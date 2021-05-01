@@ -5,13 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,12 +17,10 @@ public class App {
   private final String READ_ERR_NO_VALUE = "Error reading (%s), end of file";
   private final String READ_ERR_NO_LENGTH = "Error reading (%s), length 0";
 
-  private final OutputStream outputStream;
-//  private final InputStream inputStream;
+  private final RandomAccessFile randomAccessFile;
+
   private final Map<String, Entry> offsetMap = new HashMap<>();
   private int currentOffset = 0;
-
-  private final Path path;
 
   @AllArgsConstructor
   private static class Entry {
@@ -37,9 +30,7 @@ public class App {
   }
 
   App(String filePath) throws IOException {
-    path = Paths.get(filePath);
-    outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE);
-//    inputStream = Files.newInputStream(path);
+    randomAccessFile = new RandomAccessFile(filePath, "rw");
   }
 
   public String get(String key) {
@@ -51,11 +42,10 @@ public class App {
     }
 
     try {
-      InputStream inputStream = Files.newInputStream(path);
-      inputStream.skip(entry.getOffset());
+      randomAccessFile.seek(entry.getOffset());
 
       byte[] bytes = new byte[entry.getLength()];
-      int result = inputStream.read(bytes);
+      int result = randomAccessFile.read(bytes);
       String value = new String(bytes);
 
       if (result < 0) {
@@ -82,9 +72,8 @@ public class App {
 
   public void save(String key, String value) {
     try {
-//      outputStream.write(output.getBytes(StandardCharsets.UTF_8), currentOffset, output.length());
-      outputStream.write(value.getBytes(StandardCharsets.UTF_8));
-      outputStream.flush();
+      randomAccessFile.seek(currentOffset);
+      randomAccessFile.write(value.getBytes(StandardCharsets.UTF_8));
 
       if (offsetMap.containsKey(key)) {
         Entry entry = offsetMap.get(key);
@@ -95,8 +84,8 @@ public class App {
         offsetMap.put(key, entry);
       }
 
-      System.out.printf((SAVED_LOG) + "%n", key, value, currentOffset);
       currentOffset += value.length();
+      System.out.printf((SAVED_LOG) + "%n", key, value, currentOffset);
     } catch (IOException e) {
       e.printStackTrace();
     } catch (Exception e) {
