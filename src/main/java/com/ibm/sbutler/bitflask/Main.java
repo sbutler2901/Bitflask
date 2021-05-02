@@ -30,6 +30,15 @@ public class Main {
           String value = parsedInput[2];
 
           app.set(key, value);
+        } else if(command.startsWith("test") && parsedInput.length > 1) {
+          int generatedSets = new Integer(parsedInput[1]);
+          for (int i = 0; i < generatedSets; i++) {
+            String iteration = String.valueOf(i);
+            String key = "testKey" + iteration;
+            String value = "testValue" + iteration;
+            app.set(key, value);
+          }
+          System.out.printf("(%d) sets successfully generated%n", generatedSets);
         } else {
           System.out.println("Invalid input!");
         }

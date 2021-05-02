@@ -35,6 +35,12 @@ public class App {
     this.storage = storage;
   }
 
+  /**
+   * Sets stores a corresponding key and value in persistent storage
+   * @param key the key to use for accessing the data
+   * @param value the data to be persisted
+   * @throws IOException when an error occurs persisting the data
+   */
   public void set(String key, String value) throws IOException {
     storage.write(value.getBytes(StandardCharsets.UTF_8), currentOffset);
 
@@ -51,6 +57,12 @@ public class App {
     System.out.printf((SAVED_LOG) + "%n", key, value, currentOffset);
   }
 
+  /**
+   * Gets the value of a key from persistent storage, if it exists
+   * @param key the key used for retrieving persisted data
+   * @return the persisted data, or null if key has not been persisted
+   * @throws IOException when an error occurs retrieving the data
+   */
   public String get(String key) throws IOException {
     Entry entry = offsetMap.get(key);
 

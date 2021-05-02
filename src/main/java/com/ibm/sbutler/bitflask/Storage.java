@@ -32,6 +32,13 @@ public class Storage {
     this.randomAccessFile = randomAccessFile;
   }
 
+  /**
+   * Validates arguments provided when reading or writing data
+   * @param exceptionPrefix the prefix to used when creating an exception string
+   * @param bytes the buffer to be written or read to
+   * @param offset the offset for reading or writing data
+   * @throws IllegalArgumentException when an invalid argument is provided
+   */
   private void validateArgs(String exceptionPrefix, byte[] bytes, long offset) throws IllegalArgumentException {
     if (bytes == null) {
       throw new IllegalArgumentException(exceptionPrefix + (ARG_PROVIDED_BUFFER_NULL) + "%n");
@@ -42,13 +49,28 @@ public class Storage {
     }
   }
 
+  /**
+   * Writes the provided data to the current segment file
+   * @param bytes the bytes to be written
+   * @param offset the file offset to start writing the data
+   * @throws IOException when seeking to the provided offset or writing fails
+   * @throws IllegalArgumentException when an invalid set of data or offset is provided
+   */
   public void write(byte[] bytes, long offset) throws IOException, IllegalArgumentException {
+    // TODO: returns object containing offset used for writing data & the data segment file used. Read will need data file number
     validateArgs(WRITE_ERR_PREFIX, bytes, offset);
 
     randomAccessFile.seek(offset);
     randomAccessFile.write(bytes);
   }
 
+  /**
+   * Reads data starting at the provided offset until the provided buffer is full, or an end of file occurs
+   * @param bytes the buffer to store read data
+   * @param offset the offset to start reading data
+   * @throws IOException when seeking or reading fails
+   * @throws IllegalArgumentException when an invalid buffer or offset is provided
+   */
   public void read(byte[] bytes, long offset) throws IOException, IllegalArgumentException {
     validateArgs(READ_ERR_PREFIX, bytes, offset);
 
