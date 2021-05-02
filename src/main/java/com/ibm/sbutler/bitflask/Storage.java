@@ -21,7 +21,11 @@ public class Storage {
   private final RandomAccessFile randomAccessFile;
 
   public Storage() throws FileNotFoundException {
-    randomAccessFile = new RandomAccessFile(filePath, "rw");
+    this(filePath);
+  }
+
+  public Storage(String filePath) throws FileNotFoundException {
+    this(new RandomAccessFile(filePath, "rwd"));
   }
 
   public Storage(RandomAccessFile randomAccessFile) {
@@ -40,9 +44,6 @@ public class Storage {
 
   public void write(byte[] bytes, long offset) throws IOException, IllegalArgumentException {
     validateArgs(WRITE_ERR_PREFIX, bytes, offset);
-
-    // todo: check buffer greater than file length?
-    System.out.printf("File length: %d%n", randomAccessFile.length());
 
     randomAccessFile.seek(offset);
     randomAccessFile.write(bytes);

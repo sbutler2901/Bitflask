@@ -8,7 +8,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -19,6 +21,12 @@ class StorageTest {
 
   @Mock
   RandomAccessFile randomAccessFile;
+
+  @Test
+  void write_success() throws IOException {
+    String toWrite = "test";
+    storage.write(toWrite.getBytes(StandardCharsets.UTF_8), 0);
+  }
 
   @Test
   void write_badBuffer() {
@@ -42,6 +50,13 @@ class StorageTest {
     byte[] bytes = new byte[10];
     doThrow(new IOException()).when(randomAccessFile).seek(anyLong());
     assertThrows(IOException.class, () -> storage.write(bytes, 10));
+  }
+
+  @Test
+  void read_success() throws IOException {
+    byte[] bytes = new byte[10];
+    when(randomAccessFile.read(any())).thenReturn(10);
+    storage.read(bytes, 0);
   }
 
   @Test
