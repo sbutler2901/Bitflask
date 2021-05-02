@@ -4,13 +4,12 @@ import java.io.IOException;
 import java.util.Scanner;
 
 public class Main {
-  private static final String filePath = "./store/test.txt";
 
   public static void main(String[] args) {
     System.out.println("Hello, world!");
 
     try {
-      App app = new App(filePath);
+      App app = new App();
 
       while(true) {
         Scanner input = new Scanner(System.in);
@@ -26,11 +25,11 @@ public class Main {
           String key = parsedInput[1];
 
           app.get(key);
-        } else if (command.startsWith("save") && parsedInput.length > 2) {
+        } else if (command.startsWith("set") && parsedInput.length > 2) {
           String key = parsedInput[1];
           String value = parsedInput[2];
 
-          app.save(key, value);
+          app.set(key, value);
         } else {
           System.out.println("Invalid input!");
         }
