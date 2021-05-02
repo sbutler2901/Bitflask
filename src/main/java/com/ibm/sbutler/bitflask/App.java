@@ -28,10 +28,30 @@ public class App {
   }
 
   App() throws FileNotFoundException {
-    storage = new Storage();
+    this(new Storage());
   }
 
-  public String get(String key) {
+  App(Storage storage) {
+    this.storage = storage;
+  }
+
+  public void set(String key, String value) throws IOException {
+    storage.write(value.getBytes(StandardCharsets.UTF_8), currentOffset);
+
+    if (offsetMap.containsKey(key)) {
+      Entry entry = offsetMap.get(key);
+      entry.setOffset(currentOffset);
+      entry.setLength(value.length());
+    } else {
+      Entry entry = new Entry(currentOffset, value.length());
+      offsetMap.put(key, entry);
+    }
+
+    currentOffset += value.length();
+    System.out.printf((SAVED_LOG) + "%n", key, value, currentOffset);
+  }
+
+  public String get(String key) throws IOException {
     Entry entry = offsetMap.get(key);
 
     if (entry == null) {
@@ -39,42 +59,15 @@ public class App {
       return null;
     }
 
-    try {
-      byte[] bytes = new byte[entry.getLength()];
-      storage.read(bytes, entry.getOffset());
-      String value = new String(bytes);
+    byte[] bytes = new byte[entry.getLength()];
+    storage.read(bytes, entry.getOffset());
+    String value = new String(bytes);
 
-      System.out.printf((READ_LOG) + "%n", key, value, entry.offset);
+    System.out.printf((READ_LOG) + "%n", key, value, entry.offset);
 
-      if (value.length() > 0) {
-        return value;
-      } else {
-        return null;
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
+    if (value.length() > 0) {
+      return value;
     }
-
     return null;
-  }
-
-  public void set(String key, String value) {
-    try {
-      storage.write(value.getBytes(StandardCharsets.UTF_8), currentOffset);
-
-      if (offsetMap.containsKey(key)) {
-        Entry entry = offsetMap.get(key);
-        entry.setOffset(currentOffset);
-        entry.setLength(value.length());
-      } else {
-        Entry entry = new Entry(currentOffset, value.length());
-        offsetMap.put(key, entry);
-      }
-
-      currentOffset += value.length();
-      System.out.printf((SAVED_LOG) + "%n", key, value, currentOffset);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
   }
 }
