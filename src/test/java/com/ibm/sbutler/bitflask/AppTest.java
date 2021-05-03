@@ -1,5 +1,7 @@
 package com.ibm.sbutler.bitflask;
 
+import com.ibm.sbutler.bitflask.storage.Storage;
+import com.ibm.sbutler.bitflask.storage.StorageEntry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,39 +28,38 @@ class AppTest {
   void set_success() throws IOException {
     String key = "testKey";
     String expectedValue = "value";
-    long expectedOffset = 0;
     byte[] expectedBytes = expectedValue.getBytes(StandardCharsets.UTF_8);
 
-    // new key
     app.set(key, expectedValue);
-    verify(storage).write(eq(expectedBytes), eq(expectedOffset));
-
-    // preexisting key
-    app.set(key, expectedValue);
-    verify(storage).write(eq(expectedBytes), eq(expectedOffset + expectedValue.length()));
+    verify(storage).write(eq(expectedBytes));
   }
 
   @Test
   void set_ioExceptions() throws IOException {
-    doThrow(new IOException()).when(storage).write(any(byte[].class), anyLong());
+    doThrow(new IOException()).when(storage).write(any(byte[].class));
     assertThrows(IOException.class, () -> app.set("key", "value"));
   }
 
   @Test
   void get_success() throws IOException {
     String key = "testKey";
-    String expectedValue = "value";
-    long expectedOffset = 0;
+    String expectedValue = "testValue";
+    StorageEntry storageEntry = new StorageEntry(0, 0, expectedValue.length());
 
+    when(storage.write(any(byte[].class))).thenReturn(storageEntry);
     app.set(key, expectedValue);
-    verify(storage).read(any(byte[].class), eq(expectedOffset));
+    when(storage.read(any(StorageEntry.class))).thenReturn(expectedValue.getBytes(StandardCharsets.UTF_8));
+    String result = app.get(key);
+    assertEquals(expectedValue, result);
   }
 
   @Test
   void get_ioExceptions() throws IOException {
     String key = "testKey";
+    StorageEntry storageEntry = new StorageEntry(0, 0, 10);
+    when(storage.write(any(byte[].class))).thenReturn(storageEntry);
     app.set(key, "value");
-    doThrow(new IOException()).when(storage).read(any(byte[].class), anyLong());
+    doThrow(new IOException()).when(storage).read(any(StorageEntry.class));
     assertThrows(IOException.class, () -> app.get(key));
   }
 
@@ -66,12 +67,5 @@ class AppTest {
   void get_nullKey() throws IOException {
     app.set("testKey", "");
     assertNull(app.get(null));
-  }
-
-  @Test
-  void get_emptyValue() throws IOException {
-    String key = "testKey";
-    app.set(key, "");
-    assertNull(app.get(key));
   }
 }
