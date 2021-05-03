@@ -24,7 +24,7 @@ public class Storage {
   private static final String READ_ERR_NO_LENGTH = "Error retrieving data, length 0";
   private static final String READ_ERR_RESULT_LENGTH_LESS = "Error retrieving data, read length (%d) less than provided space (%d)";
 
-  private static final String NEW_SEGMENT_FILE_CREATED = "A new segment file was created with index (%d) at (%s)";
+  private static final String NEW_SEGMENT_FILE_CREATED = "A new segment file was created with index (%d) at (%s) with length (%d)";
 
   private static final String DEFAULT_SEGMENT_FILE_PATH = "./store/segment%d.txt";
   public static final Long NEW_SEGMENT_THRESHOLD = 10240L; // 10 KiB
@@ -46,13 +46,21 @@ public class Storage {
    * @throws FileNotFoundException when there is an error creating the new segment file
    */
   private void createNewSegmentFile() throws FileNotFoundException {
+    // todo: pre-exiting files will not be overwritten. Offset will start at file length. Need to determine index for new files to start, or overwrite
     int newSegmentFileIndex = segmentFilesList.size();
     String newSegmentFilePath = String.format(DEFAULT_SEGMENT_FILE_PATH, newSegmentFileIndex);
     RandomAccessFile newSegmentFile = new RandomAccessFile(newSegmentFilePath, SEGMENT_ACCESS_LEVEL);
 
     segmentFilesList.add(newSegmentFile);
 
-    System.out.printf(NEW_SEGMENT_FILE_CREATED, newSegmentFileIndex, newSegmentFilePath);
+    long newSegmentFileLength;
+    try {
+      newSegmentFileLength = newSegmentFile.length();
+    } catch (IOException e) {
+      newSegmentFileLength = -1;
+      System.out.println("There was an issue getting the new segment file's length");
+    }
+    System.out.printf(NEW_SEGMENT_FILE_CREATED  + "%n", newSegmentFileIndex, newSegmentFilePath, newSegmentFileLength);
   }
 
   /**

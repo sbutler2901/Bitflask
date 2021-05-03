@@ -32,13 +32,16 @@ public class Main {
           app.set(key, value);
         } else if(command.startsWith("test") && parsedInput.length > 1) {
           int generatedSets = new Integer(parsedInput[1]);
+          long startTime = System.currentTimeMillis();
           for (int i = 0; i < generatedSets; i++) {
             String iteration = String.valueOf(i);
             String key = "testKey" + iteration;
             String value = "testValue" + iteration;
             app.set(key, value);
           }
-          System.out.printf("(%d) sets successfully generated%n", generatedSets);
+          long endTime = System.currentTimeMillis();
+          long duration = (endTime - startTime);
+          System.out.printf("(%d) sets successfully generated in (%d)ms%n", generatedSets, duration);
         } else {
           System.out.println("Invalid input!");
         }
