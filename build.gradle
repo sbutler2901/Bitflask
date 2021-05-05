@@ -1,5 +1,7 @@
 plugins {
     id 'java'
+//    id 'application' // build as jar
+//    id "com.diffplug.spotless"
     id 'jacoco'
 }
 
@@ -16,8 +18,9 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok:1.18.20'
+    implementation 'org.apache.commons:commons-collections4:4.4'
     annotationProcessor 'org.projectlombok:lombok:1.18.20'
+    compileOnly 'org.projectlombok:lombok:1.18.20'
 
     testCompileOnly 'org.projectlombok:lombok:1.18.20'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
@@ -28,6 +31,10 @@ dependencies {
     testImplementation "org.mockito:mockito-core:3.+"
     testImplementation('org.mockito:mockito-junit-jupiter:3.7.7')
 }
+
+//application {
+//    mainClass = 'com.ibm.sbutler.bitflask.Main'
+//}
 
 test {
     useJUnitPlatform()

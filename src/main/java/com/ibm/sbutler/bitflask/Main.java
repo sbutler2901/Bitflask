@@ -11,7 +11,7 @@ public class Main {
     try {
       App app = new App();
 
-      while(true) {
+      while (true) {
         Scanner input = new Scanner(System.in);
 
         String line = input.nextLine();
@@ -30,7 +30,7 @@ public class Main {
           String value = parsedInput[2];
 
           app.set(key, value);
-        } else if(command.startsWith("test") && parsedInput.length > 1) {
+        } else if (command.startsWith("test") && parsedInput.length > 1) {
           int generatedSets = new Integer(parsedInput[1]);
           long startTime = System.currentTimeMillis();
           for (int i = 0; i < generatedSets; i++) {
@@ -41,7 +41,8 @@ public class Main {
           }
           long endTime = System.currentTimeMillis();
           long duration = (endTime - startTime);
-          System.out.printf("(%d) sets successfully generated in (%d)ms%n", generatedSets, duration);
+          System.out
+              .printf("(%d) sets successfully generated in (%d)ms%n", generatedSets, duration);
         } else {
           System.out.println("Invalid input!");
         }

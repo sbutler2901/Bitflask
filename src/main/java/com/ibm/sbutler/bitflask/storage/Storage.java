@@ -2,65 +2,28 @@ package com.ibm.sbutler.bitflask.storage;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Manages persisting and retrieving data
  */
 public class Storage {
-  private static final String WRITE_ERR_BUFFER_NULL = "Error writing data, provided buffer was null";
-  private static final String WRITE_ERR_BUFFER_EMPTY = "Error writing data, provided buffer length 0";
 
-  private static final String READ_ERR_ENTRY_NULL = "Error retrieving data, the provided storage entry was null";
-  private static final String READ_ERR_ENTRY_SEGMENT_INDEX_TOO_LARGE =
-      "Error retrieving data, the provided storage entry's segment index is greater than available segments";
-  private static final String READ_ERR_ENTRY_OFFSET_TOO_LARGE =
-      "Error retrieving data, the provided storage entry's offset was greater than segment's length";
-  private static final String READ_ERR_ENTRY_OFFSET_AND_LENGTH_TOO_LARGE =
-      "Error retrieving data, the provided storage entry's offset and length was greater than provided segment file's length";
-  private static final String READ_ERR_EOF = "Error retrieving data, end of file";
-  private static final String READ_ERR_NO_LENGTH = "Error retrieving data, length 0";
-  private static final String READ_ERR_RESULT_LENGTH_LESS = "Error retrieving data, read length (%d) less than provided space (%d)";
+  private static final String WRITE_ERR_BAD_KEY = "Error writing data, provided key was null or empty";
+  private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null or empty";
+  private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null or empty";
+  private static final String READ_ERR_KEY_UNAVAILABLE = "Error reading data, key was not available";
 
-  private static final String NEW_SEGMENT_FILE_CREATED = "A new segment file was created with index (%d) at (%s) with length (%d)";
-
-  private static final String DEFAULT_SEGMENT_FILE_PATH = "./store/segment%d.txt";
-  public static final Long NEW_SEGMENT_THRESHOLD = 10240L; // 10 KiB
-  private static final String SEGMENT_ACCESS_LEVEL = "rwd";
-
-  private final List<RandomAccessFile> segmentFilesList = new ArrayList<>();
+  private final List<StorageSegment> segmentFilesList = new ArrayList<>();
 
   public Storage() throws FileNotFoundException {
     createNewSegmentFile();
   }
 
-  public Storage(RandomAccessFile randomAccessFile) {
-    segmentFilesList.add(randomAccessFile);
-  }
-
-  /**
-   * Creates a new segment file for storing data
-   *
-   * @throws FileNotFoundException when there is an error creating the new segment file
-   */
-  private void createNewSegmentFile() throws FileNotFoundException {
-    // todo: pre-exiting files will not be overwritten. Offset will start at file length. Need to determine index for new files to start, or overwrite
-    int newSegmentFileIndex = segmentFilesList.size();
-    String newSegmentFilePath = String.format(DEFAULT_SEGMENT_FILE_PATH, newSegmentFileIndex);
-    RandomAccessFile newSegmentFile = new RandomAccessFile(newSegmentFilePath, SEGMENT_ACCESS_LEVEL);
-
-    segmentFilesList.add(newSegmentFile);
-
-    long newSegmentFileLength;
-    try {
-      newSegmentFileLength = newSegmentFile.length();
-    } catch (IOException e) {
-      newSegmentFileLength = -1;
-      System.out.println("There was an issue getting the new segment file's length");
-    }
-    System.out.printf(NEW_SEGMENT_FILE_CREATED  + "%n", newSegmentFileIndex, newSegmentFilePath, newSegmentFileLength);
+  public Storage(StorageSegment storageSegment) {
+    segmentFilesList.add(storageSegment.getSegmentIndex(), storageSegment);
   }
 
   /**
@@ -75,67 +38,79 @@ public class Storage {
   /**
    * Writes the provided data to the current segment file
    *
-   * @param bytes the data to be written
-   * @return the entry detailing metadata regarding written data
+   * @param key   the key for retrieving data once written
+   * @param value the data to be written
    * @throws IOException              when seeking to the provided offset or writing fails
    * @throws IllegalArgumentException when an invalid set of data or offset is provided
    */
-  public StorageEntry write(byte[] bytes) throws IOException, IllegalArgumentException {
-    if (bytes == null) {
-      throw new IllegalArgumentException(WRITE_ERR_BUFFER_NULL);
-    } else if (bytes.length == 0) {
-      throw new IllegalArgumentException(WRITE_ERR_BUFFER_EMPTY);
+  public void write(String key, String value) throws IOException, IllegalArgumentException {
+    if (key == null || key.length() <= 0) {
+      throw new IllegalArgumentException(WRITE_ERR_BAD_KEY);
+    } else if (value == null || value.length() <= 0) {
+      throw new IllegalArgumentException(WRITE_ERR_BAD_VALUE);
     }
 
-    int activeSegmentFileIndex = getActiveSegmentFileIndex();
-    RandomAccessFile activeSegmentFile = segmentFilesList.get(activeSegmentFileIndex);
-    long activeSegmentOffset = activeSegmentFile.length();
-    activeSegmentFile.seek(activeSegmentOffset);
-    activeSegmentFile.write(bytes);
-    StorageEntry storageEntry = new StorageEntry(activeSegmentFileIndex, activeSegmentOffset, bytes.length);
-    activeSegmentOffset += bytes.length;
+    StorageSegment activeStorageSegment = getActiveStorageSegment();
+    activeStorageSegment.write(key, value);
 
-    if (activeSegmentOffset >= NEW_SEGMENT_THRESHOLD) {
+    if (activeStorageSegment.exceedsStorageThreshold()) {
       createNewSegmentFile();
     }
-
-    return storageEntry;
   }
 
   /**
-   * Reads data starting at the provided offset until the provided buffer is full, or an end of file occurs
+   * Reads the provided key's value from storage
    *
-   * @param storageEntry the metadata for the entry to be retrieved
-   * @throws IOException              when seeking or reading fails
-   * @throws IllegalArgumentException when an invalid buffer or offset is provided
+   * @param key the key used for retrieving stored data
+   * @return the read value, if found
+   * @throws IOException              when reading the key fails
+   * @throws IllegalArgumentException when the provided key is invalid
    */
-  public byte[] read(StorageEntry storageEntry) throws IOException, IllegalArgumentException {
-    if (storageEntry == null) {
-      throw new IllegalArgumentException(READ_ERR_ENTRY_NULL);
-    } else if (storageEntry.getSegmentIndex() > getActiveSegmentFileIndex()) {
-      throw new IllegalArgumentException(READ_ERR_ENTRY_SEGMENT_INDEX_TOO_LARGE);
+  public Optional<String> read(String key) throws IOException, IllegalArgumentException {
+    if (key == null || key.length() <= 0) {
+      throw new IllegalArgumentException(READ_ERR_BAD_KEY);
     }
 
-    RandomAccessFile segmentFileContainingEntry = segmentFilesList.get(storageEntry.getSegmentIndex());
-
-    if (storageEntry.getSegmentOffset() > segmentFileContainingEntry.length()) {
-      throw new IllegalArgumentException(READ_ERR_ENTRY_OFFSET_TOO_LARGE);
-    } else if ((storageEntry.getSegmentOffset() + storageEntry.getEntryLength()) > segmentFileContainingEntry.length()) {
-      throw new IllegalArgumentException(READ_ERR_ENTRY_OFFSET_AND_LENGTH_TOO_LARGE);
+    Optional<StorageSegment> optionalStorageSegment = findLatestSegmentWithKey(key);
+    if (!optionalStorageSegment.isPresent()) {
+      return Optional.empty();
     }
 
-    byte[] readBytes = new byte[storageEntry.getEntryLength()];
-    segmentFileContainingEntry.seek(storageEntry.getSegmentOffset());
-    int result = segmentFileContainingEntry.read(readBytes);
+    return optionalStorageSegment.get().read(key);
+  }
 
-    if (result < 0) {
-      System.out.printf((READ_ERR_EOF) + "%n");
-    } else if (result == 0) {
-      System.out.printf((READ_ERR_NO_LENGTH) + "%n");
-    } else if (result != readBytes.length) {
-      System.out.printf((READ_ERR_RESULT_LENGTH_LESS) + "%n", result, readBytes.length);
+  /**
+   * Creates a new segment file for storing data
+   *
+   * @throws FileNotFoundException when there is an error creating the new segment file
+   */
+  private void createNewSegmentFile() throws FileNotFoundException {
+    StorageSegment newStorageSegment = new StorageSegment();
+    segmentFilesList.add(newStorageSegment.getSegmentIndex(), newStorageSegment);
+  }
+
+  /**
+   * Gets the current active storageSegment
+   *
+   * @return the active segment
+   */
+  private StorageSegment getActiveStorageSegment() {
+    return segmentFilesList.get(getActiveSegmentFileIndex());
+  }
+
+  /**
+   * Attempts to find a key in the list of storage segments starting with the most recently created
+   *
+   * @param key the key to be found
+   * @return the found storage segment, if one exists
+   */
+  private Optional<StorageSegment> findLatestSegmentWithKey(String key) {
+    for (int i = segmentFilesList.size() - 1; i >= 0; i--) {
+      StorageSegment storageSegment = segmentFilesList.get(i);
+      if (storageSegment.hasKey(key)) {
+        return Optional.of(storageSegment);
+      }
     }
-
-    return readBytes;
+    return Optional.empty();
   }
 }
