@@ -4,6 +4,11 @@
     - current performance: creating 22000 entries ~1sec
 
 ## TODO:
+### Compaction
+- Removing duplicate keys only keeping most recent
+- Merge multiple segments into a single, new segment
+- deleting old segments
+
 ### Logger
 - Add proper logging with configuration
 
@@ -13,7 +18,12 @@
   
 ### Multi threaded
 - A singular writer thread exist
-- multiple reader threads can exists
+- multiple reader threads can exist
+
+### Crash handling and recovery
+- recreate hash map offsets
+  - Replay segments
+  - or, store hashmap snapshots
 
 ### Config file
 - overwrite pre-existing segment files
