@@ -26,6 +26,7 @@ class StorageSegment {
   private final Map<String, StorageEntry> storageEntryMap = new HashMap<>();
   @Getter
   private final int segmentIndex = newSegmentFileIndex;
+
   private long currentFileWriteOffset = 0L;
 
   public StorageSegment() throws FileNotFoundException {

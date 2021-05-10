@@ -14,7 +14,6 @@ public class Storage {
   private static final String WRITE_ERR_BAD_KEY = "Error writing data, provided key was null or empty";
   private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null or empty";
   private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null or empty";
-  private static final String READ_ERR_KEY_UNAVAILABLE = "Error reading data, key was not available";
 
   private final List<StorageSegment> segmentFilesList = new ArrayList<>();
 
@@ -38,10 +37,10 @@ public class Storage {
   /**
    * Writes the provided data to the current segment file
    *
-   * @param key   the key for retrieving data once written
-   * @param value the data to be written
+   * @param key   the key for retrieving data once written. Expected to be a non-blank string.
+   * @param value the data to be written. Expected to be a non-blank string.
    * @throws IOException              when seeking to the provided offset or writing fails
-   * @throws IllegalArgumentException when an invalid set of data or offset is provided
+   * @throws IllegalArgumentException when the provided key or value is invalid
    */
   public void write(String key, String value) throws IOException, IllegalArgumentException {
     if (key == null || key.length() <= 0) {
@@ -61,7 +60,7 @@ public class Storage {
   /**
    * Reads the provided key's value from storage
    *
-   * @param key the key used for retrieving stored data
+   * @param key the key used for retrieving stored data. Expected to be a non-blank string.
    * @return the read value, if found
    * @throws IOException              when reading the key fails
    * @throws IllegalArgumentException when the provided key is invalid
