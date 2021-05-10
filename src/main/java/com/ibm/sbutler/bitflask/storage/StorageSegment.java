@@ -14,7 +14,7 @@ import lombok.Getter;
  */
 class StorageSegment {
 
-  public static final Long NEW_SEGMENT_THRESHOLD = 10240L; // 10 KiB
+  public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
   private static final String READ_ERR_EOF = "Error retrieving data, end of file";
   private static final String READ_ERR_NO_LENGTH = "Error retrieving data, length 0";
   private static final String READ_ERR_RESULT_LENGTH_LESS = "Error retrieving data, read length (%d) less than provided space (%d)";
