@@ -1,13 +1,22 @@
 package com.ibm.sbutler.bitflask.storage;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Optional;
-import lombok.Getter;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Represents a single self contained file for storing data
@@ -15,25 +24,36 @@ import lombok.Getter;
 class StorageSegment {
 
   public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
-  private static final String READ_ERR_EOF = "Error retrieving data, end of file";
-  private static final String READ_ERR_NO_LENGTH = "Error retrieving data, length 0";
-  private static final String READ_ERR_RESULT_LENGTH_LESS = "Error retrieving data, read length (%d) less than provided space (%d)";
-  private static final String SEGMENT_ACCESS_LEVEL = "rwd";
+
+  private static final String READ_ERR_BYTES_LESS_THAN_ENTRY =
+      "Error retrieving the data, The number of bytes read (%d) was less than the entry's total length (%d)";
+
   private static final String DEFAULT_SEGMENT_FILE_PATH = "./store/segment%d.txt";
-  private static int newSegmentFileIndex = 0;
+  private static final StandardOpenOption[] fileOptions = {StandardOpenOption.READ,
+      StandardOpenOption.WRITE, StandardOpenOption.CREATE};
+  private static final Set<StandardOpenOption> fileChannelOptions = new HashSet<>(
+      Arrays.asList(fileOptions));
 
-  private final RandomAccessFile segmentFile;
-  private final Map<String, StorageEntry> storageEntryMap = new HashMap<>();
-  @Getter
-  private final int segmentIndex = newSegmentFileIndex;
+  private final AsynchronousFileChannel segmentFileChannel;
+  private final ConcurrentMap<String, StorageEntry> storageEntryMap = new ConcurrentHashMap<>();
+  private final AtomicLong currentFileWriteOffset = new AtomicLong(0);
 
-  private long currentFileWriteOffset = 0L;
-
-  public StorageSegment() throws FileNotFoundException {
+  /**
+   * Creates a new storage segment with a corresponding file to store and retrieve submitted
+   * entries
+   *
+   * @param threadPoolExecutor the thread pool executor service for associating the underlying
+   *                           asynchronous file
+   * @param segmentIndex       the index used for generating the corresponding segment file
+   * @throws IOException when opening the asynchronous file fails
+   */
+  public StorageSegment(ThreadPoolExecutor threadPoolExecutor, int segmentIndex)
+      throws IOException {
     // todo: handle pre-existing files
-    String newSegmentFilePath = String.format(DEFAULT_SEGMENT_FILE_PATH, newSegmentFileIndex);
-    segmentFile = new RandomAccessFile(newSegmentFilePath, SEGMENT_ACCESS_LEVEL);
-    newSegmentFileIndex++;
+    Path newSegmentFilePath = Paths
+        .get(String.format(DEFAULT_SEGMENT_FILE_PATH, segmentIndex));
+    segmentFileChannel = AsynchronousFileChannel
+        .open(newSegmentFilePath, fileChannelOptions, threadPoolExecutor);
   }
 
   /**
@@ -42,7 +62,7 @@ class StorageSegment {
    * @return whether it exceeds the threshold, or not
    */
   public boolean exceedsStorageThreshold() {
-    return currentFileWriteOffset > NEW_SEGMENT_THRESHOLD;
+    return currentFileWriteOffset.get() > NEW_SEGMENT_THRESHOLD;
   }
 
   /**
@@ -51,7 +71,7 @@ class StorageSegment {
    * @param key the key to be searched for
    * @return whether it contains the key, or not
    */
-  public boolean hasKey(String key) {
+  public boolean containsKey(String key) {
     return storageEntryMap.containsKey(key);
   }
 
@@ -60,17 +80,28 @@ class StorageSegment {
    *
    * @param key   the key to be written and saved for retrieving data
    * @param value the associated data value to be written
-   * @throws IOException when seeking to the entry's offset or writing fails
    */
-  public void write(String key, String value) throws IOException {
+  public void write(String key, String value) {
     String combinedPair = key + value;
+    byte[] combinedPairAry = combinedPair.getBytes(StandardCharsets.UTF_8);
+    long offset = currentFileWriteOffset.getAndAdd(combinedPairAry.length);
 
-    segmentFile.seek(currentFileWriteOffset);
-    segmentFile.write(combinedPair.getBytes(StandardCharsets.UTF_8));
-    StorageEntry storageEntry = new StorageEntry(currentFileWriteOffset, key.length(),
+    Future<Integer> writeFuture = segmentFileChannel
+        .write(ByteBuffer.wrap(combinedPairAry), offset);
+
+    StorageEntry storageEntry = new StorageEntry(offset, key.length(),
         value.length());
-    storageEntryMap.put(key, storageEntry);
-    currentFileWriteOffset += combinedPair.length();
+    try {
+      writeFuture.get();
+      // Handle newer value being written and added in another thread for same key
+      storageEntryMap.merge(key, storageEntry, (retrievedStorageEntry, writtenStorageEntry) ->
+          retrievedStorageEntry.getSegmentOffset() < writtenStorageEntry.getSegmentOffset()
+              ? writtenStorageEntry
+              : retrievedStorageEntry
+      );
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+    }
   }
 
   /**
@@ -78,34 +109,35 @@ class StorageSegment {
    *
    * @param key the key to find the data in the segment file
    * @return the value for the key from the segment file, if it exists
-   * @throws IOException when seeking to the entry's offset or reading fails
    */
-  public Optional<String> read(String key) throws IOException {
-    if (!hasKey(key)) {
+  public Optional<String> read(String key) {
+    if (!containsKey(key)) {
       return Optional.empty();
     }
 
-    StorageEntry readStorageEntry = storageEntryMap.get(key);
-    int entryTotalLength = readStorageEntry.getKeyLength() + readStorageEntry.getValueLength();
-    byte[] readBytes = new byte[entryTotalLength];
+    StorageEntry storageEntry = storageEntryMap.get(key);
+    ByteBuffer readBytesBuffer = ByteBuffer.allocate(storageEntry.getTotalLength());
 
-    segmentFile.seek(readStorageEntry.getSegmentOffset());
-    int result = segmentFile.read(readBytes);
+    Future<Integer> readFuture = segmentFileChannel
+        .read(readBytesBuffer, storageEntry.getSegmentOffset());
 
-    if (result < 0) {
-      System.out.printf((READ_ERR_EOF) + "%n");
-    } else if (result == 0) {
-      System.out.printf((READ_ERR_NO_LENGTH) + "%n");
-    } else if (result != readBytes.length) {
-      System.out.printf((READ_ERR_RESULT_LENGTH_LESS) + "%n", result, readBytes.length);
+    try {
+      Integer readBytesLength = readFuture.get();
+      if (readBytesLength < storageEntry.getTotalLength()) {
+        System.out
+            .printf(READ_ERR_BYTES_LESS_THAN_ENTRY, readBytesLength, storageEntry.getTotalLength());
+        return Optional.empty();
+      }
+
+      String entry = new String(readBytesBuffer.array()).trim();
+      readBytesBuffer.clear();
+
+      String value = entry.substring(storageEntry.getKeyLength());
+      return Optional.of(value);
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
     }
 
-    // todo: handle bad reads, return Optional?
-    // todo: improve logic
-    byte[] valueBytes = new byte[readStorageEntry.getValueLength()];
-    for (int i = readStorageEntry.getKeyLength(), j = 0; i < entryTotalLength; i++, j++) {
-      valueBytes[j] = readBytes[i];
-    }
-    return Optional.of(new String(valueBytes));
+    return Optional.empty();
   }
 }

@@ -1,10 +1,12 @@
 package com.ibm.sbutler.bitflask.storage;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Manages persisting and retrieving data
@@ -15,23 +17,23 @@ public class Storage {
   private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null or empty";
   private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null or empty";
 
-  private final List<StorageSegment> segmentFilesList = new ArrayList<>();
+  private static final AtomicInteger activeStorageSegmentIndex = new AtomicInteger(0);
 
-  public Storage() throws FileNotFoundException {
-    createNewSegmentFile();
-  }
-
-  public Storage(StorageSegment storageSegment) {
-    segmentFilesList.add(storageSegment.getSegmentIndex(), storageSegment);
-  }
+  private final ThreadPoolExecutor threadPool;
+  private final List<StorageSegment> segmentFilesList = new CopyOnWriteArrayList<>();
 
   /**
-   * Gets the file index for the active segment
+   * Creates a new storage instance for managing getting and setting key-value pairs
    *
-   * @return the file index
+   * @param threadPool the thread pool executor service for which this storage instance will execute
+   *                   operations
+   * @throws IOException when creating the initial storage file fails
    */
-  public int getActiveSegmentFileIndex() {
-    return segmentFilesList.size() - 1;
+  public Storage(ThreadPoolExecutor threadPool) throws IOException {
+    this.threadPool = threadPool;
+    StorageSegment newStorageSegment = new StorageSegment(threadPool,
+        activeStorageSegmentIndex.get());
+    segmentFilesList.add(activeStorageSegmentIndex.get(), newStorageSegment);
   }
 
   /**
@@ -39,7 +41,7 @@ public class Storage {
    *
    * @param key   the key for retrieving data once written. Expected to be a non-blank string.
    * @param value the data to be written. Expected to be a non-blank string.
-   * @throws IOException              when seeking to the provided offset or writing fails
+   * @throws IOException              when creating a new segment file fails
    * @throws IllegalArgumentException when the provided key or value is invalid
    */
   public void write(String key, String value) throws IOException, IllegalArgumentException {
@@ -49,12 +51,11 @@ public class Storage {
       throw new IllegalArgumentException(WRITE_ERR_BAD_VALUE);
     }
 
-    StorageSegment activeStorageSegment = getActiveStorageSegment();
+    int activeIndex = activeStorageSegmentIndex.get();
+    StorageSegment activeStorageSegment = segmentFilesList.get(activeIndex);
     activeStorageSegment.write(key, value);
 
-    if (activeStorageSegment.exceedsStorageThreshold()) {
-      createNewSegmentFile();
-    }
+    checkAndCreateNewStorageSegment();
   }
 
   /**
@@ -62,10 +63,8 @@ public class Storage {
    *
    * @param key the key used for retrieving stored data. Expected to be a non-blank string.
    * @return the read value, if found
-   * @throws IOException              when reading the key fails
-   * @throws IllegalArgumentException when the provided key is invalid
    */
-  public Optional<String> read(String key) throws IOException, IllegalArgumentException {
+  public Optional<String> read(String key) {
     if (key == null || key.length() <= 0) {
       throw new IllegalArgumentException(READ_ERR_BAD_KEY);
     }
@@ -79,22 +78,19 @@ public class Storage {
   }
 
   /**
-   * Creates a new segment file for storing data
+   * Checks if a new storage segment should be created and creates it if needed
    *
-   * @throws FileNotFoundException when there is an error creating the new segment file
+   * @throws IOException when there is an error creating the new segment file
    */
-  private void createNewSegmentFile() throws FileNotFoundException {
-    StorageSegment newStorageSegment = new StorageSegment();
-    segmentFilesList.add(newStorageSegment.getSegmentIndex(), newStorageSegment);
-  }
+  private synchronized void checkAndCreateNewStorageSegment() throws IOException {
+    int activeIndex = activeStorageSegmentIndex.get();
+    StorageSegment activeStorageSegment = segmentFilesList.get(activeIndex);
 
-  /**
-   * Gets the current active storageSegment
-   *
-   * @return the active segment
-   */
-  private StorageSegment getActiveStorageSegment() {
-    return segmentFilesList.get(getActiveSegmentFileIndex());
+    if (activeStorageSegment.exceedsStorageThreshold()) {
+      int newSegmentIndex = activeStorageSegmentIndex.incrementAndGet();
+      StorageSegment newStorageSegment = new StorageSegment(threadPool, newSegmentIndex);
+      segmentFilesList.add(newSegmentIndex, newStorageSegment);
+    }
   }
 
   /**
@@ -104,9 +100,11 @@ public class Storage {
    * @return the found storage segment, if one exists
    */
   private Optional<StorageSegment> findLatestSegmentWithKey(String key) {
-    for (int i = segmentFilesList.size() - 1; i >= 0; i--) {
-      StorageSegment storageSegment = segmentFilesList.get(i);
-      if (storageSegment.hasKey(key)) {
+    int lastIndex = segmentFilesList.size();
+    ListIterator<StorageSegment> segmentListIterator = segmentFilesList.listIterator(lastIndex);
+    while (segmentListIterator.hasPrevious()) {
+      StorageSegment storageSegment = segmentListIterator.previous();
+      if (storageSegment.containsKey(key)) {
         return Optional.of(storageSegment);
       }
     }
