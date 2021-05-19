@@ -1,4 +1,4 @@
-package com.ibm.sbutler.bitflask.storage;
+package bitflask.server.storage;
 
 import java.io.IOException;
 import java.util.List;

@@ -1,7 +1,6 @@
-package com.ibm.sbutler.bitflask;
+package bitflask.client;
 
-import com.ibm.sbutler.bitflask.storage.Storage;
-import java.io.IOException;
+//import dev.sbutler.bitflask.server.storage.Storage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,7 +40,7 @@ class REPL implements Runnable {
   private static final String GET_LOG = "Read (%s) with value (%s)";
 
   private final Scanner input;
-  private final Storage storage;
+//  private final Storage storage;
 
   private boolean loggingEnabled = true;
 
@@ -50,9 +49,10 @@ class REPL implements Runnable {
    *
    * @param storage the storage instance for getting and setting key-value pairs
    */
-  REPL(Storage storage) {
+//  REPL(Storage storage) {
+  REPL() {
     this.input = new Scanner(System.in);
-    this.storage = storage;
+//    this.storage = storage;
   }
 
   /**
@@ -130,7 +130,9 @@ class REPL implements Runnable {
   private void get(CommandWithArgs commandWithArgs) {
     String key = commandWithArgs.args.get(0);
 
-    Optional<String> optionalValue = storage.read(key);
+//    Optional<String> optionalValue = storage.read(key);
+    Optional<String> optionalValue = Optional.empty();
+
     String readValue = optionalValue.orElse("Key not found");
     if (loggingEnabled) {
       System.out.printf((GET_LOG) + "%n", key, readValue);
@@ -146,14 +148,9 @@ class REPL implements Runnable {
     String key = commandWithArgs.args.get(0);
     String value = commandWithArgs.args.get(1);
 
-    try {
-      storage.write(key, value);
-      if (loggingEnabled) {
-        System.out.printf((SET_LOG) + "%n", key, value);
-      }
-    } catch (IOException e) {
-      System.out.println("There was an issue saving the key and value to storage");
-      e.printStackTrace();
+    //      storage.write(key, value);
+    if (loggingEnabled) {
+      System.out.printf((SET_LOG) + "%n", key, value);
     }
   }
 

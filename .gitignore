@@ -1,3 +1,10 @@
-/.gradle/
-/build/
-/store/
+/.gradle
+/.idea
+
+/buildSrc/.gradle/
+/buildSrc/build/
+
+/client/build
+
+/server/build
+/server/store

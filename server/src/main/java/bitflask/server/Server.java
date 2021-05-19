@@ -1,6 +1,6 @@
-package com.ibm.sbutler.bitflask;
+package bitflask.server;
 
-import com.ibm.sbutler.bitflask.storage.Storage;
+import bitflask.server.storage.Storage;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -8,27 +8,27 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * Provides support for getting and setting key value pairs with persistence
  */
-public class App {
+public class Server {
 
   private static final int NUM_THREADS = 4;
 
   private final Storage storage;
   private final ThreadPoolExecutor threadPool;
 
-  App() throws IOException {
+  Server() throws IOException {
     this.threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(NUM_THREADS);
     this.storage = new Storage(threadPool);
   }
 
-  App(Storage storage) {
+  Server(Storage storage) {
     this.threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(NUM_THREADS);
     this.storage = storage;
   }
 
   public static void main(String[] args) {
     try {
-      App app = new App();
-      app.start();
+      Server server = new Server();
+      server.start();
       System.exit(0);
     } catch (IOException e) {
       System.out.println("Unable to initialize storage engine. Terminating");
@@ -48,10 +48,10 @@ public class App {
   private void start() throws InterruptedException {
     System.out.println("Welcome to Bitflask!");
     printConfigInfo();
-    REPL repl = new REPL(this.storage);
-    this.threadPool.execute(repl);
-    while (threadPool.getActiveCount() > 0) {
-      Thread.sleep(10000);
-    }
+//    REPL repl = new REPL(this.storage);
+//    this.threadPool.execute(repl);
+//    while (threadPool.getActiveCount() > 0) {
+//      Thread.sleep(10000);
+//    }
   }
 }

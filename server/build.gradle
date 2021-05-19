@@ -1,0 +1,8 @@
+plugins {
+    id 'bitflask.java-application-conventions'
+}
+
+application {
+    // Define the main class for the application.
+    mainClass = 'bitflask.server.Server'
+}

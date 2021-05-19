@@ -1,7 +1,7 @@
 //package com.ibm.sbutler.bitflask.Storage;
 //
-//import com.ibm.sbutler.bitflask.storage.Storage;
-//import com.ibm.sbutler.bitflask.storage.StorageEntry;
+//import dev.sbutler.bitflask.server.storage.Storage;
+//import dev.sbutler.bitflask.server.storage.StorageEntry;
 //import org.junit.jupiter.api.Test;
 //import org.junit.jupiter.api.extension.ExtendWith;
 //import org.mockito.InjectMocks;

@@ -1,9 +1,10 @@
-package com.ibm.sbutler.bitflask.storage;
+package bitflask.server.storage;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -28,9 +29,9 @@ class StorageSegment {
   private static final String READ_ERR_BYTES_LESS_THAN_ENTRY =
       "Error retrieving the data, The number of bytes read (%d) was less than the entry's total length (%d)";
 
-  private static final String DEFAULT_SEGMENT_FILE_PATH = "./store/segment%d.txt";
-  private static final StandardOpenOption[] fileOptions = {StandardOpenOption.READ,
-      StandardOpenOption.WRITE, StandardOpenOption.CREATE};
+  private static final String DEFAULT_SEGMENT_FILE_PATH = "store/segment%d.txt";
+  private static final StandardOpenOption[] fileOptions = {StandardOpenOption.CREATE, StandardOpenOption.READ,
+      StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING};
   private static final Set<StandardOpenOption> fileChannelOptions = new HashSet<>(
       Arrays.asList(fileOptions));
 
@@ -49,7 +50,6 @@ class StorageSegment {
    */
   public StorageSegment(ThreadPoolExecutor threadPoolExecutor, int segmentIndex)
       throws IOException {
-    // todo: handle pre-existing files
     Path newSegmentFilePath = Paths
         .get(String.format(DEFAULT_SEGMENT_FILE_PATH, segmentIndex));
     segmentFileChannel = AsynchronousFileChannel
