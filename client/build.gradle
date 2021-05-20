@@ -2,7 +2,11 @@ plugins {
     id 'bitflask.java-application-conventions'
 }
 
+dependencies {
+    implementation project(':resp')
+}
+
 application {
     // Define the main class for the application.
-    mainClass = 'bitflask.client.Client'
+    mainClassName 'bitflask.client.Client'
 }

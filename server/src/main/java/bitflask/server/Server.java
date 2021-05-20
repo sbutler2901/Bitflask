@@ -1,5 +1,6 @@
 package bitflask.server;
 
+import bitflask.resp.RESP;
 import bitflask.server.storage.Storage;
 import java.io.IOException;
 import java.util.concurrent.Executors;
@@ -48,6 +49,7 @@ public class Server {
   private void start() throws InterruptedException {
     System.out.println("Welcome to Bitflask!");
     printConfigInfo();
+    String test = RESP.test();
 //    REPL repl = new REPL(this.storage);
 //    this.threadPool.execute(repl);
 //    while (threadPool.getActiveCount() > 0) {
