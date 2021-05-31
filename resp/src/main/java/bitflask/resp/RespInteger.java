@@ -36,17 +36,17 @@ public class RespInteger extends RespType<Integer> {
   }
 
   @Override
-  byte[] getEncodedBytes() {
+  public byte[] getEncodedBytes() {
     return encodedBytes;
   }
 
   @Override
-  String getEncodedString() {
+  public String getEncodedString() {
     return encodedString;
   }
 
   @Override
-  Integer getDecodedValue() {
+  public Integer getDecodedValue() {
     return decodedValue;
   }
 

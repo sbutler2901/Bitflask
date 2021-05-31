@@ -12,7 +12,7 @@ public class RespBulkString extends RespType<String> {
   private final String encodedString;
   private final byte[] encodedBytes;
 
-  RespBulkString(String decodedValue) {
+  public RespBulkString(String decodedValue) {
     this.decodedValue = decodedValue;
     this.encodedString = decodedValue == null
         ? TYPE_PREFIX + NULL_STRING_LENGTH + CRLF
@@ -20,7 +20,7 @@ public class RespBulkString extends RespType<String> {
     this.encodedBytes = this.encodedString.getBytes(ENCODED_CHARSET);
   }
 
-  RespBulkString(byte[] encodedBytes) {
+  public RespBulkString(byte[] encodedBytes) {
     if (encodedBytes.length <= 0) {
       throw new IllegalArgumentException("Empty byte array");
     }
@@ -54,17 +54,17 @@ public class RespBulkString extends RespType<String> {
   }
 
   @Override
-  byte[] getEncodedBytes() {
+  public byte[] getEncodedBytes() {
     return encodedBytes;
   }
 
   @Override
-  String getEncodedString() {
+  public String getEncodedString() {
     return encodedString;
   }
 
   @Override
-  String getDecodedValue() {
+  public String getDecodedValue() {
     return decodedValue;
   }
 

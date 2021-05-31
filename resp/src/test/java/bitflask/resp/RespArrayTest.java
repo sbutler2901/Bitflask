@@ -2,6 +2,7 @@ package bitflask.resp;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
@@ -68,12 +69,11 @@ class RespArrayTest {
 
   @Test
   void listConstructor_success_null() {
-    List<RespType> decodedValue = null;
     String expectedEncoded = RespArray.TYPE_PREFIX + RespArray.NULL_STRING_LENGTH + RespArray.CRLF;
     byte[] expectedEncodedBytes = expectedEncoded.getBytes(RespArray.ENCODED_CHARSET);
-    RespArray respArray = new RespArray(decodedValue);
+    RespArray respArray = new RespArray((List<RespType>) null);
 
-    assertEquals(decodedValue, respArray.getDecodedValue());
+    assertNull(respArray.getDecodedValue());
     assertEquals(expectedEncoded, respArray.getEncodedString());
     assertArrayEquals(expectedEncodedBytes, respArray.getEncodedBytes());
   }
@@ -136,12 +136,11 @@ class RespArrayTest {
 
   @Test
   void byteArrayConstructor_success_null() {
-    List<RespType> decodedValue = null;
     String expectedEncoded = RespArray.TYPE_PREFIX + RespArray.NULL_STRING_LENGTH + RespArray.CRLF;
     byte[] expectedEncodedBytes = expectedEncoded.getBytes(RespArray.ENCODED_CHARSET);
     RespArray respArray = new RespArray(expectedEncodedBytes);
 
-    assertEquals(decodedValue, respArray.getDecodedValue());
+    assertNull(respArray.getDecodedValue());
     assertEquals(expectedEncoded, respArray.getEncodedString());
     assertArrayEquals(expectedEncodedBytes, respArray.getEncodedBytes());
   }

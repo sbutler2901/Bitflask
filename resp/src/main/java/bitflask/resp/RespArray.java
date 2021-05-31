@@ -14,7 +14,7 @@ public class RespArray extends RespType<List<RespType>> {
   private final String encodedString;
   private final byte[] encodedBytes;
 
-  RespArray(List<RespType> entries) {
+  public RespArray(List<RespType> entries) {
     if (entries == null) {
       this.decodedValue = null;
       this.encodedString = TYPE_PREFIX + NULL_STRING_LENGTH + CRLF;
@@ -34,7 +34,7 @@ public class RespArray extends RespType<List<RespType>> {
     this.encodedBytes = encodedString.getBytes(ENCODED_CHARSET);
   }
 
-  RespArray(byte[] encodedBytes) {
+  public RespArray(byte[] encodedBytes) {
     if (encodedBytes[0] != TYPE_PREFIX) {
       throw new IllegalArgumentException("Invalid byte array");
     }
@@ -85,17 +85,17 @@ public class RespArray extends RespType<List<RespType>> {
   }
 
   @Override
-  byte[] getEncodedBytes() {
+  public byte[] getEncodedBytes() {
     return encodedBytes;
   }
 
   @Override
-  String getEncodedString() {
+  public String getEncodedString() {
     return encodedString;
   }
 
   @Override
-  List<RespType> getDecodedValue() {
+  public List<RespType> getDecodedValue() {
     return decodedValue;
   }
 

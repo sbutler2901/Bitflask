@@ -47,7 +47,7 @@ public class RespError extends RespType<String> {
   }
 
   @Override
-  String getDecodedValue() {
+  public String getDecodedValue() {
     return decodedValue;
   }
 

@@ -47,7 +47,7 @@ public final class RespSimpleString extends RespType<String> {
   }
 
   @Override
-  String getDecodedValue() {
+  public String getDecodedValue() {
     return decodedValue;
   }
 
