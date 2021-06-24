@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import lombok.NonNull;
 
-public final class RespSimpleString extends RespType<String> {
+public final class RespSimpleString implements RespType<String> {
 
   public static final char TYPE_PREFIX = '+';
 
@@ -12,13 +12,13 @@ public final class RespSimpleString extends RespType<String> {
   private final String encodedString;
   private final byte[] encodedBytes;
 
-  RespSimpleString(@NonNull String decodedValue) {
+  public RespSimpleString(@NonNull String decodedValue) {
     this.decodedValue = decodedValue;
     this.encodedString = TYPE_PREFIX + decodedValue + CRLF;
     this.encodedBytes = encodedString.getBytes(ENCODED_CHARSET);
   }
 
-  RespSimpleString(byte[] encodedBytes) {
+  public RespSimpleString(byte[] encodedBytes) {
     if (encodedBytes.length <= 0) {
       throw new IllegalArgumentException("Empty byte array");
     }
@@ -48,6 +48,11 @@ public final class RespSimpleString extends RespType<String> {
 
   @Override
   public String getDecodedValue() {
+    return decodedValue;
+  }
+
+  @Override
+  public String toString() {
     return decodedValue;
   }
 

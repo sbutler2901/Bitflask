@@ -3,7 +3,7 @@ package bitflask.resp;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class RespBulkString extends RespType<String> {
+public class RespBulkString implements RespType<String> {
 
   public static final char TYPE_PREFIX = '$';
   public static final String NULL_STRING_LENGTH = "-1";
@@ -65,6 +65,11 @@ public class RespBulkString extends RespType<String> {
 
   @Override
   public String getDecodedValue() {
+    return decodedValue;
+  }
+
+  @Override
+  public String toString() {
     return decodedValue;
   }
 

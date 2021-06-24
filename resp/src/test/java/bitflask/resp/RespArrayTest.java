@@ -13,7 +13,7 @@ class RespArrayTest {
 
   @Test
   void listConstructor_success() {
-    List<RespType> decodedValue = new ArrayList<>();
+    List<RespType<?>> decodedValue = new ArrayList<>();
     RespSimpleString respSimpleString = new RespSimpleString("foo");
     RespInteger respInteger = new RespInteger(10);
     RespError respError = new RespError("error");
@@ -57,7 +57,7 @@ class RespArrayTest {
 
   @Test
   void listConstructor_success_emptyList() {
-    List<RespType> decodedValue = new ArrayList<>();
+    List<RespType<?>> decodedValue = new ArrayList<>();
     String expectedEncoded = RespArray.TYPE_PREFIX + "0" + RespArray.CRLF;
     byte[] expectedEncodedBytes = expectedEncoded.getBytes(RespArray.ENCODED_CHARSET);
     RespArray respArray = new RespArray(decodedValue);
@@ -71,7 +71,7 @@ class RespArrayTest {
   void listConstructor_success_null() {
     String expectedEncoded = RespArray.TYPE_PREFIX + RespArray.NULL_STRING_LENGTH + RespArray.CRLF;
     byte[] expectedEncodedBytes = expectedEncoded.getBytes(RespArray.ENCODED_CHARSET);
-    RespArray respArray = new RespArray((List<RespType>) null);
+    RespArray respArray = new RespArray((List<RespType<?>>) null);
 
     assertNull(respArray.getDecodedValue());
     assertEquals(expectedEncoded, respArray.getEncodedString());
@@ -80,7 +80,7 @@ class RespArrayTest {
 
   @Test
   void byteArrayConstructor_success() {
-    List<RespType> decodedValue = new ArrayList<>();
+    List<RespType<?>> decodedValue = new ArrayList<>();
     RespSimpleString respSimpleString = new RespSimpleString("foo");
     RespInteger respInteger = new RespInteger(10);
     RespError respError = new RespError("error");
@@ -124,7 +124,7 @@ class RespArrayTest {
 
   @Test
   void byteArrayConstructor_success_emptyList() {
-    List<RespType> decodedValue = new ArrayList<>();
+    List<RespType<?>> decodedValue = new ArrayList<>();
     String expectedEncoded = RespArray.TYPE_PREFIX + "0" + RespArray.CRLF;
     byte[] expectedEncodedBytes = expectedEncoded.getBytes(RespArray.ENCODED_CHARSET);
     RespArray respArray = new RespArray(expectedEncodedBytes);

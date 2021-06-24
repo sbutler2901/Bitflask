@@ -3,16 +3,15 @@ package bitflask.resp;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-public abstract class RespType<T> {
+public interface RespType<T> {
+  char CR = '\r';
+  char LF = '\n';
+  String CRLF = new String(new char[]{CR, LF});
+  Charset ENCODED_CHARSET = StandardCharsets.UTF_8;
 
-  public static final char CR = '\r';
-  public static final char LF = '\n';
-  public static final String CRLF = new String(new char[]{CR, LF});
-  public static final Charset ENCODED_CHARSET = StandardCharsets.UTF_8;
+  byte[] getEncodedBytes();
 
-  public abstract byte[] getEncodedBytes();
+  String getEncodedString();
 
-  public abstract String getEncodedString();
-
-  public abstract T getDecodedValue();
+  T getDecodedValue();
 }

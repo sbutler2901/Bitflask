@@ -3,7 +3,7 @@ package bitflask.resp;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class RespInteger extends RespType<Integer> {
+public class RespInteger implements RespType<Integer> {
 
   public static final char TYPE_PREFIX = ':';
 
@@ -11,13 +11,13 @@ public class RespInteger extends RespType<Integer> {
   private final String encodedString;
   private final byte[] encodedBytes;
 
-  RespInteger(int decodedValue) {
+  public RespInteger(int decodedValue) {
     this.decodedValue = decodedValue;
     this.encodedString = TYPE_PREFIX + "" + decodedValue + CRLF;
     this.encodedBytes = this.encodedString.getBytes(ENCODED_CHARSET);
   }
 
-  RespInteger(byte[] encodedBytes) {
+  public RespInteger(byte[] encodedBytes) {
     if (encodedBytes.length <= 0) {
       throw new IllegalArgumentException("Empty byte array");
     }
@@ -48,6 +48,11 @@ public class RespInteger extends RespType<Integer> {
   @Override
   public Integer getDecodedValue() {
     return decodedValue;
+  }
+
+  @Override
+  public String toString() {
+    return decodedValue.toString();
   }
 
   @Override

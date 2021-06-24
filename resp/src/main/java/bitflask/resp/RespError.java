@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import lombok.NonNull;
 
-public class RespError extends RespType<String> {
+public class RespError implements RespType<String> {
 
   public static final char TYPE_PREFIX = '-';
 
@@ -12,13 +12,13 @@ public class RespError extends RespType<String> {
   private final String encodedString;
   private final byte[] encodedBytes;
 
-  RespError(@NonNull String decodedValue) {
+  public RespError(@NonNull String decodedValue) {
     this.decodedValue = decodedValue;
     this.encodedString = TYPE_PREFIX + decodedValue + CRLF;
     this.encodedBytes = encodedString.getBytes(ENCODED_CHARSET);
   }
 
-  RespError(byte[] encodedBytes) {
+  public RespError(byte[] encodedBytes) {
     if (encodedBytes.length <= 0) {
       throw new IllegalArgumentException("Empty byte array");
     }
@@ -49,6 +49,11 @@ public class RespError extends RespType<String> {
   @Override
   public String getDecodedValue() {
     return decodedValue;
+  }
+
+  @Override
+  public String toString() {
+    return "Error: " + decodedValue;
   }
 
   @Override
