@@ -57,6 +57,10 @@ public class Server {
         Socket clientSocket = serverSocket.accept();
         RequestHandler clientRequestHandler = new RequestHandler(clientSocket, storage);
 
+        System.out.println(
+            "S: Received incoming client connection from " + clientSocket.getInetAddress() + ":"
+                + clientSocket.getPort());
+
         this.threadPool.execute(clientRequestHandler);
       }
     } catch (IOException e) {

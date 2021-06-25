@@ -46,6 +46,7 @@ public class RequestHandler implements Runnable {
   @Override
   public void run() {
     while (!Thread.interrupted() && isRunning) {
+      // todo: detect client disconnect
       try {
         if (bufferedInputStream.available() <= 0) {
           try {
@@ -61,8 +62,8 @@ public class RequestHandler implements Runnable {
         byte[] readBytes = new byte[numAvailableBytes];
         IOUtils.read(bufferedInputStream, readBytes);
 
-        System.out.printf("S: %s%n", new String(readBytes));
         RespType<?> clientMessageRaw = RespUtils.from(readBytes);
+        System.out.printf("S: received from client %s%n", clientMessageRaw);
 
         RespType<?> response;
         if (clientMessageRaw.getClass() != RespArray.class) {
