@@ -24,14 +24,14 @@ public class Command {
   }
 
   public Command(RespArray commandRespArray) {
-    List<RespType<?>> test = commandRespArray.getDecodedValue();
+    List<RespType> test = commandRespArray.getValue();
     this.command = Commands.from(test.get(0).toString());
     this.args = test.subList(1, test.size()).stream().map(Object::toString).collect(
         Collectors.toList());
   }
 
   public RespArray getCommandRespArray() {
-    List<RespType<?>> arrayArgs = new ArrayList<>();
+    List<RespType> arrayArgs = new ArrayList<>();
     arrayArgs.add(new RespBulkString(this.command.toString()));
     this.args.forEach(arg -> arrayArgs.add(new RespBulkString(arg)));
     return new RespArray(arrayArgs);

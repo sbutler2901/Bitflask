@@ -1,95 +1,56 @@
 package bitflask.resp;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
 public class RespBulkString implements RespType<String> {
 
   public static final char TYPE_PREFIX = '$';
-  public static final String NULL_STRING_LENGTH = "-1";
+  public static final long NULL_STRING_LENGTH = -1;
 
-  private final String decodedValue;
-  private final String encodedString;
-  private final byte[] encodedBytes;
+  private final String value;
 
-  public RespBulkString(String decodedValue) {
-    this.decodedValue = decodedValue;
-    this.encodedString = decodedValue == null
-        ? TYPE_PREFIX + NULL_STRING_LENGTH + CRLF
-        : TYPE_PREFIX + "" + decodedValue.length() + CRLF + decodedValue + CRLF;
-    this.encodedBytes = this.encodedString.getBytes(ENCODED_CHARSET);
+  public RespBulkString(BufferedReader bufferedReader) throws IOException {
+    int length = Integer.parseInt(bufferedReader.readLine());
+    if (length == NULL_STRING_LENGTH) {
+      value = null;
+      return;
+    }
+    String readValue = bufferedReader.readLine();
+    if (readValue.length() != length) {
+      throw new IllegalArgumentException("Value length didn't match provided length");
+    }
+    this.value = readValue;
   }
 
-  public RespBulkString(byte[] encodedBytes) {
-    if (encodedBytes.length <= 0) {
-      throw new IllegalArgumentException("Empty byte array");
-    }
-    if (encodedBytes[0] != TYPE_PREFIX) {
-      throw new IllegalArgumentException("Invalid byte array");
-    }
+  public RespBulkString(String value) {
+    this.value = value;
+  }
 
-    if (encodedBytes[1] == '-') {
-      this.decodedValue = null;
-      this.encodedString = TYPE_PREFIX + NULL_STRING_LENGTH + CRLF;
+  @Override
+  public String getValue() {
+    return value;
+  }
+
+  @Override
+  public void write(BufferedOutputStream bufferedOutputStream) throws IOException {
+    bufferedOutputStream.write(TYPE_PREFIX);
+    if (value == null) {
+      bufferedOutputStream.write(String.valueOf(NULL_STRING_LENGTH).getBytes(ENCODED_CHARSET));
     } else {
-      int length = 0;
-      int index = 1;
-
-      while (encodedBytes[index] != CR) {
-        length = (length * 10) + (encodedBytes[index] - '0');
-        index++;
-      }
-      index += 2; // Set to string start
-
-      if (length == 0) {
-        this.decodedValue = "";
-        this.encodedString = TYPE_PREFIX + "0" + CRLF + CRLF;
-      } else {
-        this.decodedValue = new String(encodedBytes, index, length);
-        this.encodedString = TYPE_PREFIX + "" + length + CRLF + this.decodedValue + CRLF;
-      }
+      bufferedOutputStream.write(String.valueOf(value.length()).getBytes(ENCODED_CHARSET));
+      bufferedOutputStream.write(CRLF);
+      bufferedOutputStream.write(value.getBytes(ENCODED_CHARSET));
     }
-
-    this.encodedBytes = this.encodedString.getBytes(ENCODED_CHARSET);
-  }
-
-  @Override
-  public byte[] getEncodedBytes() {
-    return encodedBytes;
-  }
-
-  @Override
-  public String getEncodedString() {
-    return encodedString;
-  }
-
-  @Override
-  public String getDecodedValue() {
-    return decodedValue;
+    bufferedOutputStream.write(CRLF);
   }
 
   @Override
   public String toString() {
-    return decodedValue;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    RespBulkString that = (RespBulkString) o;
-    return Objects.equals(decodedValue, that.decodedValue) && encodedString
-        .equals(that.encodedString) && Arrays.equals(encodedBytes, that.encodedBytes);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(decodedValue, encodedString);
-    result = 31 * result + Arrays.hashCode(encodedBytes);
-    return result;
+    return value;
   }
 }

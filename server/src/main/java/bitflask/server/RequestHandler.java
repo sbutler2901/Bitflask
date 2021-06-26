@@ -1,76 +1,51 @@
 package bitflask.server;
 
+import bitflask.resp.Resp;
 import bitflask.resp.RespArray;
 import bitflask.resp.RespBulkString;
-import bitflask.resp.RespError;
-import bitflask.resp.RespInteger;
-import bitflask.resp.RespSimpleString;
 import bitflask.resp.RespType;
-import bitflask.resp.RespUtils;
 import bitflask.server.storage.Storage;
 import bitflask.utilities.Command;
 import bitflask.utilities.Commands;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.List;
-import java.util.Optional;
-import org.apache.commons.io.IOUtils;
 
 public class RequestHandler implements Runnable {
 
   private static final String TERMINATING_CONNECTION = "Disconnecting client";
 
-  private static final long SLEEP_INTERVAL_CLIENT_INPUT = 1000; // 1 second
-
-  private final Socket clientSocket;
+  private final Socket socket;
+  private final Resp resp;
   private final Storage storage;
-  private final BufferedInputStream bufferedInputStream;
-  private final BufferedOutputStream bufferedOutputStream;
   private boolean isRunning = true;
 
-  public RequestHandler(Socket clientSocket, Storage storage) throws IOException {
-    this.clientSocket = clientSocket;
+  public RequestHandler(Socket socket, Storage storage) throws IOException {
+    this.socket = socket;
     this.storage = storage;
-
-    this.bufferedInputStream = IOUtils.buffer(clientSocket.getInputStream());
-    this.bufferedOutputStream = IOUtils.buffer(clientSocket.getOutputStream());
-  }
-
-  private void sendToClient(byte[] message) throws IOException {
-    IOUtils.write(message, bufferedOutputStream);
-    bufferedOutputStream.flush();
+    this.resp = new Resp(this.socket);
   }
 
   @Override
   public void run() {
     while (!Thread.interrupted() && isRunning) {
-      // todo: detect client disconnect
       try {
-        if (bufferedInputStream.available() <= 0) {
-          try {
-            Thread.sleep(SLEEP_INTERVAL_CLIENT_INPUT);
-            continue;
-          } catch (InterruptedException e) {
-            close();
-            return;
-          }
+        RespType respType = this.resp.receive();
+
+        if (respType == null) {
+          System.out.println("S: Client disconnected");
+          this.close();
+          return;
         }
 
-        int numAvailableBytes = bufferedInputStream.available();
-        byte[] readBytes = new byte[numAvailableBytes];
-        IOUtils.read(bufferedInputStream, readBytes);
+        System.out.printf("S: received from client %s%n", respType);
 
-        RespType<?> clientMessageRaw = RespUtils.from(readBytes);
-        System.out.printf("S: received from client %s%n", clientMessageRaw);
-
-        RespType<?> response;
-        if (clientMessageRaw.getClass() != RespArray.class) {
-          response = new RespSimpleString("Incorrect message format. RespArray expected.");
+        RespType response;
+        if (respType.getClass() != RespArray.class) {
+          response = new RespBulkString("Incorrect message format. RespArray expected.");
         } else {
-          RespArray clientMessage = (RespArray) clientMessageRaw;
+          RespArray clientMessage = (RespArray) respType;
           Command clientCommand = new Command(clientMessage);
+
           if (clientCommand.getCommand().equals(Commands.GET)) {
             String key = clientCommand.getArgs().get(0);
             String value = storage.read(key).orElse("Not Found");
@@ -86,7 +61,7 @@ public class RequestHandler implements Runnable {
           }
         }
 
-        sendToClient(response.getEncodedBytes());
+        this.resp.send(response);
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -96,7 +71,7 @@ public class RequestHandler implements Runnable {
   public void close() {
     try {
       isRunning = false;
-      clientSocket.close();
+      socket.close();
       System.out.println(TERMINATING_CONNECTION);
     } catch (IOException e) {
       e.printStackTrace();

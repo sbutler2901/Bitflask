@@ -1,13 +1,14 @@
 package bitflask.client.repl;
 
-import bitflask.client.Client;
+import bitflask.resp.Resp;
+import bitflask.resp.RespType;
 import bitflask.utilities.Command;
 import bitflask.utilities.Commands;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.Scanner;
 
 public class REPL {
@@ -18,18 +19,18 @@ public class REPL {
   private static final String GET_LOG = "Read (%s) with value (%s)";
 
   private final Scanner input;
-  private final Client client;
+  private final Resp resp;
 
   private boolean loggingEnabled = true;
 
   /**
    * Creating a new REPL instance for accepting user command to interact with the storage engine
    *
-   * @param client client
+   * @param resp resp
    */
-  public REPL(Client client) {
+  public REPL(Resp resp) {
     this.input = new Scanner(System.in);
-    this.client = client;
+    this.resp = resp;
   }
 
   /**
@@ -59,54 +60,29 @@ public class REPL {
    */
   public void start() {
     while (true) {
-      Command command = getNextCommand();
+      try {
+        Command command = getNextCommand();
 
-      if (command.getCommand() == Commands.EXIT) {
-        break;
-      } else if (command.getCommand() == Commands.GET && command.getArgs().size() > 0) {
-        client.sendCommand(command.getCommandRespArray());
-      } else if (command.getCommand() == Commands.SET && command.getArgs().size() > 1) {
-        client.sendCommand(command.getCommandRespArray());
-      } else if (command.getCommand() == Commands.LOG && command.getArgs().size() > 0) {
-        logging(command);
-      } else if (command.getCommand() == Commands.TEST && command.getArgs().size() > 0) {
-        test(command);
-      } else {
-        System.out.println("Invalid input!");
+        if (command.getCommand() == Commands.EXIT) {
+          break;
+        } else if (command.getCommand() == Commands.GET && command.getArgs().size() > 0) {
+          resp.send(command.getCommandRespArray());
+          RespType respType = resp.receive();
+          System.out.println(respType);
+        } else if (command.getCommand() == Commands.SET && command.getArgs().size() > 1) {
+          resp.send(command.getCommandRespArray());
+          RespType respType = resp.receive();
+          System.out.println(respType);
+        } else if (command.getCommand() == Commands.LOG && command.getArgs().size() > 0) {
+          logging(command);
+        } else if (command.getCommand() == Commands.TEST && command.getArgs().size() > 0) {
+          test(command);
+        } else {
+          System.out.println("Invalid input!");
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
       }
-    }
-  }
-
-  /**
-   * Gets the value of a key from persistent storage, if it exists
-   *
-   * @param Command the get command with its required arguments
-   */
-  private void get(Command Command) {
-    String key = Command.getArgs().get(0);
-
-//    Optional<String> optionalValue = storage.read(key);
-    client.sendCommand(Command.getCommandRespArray());
-    Optional<String> optionalValue = Optional.empty();
-
-    String readValue = optionalValue.orElse("Key not found");
-    if (loggingEnabled) {
-      System.out.printf((GET_LOG) + "%n", key, readValue);
-    }
-  }
-
-  /**
-   * Sets stores a corresponding key and value in persistent storage
-   *
-   * @param Command the set command with its required arguments
-   */
-  private void set(Command Command) {
-    String key = Command.getArgs().get(0);
-    String value = Command.getArgs().get(1);
-
-    //      storage.write(key, value);
-    if (loggingEnabled) {
-      System.out.printf((SET_LOG) + "%n", key, value);
     }
   }
 
@@ -129,8 +105,7 @@ public class REPL {
    *
    * @param Command the command with its required arguments
    */
-  private void test(Command Command) {
-    // TODO: move to server side?
+  private void test(Command Command) throws IOException {
     int numEntriesGenerated = Integer.parseInt(Command.getArgs().get(0));
 
     boolean withGet =
@@ -143,16 +118,17 @@ public class REPL {
       String iteration = String.valueOf(i);
       String setKey = "testKey" + iteration;
       String value = "testValue" + iteration;
-      set(new Command(Commands.SET, Arrays.asList(setKey, value)));
+
+      resp.send(new Command(Commands.SET, Arrays.asList(setKey, value)).getCommandRespArray());
       if (withGet && i > 0) {
         int previousWrite = i - 1;
         String getKey = "testKey" + previousWrite;
-        get(new Command(Commands.GET, Collections.singletonList(getKey)));
+        resp.send(new Command(Commands.GET, Collections.singletonList(getKey)).getCommandRespArray());
       }
     }
     if (withGet) {
       String lastTestKey = "testKey" + numEntriesGenerated;
-      set(new Command(Commands.GET, Collections.singletonList(lastTestKey)));
+      resp.send(new Command(Commands.GET, Collections.singletonList(lastTestKey)).getCommandRespArray());
     }
 
     long endTime = System.currentTimeMillis();

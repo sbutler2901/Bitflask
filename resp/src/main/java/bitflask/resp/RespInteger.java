@@ -1,77 +1,37 @@
 package bitflask.resp;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.IOException;
 
 public class RespInteger implements RespType<Integer> {
 
   public static final char TYPE_PREFIX = ':';
 
-  private final Integer decodedValue;
-  private final String encodedString;
-  private final byte[] encodedBytes;
+  private final int value;
 
-  public RespInteger(int decodedValue) {
-    this.decodedValue = decodedValue;
-    this.encodedString = TYPE_PREFIX + "" + decodedValue + CRLF;
-    this.encodedBytes = this.encodedString.getBytes(ENCODED_CHARSET);
+  public RespInteger(BufferedReader bufferedReader) throws IOException {
+    this.value = Integer.parseInt(bufferedReader.readLine());
   }
 
-  public RespInteger(byte[] encodedBytes) {
-    if (encodedBytes.length <= 0) {
-      throw new IllegalArgumentException("Empty byte array");
-    }
-    if (encodedBytes[0] != TYPE_PREFIX) {
-      throw new IllegalArgumentException("Invalid byte array");
-    }
-
-    int index = 1;
-    while (index < encodedBytes.length && encodedBytes[index] != CR) {
-      index++;
-    }
-
-    this.decodedValue = Integer.parseInt(new String(encodedBytes, 1, index - 1));
-    this.encodedString = TYPE_PREFIX + "" + decodedValue + CRLF;
-    this.encodedBytes = this.encodedString.getBytes(ENCODED_CHARSET);
+  public RespInteger(int value) {
+    this.value = value;
   }
 
   @Override
-  public byte[] getEncodedBytes() {
-    return encodedBytes;
+  public Integer getValue() {
+    return value;
   }
 
   @Override
-  public String getEncodedString() {
-    return encodedString;
-  }
-
-  @Override
-  public Integer getDecodedValue() {
-    return decodedValue;
+  public void write(BufferedOutputStream bufferedOutputStream) throws IOException {
+    bufferedOutputStream.write(TYPE_PREFIX);
+    bufferedOutputStream.write(String.valueOf(value).getBytes(ENCODED_CHARSET));
+    bufferedOutputStream.write(CRLF);
   }
 
   @Override
   public String toString() {
-    return decodedValue.toString();
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    RespInteger that = (RespInteger) o;
-    return decodedValue.equals(that.decodedValue) && encodedString.equals(that.encodedString)
-        && Arrays.equals(encodedBytes, that.encodedBytes);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(decodedValue, encodedString);
-    result = 31 * result + Arrays.hashCode(encodedBytes);
-    return result;
+    return String.valueOf(value);
   }
 }
