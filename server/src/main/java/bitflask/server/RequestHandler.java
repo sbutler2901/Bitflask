@@ -34,7 +34,7 @@ public class RequestHandler implements Runnable {
         if (respType == null) {
           System.out.println("S: Client disconnected");
           this.close();
-          return;
+          break;
         }
 
         System.out.printf("S: received from client %s%n", respType);

@@ -109,26 +109,34 @@ public class REPL {
     int numEntriesGenerated = Integer.parseInt(Command.getArgs().get(0));
 
     boolean withGet =
-        Command.getArgs().size() > 2 && Boolean.parseBoolean(Command.getArgs().get(1));
+        Command.getArgs().size() > 1 && Boolean.parseBoolean(Command.getArgs().get(1));
     System.out
         .println("Generating " + numEntriesGenerated + " entries with get (" + withGet + ")");
 
+    RespType response;
     long startTime = System.currentTimeMillis();
-    for (int i = 0; i < numEntriesGenerated; i++) {
+    int i;
+    for (i = 0; i < numEntriesGenerated; i++) {
       String iteration = String.valueOf(i);
       String setKey = "testKey" + iteration;
       String value = "testValue" + iteration;
 
       resp.send(new Command(Commands.SET, Arrays.asList(setKey, value)).getCommandRespArray());
+      response = resp.receive();
+      System.out.println("Response: " + response);
       if (withGet && i > 0) {
         int previousWrite = i - 1;
         String getKey = "testKey" + previousWrite;
         resp.send(new Command(Commands.GET, Collections.singletonList(getKey)).getCommandRespArray());
+        response = resp.receive();
+        System.out.println("Response: " + response);
       }
     }
     if (withGet) {
-      String lastTestKey = "testKey" + numEntriesGenerated;
+      String lastTestKey = "testKey" + (i - 1);
       resp.send(new Command(Commands.GET, Collections.singletonList(lastTestKey)).getCommandRespArray());
+      response = resp.receive();
+      System.out.println("Response: " + response);
     }
 
     long endTime = System.currentTimeMillis();

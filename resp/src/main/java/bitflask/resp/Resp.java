@@ -1,6 +1,5 @@
 package bitflask.resp;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,12 +8,12 @@ import java.net.Socket;
 
 public class Resp {
 
-  private final BufferedInputStream bufferedInputStream;
   private final BufferedOutputStream bufferedOutputStream;
+  private final BufferedReader bufferedReader;
 
   public Resp(Socket socket) throws IOException {
-    this.bufferedInputStream = new BufferedInputStream(socket.getInputStream());
     this.bufferedOutputStream = new BufferedOutputStream(socket.getOutputStream());
+    this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }
 
   public void send(RespType respType) throws IOException {
@@ -44,7 +43,6 @@ public class Resp {
   }
 
   public RespType receive() throws IOException {
-    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(bufferedInputStream));
     return parseResptype(bufferedReader);
   }
 
