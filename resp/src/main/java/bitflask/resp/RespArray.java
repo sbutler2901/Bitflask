@@ -6,11 +6,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RespArray implements RespType<List<RespType>> {
+public class RespArray implements RespType<List<RespType<?>>> {
 
   public static final char TYPE_PREFIX = '*';
 
-  private final List<RespType> value;
+  private final List<RespType<?>> value;
 
   public RespArray(BufferedReader bufferedReader) throws IOException {
     this.value = new ArrayList<>();
@@ -20,12 +20,12 @@ public class RespArray implements RespType<List<RespType>> {
     }
   }
 
-  public RespArray(List<RespType> value) {
+  public RespArray(List<RespType<?>> value) {
     this.value = value;
   }
 
   @Override
-  public List<RespType> getValue() {
+  public List<RespType<?>> getValue() {
     return value;
   }
 
@@ -34,7 +34,7 @@ public class RespArray implements RespType<List<RespType>> {
     bufferedOutputStream.write(TYPE_PREFIX);
     bufferedOutputStream.write(String.valueOf(value.size()).getBytes(ENCODED_CHARSET));
     bufferedOutputStream.write(CRLF);
-    for (RespType respType : value) {
+    for (RespType<?> respType : value) {
       respType.write(bufferedOutputStream);
     }
   }
