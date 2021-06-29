@@ -4,9 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 public class RespArray implements RespType<List<RespType>> {
 
@@ -18,7 +16,7 @@ public class RespArray implements RespType<List<RespType>> {
     this.value = new ArrayList<>();
     int numElements = Integer.parseInt(bufferedReader.readLine());
     for (int i = 0; i < numElements; i++) {
-      this.value.add(Resp.receive(bufferedReader));
+      this.value.add(RespUtils.readNextRespType(bufferedReader));
     }
   }
 

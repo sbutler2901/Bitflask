@@ -1,7 +1,6 @@
 package bitflask.client.repl;
 
-import bitflask.resp.Resp;
-import bitflask.resp.RespType;
+import bitflask.client.Client;
 import bitflask.utilities.Command;
 import bitflask.utilities.Commands;
 import java.io.IOException;
@@ -18,19 +17,19 @@ public class REPL {
   private static final String SET_LOG = "Saved (%s) with value (%s)";
   private static final String GET_LOG = "Read (%s) with value (%s)";
 
+  private final Client client;
   private final Scanner input;
-  private final Resp resp;
 
   private boolean loggingEnabled = true;
 
   /**
    * Creating a new REPL instance for accepting user command to interact with the storage engine
    *
-   * @param resp resp
+   * @param client client
    */
-  public REPL(Resp resp) {
+  public REPL(Client client) {
+    this.client = client;
     this.input = new Scanner(System.in);
-    this.resp = resp;
   }
 
   /**
@@ -58,30 +57,24 @@ public class REPL {
   /**
    * Runs the REPL loop
    */
-  public void start() {
+  public void start() throws IOException {
     while (true) {
-      try {
-        Command command = getNextCommand();
+      Command command = getNextCommand();
 
-        if (command.getCommand() == Commands.EXIT) {
-          break;
-        } else if (command.getCommand() == Commands.GET && command.getArgs().size() > 0) {
-          resp.send(command.getCommandRespArray());
-          RespType respType = resp.receive();
-          System.out.println(respType);
-        } else if (command.getCommand() == Commands.SET && command.getArgs().size() > 1) {
-          resp.send(command.getCommandRespArray());
-          RespType respType = resp.receive();
-          System.out.println(respType);
-        } else if (command.getCommand() == Commands.LOG && command.getArgs().size() > 0) {
-          logging(command);
-        } else if (command.getCommand() == Commands.TEST && command.getArgs().size() > 0) {
-          test(command);
-        } else {
-          System.out.println("Invalid input!");
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
+      if (command.getCommand() == Commands.EXIT) {
+        break;
+      } else if (command.getCommand() == Commands.GET && command.getArgs().size() > 0) {
+        String result = client.runCommand(command);
+        System.out.println(result);
+      } else if (command.getCommand() == Commands.SET && command.getArgs().size() > 1) {
+        String result = client.runCommand(command);
+        System.out.println(result);
+      } else if (command.getCommand() == Commands.LOG && command.getArgs().size() > 0) {
+        logging(command);
+      } else if (command.getCommand() == Commands.TEST && command.getArgs().size() > 0) {
+        test(command);
+      } else {
+        System.out.println("Invalid input!");
       }
     }
   }
@@ -113,7 +106,7 @@ public class REPL {
     System.out
         .println("Generating " + numEntriesGenerated + " entries with get (" + withGet + ")");
 
-    RespType response;
+    String result;
     long startTime = System.currentTimeMillis();
     int i;
     for (i = 0; i < numEntriesGenerated; i++) {
@@ -121,22 +114,19 @@ public class REPL {
       String setKey = "testKey" + iteration;
       String value = "testValue" + iteration;
 
-      resp.send(new Command(Commands.SET, Arrays.asList(setKey, value)).getCommandRespArray());
-      response = resp.receive();
-      System.out.println("Response: " + response);
+      result = client.runCommand(new Command(Commands.SET, Arrays.asList(setKey, value)));
+      System.out.println("Result: " + result);
       if (withGet && i > 0) {
         int previousWrite = i - 1;
         String getKey = "testKey" + previousWrite;
-        resp.send(new Command(Commands.GET, Collections.singletonList(getKey)).getCommandRespArray());
-        response = resp.receive();
-        System.out.println("Response: " + response);
+        result = client.runCommand(new Command(Commands.GET, Collections.singletonList(getKey)));
+        System.out.println("Result: " + result);
       }
     }
     if (withGet) {
       String lastTestKey = "testKey" + (i - 1);
-      resp.send(new Command(Commands.GET, Collections.singletonList(lastTestKey)).getCommandRespArray());
-      response = resp.receive();
-      System.out.println("Response: " + response);
+      result = client.runCommand(new Command(Commands.GET, Collections.singletonList(lastTestKey)));
+      System.out.println("Result: " + result);
     }
 
     long endTime = System.currentTimeMillis();

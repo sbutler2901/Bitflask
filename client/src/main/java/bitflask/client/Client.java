@@ -1,8 +1,12 @@
 package bitflask.client;
 
 import bitflask.client.repl.REPL;
-import bitflask.resp.Resp;
+import bitflask.resp.RespUtils;
+import bitflask.utilities.Command;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -13,18 +17,20 @@ public class Client {
   private static final int SERVER_PORT = 9090;
 
   private final Socket socket;
-  private final Resp resp;
-  private final REPL repl;
+  private final BufferedOutputStream bufferedOutputStream;
+  private final BufferedReader bufferedReader;
 
   public Client() throws IOException {
     this.socket = new Socket(InetAddress.getLocalHost(), SERVER_PORT);
-    this.resp = new Resp(this.socket);
-    this.repl = new REPL(this.resp);
+    this.bufferedOutputStream = new BufferedOutputStream(socket.getOutputStream());
+    this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }
 
-  public void start() {
-    repl.start();
-    this.close();
+  public String runCommand(Command command) throws IOException {
+    command.getCommandRespArray().write(bufferedOutputStream);
+    bufferedOutputStream.flush();
+
+    return RespUtils.readNextRespType(bufferedReader).toString();
   }
 
   private void close() {
@@ -41,7 +47,11 @@ public class Client {
 
     try {
       Client client = new Client();
-      client.start();
+      REPL repl = new REPL(client);
+
+      repl.start();
+
+      client.close();
     } catch (IOException e) {
       e.printStackTrace();
       System.exit(1);
