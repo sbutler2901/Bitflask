@@ -1,5 +1,8 @@
 package bitflask.resp;
 
+import static bitflask.resp.RespConstants.CRLF;
+import static bitflask.resp.RespConstants.ENCODED_CHARSET;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;

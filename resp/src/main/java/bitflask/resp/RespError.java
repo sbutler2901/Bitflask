@@ -1,12 +1,11 @@
 package bitflask.resp;
 
+import static bitflask.resp.RespConstants.CRLF;
+import static bitflask.resp.RespConstants.ENCODED_CHARSET;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Objects;
-import lombok.NonNull;
 
 public class RespError implements RespType<String> {
 
