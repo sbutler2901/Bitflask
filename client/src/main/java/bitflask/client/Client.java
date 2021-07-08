@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.Socket;
+import lombok.Getter;
 
 public class Client {
 
@@ -20,10 +21,14 @@ public class Client {
   private final BufferedOutputStream bufferedOutputStream;
   private final BufferedReader bufferedReader;
 
+  @Getter
+  private final String serverAddress;
+
   public Client() throws IOException {
     this.socket = new Socket(InetAddress.getLocalHost(), SERVER_PORT);
     this.bufferedOutputStream = new BufferedOutputStream(socket.getOutputStream());
     this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    this.serverAddress = socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
   }
 
   public String runCommand(ClientCommand command) throws IOException {

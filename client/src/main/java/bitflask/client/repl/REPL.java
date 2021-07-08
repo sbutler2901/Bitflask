@@ -56,6 +56,7 @@ public class REPL {
   public void start() throws IOException {
     boolean loop = true;
     while (loop) {
+      System.out.print(client.getServerAddress() + "> ");
       ClientCommand clientCommand = getNextCommand();
       if (clientCommand == null) {
         continue;
