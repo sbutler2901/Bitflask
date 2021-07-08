@@ -1,12 +1,9 @@
 package bitflask.server;
 
-import bitflask.resp.RespUtils;
-import bitflask.resp.RespArray;
 import bitflask.resp.RespBulkString;
 import bitflask.resp.RespType;
+import bitflask.resp.RespUtils;
 import bitflask.server.storage.Storage;
-import bitflask.utilities.Command;
-import bitflask.utilities.Commands;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,55 +27,46 @@ public class RequestHandler implements Runnable {
     this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }
 
-  private boolean isValidRequest(RespType respType) {
-    if (respType.getClass() != RespArray.class) {
-      return false;
+  private RespType<?> processRequest(RespType<?> clientMessage) throws IOException {
+    ServerCommand command;
+    try {
+      command = new ServerCommand(clientMessage);
+    } catch (IllegalArgumentException e) {
+      return new RespBulkString("Invalid message: " + e.getMessage());
     }
 
-    RespArray clientMessage = (RespArray) respType;
-    for (RespType clientArg : clientMessage.getValue()) {
-      if (clientArg.getClass() != RespBulkString.class) {
-        return false;
-      }
+    String key, value;
+    switch(command.getCommand()) {
+      case GET:
+        key = command.getArgs().get(0);
+        value = storage.read(key).orElse("Not Found");
+        return new RespBulkString(value);
+      case SET:
+        key = command.getArgs().get(0);
+        value = command.getArgs().get(1);
+        storage.write(key, value);
+        return new RespBulkString("Ok");
+      case PING:
+        return new RespBulkString("Pong");
+      default:
+        return new RespBulkString("Server issue processing command");
     }
-
-    return true;
   }
 
   @Override
   public void run() {
     while (!Thread.interrupted() && isRunning) {
       try {
-        RespType clientMessage = RespUtils.readNextRespType(bufferedReader);
-
+        RespType<?> clientMessage = RespUtils.readNextRespType(bufferedReader);
         System.out.printf("S: received from client %s%n", clientMessage);
 
-        RespType response;
-        if (!isValidRequest(clientMessage)) {
-          response = new RespBulkString("Incorrect message format.");
-        } else {
-          Command clientCommand = new Command((RespArray) clientMessage);
-
-          if (clientCommand.getCommand().equals(Commands.GET)) {
-            String key = clientCommand.getArgs().get(0);
-            String value = storage.read(key).orElse("Not Found");
-            response = new RespBulkString(value);
-          } else if (clientCommand.getCommand().equals(Commands.SET)) {
-            String key = clientCommand.getArgs().get(0);
-            String value = clientCommand.getArgs().get(1);
-            storage.write(key, value);
-            response = new RespBulkString("Ok");
-          } else {
-            System.out.println("S: Unsupported received: " + clientCommand.getCommand());
-            response = new RespBulkString("Unsupported Command: " + clientCommand.getCommand());
-          }
-        }
+        RespType<?> response = processRequest(clientMessage);
 
         response.write(bufferedOutputStream);
         bufferedOutputStream.flush();
       } catch (IOException e) {
+        System.out.println("Client disconnected. Closing thread");
         this.close();
-        e.printStackTrace();
       }
     }
   }

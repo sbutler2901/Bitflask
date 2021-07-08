@@ -10,7 +10,7 @@ public class RespUtils {
     throw new AssertionError();
   }
 
-  public static RespType readNextRespType(BufferedReader bufferedReader) throws IOException {
+  public static RespType<?> readNextRespType(BufferedReader bufferedReader) throws IOException {
     int code = bufferedReader.read();
     if (code == -1) {
       throw new EOFException("Could not parse RespType");
