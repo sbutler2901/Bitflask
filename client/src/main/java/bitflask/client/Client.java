@@ -26,7 +26,7 @@ public class Client {
     this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }
 
-  public String runCommand(Command command) throws IOException {
+  public String runCommand(ClientCommand command) throws IOException {
     command.getCommandRespArray().write(bufferedOutputStream);
     bufferedOutputStream.flush();
 

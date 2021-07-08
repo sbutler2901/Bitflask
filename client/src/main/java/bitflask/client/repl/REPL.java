@@ -1,14 +1,14 @@
 package bitflask.client.repl;
 
 import bitflask.client.Client;
-import bitflask.utilities.Command;
-import bitflask.utilities.Commands;
+import bitflask.client.ClientCommand;
+import bitflask.client.ClientSpecificCommand;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class REPL {
 
@@ -37,44 +37,49 @@ public class REPL {
    *
    * @return the command along with the args
    */
-  private Command getNextCommand() {
+  private ClientCommand getNextCommand() {
     String line = input.nextLine();
-    String[] parsedInput = line.split(SPACE_REGEX);
+    List<String> parsedInput = Arrays.stream(line.split(SPACE_REGEX)).map(
+        String::trim).collect(Collectors.toList());
 
-    Commands command = Commands.INVALID;
-    List<String> args = new ArrayList<>();
-    for (int i = 0; i < parsedInput.length; i++) {
-      if (i == 0) {
-        command = Commands.from(parsedInput[i]);
-      } else {
-        args.add(parsedInput[i]);
-      }
+    if (parsedInput.size() > 0) {
+      String command = parsedInput.get(0);
+      List<String> args = parsedInput.subList(1, parsedInput.size());
+      return new ClientCommand(command, args);
     }
-
-    return new Command(command, args);
+    return null;
   }
 
   /**
    * Runs the REPL loop
    */
   public void start() throws IOException {
-    while (true) {
-      Command command = getNextCommand();
+    boolean loop = true;
+    while (loop) {
+      ClientCommand clientCommand = getNextCommand();
+      if (clientCommand == null) {
+        continue;
+      }
 
-      if (command.getCommand() == Commands.EXIT) {
-        break;
-      } else if (command.getCommand() == Commands.GET && command.getArgs().size() > 0) {
-        String result = client.runCommand(command);
-        System.out.println(result);
-      } else if (command.getCommand() == Commands.SET && command.getArgs().size() > 1) {
-        String result = client.runCommand(command);
-        System.out.println(result);
-      } else if (command.getCommand() == Commands.LOG && command.getArgs().size() > 0) {
-        logging(command);
-      } else if (command.getCommand() == Commands.TEST && command.getArgs().size() > 0) {
-        test(command);
+      if (ClientSpecificCommand.isClientSpecificCommand(clientCommand.getCommand())) {
+        ClientSpecificCommand clientSpecificCommand = ClientSpecificCommand
+            .valueOf(clientCommand.getCommand().toUpperCase());
+        switch (clientSpecificCommand) {
+          case EXIT:
+            loop = false;
+            continue;
+          case LOG:
+            logging(clientCommand);
+            break;
+          case TEST:
+            test(clientCommand);
+            break;
+          case HELP:
+            System.out.println("I can't help you.");
+        }
       } else {
-        System.out.println("Invalid input!");
+        String result = client.runCommand(clientCommand);
+        System.out.println(result);
       }
     }
   }
@@ -82,10 +87,10 @@ public class REPL {
   /**
    * Enables logging for the get and set commands
    *
-   * @param Command the log command with its required arguments
+   * @param clientCommand the log command with its required arguments
    */
-  private void logging(Command Command) {
-    loggingEnabled = Command.getArgs().get(0).equals("true");
+  private void logging(ClientCommand clientCommand) {
+    loggingEnabled = clientCommand.getArgs().get(0).equals("true");
     if (loggingEnabled) {
       System.out.println("Logging has been enabled");
     } else {
@@ -96,13 +101,13 @@ public class REPL {
   /**
    * Initiates a test generating an arg provided number of set and optional get commands
    *
-   * @param Command the command with its required arguments
+   * @param clientCommand the command with its required arguments
    */
-  private void test(Command Command) throws IOException {
-    int numEntriesGenerated = Integer.parseInt(Command.getArgs().get(0));
+  private void test(ClientCommand clientCommand) throws IOException {
+    int numEntriesGenerated = Integer.parseInt(clientCommand.getArgs().get(0));
 
     boolean withGet =
-        Command.getArgs().size() > 1 && Boolean.parseBoolean(Command.getArgs().get(1));
+        clientCommand.getArgs().size() > 1 && Boolean.parseBoolean(clientCommand.getArgs().get(1));
     System.out
         .println("Generating " + numEntriesGenerated + " entries with get (" + withGet + ")");
 
@@ -114,18 +119,18 @@ public class REPL {
       String setKey = "testKey" + iteration;
       String value = "testValue" + iteration;
 
-      result = client.runCommand(new Command(Commands.SET, Arrays.asList(setKey, value)));
+      result = client.runCommand(new ClientCommand("SET", Arrays.asList(setKey, value)));
       System.out.println("Result: " + result);
       if (withGet && i > 0) {
         int previousWrite = i - 1;
         String getKey = "testKey" + previousWrite;
-        result = client.runCommand(new Command(Commands.GET, Collections.singletonList(getKey)));
+        result = client.runCommand(new ClientCommand("GET", Collections.singletonList(getKey)));
         System.out.println("Result: " + result);
       }
     }
     if (withGet) {
       String lastTestKey = "testKey" + (i - 1);
-      result = client.runCommand(new Command(Commands.GET, Collections.singletonList(lastTestKey)));
+      result = client.runCommand(new ClientCommand("GET", Collections.singletonList(lastTestKey)));
       System.out.println("Result: " + result);
     }
 

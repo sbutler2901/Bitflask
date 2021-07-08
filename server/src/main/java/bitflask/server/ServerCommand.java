@@ -6,6 +6,7 @@ import bitflask.resp.RespType;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import lombok.NonNull;
 
 public class ServerCommand {
 
@@ -14,7 +15,7 @@ public class ServerCommand {
   @Getter
   private final List<String> args;
 
-  public ServerCommand(ServerCommands command, List<String> args) {
+  public ServerCommand(@NonNull ServerCommands command, @NonNull List<String> args) {
     if (!command.isValidCommandArgs(args)) {
       throw new IllegalArgumentException("Invalid arguments for the command: " + command);
     }
@@ -22,7 +23,7 @@ public class ServerCommand {
     this.args = args;
   }
 
-  public ServerCommand(RespType<?> commandMessage) {
+  public ServerCommand(@NonNull RespType<?> commandMessage) {
     if (!(commandMessage instanceof RespArray) ) {
       throw new IllegalArgumentException("Message must be a RespArray");
     }
@@ -38,7 +39,7 @@ public class ServerCommand {
 
       RespBulkString clientArgBulkString = (RespBulkString) clientArg;
       if (command == null) {
-        command = ServerCommands.valueOf(clientArgBulkString.getValue());
+        command = ServerCommands.valueOf(clientArgBulkString.getValue().trim().toUpperCase());
       } else {
         args.add(clientArgBulkString.getValue());
       }
