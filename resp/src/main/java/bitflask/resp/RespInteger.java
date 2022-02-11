@@ -1,5 +1,7 @@
 package bitflask.resp;
 
+import java.util.Objects;
+
 public final class RespInteger extends RespType<Integer> {
 
   static final char TYPE_PREFIX = ':';
@@ -24,5 +26,22 @@ public final class RespInteger extends RespType<Integer> {
   @Override
   public String toString() {
     return String.valueOf(value);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    RespInteger that = (RespInteger) o;
+    return getValue().equals(that.getValue());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getValue());
   }
 }

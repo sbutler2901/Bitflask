@@ -1,5 +1,7 @@
 package bitflask.resp;
 
+import java.util.Objects;
+
 public final class RespBulkString extends RespType<String> {
 
   static final char TYPE_PREFIX = '$';
@@ -45,5 +47,22 @@ public final class RespBulkString extends RespType<String> {
   @Override
   public String toString() {
     return value;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    RespBulkString that = (RespBulkString) o;
+    return Objects.equals(getValue(), that.getValue());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getValue());
   }
 }

@@ -113,9 +113,7 @@ public class RespUtilsTest {
     assertTrue(res instanceof RespArray);
     RespArray resCasted = (RespArray) res;
     assertEquals(expected.size(), resCasted.getValue().size());
-    for (int i = 0; i < expected.size(); i++) {
-      assertEquals(expected.get(i), resCasted.getValue().get(i));
-    }
+    assertEquals(expected, resCasted.getValue());
   }
 
   @Test

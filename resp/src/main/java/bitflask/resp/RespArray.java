@@ -2,6 +2,7 @@ package bitflask.resp;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public final class RespArray extends RespType<List<RespType<?>>> {
 
@@ -72,5 +73,22 @@ public final class RespArray extends RespType<List<RespType<?>>> {
     }
     content.append("]");
     return content.toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    RespArray respArray = (RespArray) o;
+    return Objects.equals(getValue(), respArray.getValue());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getValue());
   }
 }
