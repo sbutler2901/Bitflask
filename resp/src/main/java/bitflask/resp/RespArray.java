@@ -1,27 +1,14 @@
 package bitflask.resp;
 
-import static bitflask.resp.RespConstants.CRLF;
-import static bitflask.resp.RespConstants.ENCODED_CHARSET;
-
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RespArray implements RespType<List<RespType<?>>> {
+public class RespArray extends RespType<List<RespType<?>>> {
 
   public static final char TYPE_PREFIX = '*';
+  public static final long NULL_ARRAY_LENGTH = -1;
 
   private final List<RespType<?>> value;
-
-  public RespArray(BufferedReader bufferedReader) throws IOException {
-    this.value = new ArrayList<>();
-    int numElements = Integer.parseInt(bufferedReader.readLine());
-    for (int i = 0; i < numElements; i++) {
-      this.value.add(RespUtils.readNextRespType(bufferedReader));
-    }
-  }
 
   public RespArray(List<RespType<?>> value) {
     this.value = value;
@@ -33,13 +20,44 @@ public class RespArray implements RespType<List<RespType<?>>> {
   }
 
   @Override
-  public void write(BufferedOutputStream bufferedOutputStream) throws IOException {
-    bufferedOutputStream.write(TYPE_PREFIX);
-    bufferedOutputStream.write(String.valueOf(value.size()).getBytes(ENCODED_CHARSET));
-    bufferedOutputStream.write(CRLF);
-    for (RespType<?> respType : value) {
-      respType.write(bufferedOutputStream);
+  public byte[] getEncodedBytes() {
+    byte[] encodedValueBytes;
+    if (value == null) {
+      encodedValueBytes = String.valueOf(NULL_ARRAY_LENGTH).getBytes(RespType.ENCODED_CHARSET);
+    } else {
+      encodedValueBytes = convertNonNullValueToBytes();
     }
+    return RespType.getEncodedBytesFromValueBytes(encodedValueBytes, TYPE_PREFIX);
+  }
+
+  private byte[] convertNonNullValueToBytes() {
+    if (value.size() == 0) {
+      return new byte[]{'0'};
+    }
+
+    int valuesEncodedBytesTotalLength = 0;
+    List<byte[]> valuesEncodedList = new ArrayList<>();
+    for (RespType<?> respType : value) {
+      byte[] currentRespTypeEncodedBytes = respType.getEncodedBytes();
+      valuesEncodedList.add(currentRespTypeEncodedBytes);
+      valuesEncodedBytesTotalLength += currentRespTypeEncodedBytes.length;
+    }
+
+    byte[] valueLengthBytes = String.valueOf(value.size()).getBytes(RespType.ENCODED_CHARSET);
+    int encodedValueBytesNeededLength = 2 + valueLengthBytes.length + valuesEncodedBytesTotalLength;
+
+    byte[] encodedValueBytes = new byte[encodedValueBytesNeededLength];
+    System.arraycopy(valueLengthBytes, 0, encodedValueBytes, 0, valueLengthBytes.length);
+    encodedValueBytes[valueLengthBytes.length] = RespType.CR;
+    encodedValueBytes[valueLengthBytes.length + 1] = RespType.LF;
+
+    int destPosition = valueLengthBytes.length + 2;
+    for (byte[] encodedValue : valuesEncodedList) {
+      System.arraycopy(encodedValue, 0, encodedValueBytes, destPosition, encodedValue.length);
+      destPosition += encodedValue.length;
+    }
+
+    return encodedValueBytes;
   }
 
   @Override

@@ -1,153 +1,67 @@
-//package bitflask.resp;
-//
-//import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.junit.jupiter.api.Assertions.assertNull;
-//import static org.junit.jupiter.api.Assertions.assertThrows;
-//
-//import java.util.ArrayList;
-//import java.util.List;
-//import org.junit.jupiter.api.Test;
-//
-//class RespArrayTest {
-//
-//  @Test
-//  void listConstructor_success() {
-//    List<RespType<?>> decodedValue = new ArrayList<>();
-//    RespSimpleString respSimpleString = new RespSimpleString("foo");
-//    RespInteger respInteger = new RespInteger(10);
-//    RespError respError = new RespError("error");
-//    RespBulkString respBulkString = new RespBulkString("bar");
-//
-//    decodedValue.add(respSimpleString);
-//    decodedValue.add(respInteger);
-//    decodedValue.add(respError);
-//    decodedValue.add(respBulkString);
-//
-//    StringBuilder expectedEncodedBuilder = new StringBuilder();
-//    expectedEncodedBuilder.append(RespArray.TYPE_PREFIX).append(decodedValue.size())
-//        .append(RespArray.CRLF);
-//    decodedValue.forEach(entry -> expectedEncodedBuilder.append(entry.getEncodedString()));
-//
-//    String expectedEncoded = expectedEncodedBuilder.toString();
-//    byte[] expectedEncodedBytes = expectedEncoded.getBytes(RespArray.ENCODED_CHARSET);
-//    RespArray respArray = new RespArray(decodedValue);
-//
-//    assertEquals(decodedValue, respArray.getDecodedValue());
-//    assertEquals(expectedEncoded, respArray.getEncodedString());
-//    assertArrayEquals(expectedEncodedBytes, respArray.getEncodedBytes());
-//
-//    // nested array
-//    decodedValue.add(respArray);
-//    StringBuilder expectedEncodedNestedArrayBuilder = new StringBuilder();
-//    expectedEncodedNestedArrayBuilder.append(RespArray.TYPE_PREFIX).append(decodedValue.size())
-//        .append(RespArray.CRLF);
-//    decodedValue
-//        .forEach(entry -> expectedEncodedNestedArrayBuilder.append(entry.getEncodedString()));
-//
-//    String expectedEncodedNestedArray = expectedEncodedNestedArrayBuilder.toString();
-//    byte[] expectedEncodedBytesNestedArray = expectedEncodedNestedArray
-//        .getBytes(RespArray.ENCODED_CHARSET);
-//    RespArray respArrayNestedArray = new RespArray(decodedValue);
-//
-//    assertEquals(decodedValue, respArrayNestedArray.getDecodedValue());
-//    assertEquals(expectedEncodedNestedArray, respArrayNestedArray.getEncodedString());
-//    assertArrayEquals(expectedEncodedBytesNestedArray, respArrayNestedArray.getEncodedBytes());
-//  }
-//
-//  @Test
-//  void listConstructor_success_emptyList() {
-//    List<RespType<?>> decodedValue = new ArrayList<>();
-//    String expectedEncoded = RespArray.TYPE_PREFIX + "0" + RespArray.CRLF;
-//    byte[] expectedEncodedBytes = expectedEncoded.getBytes(RespArray.ENCODED_CHARSET);
-//    RespArray respArray = new RespArray(decodedValue);
-//
-//    assertEquals(decodedValue, respArray.getDecodedValue());
-//    assertEquals(expectedEncoded, respArray.getEncodedString());
-//    assertArrayEquals(expectedEncodedBytes, respArray.getEncodedBytes());
-//  }
-//
-//  @Test
-//  void listConstructor_success_null() {
-//    String expectedEncoded = RespArray.TYPE_PREFIX + RespArray.NULL_STRING_LENGTH + RespArray.CRLF;
-//    byte[] expectedEncodedBytes = expectedEncoded.getBytes(RespArray.ENCODED_CHARSET);
-//    RespArray respArray = new RespArray((List<RespType<?>>) null);
-//
-//    assertNull(respArray.getDecodedValue());
-//    assertEquals(expectedEncoded, respArray.getEncodedString());
-//    assertArrayEquals(expectedEncodedBytes, respArray.getEncodedBytes());
-//  }
-//
-//  @Test
-//  void byteArrayConstructor_success() {
-//    List<RespType<?>> decodedValue = new ArrayList<>();
-//    RespSimpleString respSimpleString = new RespSimpleString("foo");
-//    RespInteger respInteger = new RespInteger(10);
-//    RespError respError = new RespError("error");
-//    RespBulkString respBulkString = new RespBulkString("bar");
-//
-//    decodedValue.add(respSimpleString);
-//    decodedValue.add(respInteger);
-//    decodedValue.add(respError);
-//    decodedValue.add(respBulkString);
-//
-//    StringBuilder expectedEncodedBuilder = new StringBuilder();
-//    expectedEncodedBuilder.append(RespArray.TYPE_PREFIX).append(decodedValue.size())
-//        .append(RespArray.CRLF);
-//    decodedValue.forEach(entry -> expectedEncodedBuilder.append(entry.getEncodedString()));
-//
-//    String expectedEncoded = expectedEncodedBuilder.toString();
-//    byte[] expectedEncodedBytes = expectedEncoded.getBytes(RespArray.ENCODED_CHARSET);
-//    RespArray respArray = new RespArray(expectedEncodedBytes);
-//
-//    assertEquals(decodedValue, respArray.getDecodedValue());
-//    assertEquals(expectedEncoded, respArray.getEncodedString());
-//    assertArrayEquals(expectedEncodedBytes, respArray.getEncodedBytes());
-//
-//    // nested array
-//    decodedValue.add(respArray);
-//    StringBuilder expectedEncodedNestedArrayBuilder = new StringBuilder();
-//    expectedEncodedNestedArrayBuilder.append(RespArray.TYPE_PREFIX).append(decodedValue.size())
-//        .append(RespArray.CRLF);
-//    decodedValue
-//        .forEach(entry -> expectedEncodedNestedArrayBuilder.append(entry.getEncodedString()));
-//
-//    String expectedEncodedNestedArray = expectedEncodedNestedArrayBuilder.toString();
-//    byte[] expectedEncodedBytesNestedArray = expectedEncodedNestedArray
-//        .getBytes(RespArray.ENCODED_CHARSET);
-//    RespArray respArrayNestedArray = new RespArray(expectedEncodedBytesNestedArray);
-//
-//    assertEquals(decodedValue, respArrayNestedArray.getDecodedValue());
-//    assertEquals(expectedEncodedNestedArray, respArrayNestedArray.getEncodedString());
-//    assertArrayEquals(expectedEncodedBytesNestedArray, respArrayNestedArray.getEncodedBytes());
-//  }
-//
-//  @Test
-//  void byteArrayConstructor_success_emptyList() {
-//    List<RespType<?>> decodedValue = new ArrayList<>();
-//    String expectedEncoded = RespArray.TYPE_PREFIX + "0" + RespArray.CRLF;
-//    byte[] expectedEncodedBytes = expectedEncoded.getBytes(RespArray.ENCODED_CHARSET);
-//    RespArray respArray = new RespArray(expectedEncodedBytes);
-//
-//    assertEquals(decodedValue, respArray.getDecodedValue());
-//    assertEquals(expectedEncoded, respArray.getEncodedString());
-//    assertArrayEquals(expectedEncodedBytes, respArray.getEncodedBytes());
-//  }
-//
-//  @Test
-//  void byteArrayConstructor_success_null() {
-//    String expectedEncoded = RespArray.TYPE_PREFIX + RespArray.NULL_STRING_LENGTH + RespArray.CRLF;
-//    byte[] expectedEncodedBytes = expectedEncoded.getBytes(RespArray.ENCODED_CHARSET);
-//    RespArray respArray = new RespArray(expectedEncodedBytes);
-//
-//    assertNull(respArray.getDecodedValue());
-//    assertEquals(expectedEncoded, respArray.getEncodedString());
-//    assertArrayEquals(expectedEncodedBytes, respArray.getEncodedBytes());
-//  }
-//
-//  @Test
-//  void byteArrayConstructor_failure() {
-//    byte[] badEncodedBytes = "%".getBytes(RespArray.ENCODED_CHARSET);
-//    assertThrows(IllegalArgumentException.class, () -> new RespArray(badEncodedBytes));
-//  }
-//}
+package bitflask.resp;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class RespArrayTest {
+
+  @Test
+  void getValue() {
+    List<RespType<?>> inputValues = new ArrayList<>();
+    inputValues.add(new RespInteger(1));
+    inputValues.add(new RespBulkString("bulk"));
+    RespArray respArray = new RespArray(inputValues);
+    assertEquals(inputValues, respArray.getValue());
+  }
+
+  @Test
+  void getValue_null() {
+    RespArray respArray = new RespArray(null);
+    assertNull(respArray.getValue());
+  }
+
+  @Test
+  void getEncodedBytes() {
+    List<RespType<?>> inputValues = new ArrayList<>();
+    inputValues.add(new RespInteger(1));
+    inputValues.add(new RespBulkString("bulk"));
+    inputValues.add(new RespArray(List.of(new RespBulkString("nested"))));
+    RespArray respArray = new RespArray(inputValues);
+    byte[] expected = new byte[]{
+        RespArray.TYPE_PREFIX, '3', RespType.CR, RespType.LF,
+        RespInteger.TYPE_PREFIX, '1', RespType.CR, RespType.LF,
+        RespBulkString.TYPE_PREFIX, '4', RespType.CR, RespType.LF,
+        'b', 'u', 'l', 'k', RespType.CR, RespType.LF,
+        RespArray.TYPE_PREFIX, '1', RespType.CR, RespType.LF,
+        RespBulkString.TYPE_PREFIX, '6', RespType.CR, RespType.LF,
+        'n', 'e', 's', 't', 'e', 'd', RespType.CR, RespType.LF,
+        RespType.CR, RespType.LF,
+        RespType.CR, RespType.LF,
+    };
+    byte[] res = respArray.getEncodedBytes();
+    assertArrayEquals(expected, res);
+  }
+
+  @Test
+  void getEncodedBytes_empty() {
+    RespArray respArray = new RespArray(new ArrayList<>());
+    byte[] expected = new byte[]{
+        RespArray.TYPE_PREFIX, '0', RespType.CR, RespType.LF
+    };
+    assertArrayEquals(expected, respArray.getEncodedBytes());
+  }
+
+  @Test
+  void getEncodedBytes_null() {
+    RespArray respArray = new RespArray(null);
+    byte[] expected = new byte[]{
+        RespArray.TYPE_PREFIX, '-', '1', RespType.CR, RespType.LF
+    };
+    assertArrayEquals(expected, respArray.getEncodedBytes());
+  }
+}

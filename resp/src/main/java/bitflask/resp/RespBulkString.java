@@ -1,31 +1,11 @@
 package bitflask.resp;
 
-import static bitflask.resp.RespConstants.CRLF;
-import static bitflask.resp.RespConstants.ENCODED_CHARSET;
-
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.IOException;
-
-public class RespBulkString implements RespType<String> {
+public class RespBulkString extends RespType<String> {
 
   public static final char TYPE_PREFIX = '$';
   public static final long NULL_STRING_LENGTH = -1;
 
   private final String value;
-
-  public RespBulkString(BufferedReader bufferedReader) throws IOException {
-    int length = Integer.parseInt(bufferedReader.readLine());
-    if (length == NULL_STRING_LENGTH) {
-      value = null;
-      return;
-    }
-    String readValue = bufferedReader.readLine();
-    if (readValue.length() != length) {
-      throw new IllegalArgumentException("Value length didn't match provided length");
-    }
-    this.value = readValue;
-  }
 
   public RespBulkString(String value) {
     this.value = value;
@@ -37,16 +17,29 @@ public class RespBulkString implements RespType<String> {
   }
 
   @Override
-  public void write(BufferedOutputStream bufferedOutputStream) throws IOException {
-    bufferedOutputStream.write(TYPE_PREFIX);
+  public byte[] getEncodedBytes() {
+    byte[] encodedValueBytes;
     if (value == null) {
-      bufferedOutputStream.write(String.valueOf(NULL_STRING_LENGTH).getBytes(ENCODED_CHARSET));
+      encodedValueBytes = String.valueOf(NULL_STRING_LENGTH).getBytes(RespType.ENCODED_CHARSET);
     } else {
-      bufferedOutputStream.write(String.valueOf(value.length()).getBytes(ENCODED_CHARSET));
-      bufferedOutputStream.write(CRLF);
-      bufferedOutputStream.write(value.getBytes(ENCODED_CHARSET));
+      encodedValueBytes = convertNonNullValueToBytes();
     }
-    bufferedOutputStream.write(CRLF);
+    return RespType.getEncodedBytesFromValueBytes(encodedValueBytes, TYPE_PREFIX);
+  }
+
+  private byte[] convertNonNullValueToBytes() {
+    byte[] valueBytes = value.getBytes(RespType.ENCODED_CHARSET);
+    byte[] valueLengthBytes = String.valueOf(value.length()).getBytes(RespType.ENCODED_CHARSET);
+    int encodedValueBytesNeededLength = 2 + valueLengthBytes.length + value.length();
+
+    byte[] encodedValueBytes = new byte[encodedValueBytesNeededLength];
+    System.arraycopy(valueLengthBytes, 0, encodedValueBytes, 0, valueLengthBytes.length);
+    encodedValueBytes[valueLengthBytes.length] = RespType.CR;
+    encodedValueBytes[valueLengthBytes.length + 1] = RespType.LF;
+    System.arraycopy(valueBytes, 0, encodedValueBytes, valueLengthBytes.length + 2,
+        valueBytes.length);
+
+    return encodedValueBytes;
   }
 
   @Override

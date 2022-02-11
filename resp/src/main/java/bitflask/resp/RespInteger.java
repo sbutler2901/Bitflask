@@ -1,21 +1,10 @@
 package bitflask.resp;
 
-import static bitflask.resp.RespConstants.CRLF;
-import static bitflask.resp.RespConstants.ENCODED_CHARSET;
-
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.IOException;
-
-public class RespInteger implements RespType<Integer> {
+public class RespInteger extends RespType<Integer> {
 
   public static final char TYPE_PREFIX = ':';
 
   private final int value;
-
-  public RespInteger(BufferedReader bufferedReader) throws IOException {
-    this.value = Integer.parseInt(bufferedReader.readLine());
-  }
 
   public RespInteger(int value) {
     this.value = value;
@@ -27,10 +16,9 @@ public class RespInteger implements RespType<Integer> {
   }
 
   @Override
-  public void write(BufferedOutputStream bufferedOutputStream) throws IOException {
-    bufferedOutputStream.write(TYPE_PREFIX);
-    bufferedOutputStream.write(String.valueOf(value).getBytes(ENCODED_CHARSET));
-    bufferedOutputStream.write(CRLF);
+  public byte[] getEncodedBytes() {
+    byte[] encodedValueBytes = String.valueOf(value).getBytes(RespType.ENCODED_CHARSET);
+    return RespType.getEncodedBytesFromValueBytes(encodedValueBytes, TYPE_PREFIX);
   }
 
   @Override
