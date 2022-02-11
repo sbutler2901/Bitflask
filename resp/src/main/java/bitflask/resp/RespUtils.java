@@ -44,8 +44,7 @@ public class RespUtils {
     if (readValue.length() != length) {
       throw new ProtocolException("RespBulkString value length didn't match provided length");
     }
-    String value = bufferedReader.readLine();
-    return new RespBulkString(value);
+    return new RespBulkString(readValue);
   }
 
   private static RespInteger readRespInteger(BufferedReader bufferedReader) throws IOException {

@@ -8,6 +8,7 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.ProtocolException;
 import java.net.Socket;
 
 public class RequestHandler implements Runnable {
@@ -36,7 +37,7 @@ public class RequestHandler implements Runnable {
     }
 
     String key, value;
-    switch(command.getCommand()) {
+    switch (command.getCommand()) {
       case GET:
         key = command.getArgs().get(0);
         value = storage.read(key).orElse("Not Found");
@@ -62,8 +63,11 @@ public class RequestHandler implements Runnable {
 
         RespType<?> response = processRequest(clientMessage);
 
-        response.write(bufferedOutputStream);
+        bufferedOutputStream.write(response.getEncodedBytes());
         bufferedOutputStream.flush();
+      } catch (ProtocolException e) {
+        System.out.println(e.getMessage());
+        this.close();
       } catch (IOException e) {
         System.out.println("Client disconnected. Closing thread");
         this.close();

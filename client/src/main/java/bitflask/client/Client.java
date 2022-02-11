@@ -32,7 +32,7 @@ public class Client {
   }
 
   public String runCommand(ClientCommand command) throws IOException {
-    command.getCommandRespArray().write(bufferedOutputStream);
+    bufferedOutputStream.write(command.getCommandRespArray().getEncodedBytes());
     bufferedOutputStream.flush();
 
     return RespUtils.readNextRespType(bufferedReader).toString();

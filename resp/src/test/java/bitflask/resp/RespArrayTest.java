@@ -29,6 +29,23 @@ class RespArrayTest {
   void getEncodedBytes() {
     List<RespType<?>> inputValues = new ArrayList<>();
     inputValues.add(new RespInteger(1));
+    inputValues.add(new RespInteger(2));
+    inputValues.add(new RespInteger(3));
+    RespArray respArray = new RespArray(inputValues);
+    byte[] expected = new byte[]{
+        RespArray.TYPE_PREFIX, '3', RespType.CR, RespType.LF,
+        RespInteger.TYPE_PREFIX, '1', RespType.CR, RespType.LF,
+        RespInteger.TYPE_PREFIX, '2', RespType.CR, RespType.LF,
+        RespInteger.TYPE_PREFIX, '3', RespType.CR, RespType.LF,
+    };
+    byte[] res = respArray.getEncodedBytes();
+    assertArrayEquals(expected, res);
+  }
+
+  @Test
+  void getEncodedBytes_nestedArray() {
+    List<RespType<?>> inputValues = new ArrayList<>();
+    inputValues.add(new RespInteger(1));
     inputValues.add(new RespBulkString("bulk"));
     inputValues.add(new RespArray(List.of(new RespBulkString("nested"))));
     RespArray respArray = new RespArray(inputValues);
@@ -40,8 +57,6 @@ class RespArrayTest {
         RespArray.TYPE_PREFIX, '1', RespType.CR, RespType.LF,
         RespBulkString.TYPE_PREFIX, '6', RespType.CR, RespType.LF,
         'n', 'e', 's', 't', 'e', 'd', RespType.CR, RespType.LF,
-        RespType.CR, RespType.LF,
-        RespType.CR, RespType.LF,
     };
     byte[] res = respArray.getEncodedBytes();
     assertArrayEquals(expected, res);

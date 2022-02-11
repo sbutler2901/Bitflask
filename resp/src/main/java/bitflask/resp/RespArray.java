@@ -22,20 +22,20 @@ public final class RespArray extends RespType<List<RespType<?>>> {
 
   @Override
   public byte[] getEncodedBytes() {
-    byte[] encodedValueBytes;
     if (value == null) {
-      encodedValueBytes = String.valueOf(NULL_ARRAY_LENGTH).getBytes(RespType.ENCODED_CHARSET);
+      return RespType.getEncodedBytesFromValueBytes(
+          String.valueOf(NULL_ARRAY_LENGTH).getBytes(RespType.ENCODED_CHARSET),
+          TYPE_PREFIX
+      );
+    } else if (value.size() == 0) {
+      return RespType.getEncodedBytesFromValueBytes(new byte[]{'0'}, TYPE_PREFIX);
     } else {
-      encodedValueBytes = convertNonNullValueToBytes();
+      return encodedNonEmptyValueToBytes();
     }
-    return RespType.getEncodedBytesFromValueBytes(encodedValueBytes, TYPE_PREFIX);
   }
 
-  private byte[] convertNonNullValueToBytes() {
-    if (value.size() == 0) {
-      return new byte[]{'0'};
-    }
-
+  private byte[] encodedNonEmptyValueToBytes() {
+    // Generate value list as encoded bytes and total length;
     int valuesEncodedBytesTotalLength = 0;
     List<byte[]> valuesEncodedList = new ArrayList<>();
     for (RespType<?> respType : value) {
@@ -44,21 +44,27 @@ public final class RespArray extends RespType<List<RespType<?>>> {
       valuesEncodedBytesTotalLength += currentRespTypeEncodedBytes.length;
     }
 
+    // Generate bytes for number of items in array
     byte[] valueLengthBytes = String.valueOf(value.size()).getBytes(RespType.ENCODED_CHARSET);
-    int encodedValueBytesNeededLength = 2 + valueLengthBytes.length + valuesEncodedBytesTotalLength;
 
-    byte[] encodedValueBytes = new byte[encodedValueBytesNeededLength];
-    System.arraycopy(valueLengthBytes, 0, encodedValueBytes, 0, valueLengthBytes.length);
-    encodedValueBytes[valueLengthBytes.length] = RespType.CR;
-    encodedValueBytes[valueLengthBytes.length + 1] = RespType.LF;
+    // Initialize array to hold final encoded bytes
+    int encodedBytesNeededLength = 1 + valueLengthBytes.length + 2 + valuesEncodedBytesTotalLength;
+    byte[] encodedBytes = new byte[encodedBytesNeededLength];
 
-    int destPosition = valueLengthBytes.length + 2;
+    // Initialize encoding prefix
+    encodedBytes[0] = TYPE_PREFIX;
+    System.arraycopy(valueLengthBytes, 0, encodedBytes, 1, valueLengthBytes.length);
+    encodedBytes[valueLengthBytes.length + 1] = RespType.CR;
+    encodedBytes[valueLengthBytes.length + 2] = RespType.LF;
+
+    // Add encoded values to final coded bytes
+    int destPosition = valueLengthBytes.length + 3;
     for (byte[] encodedValue : valuesEncodedList) {
-      System.arraycopy(encodedValue, 0, encodedValueBytes, destPosition, encodedValue.length);
+      System.arraycopy(encodedValue, 0, encodedBytes, destPosition, encodedValue.length);
       destPosition += encodedValue.length;
     }
 
-    return encodedValueBytes;
+    return encodedBytes;
   }
 
   @Override
