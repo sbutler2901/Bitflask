@@ -1,8 +1,8 @@
 package bitflask.resp;
 
-public class RespError extends RespType<String> {
+public final class RespError extends RespType<String> {
 
-  public static final char TYPE_PREFIX = '-';
+  static final char TYPE_PREFIX = '-';
 
   private final String value;
 

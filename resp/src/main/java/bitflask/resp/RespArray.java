@@ -3,10 +3,10 @@ package bitflask.resp;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RespArray extends RespType<List<RespType<?>>> {
+public final class RespArray extends RespType<List<RespType<?>>> {
 
-  public static final char TYPE_PREFIX = '*';
-  public static final long NULL_ARRAY_LENGTH = -1;
+  static final char TYPE_PREFIX = '*';
+  static final long NULL_ARRAY_LENGTH = -1;
 
   private final List<RespType<?>> value;
 

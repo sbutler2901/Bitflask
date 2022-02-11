@@ -2,7 +2,7 @@ package bitflask.resp;
 
 public final class RespSimpleString extends RespType<String> {
 
-  public static final char TYPE_PREFIX = '+';
+  static final char TYPE_PREFIX = '+';
 
   private final String value;
 

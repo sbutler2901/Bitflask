@@ -1,9 +1,9 @@
 package bitflask.resp;
 
-public class RespBulkString extends RespType<String> {
+public final class RespBulkString extends RespType<String> {
 
-  public static final char TYPE_PREFIX = '$';
-  public static final long NULL_STRING_LENGTH = -1;
+  static final char TYPE_PREFIX = '$';
+  static final long NULL_STRING_LENGTH = -1;
 
   private final String value;
 

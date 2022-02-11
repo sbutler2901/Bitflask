@@ -1,8 +1,8 @@
 package bitflask.resp;
 
-public class RespInteger extends RespType<Integer> {
+public final class RespInteger extends RespType<Integer> {
 
-  public static final char TYPE_PREFIX = ':';
+  static final char TYPE_PREFIX = ':';
 
   private final int value;
 
