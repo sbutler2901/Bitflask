@@ -7,12 +7,7 @@ public abstract class RespType<T> {
 
   public static final char CR = '\r';
   public static final char LF = '\n';
-  public static final byte[] CRLF = new byte[]{CR, LF};
   public static final Charset ENCODED_CHARSET = StandardCharsets.UTF_8;
-
-  public abstract T getValue();
-
-  public abstract byte[] getEncodedBytes();
 
   protected static byte[] getEncodedBytesFromValueBytes(byte[] value, char typePrefix) {
     byte[] encodedBytes = new byte[3 + value.length];
@@ -22,4 +17,8 @@ public abstract class RespType<T> {
     encodedBytes[2 + value.length] = RespType.LF;
     return encodedBytes;
   }
+
+  public abstract T getValue();
+
+  public abstract byte[] getEncodedBytes();
 }

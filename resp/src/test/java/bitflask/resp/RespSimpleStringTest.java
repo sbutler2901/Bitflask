@@ -21,4 +21,9 @@ class RespSimpleStringTest {
         RespType.CR, RespType.LF};
     assertArrayEquals(expected, simpleString.getEncodedBytes());
   }
+
+  @Test
+  void constructor_null() {
+    assertThrows(IllegalArgumentException.class, () -> new RespSimpleString(null));
+  }
 }
