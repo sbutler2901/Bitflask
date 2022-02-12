@@ -1,8 +1,8 @@
-package bitflask.server;
+package bitflask.server.processing;
 
 import java.util.List;
 
-public enum ServerCommands {
+enum ServerCommands {
   PING,
   GET,
   SET;
@@ -16,9 +16,5 @@ public enum ServerCommands {
       case SET -> args != null && args.size() == 2;
       case PING -> args == null || args.size() == 0;
     };
-  }
-
-  public boolean isValidCommandArgs(List<String> args) {
-    return isValidCommandArgs(this, args);
   }
 }
