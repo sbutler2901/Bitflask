@@ -1,11 +1,11 @@
-package bitflask.server;
+package dev.sbutler.bitflask.server;
 
 import bitflask.resp.RespBulkString;
 import bitflask.resp.RespType;
 import bitflask.resp.RespUtils;
-import bitflask.server.processing.CommandProcessor;
-import bitflask.server.processing.ServerCommand;
-import bitflask.server.storage.Storage;
+import dev.sbutler.bitflask.server.processing.CommandProcessor;
+import dev.sbutler.bitflask.server.processing.ServerCommand;
+import dev.sbutler.bitflask.server.storage.Storage;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.EOFException;

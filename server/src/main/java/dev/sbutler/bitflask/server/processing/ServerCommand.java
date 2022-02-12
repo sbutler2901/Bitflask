@@ -1,4 +1,4 @@
-package bitflask.server.processing;
+package dev.sbutler.bitflask.server.processing;
 
 import bitflask.resp.RespArray;
 import bitflask.resp.RespBulkString;
@@ -7,7 +7,14 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.NonNull;
 
-public record ServerCommand(Command command, List<String> args) {
+public record ServerCommand(@NonNull Command command, List<String> args) {
+
+  public ServerCommand {
+    if (!Command.isValidCommandArgs(command, args)) {
+      throw new IllegalArgumentException(
+          "Invalid arguments for the command: " + command + ", " + args);
+    }
+  }
 
   public static ServerCommand valueOf(@NonNull RespType<?> commandMessage) {
     if (!(commandMessage instanceof RespArray clientMessageRespArray)) {
@@ -16,11 +23,6 @@ public record ServerCommand(Command command, List<String> args) {
 
     Command command = getCommandFromMessage(clientMessageRespArray.getValue());
     List<String> args = getArgsFromMessage(clientMessageRespArray.getValue());
-
-    if (!Command.isValidCommandArgs(command, args)) {
-      throw new IllegalArgumentException(
-          "Invalid arguments for the command: " + command + ", " + args);
-    }
 
     return new ServerCommand(command, args);
   }

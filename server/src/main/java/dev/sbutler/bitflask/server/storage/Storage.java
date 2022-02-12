@@ -1,4 +1,4 @@
-package bitflask.server.storage;
+package dev.sbutler.bitflask.server.storage;
 
 import java.io.IOException;
 import java.util.List;
@@ -70,7 +70,7 @@ public class Storage {
     }
 
     Optional<StorageSegment> optionalStorageSegment = findLatestSegmentWithKey(key);
-    if (!optionalStorageSegment.isPresent()) {
+    if (optionalStorageSegment.isEmpty()) {
       return Optional.empty();
     }
 

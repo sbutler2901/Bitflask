@@ -1,4 +1,4 @@
-package bitflask.server.storage;
+package dev.sbutler.bitflask.server.storage;
 
 import lombok.Getter;
 

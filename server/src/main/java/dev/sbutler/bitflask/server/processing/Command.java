@@ -1,4 +1,4 @@
-package bitflask.server.processing;
+package dev.sbutler.bitflask.server.processing;
 
 import java.util.List;
 

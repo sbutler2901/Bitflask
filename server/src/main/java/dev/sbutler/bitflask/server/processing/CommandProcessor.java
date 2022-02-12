@@ -1,7 +1,8 @@
-package bitflask.server.processing;
+package dev.sbutler.bitflask.server.processing;
 
-import bitflask.server.storage.Storage;
+import dev.sbutler.bitflask.server.storage.Storage;
 import java.io.IOException;
+import lombok.NonNull;
 
 public class CommandProcessor {
 
@@ -11,7 +12,7 @@ public class CommandProcessor {
     this.storage = storage;
   }
 
-  public String processServerCommand(ServerCommand serverCommand) throws IOException {
+  public String processServerCommand(@NonNull ServerCommand serverCommand) throws IOException {
     return switch (serverCommand.command()) {
       case GET -> processGetCommand(serverCommand);
       case SET -> processSetCommand(serverCommand);
