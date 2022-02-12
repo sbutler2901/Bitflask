@@ -11,16 +11,11 @@ public enum ServerCommands {
     if (command == null) {
       return false;
     }
-    switch (command) {
-      case GET:
-        return args != null && args.size() == 1;
-      case SET:
-        return args != null && args.size() == 2;
-      case PING:
-        return args == null || args.size() == 0;
-      default:
-        return false;
-    }
+    return switch (command) {
+      case GET -> args != null && args.size() == 1;
+      case SET -> args != null && args.size() == 2;
+      case PING -> args == null || args.size() == 0;
+    };
   }
 
   public boolean isValidCommandArgs(List<String> args) {

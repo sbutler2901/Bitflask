@@ -12,29 +12,28 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class Server {
 
-  public static final int PORT = 9090;
+  private static final int PORT = 9090;
   private static final int NUM_THREADS = 4;
 
   private final ServerSocket serverSocket;
   private final Storage storage;
-  private final ThreadPoolExecutor threadPool;
+  private final ThreadPoolExecutor threadPoolExecutor;
 
-  Server() throws IOException {
-    this.threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(NUM_THREADS);
-    this.storage = new Storage(threadPool);
-    this.serverSocket = new ServerSocket(PORT);
-  }
-
-  Server(Storage storage) throws IOException {
-    this.threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(NUM_THREADS);
+  Server(ThreadPoolExecutor threadPoolExecutor, Storage storage) throws IOException {
+    this.threadPoolExecutor = threadPoolExecutor;
     this.storage = storage;
     this.serverSocket = new ServerSocket(PORT);
   }
 
   public static void main(String[] args) {
     try {
-      Server server = new Server();
+      ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(
+          NUM_THREADS);
+      Storage storage = new Storage(threadPoolExecutor);
+
+      Server server = new Server(threadPoolExecutor, storage);
       server.start();
+
       System.exit(0);
     } catch (IOException e) {
       System.out.println("Unable to initialize storage engine. Terminating");
@@ -61,12 +60,12 @@ public class Server {
             "S: Received incoming client connection from " + clientSocket.getInetAddress() + ":"
                 + clientSocket.getPort());
 
-        this.threadPool.execute(clientRequestHandler);
+        this.threadPoolExecutor.execute(clientRequestHandler);
       }
     } catch (IOException e) {
       e.printStackTrace();
     } finally {
-      threadPool.shutdown();
+      threadPoolExecutor.shutdown();
     }
   }
 }

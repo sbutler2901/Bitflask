@@ -15,29 +15,19 @@ public class ServerCommand {
   @Getter
   private final List<String> args;
 
-  public ServerCommand(@NonNull ServerCommands command, @NonNull List<String> args) {
-    if (!command.isValidCommandArgs(args)) {
-      throw new IllegalArgumentException("Invalid arguments for the command: " + command);
-    }
-    this.command = command;
-    this.args = args;
-  }
-
   public ServerCommand(@NonNull RespType<?> commandMessage) {
-    if (!(commandMessage instanceof RespArray) ) {
+    if (!(commandMessage instanceof RespArray clientMessageRespArray)) {
       throw new IllegalArgumentException("Message must be a RespArray");
     }
 
-    RespArray clientMessageRespArray = (RespArray) commandMessage;
     ServerCommands command = null;
     List<String> args = new ArrayList<>();
 
     for (RespType<?> clientArg : clientMessageRespArray.getValue()) {
-      if(!(clientArg instanceof RespBulkString)) {
+      if (!(clientArg instanceof RespBulkString clientArgBulkString)) {
         throw new IllegalArgumentException("Message args must be RespBulkStrings");
       }
 
-      RespBulkString clientArgBulkString = (RespBulkString) clientArg;
       if (command == null) {
         command = ServerCommands.valueOf(clientArgBulkString.getValue().trim().toUpperCase());
       } else {

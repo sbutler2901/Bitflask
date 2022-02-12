@@ -6,9 +6,9 @@ import bitflask.resp.RespUtils;
 import bitflask.server.storage.Storage;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.ProtocolException;
 import java.net.Socket;
 
 public class RequestHandler implements Runnable {
@@ -28,23 +28,16 @@ public class RequestHandler implements Runnable {
     this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }
 
-  private RespType<?> processRequest(RespType<?> clientMessage) throws IOException {
-    ServerCommand command;
-    try {
-      command = new ServerCommand(clientMessage);
-    } catch (IllegalArgumentException e) {
-      return new RespBulkString("Invalid message: " + e.getMessage());
-    }
-
+  private RespType<?> processServerCommand(ServerCommand serverCommand) throws IOException {
     String key, value;
-    switch (command.getCommand()) {
+    switch (serverCommand.getCommand()) {
       case GET:
-        key = command.getArgs().get(0);
+        key = serverCommand.getArgs().get(0);
         value = storage.read(key).orElse("Not Found");
         return new RespBulkString(value);
       case SET:
-        key = command.getArgs().get(0);
-        value = command.getArgs().get(1);
+        key = serverCommand.getArgs().get(0);
+        value = serverCommand.getArgs().get(1);
         storage.write(key, value);
         return new RespBulkString("Ok");
       case PING:
@@ -54,24 +47,44 @@ public class RequestHandler implements Runnable {
     }
   }
 
+  private RespType<?> getServerResponse(RespType<?> clientMessage) throws IOException {
+    try {
+      ServerCommand command = new ServerCommand(clientMessage);
+      return processServerCommand(command);
+    } catch (IllegalArgumentException e) {
+      return new RespBulkString("Invalid message: " + e.getMessage());
+    }
+  }
+
+  private RespType<?> readClientMessage() throws IOException {
+    RespType<?> clientMessage = RespUtils.readNextRespType(bufferedReader);
+    System.out.printf("S: received from client %s%n", clientMessage);
+    return clientMessage;
+  }
+
+  private void writeResponseMessage(RespType<?> response) throws IOException {
+    bufferedOutputStream.write(response.getEncodedBytes());
+    bufferedOutputStream.flush();
+  }
+
+  private void processRequest() {
+    try {
+      RespType<?> clientMessage = readClientMessage();
+      RespType<?> response = getServerResponse(clientMessage);
+      writeResponseMessage(response);
+    } catch (EOFException e) {
+      System.out.println("Client disconnected. Closing thread");
+      this.close();
+    } catch (IOException e) {
+      System.out.println(e.getMessage());
+      this.close();
+    }
+  }
+
   @Override
   public void run() {
     while (!Thread.interrupted() && isRunning) {
-      try {
-        RespType<?> clientMessage = RespUtils.readNextRespType(bufferedReader);
-        System.out.printf("S: received from client %s%n", clientMessage);
-
-        RespType<?> response = processRequest(clientMessage);
-
-        bufferedOutputStream.write(response.getEncodedBytes());
-        bufferedOutputStream.flush();
-      } catch (ProtocolException e) {
-        System.out.println(e.getMessage());
-        this.close();
-      } catch (IOException e) {
-        System.out.println("Client disconnected. Closing thread");
-        this.close();
-      }
+      processRequest();
     }
   }
 
