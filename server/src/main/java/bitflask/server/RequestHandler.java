@@ -1,8 +1,10 @@
 package bitflask.server;
 
+import bitflask.resp.RespBulkString;
 import bitflask.resp.RespType;
 import bitflask.resp.RespUtils;
 import bitflask.server.processing.CommandProcessor;
+import bitflask.server.processing.ServerCommand;
 import bitflask.server.storage.Storage;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -33,6 +35,20 @@ public class RequestHandler implements Runnable {
     return RespUtils.readNextRespType(bufferedReader);
   }
 
+  private RespType<?> getServerResponseToClient(RespType<?> clientMessage) throws IOException {
+    System.out.printf("S: received from client %s%n", clientMessage);
+
+    String response;
+    try {
+      ServerCommand command = ServerCommand.valueOf(clientMessage);
+      response = commandProcessor.processServerCommand(command);
+    } catch (IllegalArgumentException e) {
+      response = "Invalid command: " + e.getMessage();
+    }
+
+    return new RespBulkString(response);
+  }
+
   private void writeResponseMessage(RespType<?> response) throws IOException {
     bufferedOutputStream.write(response.getEncodedBytes());
     bufferedOutputStream.flush();
@@ -41,7 +57,7 @@ public class RequestHandler implements Runnable {
   private void processRequest() {
     try {
       RespType<?> clientMessage = readClientMessage();
-      RespType<?> response = commandProcessor.getServerResponseToClient(clientMessage);
+      RespType<?> response = getServerResponseToClient(clientMessage);
       writeResponseMessage(response);
     } catch (EOFException e) {
       System.out.println("Client disconnected. Closing thread");

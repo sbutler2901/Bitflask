@@ -5,20 +5,19 @@ import bitflask.resp.RespBulkString;
 import bitflask.resp.RespType;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.Getter;
 import lombok.NonNull;
 
-record ServerCommand(ServerCommands command, List<String> args) {
+public record ServerCommand(Command command, List<String> args) {
 
   public static ServerCommand valueOf(@NonNull RespType<?> commandMessage) {
     if (!(commandMessage instanceof RespArray clientMessageRespArray)) {
       throw new IllegalArgumentException("Message must be a RespArray");
     }
 
-    ServerCommands command = getCommandFromMessage(clientMessageRespArray.getValue());
+    Command command = getCommandFromMessage(clientMessageRespArray.getValue());
     List<String> args = getArgsFromMessage(clientMessageRespArray.getValue());
 
-    if (!ServerCommands.isValidCommandArgs(command, args)) {
+    if (!Command.isValidCommandArgs(command, args)) {
       throw new IllegalArgumentException(
           "Invalid arguments for the command: " + command + ", " + args);
     }
@@ -26,14 +25,14 @@ record ServerCommand(ServerCommands command, List<String> args) {
     return new ServerCommand(command, args);
   }
 
-  private static ServerCommands getCommandFromMessage(List<RespType<?>> commandMessageArgs) {
+  private static Command getCommandFromMessage(List<RespType<?>> commandMessageArgs) {
     if (!(commandMessageArgs.get(0) instanceof RespBulkString commandBulkString)) {
       throw new IllegalArgumentException("Message args must be RespBulkStrings");
     }
 
     String normalizedCommandString = commandBulkString.getValue().trim().toUpperCase();
     try {
-      return ServerCommands.valueOf(normalizedCommandString);
+      return Command.valueOf(normalizedCommandString);
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException("Unknown command: " + normalizedCommandString);
     }

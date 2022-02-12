@@ -2,12 +2,12 @@ package bitflask.server.processing;
 
 import java.util.List;
 
-enum ServerCommands {
+enum Command {
   PING,
   GET,
   SET;
 
-  public static boolean isValidCommandArgs(ServerCommands command, List<String> args) {
+  public static boolean isValidCommandArgs(Command command, List<String> args) {
     if (command == null) {
       return false;
     }
