@@ -1,4 +1,4 @@
-package bitflask.client;
+package dev.sbutler.bitflask.client;
 
 public enum ClientSpecificCommand {
   EXIT,

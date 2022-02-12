@@ -1,8 +1,8 @@
 package dev.sbutler.bitflask.server;
 
-import bitflask.resp.RespBulkString;
-import bitflask.resp.RespType;
-import bitflask.resp.RespUtils;
+import dev.sbutler.bitflask.resp.RespBulkString;
+import dev.sbutler.bitflask.resp.RespType;
+import dev.sbutler.bitflask.resp.RespUtils;
 import dev.sbutler.bitflask.server.processing.CommandProcessor;
 import dev.sbutler.bitflask.server.processing.ServerCommand;
 import dev.sbutler.bitflask.server.storage.Storage;

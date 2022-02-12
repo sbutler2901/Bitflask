@@ -1,4 +1,4 @@
-package bitflask.resp;
+package dev.sbutler.bitflask.resp;
 
 import static org.junit.jupiter.api.Assertions.*;
 

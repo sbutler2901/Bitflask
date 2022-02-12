@@ -1,4 +1,4 @@
-package bitflask.resp;
+package dev.sbutler.bitflask.resp;
 
 import java.util.Objects;
 
@@ -19,8 +19,8 @@ public final class RespInteger extends RespType<Integer> {
 
   @Override
   public byte[] getEncodedBytes() {
-    byte[] encodedValueBytes = String.valueOf(value).getBytes(RespType.ENCODED_CHARSET);
-    return RespType.getEncodedBytesFromValueBytes(encodedValueBytes, TYPE_PREFIX);
+    byte[] encodedValueBytes = String.valueOf(value).getBytes(ENCODED_CHARSET);
+    return getEncodedBytesFromValueBytes(encodedValueBytes, TYPE_PREFIX);
   }
 
   @Override

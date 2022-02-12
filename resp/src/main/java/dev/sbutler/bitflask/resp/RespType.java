@@ -1,4 +1,4 @@
-package bitflask.resp;
+package dev.sbutler.bitflask.resp;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;

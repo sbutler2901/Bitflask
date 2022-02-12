@@ -1,8 +1,7 @@
-package bitflask.client;
+package dev.sbutler.bitflask.client;
 
-import bitflask.client.repl.REPL;
-import bitflask.resp.RespUtils;
-import bitflask.utilities.Command;
+import dev.sbutler.bitflask.client.repl.REPL;
+import dev.sbutler.bitflask.resp.RespUtils;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;

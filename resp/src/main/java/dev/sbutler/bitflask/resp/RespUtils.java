@@ -1,4 +1,4 @@
-package bitflask.resp;
+package dev.sbutler.bitflask.resp;
 
 import java.io.BufferedReader;
 import java.io.EOFException;
