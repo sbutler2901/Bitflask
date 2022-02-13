@@ -1,4 +1,4 @@
-package bitflask.utilities;
+package dev.sbutler.bitflask.utilities;
 
 /**
  * The various commands recognized by the REPL
@@ -13,13 +13,13 @@ public enum Commands {
 
   public static Commands from(String command) {
     String upperCaseCommand = command.toUpperCase().trim();
-    switch (upperCaseCommand) {
-      case "EXIT": return EXIT;
-      case "GET": return GET;
-      case "SET": return SET;
-      case "LOG": return LOG;
-      case "TEST": return TEST;
-      default: return INVALID;
-    }
+    return switch (upperCaseCommand) {
+      case "EXIT" -> EXIT;
+      case "GET" -> GET;
+      case "SET" -> SET;
+      case "LOG" -> LOG;
+      case "TEST" -> TEST;
+      default -> INVALID;
+    };
   }
 }
