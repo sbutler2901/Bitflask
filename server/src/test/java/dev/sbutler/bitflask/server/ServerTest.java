@@ -1,71 +1,62 @@
-//package com.ibm.sbutler.bitflask;
-//
-//import dev.sbutler.bitflask.server.storage.Storage;
-//import dev.sbutler.bitflask.server.storage.StorageEntry;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.junit.jupiter.MockitoExtension;
-//
-//import java.io.IOException;
-//import java.nio.charset.StandardCharsets;
-//
-//import static org.junit.jupiter.api.Assertions.*;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.ArgumentMatchers.anyLong;
-//import static org.mockito.Mockito.*;
-//
-//@ExtendWith(MockitoExtension.class)
-//class AppTest {
-//  @InjectMocks
-//  App app;
-//
-//  @Mock
-//  Storage storage;
-//
-//  @Test
-//  void set_success() throws IOException {
-//    String key = "testKey";
-//    String expectedValue = "value";
-//    byte[] expectedBytes = expectedValue.getBytes(StandardCharsets.UTF_8);
-//
-//    app.set(key, expectedValue);
-//    verify(storage).write(eq(expectedBytes));
-//  }
-//
-//  @Test
-//  void set_ioExceptions() throws IOException {
-//    doThrow(new IOException()).when(storage).write(any(byte[].class));
-//    assertThrows(IOException.class, () -> app.set("key", "value"));
-//  }
-//
-//  @Test
-//  void get_success() throws IOException {
-//    String key = "testKey";
-//    String expectedValue = "testValue";
-//    StorageEntry storageEntry = new StorageEntry(0, 0, expectedValue.length());
-//
-//    when(storage.write(any(byte[].class))).thenReturn(storageEntry);
-//    app.set(key, expectedValue);
-//    when(storage.read(any(StorageEntry.class))).thenReturn(expectedValue.getBytes(StandardCharsets.UTF_8));
-//    String result = app.get(key);
-//    assertEquals(expectedValue, result);
-//  }
-//
-//  @Test
-//  void get_ioExceptions() throws IOException {
-//    String key = "testKey";
-//    StorageEntry storageEntry = new StorageEntry(0, 0, 10);
-//    when(storage.write(any(byte[].class))).thenReturn(storageEntry);
-//    app.set(key, "value");
-//    doThrow(new IOException()).when(storage).read(any(StorageEntry.class));
-//    assertThrows(IOException.class, () -> app.get(key));
-//  }
-//
-//  @Test
-//  void get_nullKey() throws IOException {
-//    app.set("testKey", "");
-//    assertNull(app.get(null));
-//  }
-//}
+package dev.sbutler.bitflask.server;
+
+import dev.sbutler.bitflask.server.client_processing.ClientRequestHandler;
+import dev.sbutler.bitflask.server.storage.Storage;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.IOException;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class ServerTest {
+
+  @InjectMocks
+  Server server;
+
+  @Mock
+  ThreadPoolExecutor threadPoolExecutor;
+  @Mock
+  Storage storage;
+  @Mock
+  ServerSocket serverSocket;
+
+  @Test
+  void start_success() throws IOException {
+    try (MockedConstruction<ClientRequestHandler> mocked = mockConstruction(
+        ClientRequestHandler.class)) {
+      Socket clientSocket = mock(Socket.class);
+      doReturn(clientSocket).when(serverSocket).accept();
+      // easy way to terminate loop
+      doThrow(RejectedExecutionException.class).when(threadPoolExecutor)
+          .execute(any(Runnable.class));
+
+      server.start();
+
+      verify(serverSocket, times(1)).accept();
+      verify(threadPoolExecutor, times(1)).execute(any(Runnable.class));
+      verify(threadPoolExecutor, times(1)).shutdown();
+    }
+  }
+
+  @Test
+  void start_IOException_ServerSocket() throws IOException {
+    doThrow(new IOException("Test: ServerSocket accept failure")).when(serverSocket).accept();
+
+    server.start();
+
+    verify(serverSocket, times(1)).accept();
+    verify(threadPoolExecutor, times(0)).execute(any(Runnable.class));
+    verify(threadPoolExecutor, times(1)).shutdown();
+  }
+}

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -20,35 +21,37 @@ public class Server {
   private final Storage storage;
   private final ThreadPoolExecutor threadPoolExecutor;
 
-  Server(ThreadPoolExecutor threadPoolExecutor, Storage storage) throws IOException {
+  Server(ThreadPoolExecutor threadPoolExecutor, Storage storage, ServerSocket serverSocket) {
     this.threadPoolExecutor = threadPoolExecutor;
     this.storage = storage;
-    this.serverSocket = new ServerSocket(PORT);
+    this.serverSocket = serverSocket;
   }
 
   public static void main(String[] args) {
+    Server server;
+
     try {
-      ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(
-          NUM_THREADS);
-      Storage storage = new Storage(threadPoolExecutor);
-
-      Server server = new Server(threadPoolExecutor, storage);
-      server.start();
-
-      System.exit(0);
+      server = initializeServer();
     } catch (IOException e) {
-      System.out.println("Unable to initialize storage engine. Terminating");
+      System.out.println("Unable to initialize server. Terminating");
       e.printStackTrace();
       System.exit(1);
+      return;
     }
+
+    server.start();
+    System.exit(0);
   }
 
-  private void printConfigInfo() {
-    System.out
-        .printf("Runtime processors available (%s)%n", Runtime.getRuntime().availableProcessors());
+  private static Server initializeServer() throws IOException {
+    ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(
+        NUM_THREADS);
+    Storage storage = new Storage(threadPoolExecutor);
+    ServerSocket serverSocket = new ServerSocket(PORT);
+    return new Server(threadPoolExecutor, storage, serverSocket);
   }
 
-  private void start() {
+  public void start() {
     System.out.println("Welcome to Bitflask!");
     printConfigInfo();
 
@@ -63,10 +66,16 @@ public class Server {
 
         this.threadPoolExecutor.execute(clientRequestHandler);
       }
-    } catch (IOException e) {
+    } catch (IOException | RejectedExecutionException e) {
       e.printStackTrace();
     } finally {
       threadPoolExecutor.shutdown();
     }
   }
+
+  private void printConfigInfo() {
+    System.out
+        .printf("Runtime processors available (%s)%n", Runtime.getRuntime().availableProcessors());
+  }
+
 }
