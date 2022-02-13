@@ -6,13 +6,8 @@ import dev.sbutler.bitflask.resp.utilities.RespReader;
 import dev.sbutler.bitflask.resp.utilities.RespWriter;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.server.command_processing.ServerCommand;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 
 public class ClientMessageProcessor {
 
@@ -20,11 +15,11 @@ public class ClientMessageProcessor {
   private final RespReader respReader;
   private final RespWriter respWriter;
 
-  ClientMessageProcessor(CommandProcessor commandProcessor, InputStream inputStream,
-      OutputStream outputStream) {
+  ClientMessageProcessor(CommandProcessor commandProcessor, RespReader respReader,
+      RespWriter respWriter) {
     this.commandProcessor = commandProcessor;
-    this.respReader = new RespReader(new BufferedReader(new InputStreamReader(inputStream)));
-    this.respWriter = new RespWriter(new BufferedOutputStream(outputStream));
+    this.respReader = respReader;
+    this.respWriter = respWriter;
   }
 
   public boolean processNextMessage() {
@@ -50,6 +45,7 @@ public class ClientMessageProcessor {
 
     String response;
     try {
+      // todo: differentiate between invalid format and invalid command and terminate connection accordingly
       ServerCommand command = ServerCommand.valueOf(clientMessage);
       response = commandProcessor.processServerCommand(command);
     } catch (IllegalArgumentException e) {
