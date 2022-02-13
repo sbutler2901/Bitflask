@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.resp.types;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class RespSimpleStringTest {
@@ -42,5 +43,12 @@ class RespSimpleStringTest {
     assertNotEquals(null, first);
     assertNotEquals(first, new RespBulkString("other"));
     assertEquals(first, new RespSimpleString(value));
+  }
+
+  @Test
+  void hashcodeTest() {
+    String expected = "test";
+    RespSimpleString simpleString = new RespSimpleString(expected);
+    assertEquals(Objects.hash(expected), simpleString.hashCode());
   }
 }

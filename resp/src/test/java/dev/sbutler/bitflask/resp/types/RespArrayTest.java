@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class RespArrayTest {
@@ -102,5 +103,12 @@ class RespArrayTest {
     assertNotEquals(null, first);
     assertNotEquals(first, new RespBulkString("other"));
     assertEquals(first, new RespArray(list));
+  }
+
+  @Test
+  void hashcodeTest() {
+    List<RespType<?>> list = new ArrayList<>(List.of(new RespInteger(1)));
+    RespArray respArray = new RespArray(list);
+    assertEquals(Objects.hash(list), respArray.hashCode());
   }
 }

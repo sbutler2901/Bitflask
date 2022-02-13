@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class RespIntegerTest {
@@ -41,5 +42,12 @@ class RespIntegerTest {
     assertNotEquals(null, first);
     assertNotEquals(first, new RespBulkString("other"));
     assertEquals(first, new RespInteger(value));
+  }
+
+  @Test
+  void hashcodeTest() {
+    int expected = 1;
+    RespInteger respInteger = new RespInteger(expected);
+    assertEquals(Objects.hash(expected), respInteger.hashCode());
   }
 }

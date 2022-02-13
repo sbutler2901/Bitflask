@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.resp.types;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class RespErrorTest {

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class RespBulkStringTest {
@@ -57,5 +58,12 @@ class RespBulkStringTest {
     assertNotEquals(null, first);
     assertNotEquals(first, new RespSimpleString("other"));
     assertEquals(first, new RespBulkString(value));
+  }
+
+  @Test
+  void hashcodeTest() {
+    String expected = "test";
+    RespBulkString respBulkString = new RespBulkString(expected);
+    assertEquals(Objects.hash(expected), respBulkString.hashCode());
   }
 }
