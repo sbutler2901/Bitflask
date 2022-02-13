@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.resp;
+package dev.sbutler.bitflask.resp.types;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,8 +6,8 @@ import java.util.Objects;
 
 public final class RespArray extends RespType<List<RespType<?>>> {
 
-  static final char TYPE_PREFIX = '*';
-  static final long NULL_ARRAY_LENGTH = -1;
+  public static final char TYPE_PREFIX = '*';
+  public static final long NULL_ARRAY_LENGTH = -1;
 
   private final List<RespType<?>> value;
 

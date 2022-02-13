@@ -17,11 +17,8 @@ public class ClientRequestHandler implements Runnable {
 
   public ClientRequestHandler(Socket socket, Storage storage) throws IOException {
     this.socket = socket;
-    this.clientMessageProcessor = new ClientMessageProcessor(
-        new CommandProcessor(storage),
-        new BufferedReader(new InputStreamReader(socket.getInputStream())),
-        new BufferedOutputStream(socket.getOutputStream())
-    );
+    this.clientMessageProcessor = new ClientMessageProcessor(new CommandProcessor(storage),
+        socket.getInputStream(), socket.getOutputStream());
   }
 
   @Override

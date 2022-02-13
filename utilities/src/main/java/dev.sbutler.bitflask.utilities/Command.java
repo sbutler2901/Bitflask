@@ -1,8 +1,8 @@
-package bitflask.utilities;
+package dev.sbutler.bitflask.utilities;
 
-import dev.sbutler.bitflask.resp.RespArray;
-import dev.sbutler.bitflask.resp.RespBulkString;
-import dev.sbutler.bitflask.resp.RespType;
+import dev.sbutler.bitflask.resp.types.RespArray;
+import dev.sbutler.bitflask.resp.types.RespBulkString;
+import dev.sbutler.bitflask.resp.types.RespType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

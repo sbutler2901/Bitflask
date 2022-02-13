@@ -1,5 +1,11 @@
-package dev.sbutler.bitflask.resp;
+package dev.sbutler.bitflask.resp.utilities;
 
+import dev.sbutler.bitflask.resp.types.RespArray;
+import dev.sbutler.bitflask.resp.types.RespBulkString;
+import dev.sbutler.bitflask.resp.types.RespError;
+import dev.sbutler.bitflask.resp.types.RespInteger;
+import dev.sbutler.bitflask.resp.types.RespSimpleString;
+import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
@@ -7,34 +13,36 @@ import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RespUtils {
+public class RespReader {
 
-  private RespUtils() {
-    throw new AssertionError();
+  private final BufferedReader bufferedReader;
+
+  public RespReader(BufferedReader bufferedReader) {
+    this.bufferedReader = bufferedReader;
   }
 
-  public static RespType<?> readNextRespType(BufferedReader bufferedReader) throws IOException {
+  public RespType<?> readNextRespType() throws IOException {
     int code = bufferedReader.read();
     if (code == -1) {
       throw new EOFException("Could not parse RespType");
     }
     return switch (code) {
-      case RespSimpleString.TYPE_PREFIX -> readRespSimpleString(bufferedReader);
-      case RespBulkString.TYPE_PREFIX -> readRespBulkString(bufferedReader);
-      case RespInteger.TYPE_PREFIX -> readRespInteger(bufferedReader);
-      case RespError.TYPE_PREFIX -> readRespError(bufferedReader);
-      case RespArray.TYPE_PREFIX -> readRespArray(bufferedReader);
+      case RespSimpleString.TYPE_PREFIX -> readRespSimpleString();
+      case RespBulkString.TYPE_PREFIX -> readRespBulkString();
+      case RespInteger.TYPE_PREFIX -> readRespInteger();
+      case RespError.TYPE_PREFIX -> readRespError();
+      case RespArray.TYPE_PREFIX -> readRespArray();
       default -> throw new ProtocolException("RespType code not recognized");
     };
   }
 
-  private static RespSimpleString readRespSimpleString(BufferedReader bufferedReader)
+  private RespSimpleString readRespSimpleString()
       throws IOException {
     String value = bufferedReader.readLine();
     return new RespSimpleString(value);
   }
 
-  private static RespBulkString readRespBulkString(BufferedReader bufferedReader)
+  private RespBulkString readRespBulkString()
       throws IOException {
     int length = Integer.parseInt(bufferedReader.readLine());
     if (length == RespBulkString.NULL_STRING_LENGTH) {
@@ -47,25 +55,26 @@ public class RespUtils {
     return new RespBulkString(readValue);
   }
 
-  private static RespInteger readRespInteger(BufferedReader bufferedReader) throws IOException {
+  private RespInteger readRespInteger() throws IOException {
     int value = Integer.parseInt(bufferedReader.readLine());
     return new RespInteger(value);
   }
 
-  private static RespError readRespError(BufferedReader bufferedReader) throws IOException {
+  private RespError readRespError() throws IOException {
     String value = bufferedReader.readLine();
     return new RespError(value);
   }
 
-  private static RespArray readRespArray(BufferedReader bufferedReader) throws IOException {
+  private RespArray readRespArray() throws IOException {
     int numItems = Integer.parseInt(bufferedReader.readLine());
     if (numItems == RespArray.NULL_ARRAY_LENGTH) {
       return new RespArray(null);
     }
     List<RespType<?>> respArrayValues = new ArrayList<>();
     for (int i = 0; i < numItems; i++) {
-      respArrayValues.add(readNextRespType(bufferedReader));
+      respArrayValues.add(readNextRespType());
     }
     return new RespArray(respArrayValues);
   }
+
 }

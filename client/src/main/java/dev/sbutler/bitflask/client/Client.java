@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.client;
 
 import dev.sbutler.bitflask.client.repl.REPL;
-import dev.sbutler.bitflask.resp.RespUtils;
+import dev.sbutler.bitflask.resp.utilities.RespReader;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -34,7 +34,9 @@ public class Client {
     bufferedOutputStream.write(command.getCommandRespArray().getEncodedBytes());
     bufferedOutputStream.flush();
 
-    return RespUtils.readNextRespType(bufferedReader).toString();
+    // todo: improve
+    RespReader respReader = new RespReader(bufferedReader);
+    return respReader.toString();
   }
 
   private void close() {

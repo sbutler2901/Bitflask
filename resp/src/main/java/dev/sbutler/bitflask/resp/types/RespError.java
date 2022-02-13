@@ -1,8 +1,8 @@
-package dev.sbutler.bitflask.resp;
+package dev.sbutler.bitflask.resp.types;
 
 public final class RespError extends RespType<String> {
 
-  static final char TYPE_PREFIX = '-';
+  public static final char TYPE_PREFIX = '-';
 
   private final String value;
 

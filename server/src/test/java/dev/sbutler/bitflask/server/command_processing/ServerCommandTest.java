@@ -3,11 +3,11 @@ package dev.sbutler.bitflask.server.command_processing;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import dev.sbutler.bitflask.resp.RespArray;
-import dev.sbutler.bitflask.resp.RespBulkString;
-import dev.sbutler.bitflask.resp.RespInteger;
-import dev.sbutler.bitflask.resp.RespSimpleString;
-import dev.sbutler.bitflask.resp.RespType;
+import dev.sbutler.bitflask.resp.types.RespArray;
+import dev.sbutler.bitflask.resp.types.RespBulkString;
+import dev.sbutler.bitflask.resp.types.RespInteger;
+import dev.sbutler.bitflask.resp.types.RespSimpleString;
+import dev.sbutler.bitflask.resp.types.RespType;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

@@ -1,31 +1,34 @@
-package dev.sbutler.bitflask.resp;
+package dev.sbutler.bitflask.resp.types;
 
 import java.util.Objects;
 
-public final class RespInteger extends RespType<Integer> {
+public final class RespSimpleString extends RespType<String> {
 
-  static final char TYPE_PREFIX = ':';
+  public static final char TYPE_PREFIX = '+';
 
-  private final int value;
+  private final String value;
 
-  public RespInteger(int value) {
+  public RespSimpleString(String value) {
+    if (value == null) {
+      throw new IllegalArgumentException("Value must not be null");
+    }
     this.value = value;
   }
 
   @Override
-  public Integer getValue() {
+  public String getValue() {
     return value;
   }
 
   @Override
   public byte[] getEncodedBytes() {
-    byte[] encodedValueBytes = String.valueOf(value).getBytes(ENCODED_CHARSET);
+    byte[] encodedValueBytes = value.getBytes(ENCODED_CHARSET);
     return getEncodedBytesFromValueBytes(encodedValueBytes, TYPE_PREFIX);
   }
 
   @Override
   public String toString() {
-    return String.valueOf(value);
+    return value;
   }
 
   @Override
@@ -36,7 +39,7 @@ public final class RespInteger extends RespType<Integer> {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RespInteger that = (RespInteger) o;
+    RespSimpleString that = (RespSimpleString) o;
     return getValue().equals(that.getValue());
   }
 

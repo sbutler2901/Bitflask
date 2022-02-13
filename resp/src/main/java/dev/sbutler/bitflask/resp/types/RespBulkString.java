@@ -1,11 +1,11 @@
-package dev.sbutler.bitflask.resp;
+package dev.sbutler.bitflask.resp.types;
 
 import java.util.Objects;
 
 public final class RespBulkString extends RespType<String> {
 
-  static final char TYPE_PREFIX = '$';
-  static final long NULL_STRING_LENGTH = -1;
+  public static final char TYPE_PREFIX = '$';
+  public static final long NULL_STRING_LENGTH = -1;
 
   private final String value;
 
