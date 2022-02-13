@@ -4,23 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.resp.RespArray;
-import dev.sbutler.bitflask.resp.RespBulkString;
-import dev.sbutler.bitflask.resp.RespInteger;
-import dev.sbutler.bitflask.resp.RespType;
-import dev.sbutler.bitflask.server.storage.Storage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.Socket;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-
-public class RequestHandlerTest {
+public class ClientRequestHandlerTest {
 
 //  private final Socket socket = mock(Socket.class);
 //  private final Storage storage = mock(Storage.class);

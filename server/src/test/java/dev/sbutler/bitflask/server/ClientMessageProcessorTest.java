@@ -9,10 +9,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class RequestProcessorTest {
+public class ClientMessageProcessorTest {
 
   @InjectMocks
-  RequestProcessor requestProcessor;
+  ClientMessageProcessor clientMessageProcessor;
 
   @Mock
   CommandProcessor commandProcessor;

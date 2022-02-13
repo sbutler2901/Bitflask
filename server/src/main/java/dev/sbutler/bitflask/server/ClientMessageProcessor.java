@@ -10,28 +10,30 @@ import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
 
-public class RequestProcessor {
+public class ClientMessageProcessor {
 
   private final CommandProcessor commandProcessor;
   private final BufferedReader bufferedReader;
   private final BufferedOutputStream bufferedOutputStream;
 
-  RequestProcessor(CommandProcessor commandProcessor, BufferedReader bufferedReader,
+  ClientMessageProcessor(CommandProcessor commandProcessor, BufferedReader bufferedReader,
       BufferedOutputStream bufferedOutputStream) {
     this.commandProcessor = commandProcessor;
     this.bufferedReader = bufferedReader;
     this.bufferedOutputStream = bufferedOutputStream;
   }
 
-  public boolean processRequest() {
+  public boolean processNextMessage() {
     try {
       RespType<?> clientMessage = readClientMessage();
       RespType<?> response = getServerResponseToClient(clientMessage);
       writeResponseMessage(response);
     } catch (EOFException e) {
       System.out.println("Client disconnected.");
+      return false;
     } catch (IOException e) {
       System.out.println(e.getMessage());
+      return false;
     }
     return true;
   }

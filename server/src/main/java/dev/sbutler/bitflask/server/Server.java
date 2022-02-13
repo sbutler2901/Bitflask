@@ -54,7 +54,7 @@ public class Server {
     try {
       while (true) {
         Socket clientSocket = serverSocket.accept();
-        RequestHandler clientRequestHandler = new RequestHandler(clientSocket, storage);
+        ClientRequestHandler clientRequestHandler = new ClientRequestHandler(clientSocket, storage);
 
         System.out.println(
             "S: Received incoming client connection from " + clientSocket.getInetAddress() + ":"
