@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.resp.types;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import org.junit.jupiter.api.Test;
 
@@ -23,5 +24,22 @@ class RespIntegerTest {
     };
     byte[] res = singleDigit.getEncodedBytes();
     assertArrayEquals(expected, res);
+  }
+
+  @Test
+  void toStringTest() {
+    int expected = 1;
+    RespInteger respInteger = new RespInteger(expected);
+    assertEquals(String.valueOf(expected), respInteger.toString());
+  }
+
+  @Test
+  void equalsTest() {
+    int value = 1;
+    RespInteger first = new RespInteger(value);
+    assertEquals(first, first);
+    assertNotEquals(null, first);
+    assertNotEquals(first, new RespBulkString("other"));
+    assertEquals(first, new RespInteger(value));
   }
 }

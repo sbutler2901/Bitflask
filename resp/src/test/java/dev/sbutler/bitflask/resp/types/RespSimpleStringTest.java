@@ -26,4 +26,21 @@ class RespSimpleStringTest {
   void constructor_null() {
     assertThrows(IllegalArgumentException.class, () -> new RespSimpleString(null));
   }
+
+  @Test
+  void toStringTest() {
+    String expected = "test";
+    RespSimpleString simpleString = new RespSimpleString(expected);
+    assertEquals(expected, simpleString.toString());
+  }
+
+  @Test
+  void equalsTest() {
+    String value = "test";
+    RespSimpleString first = new RespSimpleString(value);
+    assertEquals(first, first);
+    assertNotEquals(null, first);
+    assertNotEquals(first, new RespBulkString("other"));
+    assertEquals(first, new RespSimpleString(value));
+  }
 }

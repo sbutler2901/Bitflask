@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.resp.types;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
@@ -78,5 +79,28 @@ class RespArrayTest {
         RespArray.TYPE_PREFIX, '-', '1', RespType.CR, RespType.LF
     };
     assertArrayEquals(expected, respArray.getEncodedBytes());
+  }
+
+  @Test
+  void toStringTest() {
+    List<RespType<?>> list = new ArrayList<>(List.of(new RespInteger(1)));
+    RespArray respArray = new RespArray(list);
+    String expected = "[1]";
+    assertEquals(expected, respArray.toString());
+
+    list.add(new RespInteger(2));
+    expected = "[1, 2]";
+    respArray = new RespArray(list);
+    assertEquals(expected, respArray.toString());
+  }
+
+  @Test
+  void equalsTest() {
+    List<RespType<?>> list = List.of(new RespInteger(1));
+    RespArray first = new RespArray(list);
+    assertEquals(first, first);
+    assertNotEquals(null, first);
+    assertNotEquals(first, new RespBulkString("other"));
+    assertEquals(first, new RespArray(list));
   }
 }

@@ -22,4 +22,11 @@ class RespErrorTest {
         RespType.CR, RespType.LF};
     assertArrayEquals(expected, simpleString.getEncodedBytes());
   }
+
+  @Test
+  void toStringTest() {
+    String expected = "error";
+    RespError respError = new RespError(expected);
+    assertEquals(expected, respError.toString());
+  }
 }
