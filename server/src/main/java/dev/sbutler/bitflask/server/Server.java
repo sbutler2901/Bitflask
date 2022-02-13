@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.server;
 
+import dev.sbutler.bitflask.server.client_processing.ClientRequestHandler;
 import dev.sbutler.bitflask.server.storage.Storage;
 import java.io.IOException;
 import java.net.ServerSocket;

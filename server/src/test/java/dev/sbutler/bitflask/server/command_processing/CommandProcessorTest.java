@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.processing;
+package dev.sbutler.bitflask.server.command_processing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;

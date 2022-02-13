@@ -1,6 +1,6 @@
-package dev.sbutler.bitflask.server;
+package dev.sbutler.bitflask.server.client_processing;
 
-import dev.sbutler.bitflask.server.processing.CommandProcessor;
+import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import org.junit.jupiter.api.extension.ExtendWith;

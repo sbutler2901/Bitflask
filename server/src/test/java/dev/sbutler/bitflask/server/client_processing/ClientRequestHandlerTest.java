@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server;
+package dev.sbutler.bitflask.server.client_processing;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
