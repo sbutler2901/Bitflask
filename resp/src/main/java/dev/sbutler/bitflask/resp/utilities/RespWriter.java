@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.resp.utilities;
 import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 public class RespWriter {
 
@@ -10,6 +11,10 @@ public class RespWriter {
 
   public RespWriter(BufferedOutputStream bufferedOutputStream) {
     this.bufferedOutputStream = bufferedOutputStream;
+  }
+
+  public RespWriter(OutputStream outputStream) {
+    this.bufferedOutputStream = new BufferedOutputStream(outputStream);
   }
 
   public void writeRespType(RespType<?> respType) throws IOException {

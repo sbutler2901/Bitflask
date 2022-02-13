@@ -9,6 +9,8 @@ import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +21,10 @@ public class RespReader {
 
   public RespReader(BufferedReader bufferedReader) {
     this.bufferedReader = bufferedReader;
+  }
+
+  public RespReader(InputStream inputStream) {
+    this.bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
   }
 
   public RespType<?> readNextRespType() throws IOException {
