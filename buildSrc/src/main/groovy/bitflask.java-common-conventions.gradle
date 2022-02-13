@@ -9,8 +9,8 @@ plugins {
     id 'jacoco'
 }
 
-//group 'dev.sbutler'
-//version '1.0'
+group 'dev.sbutler'
+version '1.0'
 
 repositories {
     mavenCentral()
