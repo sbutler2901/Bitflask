@@ -30,24 +30,6 @@ public class Client {
     this.serverAddress = socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
   }
 
-  public String runCommand(ClientCommand command) throws IOException {
-    bufferedOutputStream.write(command.getCommandRespArray().getEncodedBytes());
-    bufferedOutputStream.flush();
-
-    // todo: improve
-    RespReader respReader = new RespReader(bufferedReader);
-    return respReader.toString();
-  }
-
-  private void close() {
-    try {
-      socket.close();
-      System.out.println(TERMINATING_CONNECTION);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
-
   public static void main(String[] args) {
     System.out.println("Hello from client");
 
@@ -64,5 +46,23 @@ public class Client {
     }
 
     System.exit(0);
+  }
+
+  public String runCommand(ClientCommand command) throws IOException {
+    bufferedOutputStream.write(command.getCommandRespArray().getEncodedBytes());
+    bufferedOutputStream.flush();
+
+    // todo: improve
+    RespReader respReader = new RespReader(bufferedReader);
+    return respReader.readNextRespType().toString();
+  }
+
+  private void close() {
+    try {
+      socket.close();
+      System.out.println(TERMINATING_CONNECTION);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 }

@@ -9,5 +9,5 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClassName 'bitflask.server.Server'
+    mainClassName 'dev.sbutler.bitflask.server.Server'
 }
