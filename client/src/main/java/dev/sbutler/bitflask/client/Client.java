@@ -6,7 +6,6 @@ import dev.sbutler.bitflask.resp.utilities.RespWriter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import lombok.Getter;
 
 public class Client {
 
@@ -15,17 +14,14 @@ public class Client {
   private static final int SERVER_PORT = 9090;
 
   private final Socket socket;
-  private final RespReader respReader;
-  private final RespWriter respWriter;
-
-  @Getter
-  private final String serverAddress;
+  private final CommandProcessor commandProcessor;
 
   public Client() throws IOException {
     this.socket = new Socket(InetAddress.getLocalHost(), SERVER_PORT);
-    this.respReader = new RespReader(socket.getInputStream());
-    this.respWriter = new RespWriter(socket.getOutputStream());
-    this.serverAddress = socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
+    this.commandProcessor = new CommandProcessor(
+        new RespReader(socket.getInputStream()),
+        new RespWriter(socket.getOutputStream())
+    );
   }
 
   public static void main(String[] args) {
@@ -33,11 +29,7 @@ public class Client {
 
     try {
       Client client = new Client();
-      REPL repl = new REPL(client);
-
-      repl.start();
-
-      client.close();
+      client.runWithRepl();
     } catch (IOException e) {
       e.printStackTrace();
       System.exit(1);
@@ -46,9 +38,10 @@ public class Client {
     System.exit(0);
   }
 
-  public String runCommand(ClientCommand command) throws IOException {
-    respWriter.writeRespType(command.getAsRespArray());
-    return respReader.readNextRespType().toString();
+  private void runWithRepl() {
+    REPL repl = new REPL(commandProcessor);
+    repl.start();
+    close();
   }
 
   private void close() {

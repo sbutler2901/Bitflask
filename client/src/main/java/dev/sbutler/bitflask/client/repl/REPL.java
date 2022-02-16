@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.client.repl;
 
-import dev.sbutler.bitflask.client.Client;
 import dev.sbutler.bitflask.client.ClientCommand;
+import dev.sbutler.bitflask.client.CommandProcessor;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,8 +12,9 @@ import java.util.stream.Collectors;
 public class REPL {
 
   private static final String SPACE_REGEX = "\\s+";
+  private static final String SHELL_PREFIX = "> ";
 
-  private final Client client;
+  private final CommandProcessor commandProcessor;
   private final Scanner input;
 
   private boolean continueProcessingClientInput = true;
@@ -21,10 +22,10 @@ public class REPL {
   /**
    * Creating a new REPL instance for accepting user command to interact with the storage engine
    *
-   * @param client client
+   * @param commandProcessor for processing client provided commands on the server
    */
-  public REPL(Client client) {
-    this.client = client;
+  public REPL(CommandProcessor commandProcessor) {
+    this.commandProcessor = commandProcessor;
     this.input = new Scanner(System.in);
   }
 
@@ -33,7 +34,7 @@ public class REPL {
    */
   public void start() {
     while (continueProcessingClientInput) {
-      System.out.print(client.getServerAddress() + "> ");
+      System.out.print(SHELL_PREFIX);
       processClientInput();
     }
   }
@@ -48,11 +49,12 @@ public class REPL {
       if (ReplCommand.isReplCommand(clientCommand.command())) {
         processReplCommand(clientCommand);
       } else {
-        String result = client.runCommand(clientCommand);
-        System.out.println(result);
+        String result = commandProcessor.runCommand(clientCommand);
+        logMessageToUser(result);
       }
     } catch (IOException e) {
-      System.out.println("Failure to process command: " + e.getMessage());
+      logMessageToUser(
+          "Failure to process command [" + clientCommand.command() + "]: " + e.getMessage());
       haltClientProcessing();
     }
   }
@@ -79,13 +81,14 @@ public class REPL {
     ReplCommand replCommand = ReplCommand
         .valueOf(clientCommand.command().trim().toUpperCase());
     if (!ReplCommand.isValidReplCommandWithArgs(replCommand, clientCommand.args())) {
-      System.out.println("Invalid REPL command: " + replCommand + ", " + clientCommand.args());
-    } else {
-      switch (replCommand) {
-        case EXIT -> haltClientProcessing();
-        case TEST -> test(clientCommand);
-        case HELP -> System.out.println("I can't help you.");
-      }
+      logMessageToUser("Invalid REPL command: " + replCommand + ", " + clientCommand.args());
+      return;
+    }
+
+    switch (replCommand) {
+      case EXIT -> haltClientProcessing();
+      case TEST -> test(clientCommand);
+      case HELP -> logMessageToUser("I can't help you.");
     }
   }
 
@@ -110,18 +113,20 @@ public class REPL {
       String setKey = "testKey" + iteration;
       String value = "testValue" + iteration;
 
-      result = client.runCommand(new ClientCommand("SET", Arrays.asList(setKey, value)));
+      result = commandProcessor.runCommand(new ClientCommand("SET", Arrays.asList(setKey, value)));
       System.out.println("Result: " + result);
       if (withGet && i > 0) {
         int previousWrite = i - 1;
         String getKey = "testKey" + previousWrite;
-        result = client.runCommand(new ClientCommand("GET", Collections.singletonList(getKey)));
+        result = commandProcessor.runCommand(
+            new ClientCommand("GET", Collections.singletonList(getKey)));
         System.out.println("Result: " + result);
       }
     }
     if (withGet) {
       String lastTestKey = "testKey" + (i - 1);
-      result = client.runCommand(new ClientCommand("GET", Collections.singletonList(lastTestKey)));
+      result = commandProcessor.runCommand(
+          new ClientCommand("GET", Collections.singletonList(lastTestKey)));
       System.out.println("Result: " + result);
     }
 
@@ -129,6 +134,10 @@ public class REPL {
     long duration = (endTime - startTime);
     System.out
         .printf("(%d) sets successfully generated in (%d)ms%n", numEntriesGenerated, duration);
+  }
+
+  private void logMessageToUser(String message) {
+    System.out.println(message);
   }
 
   private void haltClientProcessing() {
