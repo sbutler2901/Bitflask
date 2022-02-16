@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client;
+package dev.sbutler.bitflask.client.repl;
 
 public enum ReplCommand {
   EXIT,

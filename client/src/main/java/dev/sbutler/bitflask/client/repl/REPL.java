@@ -2,7 +2,6 @@ package dev.sbutler.bitflask.client.repl;
 
 import dev.sbutler.bitflask.client.Client;
 import dev.sbutler.bitflask.client.ClientCommand;
-import dev.sbutler.bitflask.client.ReplCommand;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
