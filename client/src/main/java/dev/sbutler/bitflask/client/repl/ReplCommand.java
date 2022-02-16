@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.client.repl;
 
+import java.util.List;
+
 public enum ReplCommand {
   EXIT,
   TEST,
@@ -13,5 +15,12 @@ public enum ReplCommand {
     return compareString.equals(EXIT.toString())
         || compareString.equals(TEST.toString())
         || compareString.equals(HELP.toString());
+  }
+
+  public static boolean isValidReplCommand(ReplCommand replCommand, List<String> args) {
+    return switch (replCommand) {
+      case EXIT, HELP -> args == null || args.size() == 0;
+      case TEST -> args != null && args.size() == 1;
+    };
   }
 }

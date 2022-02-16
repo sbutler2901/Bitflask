@@ -69,10 +69,14 @@ public class REPL {
   private void processReplCommand(ClientCommand clientCommand) throws IOException {
     ReplCommand replCommand = ReplCommand
         .valueOf(clientCommand.command().trim().toUpperCase());
-    switch (replCommand) {
-      case EXIT -> continueReadingClientInput = false;
-      case TEST -> test(clientCommand);
-      case HELP -> System.out.println("I can't help you.");
+    if (!ReplCommand.isValidReplCommand(replCommand, clientCommand.args())) {
+      System.out.println("Invalid REPL command: " + replCommand + ", " + clientCommand.args());
+    } else {
+      switch (replCommand) {
+        case EXIT -> continueReadingClientInput = false;
+        case TEST -> test(clientCommand);
+        case HELP -> System.out.println("I can't help you.");
+      }
     }
   }
 
