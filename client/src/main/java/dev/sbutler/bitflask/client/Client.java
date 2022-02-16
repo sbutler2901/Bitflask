@@ -2,10 +2,8 @@ package dev.sbutler.bitflask.client;
 
 import dev.sbutler.bitflask.client.repl.REPL;
 import dev.sbutler.bitflask.resp.utilities.RespReader;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
+import dev.sbutler.bitflask.resp.utilities.RespWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.Socket;
 import lombok.Getter;
@@ -17,16 +15,16 @@ public class Client {
   private static final int SERVER_PORT = 9090;
 
   private final Socket socket;
-  private final BufferedOutputStream bufferedOutputStream;
-  private final BufferedReader bufferedReader;
+  private final RespReader respReader;
+  private final RespWriter respWriter;
 
   @Getter
   private final String serverAddress;
 
   public Client() throws IOException {
     this.socket = new Socket(InetAddress.getLocalHost(), SERVER_PORT);
-    this.bufferedOutputStream = new BufferedOutputStream(socket.getOutputStream());
-    this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    this.respReader = new RespReader(socket.getInputStream());
+    this.respWriter = new RespWriter(socket.getOutputStream());
     this.serverAddress = socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
   }
 
@@ -49,11 +47,7 @@ public class Client {
   }
 
   public String runCommand(ClientCommand command) throws IOException {
-    bufferedOutputStream.write(command.getCommandRespArray().getEncodedBytes());
-    bufferedOutputStream.flush();
-
-    // todo: improve
-    RespReader respReader = new RespReader(bufferedReader);
+    respWriter.writeRespType(command.getCommandRespArray());
     return respReader.readNextRespType().toString();
   }
 
