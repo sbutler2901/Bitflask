@@ -7,19 +7,15 @@ import java.io.OutputStream;
 
 public class RespWriter {
 
-  private final BufferedOutputStream bufferedOutputStream;
-
-  public RespWriter(BufferedOutputStream bufferedOutputStream) {
-    this.bufferedOutputStream = bufferedOutputStream;
-  }
+  private final OutputStream outputStream;
 
   public RespWriter(OutputStream outputStream) {
-    this.bufferedOutputStream = new BufferedOutputStream(outputStream);
+    this.outputStream = outputStream;
   }
 
   public void writeRespType(RespType<?> respType) throws IOException {
-    bufferedOutputStream.write(respType.getEncodedBytes());
-    bufferedOutputStream.flush();
+    outputStream.write(respType.getEncodedBytes());
+    outputStream.flush();
   }
 
 }

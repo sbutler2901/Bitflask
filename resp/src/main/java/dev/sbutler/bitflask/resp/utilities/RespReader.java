@@ -11,6 +11,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +20,12 @@ public class RespReader {
 
   private final BufferedReader bufferedReader;
 
-  public RespReader(BufferedReader bufferedReader) {
-    this.bufferedReader = bufferedReader;
+  public RespReader(Reader reader) {
+    if (reader instanceof BufferedReader) {
+      this.bufferedReader = (BufferedReader) reader;
+    } else {
+      this.bufferedReader = new BufferedReader(reader);
+    }
   }
 
   public RespReader(InputStream inputStream) {
