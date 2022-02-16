@@ -47,7 +47,7 @@ public class Client {
   }
 
   public String runCommand(ClientCommand command) throws IOException {
-    respWriter.writeRespType(command.getCommandRespArray());
+    respWriter.writeRespType(command.getAsRespArray());
     return respReader.readNextRespType().toString();
   }
 

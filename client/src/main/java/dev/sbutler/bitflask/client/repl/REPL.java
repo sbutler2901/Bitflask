@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.client.repl;
 
 import dev.sbutler.bitflask.client.Client;
 import dev.sbutler.bitflask.client.ClientCommand;
-import dev.sbutler.bitflask.client.ClientSpecificCommand;
+import dev.sbutler.bitflask.client.ReplCommand;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -14,13 +14,10 @@ public class REPL {
 
   private static final String SPACE_REGEX = "\\s+";
 
-  private static final String SET_LOG = "Saved (%s) with value (%s)";
-  private static final String GET_LOG = "Read (%s) with value (%s)";
-
   private final Client client;
   private final Scanner input;
 
-  private boolean loggingEnabled = true;
+  private boolean continueReadingClientInput = true;
 
   /**
    * Creating a new REPL instance for accepting user command to interact with the storage engine
@@ -54,30 +51,15 @@ public class REPL {
    * Runs the REPL loop
    */
   public void start() throws IOException {
-    boolean loop = true;
-    while (loop) {
+    while (continueReadingClientInput) {
       System.out.print(client.getServerAddress() + "> ");
       ClientCommand clientCommand = getNextCommand();
       if (clientCommand == null) {
         continue;
       }
 
-      if (ClientSpecificCommand.isClientSpecificCommand(clientCommand.getCommand())) {
-        ClientSpecificCommand clientSpecificCommand = ClientSpecificCommand
-            .valueOf(clientCommand.getCommand().toUpperCase());
-        switch (clientSpecificCommand) {
-          case EXIT:
-            loop = false;
-            continue;
-          case LOG:
-            logging(clientCommand);
-            break;
-          case TEST:
-            test(clientCommand);
-            break;
-          case HELP:
-            System.out.println("I can't help you.");
-        }
+      if (ReplCommand.isReplCommand(clientCommand.command())) {
+        processReplCommand(clientCommand);
       } else {
         String result = client.runCommand(clientCommand);
         System.out.println(result);
@@ -85,17 +67,13 @@ public class REPL {
     }
   }
 
-  /**
-   * Enables logging for the get and set commands
-   *
-   * @param clientCommand the log command with its required arguments
-   */
-  private void logging(ClientCommand clientCommand) {
-    loggingEnabled = clientCommand.getArgs().get(0).equals("true");
-    if (loggingEnabled) {
-      System.out.println("Logging has been enabled");
-    } else {
-      System.out.println("Logging has been disabled");
+  private void processReplCommand(ClientCommand clientCommand) throws IOException {
+    ReplCommand replCommand = ReplCommand
+        .valueOf(clientCommand.command().trim().toUpperCase());
+    switch (replCommand) {
+      case EXIT -> continueReadingClientInput = false;
+      case TEST -> test(clientCommand);
+      case HELP -> System.out.println("I can't help you.");
     }
   }
 
@@ -105,10 +83,10 @@ public class REPL {
    * @param clientCommand the command with its required arguments
    */
   private void test(ClientCommand clientCommand) throws IOException {
-    int numEntriesGenerated = Integer.parseInt(clientCommand.getArgs().get(0));
+    int numEntriesGenerated = Integer.parseInt(clientCommand.args().get(0));
 
     boolean withGet =
-        clientCommand.getArgs().size() > 1 && Boolean.parseBoolean(clientCommand.getArgs().get(1));
+        clientCommand.args().size() > 1 && Boolean.parseBoolean(clientCommand.args().get(1));
     System.out
         .println("Generating " + numEntriesGenerated + " entries with get (" + withGet + ")");
 
