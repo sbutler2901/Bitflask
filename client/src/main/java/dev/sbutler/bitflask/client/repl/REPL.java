@@ -16,7 +16,7 @@ public class REPL {
   private final Client client;
   private final Scanner input;
 
-  private boolean continueReadingClientInput = true;
+  private boolean continueProcessingClientInput = true;
 
   /**
    * Creating a new REPL instance for accepting user command to interact with the storage engine
@@ -26,6 +26,35 @@ public class REPL {
   public REPL(Client client) {
     this.client = client;
     this.input = new Scanner(System.in);
+  }
+
+  /**
+   * Runs the REPL loop
+   */
+  public void start() {
+    while (continueProcessingClientInput) {
+      System.out.print(client.getServerAddress() + "> ");
+      processClientInput();
+    }
+  }
+
+  private void processClientInput() {
+    ClientCommand clientCommand = getNextCommand();
+    if (clientCommand == null) {
+      return;
+    }
+
+    try {
+      if (ReplCommand.isReplCommand(clientCommand.command())) {
+        processReplCommand(clientCommand);
+      } else {
+        String result = client.runCommand(clientCommand);
+        System.out.println(result);
+      }
+    } catch (IOException e) {
+      System.out.println("Failure to process command: " + e.getMessage());
+      haltClientProcessing();
+    }
   }
 
   /**
@@ -46,34 +75,14 @@ public class REPL {
     return null;
   }
 
-  /**
-   * Runs the REPL loop
-   */
-  public void start() throws IOException {
-    while (continueReadingClientInput) {
-      System.out.print(client.getServerAddress() + "> ");
-      ClientCommand clientCommand = getNextCommand();
-      if (clientCommand == null) {
-        continue;
-      }
-
-      if (ReplCommand.isReplCommand(clientCommand.command())) {
-        processReplCommand(clientCommand);
-      } else {
-        String result = client.runCommand(clientCommand);
-        System.out.println(result);
-      }
-    }
-  }
-
   private void processReplCommand(ClientCommand clientCommand) throws IOException {
     ReplCommand replCommand = ReplCommand
         .valueOf(clientCommand.command().trim().toUpperCase());
-    if (!ReplCommand.isValidReplCommand(replCommand, clientCommand.args())) {
+    if (!ReplCommand.isValidReplCommandWithArgs(replCommand, clientCommand.args())) {
       System.out.println("Invalid REPL command: " + replCommand + ", " + clientCommand.args());
     } else {
       switch (replCommand) {
-        case EXIT -> continueReadingClientInput = false;
+        case EXIT -> haltClientProcessing();
         case TEST -> test(clientCommand);
         case HELP -> System.out.println("I can't help you.");
       }
@@ -120,5 +129,9 @@ public class REPL {
     long duration = (endTime - startTime);
     System.out
         .printf("(%d) sets successfully generated in (%d)ms%n", numEntriesGenerated, duration);
+  }
+
+  private void haltClientProcessing() {
+    continueProcessingClientInput = false;
   }
 }

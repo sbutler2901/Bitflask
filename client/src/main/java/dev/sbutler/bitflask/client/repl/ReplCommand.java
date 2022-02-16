@@ -17,7 +17,7 @@ public enum ReplCommand {
         || compareString.equals(HELP.toString());
   }
 
-  public static boolean isValidReplCommand(ReplCommand replCommand, List<String> args) {
+  public static boolean isValidReplCommandWithArgs(ReplCommand replCommand, List<String> args) {
     return switch (replCommand) {
       case EXIT, HELP -> args == null || args.size() == 0;
       case TEST -> args != null && args.size() == 1;
