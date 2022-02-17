@@ -23,8 +23,8 @@ public class InputParser {
    */
   public ClientCommand getNextCommand() {
     String line = inputScanner.nextLine();
-    List<String> parsedInput = Arrays.stream(line.split(SPACE_REGEX)).map(
-        String::trim).collect(Collectors.toList());
+    List<String> parsedInput = Arrays.stream(line.split(SPACE_REGEX))
+        .filter((arg) -> !arg.isBlank()).collect(Collectors.toList());
 
     if (parsedInput.size() > 0) {
       String command = parsedInput.get(0);
