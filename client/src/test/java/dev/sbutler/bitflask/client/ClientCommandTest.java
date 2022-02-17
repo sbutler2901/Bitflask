@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import dev.sbutler.bitflask.client.command_processing.ClientCommand;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import java.util.List;

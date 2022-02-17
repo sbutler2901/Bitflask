@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.client;
 
+import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.client.repl.REPL;
 import dev.sbutler.bitflask.resp.utilities.RespReader;
 import dev.sbutler.bitflask.resp.utilities.RespWriter;
