@@ -4,7 +4,6 @@ import java.util.List;
 
 public enum ReplCommand {
   EXIT,
-  TEST,
   HELP;
 
   public static boolean isReplCommand(String command) {
@@ -13,14 +12,12 @@ public enum ReplCommand {
     }
     String compareString = command.trim().toUpperCase();
     return compareString.equals(EXIT.toString())
-        || compareString.equals(TEST.toString())
         || compareString.equals(HELP.toString());
   }
 
   public static boolean isValidReplCommandWithArgs(ReplCommand replCommand, List<String> args) {
     return switch (replCommand) {
       case EXIT, HELP -> args == null || args.size() == 0;
-      case TEST -> args != null && args.size() == 1;
     };
   }
 }

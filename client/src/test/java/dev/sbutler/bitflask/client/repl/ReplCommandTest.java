@@ -13,15 +13,12 @@ public class ReplCommandTest {
   void isReplCommand() {
     assertTrue(ReplCommand.isReplCommand("EXIT"));
     assertTrue(ReplCommand.isReplCommand(" exit"));
-    assertTrue(ReplCommand.isReplCommand("TEST"));
-    assertTrue(ReplCommand.isReplCommand("test "));
     assertTrue(ReplCommand.isReplCommand("HELP"));
     assertTrue(ReplCommand.isReplCommand(" help "));
 
     assertFalse(ReplCommand.isReplCommand(null));
     assertFalse(ReplCommand.isReplCommand(""));
     assertFalse(ReplCommand.isReplCommand("exita"));
-    assertFalse(ReplCommand.isReplCommand("btest"));
     assertFalse(ReplCommand.isReplCommand("hel"));
   }
 
@@ -31,18 +28,12 @@ public class ReplCommandTest {
     // EXIT
     assertTrue(ReplCommand.isValidReplCommandWithArgs(ReplCommand.EXIT, null));
     assertTrue(ReplCommand.isValidReplCommandWithArgs(ReplCommand.EXIT, new ArrayList<>()));
-    assertFalse(ReplCommand.isValidReplCommandWithArgs(ReplCommand.EXIT, List.of("test")));
+    assertFalse(ReplCommand.isValidReplCommandWithArgs(ReplCommand.EXIT, List.of("test-arg")));
 
     // HELP
     assertTrue(ReplCommand.isValidReplCommandWithArgs(ReplCommand.HELP, null));
     assertTrue(ReplCommand.isValidReplCommandWithArgs(ReplCommand.HELP, new ArrayList<>()));
     assertFalse(ReplCommand.isValidReplCommandWithArgs(ReplCommand.HELP, List.of("test")));
-
-    // TEST
-    assertTrue(ReplCommand.isValidReplCommandWithArgs(ReplCommand.TEST, List.of("test")));
-    assertFalse(ReplCommand.isValidReplCommandWithArgs(ReplCommand.TEST, null));
-    assertFalse(ReplCommand.isValidReplCommandWithArgs(ReplCommand.TEST, new ArrayList<>()));
-    assertFalse(ReplCommand.isValidReplCommandWithArgs(ReplCommand.TEST, List.of("test", "other")));
   }
 
 }
