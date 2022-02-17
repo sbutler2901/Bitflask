@@ -6,10 +6,6 @@ public class OutputWriter {
 
   PrintStream printStream;
 
-  public OutputWriter() {
-    printStream = System.out;
-  }
-
   public OutputWriter(PrintStream printStream) {
     this.printStream = printStream;
   }
