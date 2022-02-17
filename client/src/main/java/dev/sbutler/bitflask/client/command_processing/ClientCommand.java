@@ -12,9 +12,13 @@ public record ClientCommand(@NonNull String command, List<String> args) {
   public RespArray getAsRespArray() {
     List<RespType<?>> arrayArgs = new ArrayList<>();
     arrayArgs.add(new RespBulkString(this.command));
-    for (String arg : args) {
-      arrayArgs.add(new RespBulkString(arg));
+
+    if (args != null) {
+      for (String arg : args) {
+        arrayArgs.add(new RespBulkString(arg));
+      }
     }
+
     return new RespArray(arrayArgs);
   }
 }

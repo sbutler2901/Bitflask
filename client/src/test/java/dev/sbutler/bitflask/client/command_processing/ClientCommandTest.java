@@ -21,4 +21,12 @@ public class ClientCommandTest {
 
     assertEquals(expected, clientCommand.getAsRespArray());
   }
+
+  @Test
+  void getAsRespArray_nullArgs() {
+    String command = "GET";
+    RespArray expected = new RespArray(List.of(new RespBulkString(command)));
+    ClientCommand clientCommand = new ClientCommand(command, null);
+    assertEquals(expected, clientCommand.getAsRespArray());
+  }
 }
