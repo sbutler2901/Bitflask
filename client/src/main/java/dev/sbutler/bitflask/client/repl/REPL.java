@@ -51,16 +51,8 @@ public class REPL {
 
     if (ReplCommand.isReplCommand(clientCommand.command())) {
       processReplCommand(clientCommand);
-      return;
-    }
-
-    try {
-      String result = commandProcessor.runCommand(clientCommand);
-      outputWriter.writeWithNewLine(result);
-    } catch (IOException e) {
-      outputWriter.writeWithNewLine(
-          "Failure to process command [" + clientCommand.command() + "]: " + e.getMessage());
-      haltClientProcessing();
+    } else {
+      processServerCommand(clientCommand);
     }
   }
 
@@ -76,6 +68,17 @@ public class REPL {
     switch (replCommand) {
       case EXIT -> haltClientProcessing();
       case HELP -> outputWriter.writeWithNewLine("I can't help you.");
+    }
+  }
+
+  private void processServerCommand(ClientCommand clientCommand) {
+    try {
+      String result = commandProcessor.runCommand(clientCommand);
+      outputWriter.writeWithNewLine(result);
+    } catch (IOException e) {
+      outputWriter.writeWithNewLine(
+          "Failure to process command [" + clientCommand.command() + "]: " + e.getMessage());
+      haltClientProcessing();
     }
   }
 
