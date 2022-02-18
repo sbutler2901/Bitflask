@@ -17,9 +17,14 @@ public class Server {
   private static final int PORT = 9090;
   private static final int NUM_THREADS = 4;
 
+  private static final String GREETING_MSG = "Welcome to Bitflask!";
+  private static final String INITIALIZATION_FAILURE = "Failed to initialize the server";
+
   private final ServerSocket serverSocket;
   private final Storage storage;
   private final ThreadPoolExecutor threadPoolExecutor;
+
+  private boolean shouldContinueRunning = true;
 
   Server(ThreadPoolExecutor threadPoolExecutor, Storage storage, ServerSocket serverSocket) {
     this.threadPoolExecutor = threadPoolExecutor;
@@ -33,14 +38,14 @@ public class Server {
     try {
       server = initializeServer();
     } catch (IOException e) {
-      System.out.println("Unable to initialize server. Terminating");
+      System.out.println(INITIALIZATION_FAILURE);
       e.printStackTrace();
       System.exit(1);
       return;
     }
 
     server.start();
-    System.exit(0);
+    server.close();
   }
 
   private static Server initializeServer() throws IOException {
@@ -52,11 +57,11 @@ public class Server {
   }
 
   public void start() {
-    System.out.println("Welcome to Bitflask!");
+    System.out.println(GREETING_MSG);
     printConfigInfo();
 
     try {
-      while (true) {
+      while (shouldContinueRunning) {
         Socket clientSocket = serverSocket.accept();
         ClientRequestHandler clientRequestHandler = new ClientRequestHandler(clientSocket, storage);
 
@@ -68,8 +73,16 @@ public class Server {
       }
     } catch (IOException | RejectedExecutionException e) {
       e.printStackTrace();
-    } finally {
+    }
+  }
+
+  public void close() {
+    try {
+      shouldContinueRunning = false;
       threadPoolExecutor.shutdown();
+      serverSocket.close();
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
 

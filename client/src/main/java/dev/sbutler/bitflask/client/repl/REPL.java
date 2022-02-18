@@ -37,6 +37,7 @@ public class REPL {
    * Runs the REPL loop
    */
   public void start() {
+    outputWriter.writeWithNewLine("Hello from client");
     while (continueProcessingClientInput) {
       outputWriter.write(SHELL_PREFIX);
       processClientInput();
