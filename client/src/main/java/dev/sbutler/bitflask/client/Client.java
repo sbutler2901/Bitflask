@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.client;
 
+import com.sun.jdi.InternalException;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.client.repl.REPL;
 import dev.sbutler.bitflask.resp.utilities.RespReader;
@@ -10,47 +11,50 @@ import java.net.Socket;
 
 public class Client {
 
+  private static final String INITIALIZATION_FAILURE = "Failed to initialize the client";
   private static final String TERMINATING_CONNECTION = "Disconnecting server";
+  private static final String TERMINATION_FAILURE = "Failed to close the socket";
 
   private static final int SERVER_PORT = 9090;
 
   private final Socket socket;
   private final CommandProcessor commandProcessor;
 
-  public Client() throws IOException {
-    this.socket = new Socket(InetAddress.getLocalHost(), SERVER_PORT);
-    this.commandProcessor = new CommandProcessor(
-        new RespReader(socket.getInputStream()),
-        new RespWriter(socket.getOutputStream())
-    );
+  public Client(Socket socket, CommandProcessor commandProcessor) {
+    this.socket = socket;
+    this.commandProcessor = commandProcessor;
   }
 
   public static void main(String[] args) {
-    System.out.println("Hello from client");
-
-    try {
-      Client client = new Client();
-      client.runWithRepl();
-    } catch (IOException e) {
-      e.printStackTrace();
-      System.exit(1);
-    }
-
-    System.exit(0);
+    Client client = initializeClient();
+    client.start();
+    client.close();
   }
 
-  private void runWithRepl() {
+  private static Client initializeClient() {
+    try {
+      Socket socket = new Socket(InetAddress.getLocalHost(), SERVER_PORT);
+      CommandProcessor commandProcessor = new CommandProcessor(
+          new RespReader(socket.getInputStream()),
+          new RespWriter(socket.getOutputStream())
+      );
+      return new Client(socket, commandProcessor);
+    } catch (IOException e) {
+      throw new InternalException(INITIALIZATION_FAILURE);
+    }
+  }
+
+  public void start() {
     REPL repl = new REPL(commandProcessor);
     repl.start();
-    close();
   }
 
-  private void close() {
+  public void close() {
+    System.out.println(TERMINATING_CONNECTION);
     try {
       socket.close();
-      System.out.println(TERMINATING_CONNECTION);
     } catch (IOException e) {
-      e.printStackTrace();
+      throw new InternalException(TERMINATION_FAILURE);
     }
   }
 }
