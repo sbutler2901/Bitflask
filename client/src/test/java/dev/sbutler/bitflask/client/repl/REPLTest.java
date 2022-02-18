@@ -35,14 +35,14 @@ public class REPLTest {
   void anyCommand_nullInput() {
     doReturn(null, exitCommand).when(inputParser).getNextCommand();
     assertTimeoutPreemptively(Duration.ofMillis(100), () -> repl.start());
-    verify(outputWriter, times(1)).writeWithNewLine(anyString());
+    verify(outputWriter, times(2)).writeWithNewLine(anyString());
   }
 
   @Test
   void replCommand_exit() {
     doReturn(exitCommand).when(inputParser).getNextCommand();
     assertTimeoutPreemptively(Duration.ofMillis(100), () -> repl.start());
-    verify(outputWriter, times(1)).writeWithNewLine(anyString());
+    verify(outputWriter, times(2)).writeWithNewLine(anyString());
   }
 
   @Test
@@ -50,7 +50,7 @@ public class REPLTest {
     ClientCommand command = new ClientCommand("help", null);
     doReturn(command, exitCommand).when(inputParser).getNextCommand();
     assertTimeoutPreemptively(Duration.ofMillis(100), () -> repl.start());
-    verify(outputWriter, times(2)).writeWithNewLine(anyString());
+    verify(outputWriter, times(3)).writeWithNewLine(anyString());
   }
 
   @Test
@@ -58,7 +58,7 @@ public class REPLTest {
     ClientCommand command = new ClientCommand("help", List.of("invalid-arg"));
     doReturn(command, exitCommand).when(inputParser).getNextCommand();
     assertTimeoutPreemptively(Duration.ofMillis(100), () -> repl.start());
-    verify(outputWriter, times(2)).writeWithNewLine(anyString());
+    verify(outputWriter, times(3)).writeWithNewLine(anyString());
   }
 
   @Test
@@ -77,6 +77,6 @@ public class REPLTest {
     doReturn(command).when(inputParser).getNextCommand();
     doThrow(new IOException("Test: commandProcessor")).when(commandProcessor).runCommand(command);
     assertTimeoutPreemptively(Duration.ofMillis(100), () -> repl.start());
-    verify(outputWriter, times(2)).writeWithNewLine(anyString());
+    verify(outputWriter, times(3)).writeWithNewLine(anyString());
   }
 }
