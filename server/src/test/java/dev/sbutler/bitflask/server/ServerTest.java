@@ -61,35 +61,6 @@ class ServerTest {
   }
 
   @Test
-  void start_success() throws IOException {
-    try (MockedConstruction<ClientRequestHandler> mocked = mockConstruction(
-        ClientRequestHandler.class)) {
-      Socket clientSocket = mock(Socket.class);
-      doReturn(clientSocket).when(serverSocket).accept();
-      // easy way to terminate loop
-      doThrow(RejectedExecutionException.class).when(threadPoolExecutor)
-          .execute(any(Runnable.class));
-
-      server.start();
-
-      verify(serverSocket, times(1)).accept();
-      verify(threadPoolExecutor, times(1)).execute(any(Runnable.class));
-      verify(threadPoolExecutor, times(1)).shutdown();
-    }
-  }
-
-  @Test
-  void start_IOException_ServerSocket() throws IOException {
-    doThrow(new IOException("Test: ServerSocket accept failure")).when(serverSocket).accept();
-
-    server.start();
-
-    verify(serverSocket, times(1)).accept();
-    verify(threadPoolExecutor, times(0)).execute(any(Runnable.class));
-    verify(threadPoolExecutor, times(1)).shutdown();
-  }
-
-  @Test
   void server_start() throws IOException {
     MockedConstruction<ClientRequestHandler> clientRequestHandlerMockedConstruction = mockConstruction(
         ClientRequestHandler.class);
