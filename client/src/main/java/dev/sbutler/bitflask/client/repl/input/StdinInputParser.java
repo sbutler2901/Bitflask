@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client.repl;
+package dev.sbutler.bitflask.client.repl.input;
 
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
 import java.util.Arrays;

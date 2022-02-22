@@ -2,6 +2,10 @@ package dev.sbutler.bitflask.client.repl;
 
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
+import dev.sbutler.bitflask.client.repl.input.InputParser;
+import dev.sbutler.bitflask.client.repl.input.StdinInputParser;
+import dev.sbutler.bitflask.client.repl.output.OutputWriter;
+import dev.sbutler.bitflask.client.repl.output.StdoutOutputWriter;
 import java.io.IOException;
 import java.util.Scanner;
 

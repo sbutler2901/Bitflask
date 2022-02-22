@@ -1,10 +1,11 @@
-package dev.sbutler.bitflask.client.repl;
+package dev.sbutler.bitflask.client.repl.input;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.doReturn;
 
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
+import dev.sbutler.bitflask.client.repl.input.StdinInputParser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;

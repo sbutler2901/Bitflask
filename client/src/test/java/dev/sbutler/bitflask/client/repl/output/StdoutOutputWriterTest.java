@@ -1,9 +1,10 @@
-package dev.sbutler.bitflask.client.repl;
+package dev.sbutler.bitflask.client.repl.output;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import dev.sbutler.bitflask.client.repl.output.StdoutOutputWriter;
 import java.io.PrintStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

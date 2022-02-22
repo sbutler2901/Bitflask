@@ -9,6 +9,8 @@ import static org.mockito.Mockito.verify;
 
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
+import dev.sbutler.bitflask.client.repl.input.InputParser;
+import dev.sbutler.bitflask.client.repl.output.OutputWriter;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;

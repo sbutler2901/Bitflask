@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client.repl;
+package dev.sbutler.bitflask.client.repl.output;
 
 public interface OutputWriter {
 
