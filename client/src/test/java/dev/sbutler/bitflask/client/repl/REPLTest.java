@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class REPLTest {
 
   final ClientCommand exitCommand = new ClientCommand("exit", null);
+
   @InjectMocks
   REPL repl;
   @Mock

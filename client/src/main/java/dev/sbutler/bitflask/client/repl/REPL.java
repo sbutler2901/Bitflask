@@ -22,8 +22,8 @@ public class REPL {
    */
   public REPL(CommandProcessor commandProcessor) {
     this.commandProcessor = commandProcessor;
-    this.inputParser = new InputParser(new Scanner(System.in));
-    this.outputWriter = new OutputWriter(System.out);
+    this.inputParser = new StdinInputParser(new Scanner(System.in));
+    this.outputWriter = new StdoutOutputWriter(System.out);
   }
 
   public REPL(CommandProcessor commandProcessor, InputParser inputParser,

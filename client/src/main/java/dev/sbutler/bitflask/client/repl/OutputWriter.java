@@ -1,20 +1,9 @@
 package dev.sbutler.bitflask.client.repl;
 
-import java.io.PrintStream;
+public interface OutputWriter {
 
-public class OutputWriter {
+  void write(String output);
 
-  PrintStream printStream;
+  void writeWithNewLine(String output);
 
-  public OutputWriter(PrintStream printStream) {
-    this.printStream = printStream;
-  }
-
-  public void write(String output) {
-    printStream.print(output);
-  }
-
-  public void writeWithNewLine(String output) {
-    printStream.println(output);
-  }
 }

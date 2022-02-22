@@ -15,10 +15,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class InputParserTest {
+public class StdinInputParserTest {
 
   @InjectMocks
-  InputParser inputParser;
+  StdinInputParser stdinInputParser;
 
   @Mock
   Scanner inputScanner;
@@ -28,7 +28,7 @@ public class InputParserTest {
     String nextLine = "get test-key";
     ClientCommand expected = new ClientCommand("get", List.of("test-key"));
     doReturn(nextLine).when(inputScanner).nextLine();
-    assertEquals(expected, inputParser.getNextCommand());
+    assertEquals(expected, stdinInputParser.getNextCommand());
   }
 
   @Test
@@ -36,21 +36,21 @@ public class InputParserTest {
     String nextLine = "get";
     ClientCommand expected = new ClientCommand("get", new ArrayList<>());
     doReturn(nextLine).when(inputScanner).nextLine();
-    assertEquals(expected, inputParser.getNextCommand());
+    assertEquals(expected, stdinInputParser.getNextCommand());
   }
 
   @Test
   void getNextCommand_emptyString() {
     String nextLine = "";
     doReturn(nextLine).when(inputScanner).nextLine();
-    assertNull(inputParser.getNextCommand());
+    assertNull(stdinInputParser.getNextCommand());
   }
 
   @Test
   void getNextCommand_whitespaceOnly() {
     String nextLine = " ";
     doReturn(nextLine).when(inputScanner).nextLine();
-    assertNull(inputParser.getNextCommand());
+    assertNull(stdinInputParser.getNextCommand());
   }
 
 }

@@ -12,10 +12,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class OutputWriterTest {
+public class StdoutOutputWriterTest {
 
   @InjectMocks
-  OutputWriter outputWriter;
+  StdoutOutputWriter stdoutOutputWriter;
 
   @Mock
   PrintStream printStream;
@@ -23,14 +23,14 @@ public class OutputWriterTest {
   @Test
   void write() {
     String output = "test-output";
-    outputWriter.write(output);
+    stdoutOutputWriter.write(output);
     verify(printStream, times(1)).print(anyString());
   }
 
   @Test
   void writeWithNewLine() {
     String output = "test-output";
-    outputWriter.writeWithNewLine(output);
+    stdoutOutputWriter.writeWithNewLine(output);
     verify(printStream, times(1)).println(anyString());
   }
 
