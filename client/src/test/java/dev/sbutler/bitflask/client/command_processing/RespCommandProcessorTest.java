@@ -16,10 +16,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CommandProcessorTest {
+public class RespCommandProcessorTest {
 
   @InjectMocks
-  CommandProcessor commandProcessor;
+  RespCommandProcessor respCommandProcessor;
 
   @Mock
   RespReader respReader;
@@ -27,11 +27,11 @@ public class CommandProcessorTest {
   RespWriter respWriter;
 
   @Test
-  void runCommand() throws IOException {
+  void runCommand() throws ProcessingException, IOException {
     ClientCommand clientCommand = new ClientCommand("PING", null);
     RespBulkString mockResponse = new RespBulkString("ping");
     doReturn(mockResponse).when(respReader).readNextRespType();
-    String result = commandProcessor.runCommand(clientCommand);
+    String result = respCommandProcessor.runCommand(clientCommand);
     assertEquals(result, mockResponse.toString());
     verify(respWriter, times(1)).writeRespType(clientCommand.getAsRespArray());
   }

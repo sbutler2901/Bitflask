@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import com.sun.jdi.InternalException;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
+import dev.sbutler.bitflask.client.command_processing.RespCommandProcessor;
 import dev.sbutler.bitflask.client.repl.Repl;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,8 +37,8 @@ public class ClientTest {
           doReturn(mock(InputStream.class)).when(socketMock).getInputStream();
           doReturn(mock(OutputStream.class)).when(socketMock).getOutputStream();
         });
-    MockedConstruction<CommandProcessor> commandProcessorMockedConstruction = mockConstruction(
-        CommandProcessor.class);
+    MockedConstruction<RespCommandProcessor> commandProcessorMockedConstruction = mockConstruction(
+        RespCommandProcessor.class);
     MockedConstruction<Client> clientMockedConstruction = mockConstruction(Client.class);
 
     Client.main(null);

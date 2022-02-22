@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.client;
 
 import com.sun.jdi.InternalException;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
+import dev.sbutler.bitflask.client.command_processing.RespCommandProcessor;
 import dev.sbutler.bitflask.client.repl.Repl;
 import dev.sbutler.bitflask.client.repl.input.StdinInputParser;
 import dev.sbutler.bitflask.client.repl.output.StdoutOutputWriter;
@@ -36,11 +37,11 @@ public class Client {
   private static Client initializeClient() {
     try {
       Socket socket = new Socket(InetAddress.getLocalHost(), SERVER_PORT);
-      CommandProcessor commandProcessor = new CommandProcessor(
+      CommandProcessor respCommandProcessor = new RespCommandProcessor(
           new RespReader(socket.getInputStream()),
           new RespWriter(socket.getOutputStream())
       );
-      return new Client(socket, commandProcessor);
+      return new Client(socket, respCommandProcessor);
     } catch (IOException e) {
       throw new InternalException(INITIALIZATION_FAILURE);
     }

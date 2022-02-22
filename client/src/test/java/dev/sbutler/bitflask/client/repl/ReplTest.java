@@ -8,10 +8,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
-import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
+import dev.sbutler.bitflask.client.command_processing.ProcessingException;
+import dev.sbutler.bitflask.client.command_processing.RespCommandProcessor;
 import dev.sbutler.bitflask.client.repl.input.InputParser;
 import dev.sbutler.bitflask.client.repl.output.OutputWriter;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ public class ReplTest {
   @InjectMocks
   Repl repl;
   @Mock
-  CommandProcessor commandProcessor;
+  RespCommandProcessor respCommandProcessor;
   @Mock
   InputParser inputParser;
   @Mock
@@ -65,20 +65,21 @@ public class ReplTest {
   }
 
   @Test
-  void serverCommand() throws IOException {
+  void serverCommand() throws ProcessingException {
     ClientCommand command = new ClientCommand("ping", null);
     doReturn(command, exitCommand).when(inputParser).getNextCommand();
     String response = "pong";
-    doReturn(response).when(commandProcessor).runCommand(command);
+    doReturn(response).when(respCommandProcessor).runCommand(command);
     assertTimeoutPreemptively(Duration.ofMillis(100), () -> repl.start());
     verify(outputWriter, times(1)).writeWithNewLine(response);
   }
 
   @Test
-  void serverCommand_IOException() throws IOException {
+  void serverCommand_IOException() throws ProcessingException {
     ClientCommand command = new ClientCommand("ping", null);
     doReturn(command).when(inputParser).getNextCommand();
-    doThrow(new IOException("Test: commandProcessor")).when(commandProcessor).runCommand(command);
+    doThrow(new ProcessingException("Test: commandProcessor")).when(respCommandProcessor)
+        .runCommand(command);
     assertTimeoutPreemptively(Duration.ofMillis(100), () -> repl.start());
     verify(outputWriter, times(3)).writeWithNewLine(anyString());
   }

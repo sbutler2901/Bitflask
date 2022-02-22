@@ -2,9 +2,9 @@ package dev.sbutler.bitflask.client.repl;
 
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
+import dev.sbutler.bitflask.client.command_processing.ProcessingException;
 import dev.sbutler.bitflask.client.repl.input.InputParser;
 import dev.sbutler.bitflask.client.repl.output.OutputWriter;
-import java.io.IOException;
 
 public class Repl {
 
@@ -66,7 +66,7 @@ public class Repl {
     try {
       String result = commandProcessor.runCommand(clientCommand);
       outputWriter.writeWithNewLine(result);
-    } catch (IOException e) {
+    } catch (ProcessingException e) {
       outputWriter.writeWithNewLine(
           "Failure to process command [" + clientCommand.command() + "]: " + e.getMessage());
       haltClientProcessing();
