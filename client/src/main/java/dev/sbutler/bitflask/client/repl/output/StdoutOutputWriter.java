@@ -6,8 +6,8 @@ public class StdoutOutputWriter implements OutputWriter {
 
   PrintStream printStream;
 
-  public StdoutOutputWriter(PrintStream printStream) {
-    this.printStream = printStream;
+  public StdoutOutputWriter() {
+    this.printStream = System.out;
   }
 
   public void write(String output) {

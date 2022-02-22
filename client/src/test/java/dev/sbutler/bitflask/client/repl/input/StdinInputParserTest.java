@@ -2,55 +2,66 @@ package dev.sbutler.bitflask.client.repl.input;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.doReturn;
 
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
-import dev.sbutler.bitflask.client.repl.input.StdinInputParser;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class StdinInputParserTest {
 
-  @InjectMocks
+  private static final InputStream DEFAULT_STDIN = System.in;
+
   StdinInputParser stdinInputParser;
 
-  @Mock
-  Scanner inputScanner;
+  @AfterEach
+  void afterEach() {
+    System.setIn(DEFAULT_STDIN);
+  }
+
+  void initParser(String nextLine) {
+    System.setIn(new ByteArrayInputStream(nextLine.getBytes(StandardCharsets.UTF_8)));
+    stdinInputParser = new StdinInputParser();
+  }
 
   @Test
   void getNextCommand_withArgs() {
     String nextLine = "get test-key";
+    initParser(nextLine);
     ClientCommand expected = new ClientCommand("get", List.of("test-key"));
-    doReturn(nextLine).when(inputScanner).nextLine();
+
     assertEquals(expected, stdinInputParser.getNextCommand());
   }
 
   @Test
   void getNextCommand_withoutArgs() {
     String nextLine = "get";
+    initParser(nextLine);
     ClientCommand expected = new ClientCommand("get", new ArrayList<>());
-    doReturn(nextLine).when(inputScanner).nextLine();
+
     assertEquals(expected, stdinInputParser.getNextCommand());
   }
 
   @Test
   void getNextCommand_emptyString() {
-    String nextLine = "";
-    doReturn(nextLine).when(inputScanner).nextLine();
+    String nextLine = "\n";
+    initParser(nextLine);
+
     assertNull(stdinInputParser.getNextCommand());
   }
 
   @Test
   void getNextCommand_whitespaceOnly() {
     String nextLine = " ";
-    doReturn(nextLine).when(inputScanner).nextLine();
+    initParser(nextLine);
+
     assertNull(stdinInputParser.getNextCommand());
   }
 

@@ -12,8 +12,8 @@ public class StdinInputParser implements InputParser {
 
   private final Scanner inputScanner;
 
-  public StdinInputParser(Scanner inputScanner) {
-    this.inputScanner = inputScanner;
+  public StdinInputParser() {
+    this.inputScanner = new Scanner(System.in);
   }
 
   /**

@@ -3,6 +3,8 @@ package dev.sbutler.bitflask.client;
 import com.sun.jdi.InternalException;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.client.repl.REPL;
+import dev.sbutler.bitflask.client.repl.input.StdinInputParser;
+import dev.sbutler.bitflask.client.repl.output.StdoutOutputWriter;
 import dev.sbutler.bitflask.resp.utilities.RespReader;
 import dev.sbutler.bitflask.resp.utilities.RespWriter;
 import java.io.IOException;
@@ -45,7 +47,11 @@ public class Client {
   }
 
   public void start() {
-    REPL repl = new REPL(commandProcessor);
+    REPL repl = new REPL(
+        commandProcessor,
+        new StdinInputParser(),
+        new StdoutOutputWriter()
+    );
     repl.start();
   }
 

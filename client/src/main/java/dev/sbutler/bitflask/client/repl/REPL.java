@@ -3,11 +3,8 @@ package dev.sbutler.bitflask.client.repl;
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.client.repl.input.InputParser;
-import dev.sbutler.bitflask.client.repl.input.StdinInputParser;
 import dev.sbutler.bitflask.client.repl.output.OutputWriter;
-import dev.sbutler.bitflask.client.repl.output.StdoutOutputWriter;
 import java.io.IOException;
-import java.util.Scanner;
 
 public class REPL {
 
@@ -18,17 +15,6 @@ public class REPL {
   private final OutputWriter outputWriter;
 
   private boolean continueProcessingClientInput = true;
-
-  /**
-   * Creating a new REPL instance for accepting user command to interact with the storage engine
-   *
-   * @param commandProcessor for processing client provided commands on the server
-   */
-  public REPL(CommandProcessor commandProcessor) {
-    this.commandProcessor = commandProcessor;
-    this.inputParser = new StdinInputParser(new Scanner(System.in));
-    this.outputWriter = new StdoutOutputWriter(System.out);
-  }
 
   public REPL(CommandProcessor commandProcessor, InputParser inputParser,
       OutputWriter outputWriter) {
