@@ -21,12 +21,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class REPLTest {
+public class ReplTest {
 
   final ClientCommand exitCommand = new ClientCommand("exit", null);
 
   @InjectMocks
-  REPL repl;
+  Repl repl;
   @Mock
   CommandProcessor commandProcessor;
   @Mock

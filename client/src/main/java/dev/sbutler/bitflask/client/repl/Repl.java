@@ -6,7 +6,7 @@ import dev.sbutler.bitflask.client.repl.input.InputParser;
 import dev.sbutler.bitflask.client.repl.output.OutputWriter;
 import java.io.IOException;
 
-public class REPL {
+public class Repl {
 
   private static final String SHELL_PREFIX = "> ";
 
@@ -16,7 +16,7 @@ public class REPL {
 
   private boolean continueProcessingClientInput = true;
 
-  public REPL(CommandProcessor commandProcessor, InputParser inputParser,
+  public Repl(CommandProcessor commandProcessor, InputParser inputParser,
       OutputWriter outputWriter) {
     this.commandProcessor = commandProcessor;
     this.inputParser = inputParser;

@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.client;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -11,7 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import com.sun.jdi.InternalException;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
-import dev.sbutler.bitflask.client.repl.REPL;
+import dev.sbutler.bitflask.client.repl.Repl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -61,10 +60,10 @@ public class ClientTest {
 
   @Test
   void client_start() {
-    try (MockedConstruction<REPL> mockedReplConstruction = mockConstruction(REPL.class)) {
+    try (MockedConstruction<Repl> mockedReplConstruction = mockConstruction(Repl.class)) {
       Client client = new Client(socket, commandProcessor);
       client.start();
-      REPL constructedRepl = mockedReplConstruction.constructed().get(0);
+      Repl constructedRepl = mockedReplConstruction.constructed().get(0);
       verify(constructedRepl, times(1)).start();
     }
   }
