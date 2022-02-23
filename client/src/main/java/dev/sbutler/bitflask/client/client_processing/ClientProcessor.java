@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client;
+package dev.sbutler.bitflask.client.client_processing;
 
 public interface ClientProcessor {
 

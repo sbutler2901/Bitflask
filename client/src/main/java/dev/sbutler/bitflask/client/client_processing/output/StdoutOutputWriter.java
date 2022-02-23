@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client.repl.output;
+package dev.sbutler.bitflask.client.client_processing.output;
 
 import java.io.PrintStream;
 

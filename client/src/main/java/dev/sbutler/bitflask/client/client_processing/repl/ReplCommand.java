@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client.repl;
+package dev.sbutler.bitflask.client.client_processing.repl;
 
 import java.util.List;
 

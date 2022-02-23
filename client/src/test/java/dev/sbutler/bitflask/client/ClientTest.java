@@ -6,6 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.sun.jdi.InternalException;
+import dev.sbutler.bitflask.client.client_processing.ClientProcessor;
 import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
