@@ -9,9 +9,9 @@ import java.io.OutputStream;
 
 public class CommandProcessingModule extends AbstractModule {
 
-  @Override
-  protected void configure() {
-    bind(CommandProcessor.class).to(RespCommandProcessor.class);
+  @Provides
+  CommandProcessor provideCommandProcessor(RespCommandProcessor commandProcessor) {
+    return commandProcessor;
   }
 
   @Provides
