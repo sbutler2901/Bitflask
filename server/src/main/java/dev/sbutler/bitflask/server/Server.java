@@ -49,7 +49,7 @@ public class Server {
       ServerSocket serverSocket = new ServerSocket(PORT);
       return new Server(threadPoolExecutor, storage, serverSocket);
     } catch (IOException e) {
-      throw new InternalException(INITIALIZATION_FAILURE);
+      throw new InternalException(INITIALIZATION_FAILURE + " [" + e.getMessage() + "]");
     }
   }
 

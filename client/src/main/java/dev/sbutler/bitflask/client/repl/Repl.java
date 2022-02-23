@@ -1,12 +1,14 @@
 package dev.sbutler.bitflask.client.repl;
 
+import com.google.inject.Inject;
+import dev.sbutler.bitflask.client.ClientProcessor;
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.client.command_processing.ProcessingException;
 import dev.sbutler.bitflask.client.repl.input.InputParser;
 import dev.sbutler.bitflask.client.repl.output.OutputWriter;
 
-public class Repl {
+public class Repl implements ClientProcessor {
 
   private static final String SHELL_PREFIX = "> ";
 
@@ -16,6 +18,7 @@ public class Repl {
 
   private boolean continueProcessingClientInput = true;
 
+  @Inject
   public Repl(CommandProcessor commandProcessor, InputParser inputParser,
       OutputWriter outputWriter) {
     this.commandProcessor = commandProcessor;
@@ -57,7 +60,7 @@ public class Repl {
     }
 
     switch (replCommand) {
-      case EXIT -> haltClientProcessing();
+      case EXIT -> halt();
       case HELP -> outputWriter.writeWithNewLine("I can't help you.");
     }
   }
@@ -69,11 +72,11 @@ public class Repl {
     } catch (ProcessingException e) {
       outputWriter.writeWithNewLine(
           "Failure to process command [" + clientCommand.command() + "]: " + e.getMessage());
-      haltClientProcessing();
+      halt();
     }
   }
 
-  private void haltClientProcessing() {
+  public void halt() {
     outputWriter.writeWithNewLine("Exiting...");
     continueProcessingClientInput = false;
   }

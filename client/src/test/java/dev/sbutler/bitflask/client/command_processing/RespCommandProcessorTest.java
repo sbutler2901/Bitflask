@@ -32,7 +32,7 @@ public class RespCommandProcessorTest {
     RespBulkString mockResponse = new RespBulkString("ping");
     doReturn(mockResponse).when(respReader).readNextRespType();
     String result = respCommandProcessor.runCommand(clientCommand);
-    assertEquals(result, mockResponse.toString());
+    assertEquals(mockResponse.toString(), result);
     verify(respWriter, times(1)).writeRespType(clientCommand.getAsRespArray());
   }
 

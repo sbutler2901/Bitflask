@@ -1,16 +1,14 @@
 package dev.sbutler.bitflask.client;
 
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.sun.jdi.InternalException;
-import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
-import dev.sbutler.bitflask.client.command_processing.RespCommandProcessor;
-import dev.sbutler.bitflask.client.repl.Repl;
-import dev.sbutler.bitflask.client.repl.input.StdinInputParser;
-import dev.sbutler.bitflask.client.repl.output.StdoutOutputWriter;
-import dev.sbutler.bitflask.resp.utilities.RespReader;
-import dev.sbutler.bitflask.resp.utilities.RespWriter;
+import dev.sbutler.bitflask.client.command_processing.CommandProcessingModule;
+import dev.sbutler.bitflask.client.connection.ConnectionManager;
+import dev.sbutler.bitflask.client.connection.ConnectionModule;
+import dev.sbutler.bitflask.client.repl.ReplModule;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
 
 public class Client {
 
@@ -18,50 +16,47 @@ public class Client {
   private static final String TERMINATING_CONNECTION = "Disconnecting server";
   private static final String TERMINATION_FAILURE = "Failed to close the socket";
 
-  private static final int SERVER_PORT = 9090;
+  private final ConnectionManager connectionManager;
+  private final ClientProcessor clientProcessor;
 
-  private final Socket socket;
-  private final CommandProcessor commandProcessor;
-
-  public Client(Socket socket, CommandProcessor commandProcessor) {
-    this.socket = socket;
-    this.commandProcessor = commandProcessor;
+  @Inject
+  public Client(ConnectionManager connectionManager, ClientProcessor clientProcessor) {
+    this.connectionManager = connectionManager;
+    this.clientProcessor = clientProcessor;
   }
 
   public static void main(String[] args) {
-    Client client = initializeClient();
+    Injector injector = Guice.createInjector(
+        createConnectionModule(),
+        new CommandProcessingModule(),
+        new ReplModule(),
+        new ClientModule()
+    );
+
+    Client client = injector.getInstance(Client.class);
     client.start();
     client.close();
   }
 
-  private static Client initializeClient() {
-    try {
-      Socket socket = new Socket(InetAddress.getLocalHost(), SERVER_PORT);
-      CommandProcessor respCommandProcessor = new RespCommandProcessor(
-          new RespReader(socket.getInputStream()),
-          new RespWriter(socket.getOutputStream())
-      );
-      return new Client(socket, respCommandProcessor);
-    } catch (IOException e) {
-      throw new InternalException(INITIALIZATION_FAILURE);
-    }
-  }
-
   public void start() {
-    Repl repl = new Repl(
-        commandProcessor,
-        new StdinInputParser(),
-        new StdoutOutputWriter()
-    );
-    repl.start();
+    clientProcessor.start();
   }
 
   public void close() {
     System.out.println(TERMINATING_CONNECTION);
+    clientProcessor.halt();
     try {
-      socket.close();
+      connectionManager.close();
     } catch (IOException e) {
-      throw new InternalException(TERMINATION_FAILURE);
+      throw new InternalException(TERMINATION_FAILURE + e.getMessage());
+    }
+  }
+
+  private static ConnectionModule createConnectionModule() {
+    try {
+      return new ConnectionModule();
+    } catch (IOException e) {
+      throw new InternalException(INITIALIZATION_FAILURE + e.getMessage());
     }
   }
 }
