@@ -9,6 +9,7 @@ import dev.sbutler.bitflask.client.client_processing.ClientProcessor;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import dev.sbutler.bitflask.client.connection.ConnectionModule;
+import dev.sbutler.bitflask.resp.network.RespNetworkModule;
 import java.io.IOException;
 
 public class Client {
@@ -29,6 +30,7 @@ public class Client {
   public static void main(String[] args) {
     Injector injector = Guice.createInjector(
         createConnectionModule(),
+        new RespNetworkModule(),
         new CommandProcessingModule(),
         new ClientProcessingModule()
     );
