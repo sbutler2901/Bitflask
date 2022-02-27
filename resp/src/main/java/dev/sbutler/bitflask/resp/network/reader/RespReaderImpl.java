@@ -1,5 +1,6 @@
-package dev.sbutler.bitflask.resp.utilities;
+package dev.sbutler.bitflask.resp.network.reader;
 
+import com.google.inject.Inject;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespError;
@@ -11,24 +12,22 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RespReader {
+// todo: reduce class visibility
+public class RespReaderImpl implements RespReader {
 
   private final BufferedReader bufferedReader;
 
-  public RespReader(Reader reader) {
-    if (reader instanceof BufferedReader) {
-      this.bufferedReader = (BufferedReader) reader;
-    } else {
-      this.bufferedReader = new BufferedReader(reader);
-    }
+  @Inject
+  RespReaderImpl(BufferedReader reader) {
+    this.bufferedReader = reader;
   }
 
-  public RespReader(InputStream inputStream) {
+  // todo reduce constructor visibility
+  public RespReaderImpl(InputStream inputStream) {
     this.bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
   }
 

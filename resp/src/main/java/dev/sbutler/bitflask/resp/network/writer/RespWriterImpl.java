@@ -1,15 +1,18 @@
-package dev.sbutler.bitflask.resp.utilities;
+package dev.sbutler.bitflask.resp.network.writer;
 
+import com.google.inject.Inject;
 import dev.sbutler.bitflask.resp.types.RespType;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class RespWriter {
+// todo: reduce class visibility
+public class RespWriterImpl implements RespWriter {
 
   private final OutputStream outputStream;
 
-  public RespWriter(OutputStream outputStream) {
+  // todo reduce constructor visibility
+  @Inject
+  public RespWriterImpl(OutputStream outputStream) {
     this.outputStream = outputStream;
   }
 

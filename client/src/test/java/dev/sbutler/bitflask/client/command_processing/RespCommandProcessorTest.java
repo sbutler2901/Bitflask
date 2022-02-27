@@ -6,8 +6,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import dev.sbutler.bitflask.resp.types.RespBulkString;
-import dev.sbutler.bitflask.resp.utilities.RespReader;
-import dev.sbutler.bitflask.resp.utilities.RespWriter;
+import dev.sbutler.bitflask.resp.network.reader.RespReader;
+import dev.sbutler.bitflask.resp.network.writer.RespWriter;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
