@@ -11,8 +11,9 @@ public class ConnectionManagerImpl implements ConnectionManager {
   private final Socket socket;
 
   @Inject
-  public ConnectionManagerImpl(Socket socket) {
-    this.socket = socket;
+  public ConnectionManagerImpl(@ServerHost String serverHost, @ServerPort int serverPort)
+      throws IOException {
+    this.socket = new Socket(serverHost, serverPort);
   }
 
   @Override

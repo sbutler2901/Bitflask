@@ -6,7 +6,6 @@ import com.google.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.Socket;
 
 public class ConnectionModule extends AbstractModule {
 
@@ -26,11 +25,6 @@ public class ConnectionModule extends AbstractModule {
   @Singleton
   ConnectionManager provideConnectionManager(ConnectionManagerImpl connectionManager) {
     return connectionManager;
-  }
-
-  @Provides
-  Socket provideSocket(@ServerHost String host, @ServerPort int port) throws IOException {
-    return new Socket(host, port);
   }
 
   @Provides
