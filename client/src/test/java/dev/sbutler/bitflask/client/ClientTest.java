@@ -25,35 +25,6 @@ public class ClientTest {
   @Mock
   ClientProcessor clientProcessor;
 
-//  @Test
-//  void main_start_Success() {
-//    MockedConstruction<Socket> socketMockedConstruction = mockConstruction(Socket.class,
-//        (socketMock, context) -> {
-//          doReturn(mock(InputStream.class)).when(socketMock).getInputStream();
-//          doReturn(mock(OutputStream.class)).when(socketMock).getOutputStream();
-//        });
-//    MockedConstruction<RespCommandProcessor> commandProcessorMockedConstruction = mockConstruction(
-//        RespCommandProcessor.class);
-//    MockedConstruction<Client> clientMockedConstruction = mockConstruction(Client.class);
-//
-//    Client.main(null);
-//    Client client = clientMockedConstruction.constructed().get(0);
-//    verify(client, times(1)).start();
-//    verify(client, times(1)).close();
-//
-//    clientMockedConstruction.close();
-//    commandProcessorMockedConstruction.close();
-//    socketMockedConstruction.close();
-//  }
-//
-//  @Test
-//  void main_start_IOException() {
-//    try (MockedConstruction<Socket> socketMockedConstruction = mockConstruction(Socket.class,
-//        (mock, context) -> doThrow(new IOException("Test: socket")).when(mock).getInputStream())) {
-//      assertThrows(InternalException.class, () -> Client.main(null));
-//    }
-//  }
-
   @Test
   void client_start() {
     client.start();

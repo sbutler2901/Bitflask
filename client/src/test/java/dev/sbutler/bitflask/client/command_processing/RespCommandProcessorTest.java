@@ -1,13 +1,17 @@
 package dev.sbutler.bitflask.client.command_processing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.network.writer.RespWriter;
+import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +38,24 @@ public class RespCommandProcessorTest {
     String result = respCommandProcessor.runCommand(clientCommand);
     assertEquals(mockResponse.toString(), result);
     verify(respWriter, times(1)).writeRespType(clientCommand.getAsRespArray());
+  }
+
+  @Test
+  void runCommand_write_IOException() throws IOException {
+    ClientCommand clientCommand = new ClientCommand("PING", null);
+    doThrow(IOException.class).when(respWriter).writeRespType(any(RespType.class));
+    assertThrows(ProcessingException.class, () -> respCommandProcessor.runCommand(clientCommand));
+    verify(respWriter, times(1)).writeRespType(clientCommand.getAsRespArray());
+    verify(respReader, times(0)).readNextRespType();
+  }
+
+  @Test
+  void runCommand_read_IOException() throws IOException {
+    ClientCommand clientCommand = new ClientCommand("PING", null);
+    doThrow(IOException.class).when(respReader).readNextRespType();
+    assertThrows(ProcessingException.class, () -> respCommandProcessor.runCommand(clientCommand));
+    verify(respWriter, times(1)).writeRespType(clientCommand.getAsRespArray());
+    verify(respReader, times(1)).readNextRespType();
   }
 
 }
