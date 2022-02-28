@@ -14,10 +14,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CommandProcessorTest {
+public class CommandProcessorImplTest {
 
   @InjectMocks
-  CommandProcessor commandProcessor;
+  CommandProcessorImpl commandProcessor;
 
   @Mock
   Storage storage;

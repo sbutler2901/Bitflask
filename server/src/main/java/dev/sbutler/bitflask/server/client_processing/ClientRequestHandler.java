@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.server.client_processing;
 
 import dev.sbutler.bitflask.resp.network.reader.RespReaderImpl;
 import dev.sbutler.bitflask.resp.network.writer.RespWriterImpl;
-import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
+import dev.sbutler.bitflask.server.command_processing.CommandProcessorImpl;
 import dev.sbutler.bitflask.server.storage.Storage;
 import java.io.IOException;
 import java.net.Socket;
@@ -17,8 +17,8 @@ public class ClientRequestHandler implements Runnable {
 
   public ClientRequestHandler(Socket socket, Storage storage) throws IOException {
     this.socket = socket;
-    this.clientMessageProcessor = new ClientMessageProcessor(
-        new CommandProcessor(storage),
+    this.clientMessageProcessor = new ClientMessageProcessorImpl(
+        new CommandProcessorImpl(storage),
         new RespReaderImpl(socket.getInputStream()),
         new RespWriterImpl(socket.getOutputStream())
     );

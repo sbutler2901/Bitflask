@@ -13,7 +13,7 @@ import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
 import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.network.writer.RespWriter;
-import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
+import dev.sbutler.bitflask.server.command_processing.CommandProcessorImpl;
 import dev.sbutler.bitflask.server.command_processing.ServerCommand;
 import java.io.EOFException;
 import java.io.IOException;
@@ -25,13 +25,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ClientMessageProcessorTest {
+public class ClientMessageProcessorImplTest {
 
   @InjectMocks
-  ClientMessageProcessor clientMessageProcessor;
+  ClientMessageProcessorImpl clientMessageProcessor;
 
   @Mock
-  CommandProcessor commandProcessor;
+  CommandProcessorImpl commandProcessor;
   @Mock
   RespReader respReader;
   @Mock
