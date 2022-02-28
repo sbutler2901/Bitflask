@@ -8,7 +8,7 @@ public interface ConnectionManager {
 
   void close() throws IOException;
 
-  InputStream getInputStream();
+  InputStream getInputStream() throws IOException;
 
-  OutputStream getOutputStream();
+  OutputStream getOutputStream() throws IOException;
 }

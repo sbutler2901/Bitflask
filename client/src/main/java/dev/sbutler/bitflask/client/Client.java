@@ -29,7 +29,7 @@ public class Client {
 
   public static void main(String[] args) {
     Injector injector = Guice.createInjector(
-        createConnectionModule(),
+        new ConnectionModule(),
         new RespNetworkModule(),
         new CommandProcessingModule(),
         new ClientProcessingModule()
@@ -54,11 +54,4 @@ public class Client {
     }
   }
 
-  private static ConnectionModule createConnectionModule() {
-    try {
-      return new ConnectionModule();
-    } catch (IOException e) {
-      throw new InternalException(INITIALIZATION_FAILURE + e.getMessage());
-    }
-  }
 }

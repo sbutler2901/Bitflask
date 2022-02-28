@@ -2,30 +2,44 @@ package dev.sbutler.bitflask.client.connection;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Socket;
 
 public class ConnectionModule extends AbstractModule {
 
-  private final ConnectionManager connectionManager;
-
-  public ConnectionModule() throws IOException {
-    this.connectionManager = new LocalhostConnectionManager();
+  @Provides
+  @ServerHost
+  static String provideServerHost() {
+    return "localhost";
   }
 
   @Provides
-  ConnectionManager provideConnectionManager() {
-    return this.connectionManager;
+  @ServerPort
+  static int provideServerPort() {
+    return 9090;
   }
 
   @Provides
-  InputStream provideInputStream(ConnectionManager connectionManager) {
+  @Singleton
+  ConnectionManager provideConnectionManager(ConnectionManagerImpl connectionManager) {
+    return connectionManager;
+  }
+
+  @Provides
+  Socket provideSocket(@ServerHost String host, @ServerPort int port) throws IOException {
+    return new Socket(host, port);
+  }
+
+  @Provides
+  InputStream provideInputStream(ConnectionManager connectionManager) throws IOException {
     return connectionManager.getInputStream();
   }
 
   @Provides
-  OutputStream provideOutputStream(ConnectionManager connectionManager) {
+  OutputStream provideOutputStream(ConnectionManager connectionManager) throws IOException {
     return connectionManager.getOutputStream();
   }
 
