@@ -18,8 +18,13 @@ public class RespNetworkModule extends AbstractModule {
   }
 
   @Provides
-  BufferedReader provideBufferedReader(InputStream inputStream) {
-    return new BufferedReader(new InputStreamReader(inputStream));
+  BufferedReader provideBufferedReader(InputStreamReader inputStreamReader) {
+    return new BufferedReader(inputStreamReader);
+  }
+
+  @Provides
+  InputStreamReader provideInputStreamReader(InputStream inputStream) {
+    return new InputStreamReader(inputStream);
   }
 
   @Provides
