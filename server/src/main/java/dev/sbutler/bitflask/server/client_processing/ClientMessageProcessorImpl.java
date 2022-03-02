@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.server.client_processing;
 
+import com.google.inject.Inject;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
 import dev.sbutler.bitflask.resp.network.reader.RespReader;
@@ -15,6 +16,7 @@ public class ClientMessageProcessorImpl implements ClientMessageProcessor {
   private final RespReader respReader;
   private final RespWriter respWriter;
 
+  @Inject
   ClientMessageProcessorImpl(CommandProcessor commandProcessor, RespReader respReader,
       RespWriter respWriter) {
     this.commandProcessor = commandProcessor;

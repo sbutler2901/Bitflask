@@ -4,13 +4,15 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.sun.jdi.InternalException;
+import dev.sbutler.bitflask.resp.network.RespNetworkModule;
+import dev.sbutler.bitflask.server.client_connection.ClientConnectionModule;
+import dev.sbutler.bitflask.server.client_processing.ClientProcessingModule;
 import dev.sbutler.bitflask.server.client_processing.ClientRequestHandler;
+import dev.sbutler.bitflask.server.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
-import dev.sbutler.bitflask.server.storage.Storage;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -23,39 +25,46 @@ public class Server {
   private static final String TERMINATION_FAILURE = "Failed to properly terminate the server";
   private static final String CLIENT_CONNECTION_FAILURE = "Failed to accept incoming client connection";
 
-  private final ServerSocket serverSocket;
-  private final Storage storage;
   private final ThreadPoolExecutor threadPoolExecutor;
+  private final ServerSocket serverSocket;
 
   private boolean shouldContinueRunning = true;
 
   @Inject
-  Server(ThreadPoolExecutor threadPoolExecutor, Storage storage, ServerSocket serverSocket) {
+  Server(ThreadPoolExecutor threadPoolExecutor, ServerSocket serverSocket) {
     this.threadPoolExecutor = threadPoolExecutor;
-    this.storage = storage;
     this.serverSocket = serverSocket;
   }
 
   public static void main(String[] args) {
-    Injector injector = Guice.createInjector(new ServerModule());
+    Injector injector = Guice.createInjector(
+        new ServerModule(),
+        new CommandProcessingModule(),
+        new ClientConnectionModule(),
+        new RespNetworkModule(),
+        new ClientProcessingModule()
+    );
 
     Server server = injector.getInstance(Server.class);
-    server.start();
+    server.start(injector);
     server.close();
   }
 
-  public void start() {
+  public void start(Injector injector) {
     System.out.println(GREETING_MSG);
     printConfigInfo();
 
     try {
       while (shouldContinueRunning) {
         Socket clientSocket = serverSocket.accept();
-        ClientRequestHandler clientRequestHandler = new ClientRequestHandler(clientSocket, storage);
+        ClientConnectionModule.setSocket(clientSocket);
+
+        ClientRequestHandler clientRequestHandler = injector.getInstance(
+            ClientRequestHandler.class);
 
         printClientConnectionInfo(clientSocket);
 
-        this.threadPoolExecutor.execute(clientRequestHandler);
+        threadPoolExecutor.execute(clientRequestHandler);
       }
     } catch (IOException e) {
       throw new InternalException(CLIENT_CONNECTION_FAILURE);

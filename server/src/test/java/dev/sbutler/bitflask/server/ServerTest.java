@@ -1,24 +1,20 @@
 package dev.sbutler.bitflask.server;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Module;
 import com.sun.jdi.InternalException;
+import dev.sbutler.bitflask.server.client_connection.ClientConnectionModule;
 import dev.sbutler.bitflask.server.client_processing.ClientRequestHandler;
-import dev.sbutler.bitflask.server.storage.Storage;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,59 +30,49 @@ class ServerTest {
   @Mock
   ThreadPoolExecutor threadPoolExecutor;
   @Mock
-  Storage storage;
-  @Mock
   ServerSocket serverSocket;
 
   @Test
   void main_success() {
-    MockedStatic<Executors> mockedExecutors = mockStatic(Executors.class);
-    mockedExecutors.when(() -> Executors.newFixedThreadPool(anyInt()))
-        .thenReturn(threadPoolExecutor);
-    MockedConstruction<Storage> storageMockedConstruction = mockConstruction(Storage.class);
-    MockedConstruction<ServerSocket> socketMockedConstruction = mockConstruction(
-        ServerSocket.class);
-    MockedConstruction<Server> serverMockedConstruction = mockConstruction(Server.class);
+    MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class);
+    Injector mockedInjector = mock(Injector.class);
+    guiceMockedStatic.when(() -> Guice.createInjector((Module) any())).thenReturn(mockedInjector);
+    Server mockedServer = mock(Server.class);
+    doReturn(mockedServer).when(mockedInjector).getInstance(Server.class);
 
     Server.main(null);
 
-    Server mockedServer = serverMockedConstruction.constructed().get(0);
-    verify(mockedServer, times(1)).start();
+    verify(mockedServer, times(1)).start(mockedInjector);
     verify(mockedServer, times(1)).close();
-
-    serverMockedConstruction.close();
-    socketMockedConstruction.close();
-    storageMockedConstruction.close();
-    mockedExecutors.close();
   }
 
   @Test
   void server_start() throws IOException {
-    MockedConstruction<ClientRequestHandler> clientRequestHandlerMockedConstruction = mockConstruction(
-        ClientRequestHandler.class);
     Socket mockClientSocket = mock(Socket.class);
-    doReturn(mock(InetAddress.class)).when(mockClientSocket).getInetAddress();
-    doReturn(9001).when(mockClientSocket).getPort();
     when(serverSocket.accept()).thenReturn(mockClientSocket)
         .thenThrow(new IOException("test: loop termination"));
+    MockedStatic<ClientConnectionModule> clientConnectionModuleMockedStatic = mockStatic(
+        ClientConnectionModule.class);
+    Injector mockedInjector = mock(Injector.class);
+    ClientRequestHandler mockedClientRequestHandler = mock(ClientRequestHandler.class);
+    doReturn(mockedClientRequestHandler).when(mockedInjector)
+        .getInstance(ClientRequestHandler.class);
 
     try {
-      server.start();
+      server.start(mockedInjector);
     } catch (InternalException ignored) {
       // ignored, purposefully terminate loop
     }
 
-    ClientRequestHandler mockedClientRequestHandler = clientRequestHandlerMockedConstruction.constructed()
-        .get(0);
+    clientConnectionModuleMockedStatic.verify(
+        () -> ClientConnectionModule.setSocket(mockClientSocket), times(1));
     verify(threadPoolExecutor, times(1)).execute(mockedClientRequestHandler);
-
-    clientRequestHandlerMockedConstruction.close();
   }
 
   @Test
   void server_start_IOException() throws IOException {
     doThrow(new IOException("Test: socker accept")).when(serverSocket).accept();
-    assertThrows(InternalException.class, () -> server.start());
+    assertThrows(InternalException.class, () -> server.start(mock(Injector.class)));
   }
 
   @Test

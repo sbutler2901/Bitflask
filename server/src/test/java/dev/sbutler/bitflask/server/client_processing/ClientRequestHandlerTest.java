@@ -1,16 +1,15 @@
 package dev.sbutler.bitflask.server.client_processing;
 
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import dev.sbutler.bitflask.server.storage.Storage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import dev.sbutler.bitflask.server.client_connection.ClientConnectionManager;
 import java.io.IOException;
-import java.net.Socket;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,33 +19,37 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ClientRequestHandlerTest {
 
+  @InjectMocks
+  ClientRequestHandler clientRequestHandler;
+
   @Mock
-  Socket socket;
+  ClientConnectionManager clientConnectionManager;
   @Mock
-  Storage storage;
+  ClientMessageProcessor clientMessageProcessor;
 
   @Test
-  void start_IOException() throws IOException {
-    doReturn(new ByteArrayInputStream(new byte[0])).when(socket).getInputStream();
-    doReturn(new ByteArrayOutputStream()).when(socket).getOutputStream();
-    ClientRequestHandler clientRequestHandler = new ClientRequestHandler(socket, storage);
-    clientRequestHandler.run();
-    verify(socket, times(1)).close();
+  void run() throws IOException {
+    doReturn(false).when(clientMessageProcessor).processNextMessage();
+    assertTimeoutPreemptively(Duration.ofMillis(100), () -> clientRequestHandler.run());
+    verify(clientConnectionManager, times(1)).close();
+  }
+
+  @Test
+  void close() throws IOException {
+    clientRequestHandler.close();
+    verify(clientConnectionManager, times(1)).close();
   }
 
   @Test
   void close_IOException() throws IOException {
-    doReturn(new ByteArrayInputStream(new byte[0])).when(socket).getInputStream();
-    doReturn(new ByteArrayOutputStream()).when(socket).getOutputStream();
-    doThrow(new IOException("Test: failure to close socket")).when(socket).close();
+    doThrow(new IOException("Test: failure to close socket")).when(clientConnectionManager).close();
 
     try {
-      ClientRequestHandler clientRequestHandler = new ClientRequestHandler(socket, storage);
-      clientRequestHandler.run();
+      clientRequestHandler.close();
     } catch (Exception e) {
-      fail();
+      fail("Test: exception caught from close()");
     }
 
-    verify(socket, times(1)).close();
+    verify(clientConnectionManager, times(1)).close();
   }
 }
