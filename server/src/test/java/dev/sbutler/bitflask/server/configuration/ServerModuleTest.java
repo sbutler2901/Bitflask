@@ -17,7 +17,7 @@ import org.mockito.MockedStatic;
 
 public class ServerModuleTest {
 
-  private final ServerModule serverModule = new ServerModule();
+  private final ServerModule serverModule = ServerModule.getInstance();
 
   @Test
   void provideServerPort() {

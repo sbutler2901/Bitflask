@@ -9,10 +9,10 @@ import java.net.Socket;
 
 public class ClientConnectionModule extends AbstractModule {
 
-  private static Socket socket;
+  private final Socket socket;
 
-  public static void setSocket(Socket socket) {
-    ClientConnectionModule.socket = socket;
+  public ClientConnectionModule(Socket socket) {
+    this.socket = socket;
   }
 
   @Provides

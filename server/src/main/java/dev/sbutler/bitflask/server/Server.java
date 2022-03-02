@@ -37,28 +37,22 @@ public class Server {
   }
 
   public static void main(String[] args) {
-    Injector injector = Guice.createInjector(
-        new ServerModule(),
-        new CommandProcessingModule(),
-        new ClientConnectionModule(),
-        new RespNetworkModule(),
-        new ClientProcessingModule()
-    );
+    Injector injector = Guice.createInjector(ServerModule.getInstance());
 
     Server server = injector.getInstance(Server.class);
-    server.start(injector);
+    server.start();
     server.close();
   }
 
-  public void start(Injector injector) {
+  public void start() {
     System.out.println(GREETING_MSG);
     printConfigInfo();
 
     try {
       while (shouldContinueRunning) {
         Socket clientSocket = serverSocket.accept();
-        ClientConnectionModule.setSocket(clientSocket);
 
+        Injector injector = createInjector(clientSocket);
         ClientRequestHandler clientRequestHandler = injector.getInstance(
             ClientRequestHandler.class);
 
@@ -69,6 +63,16 @@ public class Server {
     } catch (IOException e) {
       throw new InternalException(CLIENT_CONNECTION_FAILURE);
     }
+  }
+
+  private Injector createInjector(Socket clientSocket) {
+    return Guice.createInjector(
+        ServerModule.getInstance(),
+        new CommandProcessingModule(),
+        new ClientConnectionModule(clientSocket),
+        new RespNetworkModule(),
+        new ClientProcessingModule()
+    );
   }
 
   public void close() {

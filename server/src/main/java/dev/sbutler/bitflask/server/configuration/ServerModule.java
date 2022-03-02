@@ -11,6 +11,17 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class ServerModule extends AbstractModule {
 
+  private static final ServerModule instance = new ServerModule();
+
+  private ThreadPoolExecutor threadPoolExecutor;
+  private Storage storage;
+
+  private ServerModule() {}
+
+  public static ServerModule getInstance() {
+    return instance;
+  }
+
   @Provides
   @ServerPort
   int provideServerPort() {
@@ -26,13 +37,19 @@ public class ServerModule extends AbstractModule {
   @Provides
   @Singleton
   ThreadPoolExecutor provideThreadPoolExecutor(@ServerNumThreads int numThreads) {
-    return (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads);
+    if (threadPoolExecutor == null) {
+      threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads);
+    }
+    return threadPoolExecutor;
   }
 
   @Provides
   @Singleton
   Storage provideStorage(ThreadPoolExecutor threadPoolExecutor) throws IOException {
-    return new Storage(threadPoolExecutor);
+    if (storage == null) {
+      storage = new Storage(threadPoolExecutor);
+    }
+    return storage;
   }
 
   @Provides

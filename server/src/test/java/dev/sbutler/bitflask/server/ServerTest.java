@@ -4,7 +4,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.sun.jdi.InternalException;
-import dev.sbutler.bitflask.server.client_connection.ClientConnectionModule;
 import dev.sbutler.bitflask.server.client_processing.ClientRequestHandler;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -42,7 +41,7 @@ class ServerTest {
 
       Server.main(null);
 
-      verify(mockedServer, times(1)).start(mockedInjector);
+      verify(mockedServer, times(1)).start();
       verify(mockedServer, times(1)).close();
     }
   }
@@ -52,21 +51,21 @@ class ServerTest {
     Socket mockClientSocket = mock(Socket.class);
     when(serverSocket.accept()).thenReturn(mockClientSocket)
         .thenThrow(new IOException("test: loop termination"));
-    Injector mockedInjector = mock(Injector.class);
-    ClientRequestHandler mockedClientRequestHandler = mock(ClientRequestHandler.class);
-    doReturn(mockedClientRequestHandler).when(mockedInjector)
-        .getInstance(ClientRequestHandler.class);
-    try (MockedStatic<ClientConnectionModule> clientConnectionModuleMockedStatic = mockStatic(
-        ClientConnectionModule.class)) {
+
+    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
+      Injector mockedInjector = mock(Injector.class);
+      guiceMockedStatic.when(() -> Guice.createInjector((Module) any())).thenReturn(mockedInjector);
+
+      ClientRequestHandler mockedClientRequestHandler = mock(ClientRequestHandler.class);
+      doReturn(mockedClientRequestHandler).when(mockedInjector)
+          .getInstance(ClientRequestHandler.class);
 
       try {
-        server.start(mockedInjector);
+        server.start();
       } catch (InternalException ignored) {
         // ignored, purposefully terminate loop
       }
 
-      clientConnectionModuleMockedStatic.verify(
-          () -> ClientConnectionModule.setSocket(mockClientSocket), times(1));
       verify(threadPoolExecutor, times(1)).execute(mockedClientRequestHandler);
     }
   }
@@ -74,7 +73,7 @@ class ServerTest {
   @Test
   void server_start_IOException() throws IOException {
     doThrow(new IOException("Test: socker accept")).when(serverSocket).accept();
-    assertThrows(InternalException.class, () -> server.start(mock(Injector.class)));
+    assertThrows(InternalException.class, () -> server.start());
   }
 
   @Test

@@ -10,19 +10,24 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class ClientConnectionModuleTest {
 
-  private final ClientConnectionModule clientConnectionModule = new ClientConnectionModule();
+  @InjectMocks
+  private ClientConnectionModule clientConnectionModule;
+
+  @Mock
+  private Socket socket;
 
   @Test
   void socket() {
-    Socket mockSocket = mock(Socket.class);
-    ClientConnectionModule.setSocket(mockSocket);
-
     Socket socket = clientConnectionModule.provideSocket();
-
-    assertEquals(mockSocket, socket);
+    assertEquals(this.socket, socket);
   }
 
   @Test
