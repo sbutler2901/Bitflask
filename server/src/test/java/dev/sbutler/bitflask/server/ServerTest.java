@@ -34,16 +34,17 @@ class ServerTest {
 
   @Test
   void main_success() {
-    MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class);
-    Injector mockedInjector = mock(Injector.class);
-    guiceMockedStatic.when(() -> Guice.createInjector((Module) any())).thenReturn(mockedInjector);
-    Server mockedServer = mock(Server.class);
-    doReturn(mockedServer).when(mockedInjector).getInstance(Server.class);
+    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
+      Injector mockedInjector = mock(Injector.class);
+      guiceMockedStatic.when(() -> Guice.createInjector((Module) any())).thenReturn(mockedInjector);
+      Server mockedServer = mock(Server.class);
+      doReturn(mockedServer).when(mockedInjector).getInstance(Server.class);
 
-    Server.main(null);
+      Server.main(null);
 
-    verify(mockedServer, times(1)).start(mockedInjector);
-    verify(mockedServer, times(1)).close();
+      verify(mockedServer, times(1)).start(mockedInjector);
+      verify(mockedServer, times(1)).close();
+    }
   }
 
   @Test
@@ -51,22 +52,23 @@ class ServerTest {
     Socket mockClientSocket = mock(Socket.class);
     when(serverSocket.accept()).thenReturn(mockClientSocket)
         .thenThrow(new IOException("test: loop termination"));
-    MockedStatic<ClientConnectionModule> clientConnectionModuleMockedStatic = mockStatic(
-        ClientConnectionModule.class);
     Injector mockedInjector = mock(Injector.class);
     ClientRequestHandler mockedClientRequestHandler = mock(ClientRequestHandler.class);
     doReturn(mockedClientRequestHandler).when(mockedInjector)
         .getInstance(ClientRequestHandler.class);
+    try (MockedStatic<ClientConnectionModule> clientConnectionModuleMockedStatic = mockStatic(
+        ClientConnectionModule.class)) {
 
-    try {
-      server.start(mockedInjector);
-    } catch (InternalException ignored) {
-      // ignored, purposefully terminate loop
+      try {
+        server.start(mockedInjector);
+      } catch (InternalException ignored) {
+        // ignored, purposefully terminate loop
+      }
+
+      clientConnectionModuleMockedStatic.verify(
+          () -> ClientConnectionModule.setSocket(mockClientSocket), times(1));
+      verify(threadPoolExecutor, times(1)).execute(mockedClientRequestHandler);
     }
-
-    clientConnectionModuleMockedStatic.verify(
-        () -> ClientConnectionModule.setSocket(mockClientSocket), times(1));
-    verify(threadPoolExecutor, times(1)).execute(mockedClientRequestHandler);
   }
 
   @Test
