@@ -14,11 +14,14 @@ public class RespReaderModule extends AbstractModule {
   }
 
   @Provides
-  BufferedReader provideBufferedReader(InputStreamReader inputStreamReader) {
+  @RespReaderBufferedReader
+  BufferedReader provideBufferedReader(
+      @RespReaderInputStreamReader InputStreamReader inputStreamReader) {
     return new BufferedReader(inputStreamReader);
   }
 
   @Provides
+  @RespReaderInputStreamReader
   InputStreamReader provideInputStreamReader(InputStream inputStream) {
     return new InputStreamReader(inputStream);
   }

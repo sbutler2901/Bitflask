@@ -21,7 +21,7 @@ class RespReaderImpl implements RespReader {
   private final BufferedReader bufferedReader;
 
   @Inject
-  RespReaderImpl(BufferedReader reader) {
+  RespReaderImpl(@RespReaderBufferedReader BufferedReader reader) {
     this.bufferedReader = reader;
   }
 
