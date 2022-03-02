@@ -41,7 +41,7 @@ class ServerTest {
 
       Server.main(null);
 
-      verify(mockedServer, times(1)).start();
+      verify(mockedServer, times(1)).start(mockedInjector);
       verify(mockedServer, times(1)).close();
     }
   }
@@ -52,28 +52,27 @@ class ServerTest {
     when(serverSocket.accept()).thenReturn(mockClientSocket)
         .thenThrow(new IOException("test: loop termination"));
 
-    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
-      Injector mockedInjector = mock(Injector.class);
-      guiceMockedStatic.when(() -> Guice.createInjector((Module) any())).thenReturn(mockedInjector);
+    Injector parentInjector = mock(Injector.class);
+    Injector childInjector = mock(Injector.class);
+    doReturn(childInjector).when(parentInjector).createChildInjector((Module) any());
 
-      ClientRequestHandler mockedClientRequestHandler = mock(ClientRequestHandler.class);
-      doReturn(mockedClientRequestHandler).when(mockedInjector)
-          .getInstance(ClientRequestHandler.class);
+    ClientRequestHandler mockedClientRequestHandler = mock(ClientRequestHandler.class);
+    doReturn(mockedClientRequestHandler).when(childInjector)
+        .getInstance(ClientRequestHandler.class);
 
-      try {
-        server.start();
-      } catch (InternalException ignored) {
-        // ignored, purposefully terminate loop
-      }
-
-      verify(threadPoolExecutor, times(1)).execute(mockedClientRequestHandler);
+    try {
+      server.start(parentInjector);
+    } catch (InternalException ignored) {
+      // ignored, purposefully terminate loop
     }
+
+    verify(threadPoolExecutor, times(1)).execute(mockedClientRequestHandler);
   }
 
   @Test
   void server_start_IOException() throws IOException {
     doThrow(new IOException("Test: socker accept")).when(serverSocket).accept();
-    assertThrows(InternalException.class, () -> server.start());
+    assertThrows(InternalException.class, () -> server.start(mock(Injector.class)));
   }
 
   @Test

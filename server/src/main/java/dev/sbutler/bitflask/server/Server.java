@@ -40,11 +40,11 @@ public class Server {
     Injector injector = Guice.createInjector(ServerModule.getInstance());
 
     Server server = injector.getInstance(Server.class);
-    server.start();
+    server.start(injector);
     server.close();
   }
 
-  public void start() {
+  public void start(Injector parentInjector) {
     System.out.println(GREETING_MSG);
     printConfigInfo();
 
@@ -52,7 +52,7 @@ public class Server {
       while (shouldContinueRunning) {
         Socket clientSocket = serverSocket.accept();
 
-        Injector injector = createInjector(clientSocket);
+        Injector injector = createChildInjector(parentInjector, clientSocket);
         ClientRequestHandler clientRequestHandler = injector.getInstance(
             ClientRequestHandler.class);
 
@@ -65,9 +65,8 @@ public class Server {
     }
   }
 
-  private Injector createInjector(Socket clientSocket) {
-    return Guice.createInjector(
-        ServerModule.getInstance(),
+  private Injector createChildInjector(Injector parentInjector, Socket clientSocket) {
+    return parentInjector.createChildInjector(
         new CommandProcessingModule(),
         new ClientConnectionModule(clientSocket),
         new RespNetworkModule(),
