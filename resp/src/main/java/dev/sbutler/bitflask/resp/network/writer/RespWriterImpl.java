@@ -5,14 +5,12 @@ import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.IOException;
 import java.io.OutputStream;
 
-// todo: reduce class visibility
-public class RespWriterImpl implements RespWriter {
+class RespWriterImpl implements RespWriter {
 
   private final OutputStream outputStream;
 
-  // todo reduce constructor visibility
   @Inject
-  public RespWriterImpl(OutputStream outputStream) {
+  RespWriterImpl(OutputStream outputStream) {
     this.outputStream = outputStream;
   }
 

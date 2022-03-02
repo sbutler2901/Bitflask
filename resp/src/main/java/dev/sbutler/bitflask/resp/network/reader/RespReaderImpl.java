@@ -16,19 +16,13 @@ import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.List;
 
-// todo: reduce class visibility
-public class RespReaderImpl implements RespReader {
+class RespReaderImpl implements RespReader {
 
   private final BufferedReader bufferedReader;
 
   @Inject
   RespReaderImpl(BufferedReader reader) {
     this.bufferedReader = reader;
-  }
-
-  // todo reduce constructor visibility
-  public RespReaderImpl(InputStream inputStream) {
-    this.bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
   }
 
   public RespType<?> readNextRespType() throws IOException {
