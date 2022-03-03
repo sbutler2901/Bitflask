@@ -9,5 +9,9 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClassName 'bitflask.client.Client'
+    mainClassName 'dev.sbutler.bitflask.client.Client'
+}
+
+run {
+    standardInput = System.in
 }
