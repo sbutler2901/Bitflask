@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.server.configuration;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import dev.sbutler.bitflask.server.storage.Storage;
+import dev.sbutler.bitflask.storage.Storage;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.Executors;

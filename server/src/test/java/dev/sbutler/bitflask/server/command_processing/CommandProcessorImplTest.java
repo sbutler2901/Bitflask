@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.server.command_processing;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.server.storage.Storage;
+import dev.sbutler.bitflask.storage.Storage;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;

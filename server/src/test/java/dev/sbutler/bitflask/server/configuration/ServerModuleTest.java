@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 
-import dev.sbutler.bitflask.server.storage.Storage;
+import dev.sbutler.bitflask.storage.Storage;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.Executors;

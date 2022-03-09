@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.server.command_processing;
 
 import com.google.inject.Inject;
-import dev.sbutler.bitflask.server.storage.Storage;
+import dev.sbutler.bitflask.storage.Storage;
 import java.io.IOException;
 import lombok.NonNull;
 
