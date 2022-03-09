@@ -10,6 +10,7 @@ import dev.sbutler.bitflask.server.client_processing.ClientProcessingModule;
 import dev.sbutler.bitflask.server.client_processing.ClientRequestHandler;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
+import dev.sbutler.bitflask.storage.StorageModule;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -67,6 +68,7 @@ public class Server {
 
   private Injector createChildInjector(Injector parentInjector, Socket clientSocket) {
     return parentInjector.createChildInjector(
+        StorageModule.getInstance(),
         new CommandProcessingModule(),
         new ClientConnectionModule(clientSocket),
         new RespNetworkModule(),
