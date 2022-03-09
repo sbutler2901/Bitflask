@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Manages persisting and retrieving data
  */
-public class StorageImpl implements Storage {
+class StorageImpl implements Storage {
 
   private static final String WRITE_ERR_BAD_KEY = "Error writing data, provided key was null or empty";
   private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null or empty";
