@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 
-import dev.sbutler.bitflask.storage.Storage;
+import dev.sbutler.bitflask.storage.StorageImpl;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.Executors;
@@ -42,9 +42,9 @@ public class ServerModuleTest {
 
   @Test
   void provideStorage() throws IOException {
-    try (MockedConstruction<Storage> storageMockedConstruction = mockConstruction(Storage.class)) {
-      Storage storage = serverModule.provideStorage(mock(ThreadPoolExecutor.class));
-      Storage mockedStorage = storageMockedConstruction.constructed().get(0);
+    try (MockedConstruction<StorageImpl> storageMockedConstruction = mockConstruction(StorageImpl.class)) {
+      StorageImpl storage = serverModule.provideStorage(mock(ThreadPoolExecutor.class));
+      StorageImpl mockedStorage = storageMockedConstruction.constructed().get(0);
       assertEquals(mockedStorage, storage);
     }
   }

@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Manages persisting and retrieving data
  */
-public class Storage {
+public class StorageImpl {
 
   private static final String WRITE_ERR_BAD_KEY = "Error writing data, provided key was null or empty";
   private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null or empty";
@@ -29,7 +29,7 @@ public class Storage {
    *                   operations
    * @throws IOException when creating the initial storage file fails
    */
-  public Storage(ThreadPoolExecutor threadPool) throws IOException {
+  public StorageImpl(ThreadPoolExecutor threadPool) throws IOException {
     this.threadPool = threadPool;
     StorageSegment newStorageSegment = new StorageSegment(threadPool,
         activeStorageSegmentIndex.get());

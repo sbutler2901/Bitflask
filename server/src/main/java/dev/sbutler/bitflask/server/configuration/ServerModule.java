@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.server.configuration;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import dev.sbutler.bitflask.storage.Storage;
+import dev.sbutler.bitflask.storage.StorageImpl;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.Executors;
@@ -14,7 +14,7 @@ public class ServerModule extends AbstractModule {
   private static final ServerModule instance = new ServerModule();
 
   private ThreadPoolExecutor threadPoolExecutor;
-  private Storage storage;
+  private StorageImpl storage;
 
   private ServerModule() {}
 
@@ -45,9 +45,9 @@ public class ServerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  Storage provideStorage(ThreadPoolExecutor threadPoolExecutor) throws IOException {
+  StorageImpl provideStorage(ThreadPoolExecutor threadPoolExecutor) throws IOException {
     if (storage == null) {
-      storage = new Storage(threadPoolExecutor);
+      storage = new StorageImpl(threadPoolExecutor);
     }
     return storage;
   }
