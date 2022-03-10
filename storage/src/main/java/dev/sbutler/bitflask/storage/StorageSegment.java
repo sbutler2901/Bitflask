@@ -19,7 +19,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Represents a single self contained file for storing data
+ * Represents a single self-contained file for storing data
  */
 class StorageSegment {
 
