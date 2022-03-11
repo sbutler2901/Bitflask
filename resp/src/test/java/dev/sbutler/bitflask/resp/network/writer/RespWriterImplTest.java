@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.resp.network.writer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import dev.sbutler.bitflask.resp.network.writer.RespWriterImpl;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.BufferedOutputStream;

@@ -8,10 +8,7 @@ import static org.mockito.Mockito.verify;
 import java.io.PrintStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 public class StdoutOutputWriterTest {
 
   private static final PrintStream DEFAULT_STDOUT = System.out;
