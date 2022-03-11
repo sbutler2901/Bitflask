@@ -17,7 +17,7 @@ class StorageImpl implements Storage {
   private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null or empty";
   private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null or empty";
 
-  private final AtomicInteger activeStorageSegmentIndex = new AtomicInteger(0);
+  private final AtomicInteger activeStorageSegmentIndex = new AtomicInteger(-1);
 
   private final ThreadPoolExecutor threadPool;
   private final List<StorageSegment> segmentFilesList = new CopyOnWriteArrayList<>();
@@ -31,13 +31,15 @@ class StorageImpl implements Storage {
    */
   public StorageImpl(ThreadPoolExecutor threadPool) throws IOException {
     this.threadPool = threadPool;
-    createInitialStorageSegment();
+    createNewStorageSegment();
   }
 
-  private void createInitialStorageSegment() throws IOException {
-    StorageSegment newStorageSegment = new StorageSegment(threadPool,
-        activeStorageSegmentIndex.get());
-    segmentFilesList.add(activeStorageSegmentIndex.get(), newStorageSegment);
+  private void createNewStorageSegment() throws IOException {
+    int newStorageSegmentIndex = activeStorageSegmentIndex.incrementAndGet();
+    StorageSegmentFile storageSegmentFile = new StorageSegmentFile(threadPool,
+        newStorageSegmentIndex);
+    StorageSegment newStorageSegment = new StorageSegment(storageSegmentFile);
+    segmentFilesList.add(newStorageSegmentIndex, newStorageSegment);
   }
 
   /**
@@ -91,9 +93,7 @@ class StorageImpl implements Storage {
     StorageSegment activeStorageSegment = segmentFilesList.get(activeIndex);
 
     if (activeStorageSegment.exceedsStorageThreshold()) {
-      int newSegmentIndex = activeStorageSegmentIndex.incrementAndGet();
-      StorageSegment newStorageSegment = new StorageSegment(threadPool, newSegmentIndex);
-      segmentFilesList.add(newSegmentIndex, newStorageSegment);
+      createNewStorageSegment();
     }
   }
 

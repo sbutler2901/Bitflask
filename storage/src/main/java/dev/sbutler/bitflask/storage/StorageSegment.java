@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -21,11 +20,6 @@ class StorageSegment {
 
   public StorageSegment(StorageSegmentFile storageSegmentFile) {
     this.storageSegmentFile = storageSegmentFile;
-  }
-
-  public StorageSegment(ThreadPoolExecutor threadPoolExecutor, int segmentIndex)
-      throws IOException {
-    this.storageSegmentFile = new StorageSegmentFile(threadPoolExecutor, segmentIndex);
   }
 
   /**
