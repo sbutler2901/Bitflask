@@ -8,8 +8,8 @@ import static org.mockito.Mockito.mockStatic;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
@@ -29,13 +29,13 @@ public class ServerModuleTest {
   }
 
   @Test
-  void provideThreadPoolExecutor() {
+  void provideExecutorService() {
     try (MockedStatic<Executors> executorsMockedStatic = mockStatic(Executors.class)) {
-      ThreadPoolExecutor mockThreadPoolExecutor = mock(ThreadPoolExecutor.class);
+      ExecutorService mockExecutorService = mock(ExecutorService.class);
       executorsMockedStatic.when(() -> Executors.newFixedThreadPool(anyInt()))
-          .thenReturn(mockThreadPoolExecutor);
-      ThreadPoolExecutor threadPoolExecutor = serverModule.provideThreadPoolExecutor(4);
-      assertEquals(mockThreadPoolExecutor, threadPoolExecutor);
+          .thenReturn(mockExecutorService);
+      ExecutorService executorService = serverModule.provideExecutorService(4);
+      assertEquals(mockExecutorService, executorService);
     }
   }
 

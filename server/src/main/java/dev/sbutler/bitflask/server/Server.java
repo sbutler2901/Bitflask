@@ -14,7 +14,7 @@ import dev.sbutler.bitflask.storage.StorageModule;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Provides support for getting and setting key value pairs with persistence
@@ -26,14 +26,14 @@ public class Server {
   private static final String TERMINATION_FAILURE = "Failed to properly terminate the server";
   private static final String CLIENT_CONNECTION_FAILURE = "Failed to accept incoming client connection";
 
-  private final ThreadPoolExecutor threadPoolExecutor;
+  private final ExecutorService executorService;
   private final ServerSocket serverSocket;
 
   private boolean shouldContinueRunning = true;
 
   @Inject
-  Server(ThreadPoolExecutor threadPoolExecutor, ServerSocket serverSocket) {
-    this.threadPoolExecutor = threadPoolExecutor;
+  Server(ExecutorService executorService, ServerSocket serverSocket) {
+    this.executorService = executorService;
     this.serverSocket = serverSocket;
   }
 
@@ -59,7 +59,7 @@ public class Server {
 
         printClientConnectionInfo(clientSocket);
 
-        threadPoolExecutor.execute(clientRequestHandler);
+        executorService.execute(clientRequestHandler);
       }
     } catch (IOException e) {
       throw new InternalException(CLIENT_CONNECTION_FAILURE);
@@ -79,7 +79,7 @@ public class Server {
   public void close() {
     try {
       shouldContinueRunning = false;
-      threadPoolExecutor.shutdown();
+      executorService.shutdown();
       serverSocket.close();
     } catch (IOException e) {
       throw new InternalException(TERMINATION_FAILURE);

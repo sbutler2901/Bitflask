@@ -5,14 +5,14 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 public class ServerModule extends AbstractModule {
 
   private static final ServerModule instance = new ServerModule();
 
-  private ThreadPoolExecutor threadPoolExecutor;
+  private ExecutorService executorService;
 
   private ServerModule() {
   }
@@ -35,11 +35,11 @@ public class ServerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  ThreadPoolExecutor provideThreadPoolExecutor(@ServerNumThreads int numThreads) {
-    if (threadPoolExecutor == null) {
-      threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads);
+  ExecutorService provideExecutorService(@ServerNumThreads int numThreads) {
+    if (executorService == null) {
+      executorService = Executors.newFixedThreadPool(numThreads);
     }
-    return threadPoolExecutor;
+    return executorService;
   }
 
   @Provides

@@ -1,24 +1,30 @@
 package dev.sbutler.bitflask.server;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.sun.jdi.InternalException;
 import dev.sbutler.bitflask.server.client_processing.ClientRequestHandler;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ServerTest {
@@ -27,7 +33,7 @@ class ServerTest {
   Server server;
 
   @Mock
-  ThreadPoolExecutor threadPoolExecutor;
+  ExecutorService executorService;
   @Mock
   ServerSocket serverSocket;
 
@@ -66,7 +72,7 @@ class ServerTest {
       // ignored, purposefully terminate loop
     }
 
-    verify(threadPoolExecutor, times(1)).execute(mockedClientRequestHandler);
+    verify(executorService, times(1)).execute(mockedClientRequestHandler);
   }
 
   @Test
@@ -78,7 +84,7 @@ class ServerTest {
   @Test
   void server_close() throws IOException {
     server.close();
-    verify(threadPoolExecutor, times(1)).shutdown();
+    verify(executorService, times(1)).shutdown();
     verify(serverSocket, times(1)).close();
   }
 
@@ -86,6 +92,6 @@ class ServerTest {
   void server_close_IOException() throws IOException {
     doThrow(new IOException("Test: socket close")).when(serverSocket).close();
     assertThrows(InternalException.class, () -> server.close());
-    verify(threadPoolExecutor, times(1)).shutdown();
+    verify(executorService, times(1)).shutdown();
   }
 }
