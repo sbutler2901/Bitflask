@@ -16,8 +16,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
@@ -25,15 +25,15 @@ public class StorageSegmentFileTest {
 
   @Test
   void write() throws IOException {
-    ThreadPoolExecutor threadPoolExecutor = mock(ThreadPoolExecutor.class);
+    ExecutorService executorService = mock(ExecutorService.class);
     try (MockedStatic<AsynchronousFileChannel> asynchronousFileChannelMockedStatic = mockStatic(
         AsynchronousFileChannel.class)) {
       AsynchronousFileChannel asynchronousFileChannel = mock(AsynchronousFileChannel.class);
       asynchronousFileChannelMockedStatic.when(
-              () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ThreadPoolExecutor.class)))
+              () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(threadPoolExecutor, 0);
+      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService, 0);
 
       doReturn(mock(Future.class)).when(asynchronousFileChannel)
           .write(any(ByteBuffer.class), anyLong());
@@ -45,15 +45,15 @@ public class StorageSegmentFileTest {
   @Test
   @SuppressWarnings("unchecked")
   void write_exception() throws IOException, ExecutionException, InterruptedException {
-    ThreadPoolExecutor threadPoolExecutor = mock(ThreadPoolExecutor.class);
+    ExecutorService executorService = mock(ExecutorService.class);
     try (MockedStatic<AsynchronousFileChannel> asynchronousFileChannelMockedStatic = mockStatic(
         AsynchronousFileChannel.class)) {
       AsynchronousFileChannel asynchronousFileChannel = mock(AsynchronousFileChannel.class);
       asynchronousFileChannelMockedStatic.when(
-              () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ThreadPoolExecutor.class)))
+              () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(threadPoolExecutor, 0);
+      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService, 0);
 
       Future<Integer> writeFuture = mock(Future.class);
       doReturn(writeFuture).when(asynchronousFileChannel)
@@ -69,15 +69,15 @@ public class StorageSegmentFileTest {
   @Test
   @SuppressWarnings("unchecked")
   void read() throws IOException {
-    ThreadPoolExecutor threadPoolExecutor = mock(ThreadPoolExecutor.class);
+    ExecutorService executorService = mock(ExecutorService.class);
     try (MockedStatic<AsynchronousFileChannel> asynchronousFileChannelMockedStatic = mockStatic(
         AsynchronousFileChannel.class)) {
       AsynchronousFileChannel asynchronousFileChannel = mock(AsynchronousFileChannel.class);
       asynchronousFileChannelMockedStatic.when(
-              () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ThreadPoolExecutor.class)))
+              () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(threadPoolExecutor, 0);
+      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService, 0);
 
       Future<Integer> readFuture = mock(Future.class);
       doReturn(readFuture).when(asynchronousFileChannel).read(any(ByteBuffer.class), anyLong());
@@ -91,15 +91,15 @@ public class StorageSegmentFileTest {
   @Test
   @SuppressWarnings("unchecked")
   void read_exception() throws IOException, ExecutionException, InterruptedException {
-    ThreadPoolExecutor threadPoolExecutor = mock(ThreadPoolExecutor.class);
+    ExecutorService executorService = mock(ExecutorService.class);
     try (MockedStatic<AsynchronousFileChannel> asynchronousFileChannelMockedStatic = mockStatic(
         AsynchronousFileChannel.class)) {
       AsynchronousFileChannel asynchronousFileChannel = mock(AsynchronousFileChannel.class);
       asynchronousFileChannelMockedStatic.when(
-              () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ThreadPoolExecutor.class)))
+              () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(threadPoolExecutor, 0);
+      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService, 0);
 
       Future<Integer> readFuture = mock(Future.class);
       doReturn(readFuture).when(asynchronousFileChannel).read(any(ByteBuffer.class), anyLong());

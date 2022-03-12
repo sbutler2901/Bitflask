@@ -7,8 +7,8 @@ import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
@@ -23,13 +23,13 @@ public class StorageModuleTest {
   }
 
   @Test
-  void provideThreadPoolExecutor() {
+  void provideExecutorService() {
     try (MockedStatic<Executors> executorsMockedStatic = mockStatic(Executors.class)) {
-      ThreadPoolExecutor mockThreadPoolExecutor = mock(ThreadPoolExecutor.class);
+      ExecutorService mockExecutorService = mock(ExecutorService.class);
       executorsMockedStatic.when(() -> Executors.newFixedThreadPool(anyInt()))
-          .thenReturn(mockThreadPoolExecutor);
-      ThreadPoolExecutor threadPoolExecutor = storageModule.provideThreadPoolExecutor(4);
-      assertEquals(mockThreadPoolExecutor, threadPoolExecutor);
+          .thenReturn(mockExecutorService);
+      ExecutorService executorService = storageModule.provideExecutorService(4);
+      assertEquals(mockExecutorService, executorService);
     }
   }
 
@@ -37,7 +37,7 @@ public class StorageModuleTest {
   void provideStorage() throws IOException {
     try (MockedConstruction<StorageImpl> storageMockedConstruction = mockConstruction(
         StorageImpl.class)) {
-      Storage storage = storageModule.provideStorage(mock(ThreadPoolExecutor.class));
+      Storage storage = storageModule.provideStorage(mock(ExecutorService.class));
       Storage mockedStorage = storageMockedConstruction.constructed().get(0);
       assertEquals(mockedStorage, storage);
     }

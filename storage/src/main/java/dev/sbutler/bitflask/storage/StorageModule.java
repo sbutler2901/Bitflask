@@ -4,14 +4,14 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 public class StorageModule extends AbstractModule {
 
   private static final StorageModule instance = new StorageModule();
 
-  private ThreadPoolExecutor threadPoolExecutor;
+  private ExecutorService executorService;
   private Storage storage;
 
   private StorageModule() {
@@ -29,20 +29,20 @@ public class StorageModule extends AbstractModule {
 
   @Provides
   @Singleton
-  @StorageThreadPoolExecutor
-  ThreadPoolExecutor provideThreadPoolExecutor(@StorageNumThreads int numThreads) {
-    if (threadPoolExecutor == null) {
-      threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads);
+  @StorageExecutorService
+  ExecutorService provideExecutorService(@StorageNumThreads int numThreads) {
+    if (executorService == null) {
+      executorService = Executors.newFixedThreadPool(numThreads);
     }
-    return threadPoolExecutor;
+    return executorService;
   }
 
   @Provides
   @Singleton
-  Storage provideStorage(@StorageThreadPoolExecutor ThreadPoolExecutor threadPoolExecutor)
+  Storage provideStorage(@StorageExecutorService ExecutorService executorService)
       throws IOException {
     if (storage == null) {
-      storage = new StorageImpl(threadPoolExecutor);
+      storage = new StorageImpl(executorService);
     }
     return storage;
   }

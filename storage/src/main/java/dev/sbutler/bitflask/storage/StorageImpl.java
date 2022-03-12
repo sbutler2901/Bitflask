@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -19,24 +19,24 @@ class StorageImpl implements Storage {
 
   private final AtomicInteger activeStorageSegmentIndex = new AtomicInteger(-1);
 
-  private final ThreadPoolExecutor threadPool;
+  private final ExecutorService executorService;
   private final List<StorageSegment> segmentFilesList = new CopyOnWriteArrayList<>();
 
   /**
    * Creates a new storage instance for managing getting and setting key-value pairs
    *
-   * @param threadPool the thread pool executor service for which this storage instance will execute
-   *                   operations
+   * @param executorService the thread pool executor service for which this storage instance will
+   *                        execute operations
    * @throws IOException when creating the initial storage file fails
    */
-  public StorageImpl(ThreadPoolExecutor threadPool) throws IOException {
-    this.threadPool = threadPool;
+  public StorageImpl(ExecutorService executorService) throws IOException {
+    this.executorService = executorService;
     createNewStorageSegment();
   }
 
   private void createNewStorageSegment() throws IOException {
     int newStorageSegmentIndex = activeStorageSegmentIndex.incrementAndGet();
-    StorageSegmentFile storageSegmentFile = new StorageSegmentFile(threadPool,
+    StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService,
         newStorageSegmentIndex);
     StorageSegment newStorageSegment = new StorageSegment(storageSegmentFile);
     segmentFilesList.add(newStorageSegmentIndex, newStorageSegment);

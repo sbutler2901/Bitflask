@@ -10,8 +10,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 
 class StorageSegmentFile {
 
@@ -24,12 +24,12 @@ class StorageSegmentFile {
 
   private final AsynchronousFileChannel segmentFileChannel;
 
-  public StorageSegmentFile(ThreadPoolExecutor threadPoolExecutor, int segmentIndex)
+  public StorageSegmentFile(ExecutorService executorService, int segmentIndex)
       throws IOException {
     Path newSegmentFilePath = Paths
         .get(String.format(DEFAULT_SEGMENT_FILE_PATH, segmentIndex));
     segmentFileChannel = AsynchronousFileChannel
-        .open(newSegmentFilePath, fileChannelOptions, threadPoolExecutor);
+        .open(newSegmentFilePath, fileChannelOptions, executorService);
   }
 
   void write(byte[] data, long fileOffset) throws IOException {
