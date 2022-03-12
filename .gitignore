@@ -5,10 +5,14 @@
 /buildSrc/build/
 
 /client/build
+/client/out
 
 /server/build
+/server/out
 /server/store
 
 /resp/build
+/resp/out
 
 /storage/build
+/storage/out

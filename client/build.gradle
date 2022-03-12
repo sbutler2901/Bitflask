@@ -12,5 +12,6 @@ application {
 }
 
 run {
+    // Allow standard input while running client via gradle task
     standardInput = System.in
 }
