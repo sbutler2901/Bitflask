@@ -15,30 +15,11 @@ class StorageSegment {
   public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
 
   private final StorageSegmentFile storageSegmentFile;
-  private final ConcurrentMap<String, StorageEntry> storageEntryMap = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, StorageEntry> keyStorageEntryMap = new ConcurrentHashMap<>();
   private final AtomicLong currentFileWriteOffset = new AtomicLong(0);
 
   public StorageSegment(StorageSegmentFile storageSegmentFile) {
     this.storageSegmentFile = storageSegmentFile;
-  }
-
-  /**
-   * Checks if the segment exceeds the new segment threshold
-   *
-   * @return whether it exceeds the threshold, or not
-   */
-  public boolean exceedsStorageThreshold() {
-    return currentFileWriteOffset.get() > NEW_SEGMENT_THRESHOLD;
-  }
-
-  /**
-   * Checks if the segment contains the provided key
-   *
-   * @param key the key to be searched for
-   * @return whether it contains the key, or not
-   */
-  public boolean containsKey(String key) {
-    return storageEntryMap.containsKey(key);
   }
 
   /**
@@ -48,24 +29,30 @@ class StorageSegment {
    * @param value the associated data value to be written
    */
   public void write(String key, String value) {
-    String combinedPair = key + value;
-    byte[] combinedPairAry = combinedPair.getBytes(StandardCharsets.UTF_8);
-    long offset = currentFileWriteOffset.getAndAdd(combinedPairAry.length);
+    byte[] encodedKeyAndValue = encodeKeyAndValue(key, value);
+    long writeOffset = currentFileWriteOffset.getAndAdd(encodedKeyAndValue.length);
 
     try {
-      storageSegmentFile.write(combinedPairAry, offset);
-
-      StorageEntry storageEntry = new StorageEntry(offset, key.length(),
-          value.length());
-      // Handle newer value being written and added in another thread for same key
-      storageEntryMap.merge(key, storageEntry, (retrievedStorageEntry, writtenStorageEntry) ->
-          retrievedStorageEntry.getSegmentOffset() < writtenStorageEntry.getSegmentOffset()
-              ? writtenStorageEntry
-              : retrievedStorageEntry
-      );
+      storageSegmentFile.write(encodedKeyAndValue, writeOffset);
+      createAndAddNewStorageEntry(key, value, writeOffset);
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  private byte[] encodeKeyAndValue(String key, String value) {
+    String keyAndValueCombined = key + value;
+    return keyAndValueCombined.getBytes(StandardCharsets.UTF_8);
+  }
+
+  private void createAndAddNewStorageEntry(String key, String value, long offset) {
+    StorageEntry storageEntry = new StorageEntry(offset, key.length(), value.length());
+    // Handle newer value being written and added in another thread for same key
+    keyStorageEntryMap.merge(key, storageEntry, (retrievedStorageEntry, writtenStorageEntry) ->
+        retrievedStorageEntry.getSegmentOffset() < writtenStorageEntry.getSegmentOffset()
+            ? writtenStorageEntry
+            : retrievedStorageEntry
+    );
   }
 
   /**
@@ -79,13 +66,11 @@ class StorageSegment {
       return Optional.empty();
     }
 
-    StorageEntry storageEntry = storageEntryMap.get(key);
-
+    StorageEntry storageEntry = keyStorageEntryMap.get(key);
     try {
       byte[] readBytes = storageSegmentFile.read(storageEntry.getTotalLength(),
           storageEntry.getSegmentOffset());
-      String entry = new String(readBytes).trim();
-      String value = entry.substring(storageEntry.getKeyLength());
+      String value = decodeValue(readBytes, storageEntry.getKeyLength());
       return Optional.of(value);
     } catch (IOException e) {
       e.printStackTrace();
@@ -93,4 +78,29 @@ class StorageSegment {
 
     return Optional.empty();
   }
+
+  private String decodeValue(byte[] readBytes, int keyLength) {
+    String entry = new String(readBytes).trim();
+    return entry.substring(keyLength);
+  }
+
+  /**
+   * Checks if the segment contains the provided key
+   *
+   * @param key the key to be searched for
+   * @return whether it contains the key, or not
+   */
+  public boolean containsKey(String key) {
+    return keyStorageEntryMap.containsKey(key);
+  }
+
+  /**
+   * Checks if the segment exceeds the new segment threshold
+   *
+   * @return whether it exceeds the threshold, or not
+   */
+  public boolean exceedsStorageThreshold() {
+    return currentFileWriteOffset.get() > NEW_SEGMENT_THRESHOLD;
+  }
+
 }

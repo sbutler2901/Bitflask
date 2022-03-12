@@ -5,7 +5,7 @@ import java.util.Optional;
 
 public interface Storage {
 
-  void write(String key, String value) throws IOException, IllegalArgumentException;
+  void write(String key, String value) throws IOException;
 
   Optional<String> read(String key);
 }

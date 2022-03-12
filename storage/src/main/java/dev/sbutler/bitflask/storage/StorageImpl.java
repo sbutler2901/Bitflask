@@ -50,12 +50,8 @@ class StorageImpl implements Storage {
    * @throws IOException              when creating a new segment file fails
    * @throws IllegalArgumentException when the provided key or value is invalid
    */
-  public void write(String key, String value) throws IOException, IllegalArgumentException {
-    if (key == null || key.length() <= 0) {
-      throw new IllegalArgumentException(WRITE_ERR_BAD_KEY);
-    } else if (value == null || value.length() <= 0) {
-      throw new IllegalArgumentException(WRITE_ERR_BAD_VALUE);
-    }
+  public void write(String key, String value) throws IOException {
+    validateWriteArgs(key, value);
 
     int activeIndex = activeStorageSegmentIndex.get();
     StorageSegment activeStorageSegment = segmentFilesList.get(activeIndex);
@@ -64,23 +60,12 @@ class StorageImpl implements Storage {
     checkAndCreateNewStorageSegment();
   }
 
-  /**
-   * Reads the provided key's value from storage
-   *
-   * @param key the key used for retrieving stored data. Expected to be a non-blank string.
-   * @return the read value, if found
-   */
-  public Optional<String> read(String key) {
+  private void validateWriteArgs(String key, String value) {
     if (key == null || key.length() <= 0) {
-      throw new IllegalArgumentException(READ_ERR_BAD_KEY);
+      throw new IllegalArgumentException(WRITE_ERR_BAD_KEY);
+    } else if (value == null || value.length() <= 0) {
+      throw new IllegalArgumentException(WRITE_ERR_BAD_VALUE);
     }
-
-    Optional<StorageSegment> optionalStorageSegment = findLatestSegmentWithKey(key);
-    if (optionalStorageSegment.isEmpty()) {
-      return Optional.empty();
-    }
-
-    return optionalStorageSegment.get().read(key);
   }
 
   /**
@@ -94,6 +79,29 @@ class StorageImpl implements Storage {
 
     if (activeStorageSegment.exceedsStorageThreshold()) {
       createNewStorageSegment();
+    }
+  }
+
+  /**
+   * Reads the provided key's value from storage
+   *
+   * @param key the key used for retrieving stored data. Expected to be a non-blank string.
+   * @return the read value, if found
+   */
+  public Optional<String> read(String key) {
+    validateReadArgs(key);
+
+    Optional<StorageSegment> optionalStorageSegment = findLatestSegmentWithKey(key);
+    if (optionalStorageSegment.isEmpty()) {
+      return Optional.empty();
+    }
+
+    return optionalStorageSegment.get().read(key);
+  }
+
+  private void validateReadArgs(String key) {
+    if (key == null || key.length() <= 0) {
+      throw new IllegalArgumentException(READ_ERR_BAD_KEY);
     }
   }
 

@@ -26,10 +26,13 @@ class StorageSegmentFile {
 
   public StorageSegmentFile(ExecutorService executorService, int segmentIndex)
       throws IOException {
-    Path newSegmentFilePath = Paths
-        .get(String.format(DEFAULT_SEGMENT_FILE_PATH, segmentIndex));
+    Path newSegmentFilePath = getFilePath(segmentIndex);
     segmentFileChannel = AsynchronousFileChannel
         .open(newSegmentFilePath, fileChannelOptions, executorService);
+  }
+
+  private Path getFilePath(int segmentIndex) {
+    return Paths.get(String.format(DEFAULT_SEGMENT_FILE_PATH, segmentIndex));
   }
 
   void write(byte[] data, long fileOffset) throws IOException {
