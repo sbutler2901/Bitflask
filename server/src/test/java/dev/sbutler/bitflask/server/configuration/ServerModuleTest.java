@@ -6,6 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 
+import dev.sbutler.bitflask.server.network_service.NetworkService;
+import dev.sbutler.bitflask.server.network_service.NetworkServiceImpl;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.ExecutorService;
@@ -47,5 +49,12 @@ public class ServerModuleTest {
       ServerSocket mockedServerSocket = serverSocketMockedConstruction.constructed().get(0);
       assertEquals(mockedServerSocket, serverSocket);
     }
+  }
+
+  @Test
+  void provideNetworkService() {
+    NetworkServiceImpl mockNetworkService = mock(NetworkServiceImpl.class);
+    NetworkService networkService = serverModule.provideNetworkService(mockNetworkService);
+    assertEquals(mockNetworkService, networkService);
   }
 }

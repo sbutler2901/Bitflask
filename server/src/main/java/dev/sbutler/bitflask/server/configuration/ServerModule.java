@@ -3,6 +3,8 @@ package dev.sbutler.bitflask.server.configuration;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import dev.sbutler.bitflask.server.network_service.NetworkService;
+import dev.sbutler.bitflask.server.network_service.NetworkServiceImpl;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.ExecutorService;
@@ -46,5 +48,12 @@ public class ServerModule extends AbstractModule {
   @Singleton
   ServerSocket provideServerSocket(@ServerPort int port) throws IOException {
     return new ServerSocket(port);
+  }
+
+  // todo: determine best place for this
+  @Provides
+  @Singleton
+  NetworkService provideNetworkService(NetworkServiceImpl networkService) {
+    return networkService;
   }
 }

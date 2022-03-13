@@ -26,7 +26,7 @@ public class ClientRequestHandler implements Runnable, Closeable {
     while (!Thread.currentThread().isInterrupted() && shouldContinueRunning) {
       shouldContinueRunning = clientMessageProcessor.processNextMessage();
     }
-    System.out.printf("ClientRequestHandler: closing: isInterrupted [%b]",
+    System.out.printf("ClientRequestHandler: closing: isInterrupted [%b]\n",
         Thread.currentThread().isInterrupted());
     close();
   }

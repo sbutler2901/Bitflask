@@ -71,11 +71,4 @@ public class NetworkServiceImplTest {
     verify(serverSocket, times(1)).close();
   }
 
-  @Test
-  void close_IOException() throws IOException {
-    doThrow(new IOException("test")).when(serverSocket).close();
-    networkService.close();
-    verify(serverSocket, times(1)).close();
-  }
-
 }

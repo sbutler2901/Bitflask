@@ -4,7 +4,8 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
-import dev.sbutler.bitflask.server.network_service.NetworkServiceImpl;
+import dev.sbutler.bitflask.server.network_service.NetworkService;
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -15,10 +16,10 @@ import java.util.concurrent.TimeUnit;
 public class Server {
 
   private final ExecutorService executorService;
-  private final NetworkServiceImpl networkService;
+  private final NetworkService networkService;
 
   @Inject
-  private Server(ExecutorService executorService, NetworkServiceImpl networkService) {
+  private Server(ExecutorService executorService, NetworkService networkService) {
     this.executorService = executorService;
     this.networkService = networkService;
   }
@@ -53,7 +54,11 @@ public class Server {
   }
 
   private void shutdownNetworkService() {
-    networkService.close();
+    try {
+      networkService.close();
+    } catch (IOException e) {
+      System.out.println("Error closing NetworkService " + e.getMessage());
+    }
   }
 
   private void shutdownExecutorServiceAndAwaitTermination() {

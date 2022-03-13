@@ -12,7 +12,8 @@ import static org.mockito.Mockito.verify;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import dev.sbutler.bitflask.server.network_service.NetworkServiceImpl;
+import dev.sbutler.bitflask.server.network_service.NetworkService;
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -31,7 +32,7 @@ class ServerTest {
   @Mock
   ExecutorService executorService;
   @Mock
-  NetworkServiceImpl networkService;
+  NetworkService networkService;
 
   @Test
   void main() {
@@ -65,7 +66,7 @@ class ServerTest {
   }
 
   @Test
-  void shutdown() throws InterruptedException {
+  void shutdown() throws InterruptedException, IOException {
     server.shutdown();
     verify(networkService, times(1)).close();
     verify(executorService, times(1)).shutdownNow();
@@ -73,7 +74,16 @@ class ServerTest {
   }
 
   @Test
-  void shutdown_InterruptedException() throws InterruptedException {
+  void shutdown_IOException() throws IOException, InterruptedException {
+    doThrow(new IOException("test")).when(networkService).close();
+    server.shutdown();
+    verify(networkService, times(1)).close();
+    verify(executorService, times(1)).shutdownNow();
+    verify(executorService, times(1)).awaitTermination(anyLong(), any());
+  }
+
+  @Test
+  void shutdown_InterruptedException() throws InterruptedException, IOException {
     doThrow(new InterruptedException("test")).when(executorService)
         .awaitTermination(anyLong(), any());
     server.shutdown();

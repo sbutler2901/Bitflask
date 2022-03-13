@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.server.network_service;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.Singleton;
 import dev.sbutler.bitflask.resp.network.RespNetworkModule;
 import dev.sbutler.bitflask.server.client_connection.ClientConnectionModule;
 import dev.sbutler.bitflask.server.client_processing.ClientProcessingModule;
@@ -17,8 +16,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 
-@Singleton
-public class NetworkServiceImpl implements Runnable {
+public class NetworkServiceImpl implements NetworkService {
 
   private static final String SERVER_SOCKET_CLOSED = "Server socket closed";
   private static final String SERVER_SOCKET_FAILURE = "Failed to accept incoming client connections";
@@ -77,13 +75,8 @@ public class NetworkServiceImpl implements Runnable {
     );
   }
 
-  public void close() {
-    System.out.println("NetworkServiceImpl: closing");
-    try {
-      serverSocket.close();
-    } catch (IOException e) {
-      System.out.println("Exception thrown while closing serverSocket" + e.getMessage());
-    }
+  public void close() throws IOException {
+    serverSocket.close();
   }
 
   private void printClientConnectionInfo(Socket clientSocket) {
