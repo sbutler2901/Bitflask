@@ -4,7 +4,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
-import dev.sbutler.bitflask.server.network_service.NetworkService;
+import dev.sbutler.bitflask.server.network_service.NetworkServiceImpl;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -15,10 +15,10 @@ import java.util.concurrent.TimeUnit;
 public class Server {
 
   private final ExecutorService executorService;
-  private final NetworkService networkService;
+  private final NetworkServiceImpl networkService;
 
   @Inject
-  private Server(ExecutorService executorService, NetworkService networkService) {
+  private Server(ExecutorService executorService, NetworkServiceImpl networkService) {
     this.executorService = executorService;
     this.networkService = networkService;
   }

@@ -18,7 +18,7 @@ import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 
 @Singleton
-public class NetworkService implements Runnable {
+public class NetworkServiceImpl implements Runnable {
 
   private static final String SERVER_SOCKET_CLOSED = "Server socket closed";
   private static final String SERVER_SOCKET_FAILURE = "Failed to accept incoming client connections";
@@ -28,7 +28,7 @@ public class NetworkService implements Runnable {
   private Injector rootInjector;
 
   @Inject
-  public NetworkService(ExecutorService executorService, ServerSocket serverSocket) {
+  public NetworkServiceImpl(ExecutorService executorService, ServerSocket serverSocket) {
     this.executorService = executorService;
     this.serverSocket = serverSocket;
   }
@@ -78,7 +78,7 @@ public class NetworkService implements Runnable {
   }
 
   public void close() {
-    System.out.println("NetworkService: closing");
+    System.out.println("NetworkServiceImpl: closing");
     try {
       serverSocket.close();
     } catch (IOException e) {

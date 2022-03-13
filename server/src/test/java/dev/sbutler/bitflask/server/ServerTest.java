@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import dev.sbutler.bitflask.server.network_service.NetworkService;
+import dev.sbutler.bitflask.server.network_service.NetworkServiceImpl;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -31,7 +31,7 @@ class ServerTest {
   @Mock
   ExecutorService executorService;
   @Mock
-  NetworkService networkService;
+  NetworkServiceImpl networkService;
 
   @Test
   void main() {
