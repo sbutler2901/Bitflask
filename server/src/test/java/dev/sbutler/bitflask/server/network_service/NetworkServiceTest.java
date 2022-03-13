@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.server.network_service;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -17,6 +16,7 @@ import dev.sbutler.bitflask.server.client_processing.ClientRequestHandler;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,32 +58,24 @@ public class NetworkServiceTest {
   }
 
   @Test
-  void run_IOException() throws IOException {
-    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
-      Injector rootInjector = mock(Injector.class);
-      guiceMockedStatic.when(() -> Guice.createInjector((Module) any())).thenReturn(rootInjector);
-      doThrow(new IOException("Test: socket accept")).when(serverSocket).accept();
-
-      networkService.run();
-
-      verify(executorService, times(1)).shutdown();
-    }
+  void run_SocketException() throws IOException {
+    doThrow(new SocketException("test")).when(serverSocket).accept();
+    when(serverSocket.isClosed()).thenReturn(false).thenReturn(true);
+    networkService.run();
+    verify(executorService, times(0)).execute(any(ClientRequestHandler.class));
   }
 
   @Test
-  void shutdownAndAwaitTermination() {
-    networkService.shutdownAndAwaitTermination();
-    verify(executorService, times(1)).shutdown();
-    verify(executorService, times(1)).shutdownNow();
+  void close() throws IOException {
+    networkService.close();
+    verify(serverSocket, times(1)).close();
   }
 
   @Test
-  void shutdownAndAwaitTermination_InterruptedException() throws InterruptedException {
-    doThrow(new InterruptedException("test")).when(executorService)
-        .awaitTermination(anyLong(), any());
-    networkService.shutdownAndAwaitTermination();
-    verify(executorService, times(1)).shutdown();
-    verify(executorService, times(1)).shutdownNow();
+  void close_IOException() throws IOException {
+    doThrow(new IOException("test")).when(serverSocket).close();
+    networkService.close();
+    verify(serverSocket, times(1)).close();
   }
 
 }

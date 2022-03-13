@@ -2,9 +2,10 @@ package dev.sbutler.bitflask.server.client_processing;
 
 import com.google.inject.Inject;
 import dev.sbutler.bitflask.server.client_connection.ClientConnectionManager;
+import java.io.Closeable;
 import java.io.IOException;
 
-public class ClientRequestHandler implements Runnable {
+public class ClientRequestHandler implements Runnable, Closeable {
 
   private static final String TERMINATING_CONNECTION = "Terminating session.";
 
@@ -22,9 +23,11 @@ public class ClientRequestHandler implements Runnable {
 
   @Override
   public void run() {
-    while (!Thread.interrupted() && shouldContinueRunning) {
+    while (!Thread.currentThread().isInterrupted() && shouldContinueRunning) {
       shouldContinueRunning = clientMessageProcessor.processNextMessage();
     }
+    System.out.printf("ClientRequestHandler: closing: isInterrupted [%b]",
+        Thread.currentThread().isInterrupted());
     close();
   }
 

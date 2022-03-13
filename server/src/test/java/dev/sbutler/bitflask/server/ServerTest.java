@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.server;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -17,21 +18,27 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ServerTest {
 
+  @InjectMocks
+  Server server;
+  @Mock
+  ExecutorService executorService;
+  @Mock
+  NetworkService networkService;
+
   @Test
-  void main_success() {
+  void main() {
     try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       Injector mockedInjector = mock(Injector.class);
       guiceMockedStatic.when(() -> Guice.createInjector((Module) any())).thenReturn(mockedInjector);
-      ExecutorService executorService = mock(ExecutorService.class);
-      NetworkService networkService = mock(NetworkService.class);
-      doReturn(executorService).when(mockedInjector).getInstance(ExecutorService.class);
-      doReturn(networkService).when(mockedInjector).getInstance(NetworkService.class);
+      doReturn(server).when(mockedInjector).getInstance(Server.class);
 
       doReturn(mock(Future.class)).when(executorService).submit(networkService);
 
@@ -42,24 +49,36 @@ class ServerTest {
   }
 
   @Test
-  void main_Exception() throws ExecutionException, InterruptedException {
-    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
-      Injector mockedInjector = mock(Injector.class);
-      guiceMockedStatic.when(() -> Guice.createInjector((Module) any())).thenReturn(mockedInjector);
-      ExecutorService executorService = mock(ExecutorService.class);
-      NetworkService networkService = mock(NetworkService.class);
-      doReturn(executorService).when(mockedInjector).getInstance(ExecutorService.class);
-      doReturn(networkService).when(mockedInjector).getInstance(NetworkService.class);
+  void run() {
+    doReturn(mock(Future.class)).when(executorService).submit(networkService);
+    server.run();
+    verify(executorService, times(1)).submit(networkService);
+  }
 
-      Future<?> future = mock(Future.class);
-      doReturn(future).when(executorService).submit(networkService);
+  @Test
+  void run_Exception() throws ExecutionException, InterruptedException {
+    Future<?> future = mock(Future.class);
+    doReturn(future).when(executorService).submit(networkService);
+    doThrow(new InterruptedException("test")).when(future).get();
+    server.run();
+    verify(executorService, times(1)).submit(networkService);
+  }
 
-      doThrow(new InterruptedException("test")).when(future).get();
+  @Test
+  void shutdown() throws InterruptedException {
+    server.shutdown();
+    verify(networkService, times(1)).close();
+    verify(executorService, times(1)).shutdownNow();
+    verify(executorService, times(1)).awaitTermination(anyLong(), any());
+  }
 
-      Server.main(null);
-
-      verify(executorService, times(1)).submit(networkService);
-      verify(networkService, times(1)).shutdownAndAwaitTermination();
-    }
+  @Test
+  void shutdown_InterruptedException() throws InterruptedException {
+    doThrow(new InterruptedException("test")).when(executorService)
+        .awaitTermination(anyLong(), any());
+    server.shutdown();
+    verify(networkService, times(1)).close();
+    verify(executorService, times(2)).shutdownNow();
+    verify(executorService, times(1)).awaitTermination(anyLong(), any());
   }
 }
