@@ -6,7 +6,8 @@ import com.google.inject.Singleton;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.server.network_service.NetworkServiceImpl;
 import java.io.IOException;
-import java.net.ServerSocket;
+import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -15,6 +16,7 @@ public class ServerModule extends AbstractModule {
   private static final ServerModule instance = new ServerModule();
 
   private ExecutorService executorService;
+  private ServerSocketChannel serverSocketChannel;
 
   private ServerModule() {
   }
@@ -46,8 +48,13 @@ public class ServerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  ServerSocket provideServerSocket(@ServerPort int port) throws IOException {
-    return new ServerSocket(port);
+  ServerSocketChannel provideServerSocketChannel(@ServerPort int port) throws IOException {
+    if (serverSocketChannel == null) {
+      serverSocketChannel = ServerSocketChannel.open();
+      InetSocketAddress inetSocketAddress = new InetSocketAddress(port);
+      serverSocketChannel.bind(inetSocketAddress);
+    }
+    return serverSocketChannel;
   }
 
   // todo: determine best place for this

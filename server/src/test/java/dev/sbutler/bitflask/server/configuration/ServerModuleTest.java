@@ -3,17 +3,15 @@ package dev.sbutler.bitflask.server.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.server.network_service.NetworkServiceImpl;
 import java.io.IOException;
-import java.net.ServerSocket;
+import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 
 public class ServerModuleTest {
@@ -42,12 +40,14 @@ public class ServerModuleTest {
   }
 
   @Test
-  void provideServerSocket() throws IOException {
-    try (MockedConstruction<ServerSocket> serverSocketMockedConstruction = mockConstruction(
-        ServerSocket.class)) {
-      ServerSocket serverSocket = serverModule.provideServerSocket(9090);
-      ServerSocket mockedServerSocket = serverSocketMockedConstruction.constructed().get(0);
-      assertEquals(mockedServerSocket, serverSocket);
+  void provideServerSocketChannel() throws IOException {
+    try (MockedStatic<ServerSocketChannel> serverSocketChannelMockedStatic = mockStatic(
+        ServerSocketChannel.class)) {
+      ServerSocketChannel mockedServerSocketChannel = mock(ServerSocketChannel.class);
+      serverSocketChannelMockedStatic.when(ServerSocketChannel::open)
+          .thenReturn(mockedServerSocketChannel);
+      ServerSocketChannel serverSocketChannel = serverModule.provideServerSocketChannel(9090);
+      assertEquals(mockedServerSocketChannel, serverSocketChannel);
     }
   }
 

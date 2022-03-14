@@ -14,9 +14,9 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import dev.sbutler.bitflask.server.client_processing.ClientRequestHandler;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +34,7 @@ public class NetworkServiceImplTest {
   @Mock
   ExecutorService executorService;
   @Mock
-  ServerSocket serverSocket;
+  ServerSocketChannel serverSocketChannel;
 
   @Test
   void run() throws IOException {
@@ -43,8 +43,9 @@ public class NetworkServiceImplTest {
       guiceMockedStatic.when(() -> Guice.createInjector((Module) any())).thenReturn(rootInjector);
       Injector childInjector = mock(Injector.class);
       doReturn(childInjector).when(rootInjector).createChildInjector((Module) any());
-      Socket mockClientSocket = mock(Socket.class);
-      when(serverSocket.accept()).thenReturn(mockClientSocket)
+      doReturn(true).when(serverSocketChannel).isOpen();
+      SocketChannel socketChannel = mock(SocketChannel.class);
+      when(serverSocketChannel.accept()).thenReturn(socketChannel)
           .thenThrow(new IOException("test: loop termination"));
 
       ClientRequestHandler mockedClientRequestHandler = mock(ClientRequestHandler.class);
@@ -58,9 +59,9 @@ public class NetworkServiceImplTest {
   }
 
   @Test
-  void run_SocketException() throws IOException {
-    doThrow(new SocketException("test")).when(serverSocket).accept();
-    when(serverSocket.isClosed()).thenReturn(false).thenReturn(true);
+  void run_ClosedChannelException() throws IOException {
+    doThrow(new ClosedChannelException()).when(serverSocketChannel).accept();
+    when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
     networkService.run();
     verify(executorService, times(0)).execute(any(ClientRequestHandler.class));
   }
@@ -68,7 +69,7 @@ public class NetworkServiceImplTest {
   @Test
   void close() throws IOException {
     networkService.close();
-    verify(serverSocket, times(1)).close();
+    verify(serverSocketChannel, times(1)).close();
   }
 
 }

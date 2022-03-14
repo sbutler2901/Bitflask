@@ -11,9 +11,9 @@ import dev.sbutler.bitflask.server.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.storage.StorageModule;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 
 public class NetworkServiceImpl implements NetworkService {
@@ -22,13 +22,14 @@ public class NetworkServiceImpl implements NetworkService {
   private static final String SERVER_SOCKET_FAILURE = "Failed to accept incoming client connections";
 
   private final ExecutorService executorService;
-  private final ServerSocket serverSocket;
+  private final ServerSocketChannel serverSocketChannel;
   private Injector rootInjector;
 
   @Inject
-  public NetworkServiceImpl(ExecutorService executorService, ServerSocket serverSocket) {
+  public NetworkServiceImpl(ExecutorService executorService,
+      ServerSocketChannel serverSocketChannel) {
     this.executorService = executorService;
-    this.serverSocket = serverSocket;
+    this.serverSocketChannel = serverSocketChannel;
   }
 
   @Override
@@ -36,7 +37,7 @@ public class NetworkServiceImpl implements NetworkService {
     initialize();
 
     try {
-      while (!serverSocket.isClosed()) {
+      while (serverSocketChannel.isOpen()) {
         acceptAndExecuteNextClientConnection();
       }
     } catch (IOException e) {
@@ -53,35 +54,34 @@ public class NetworkServiceImpl implements NetworkService {
 
   private void acceptAndExecuteNextClientConnection() throws IOException {
     try {
-      Socket clientSocket = serverSocket.accept();
-      Injector injector = createChildInjector(clientSocket);
+      SocketChannel socketChannel = serverSocketChannel.accept();
+      Injector injector = createChildInjector(socketChannel);
       ClientRequestHandler clientRequestHandler = injector.getInstance(
           ClientRequestHandler.class);
 
-      printClientConnectionInfo(clientSocket);
+      printClientConnectionInfo(socketChannel);
 
       executorService.execute(clientRequestHandler);
-    } catch (SocketException e) {
+    } catch (ClosedChannelException e) {
       System.out.println(SERVER_SOCKET_CLOSED);
     }
   }
 
-  private Injector createChildInjector(Socket clientSocket) {
+  private Injector createChildInjector(SocketChannel clientSocketChannel) {
     return rootInjector.createChildInjector(
         new CommandProcessingModule(),
-        new ClientConnectionModule(clientSocket),
+        new ClientConnectionModule(clientSocketChannel.socket()),
         new RespNetworkModule(),
         new ClientProcessingModule()
     );
   }
 
   public void close() throws IOException {
-    serverSocket.close();
+    serverSocketChannel.close();
   }
 
-  private void printClientConnectionInfo(Socket clientSocket) {
+  private void printClientConnectionInfo(SocketChannel socketChannel) throws IOException {
     System.out.println(
-        "S: Received incoming client connection from " + clientSocket.getInetAddress() + ":"
-            + clientSocket.getPort());
+        "S: Received incoming client connection from " + socketChannel.getRemoteAddress());
   }
 }
