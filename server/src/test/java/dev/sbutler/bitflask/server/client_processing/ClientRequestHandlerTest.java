@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.server.client_processing;
 
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
@@ -44,11 +43,7 @@ public class ClientRequestHandlerTest {
   void close_IOException() throws IOException {
     doThrow(new IOException("Test: failure to close socket")).when(clientConnectionManager).close();
 
-    try {
-      clientRequestHandler.close();
-    } catch (Exception e) {
-      fail("Test: exception caught from close()");
-    }
+    clientRequestHandler.close();
 
     verify(clientConnectionManager, times(1)).close();
   }

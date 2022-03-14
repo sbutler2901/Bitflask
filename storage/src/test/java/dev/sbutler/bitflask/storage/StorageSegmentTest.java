@@ -91,6 +91,10 @@ public class StorageSegmentTest {
   @Test
   void exceedsStorageThreshold() {
     assertFalse(storageSegment.exceedsStorageThreshold());
-    // todo: test threshold exceeded
+    // key bytes + 1MiB from value to exceed
+    int oneMiB = 1048576;
+    String thresholdSizedValue = new String(new char[oneMiB]);
+    storageSegment.write("key", thresholdSizedValue);
+    assertTrue(storageSegment.exceedsStorageThreshold());
   }
 }
