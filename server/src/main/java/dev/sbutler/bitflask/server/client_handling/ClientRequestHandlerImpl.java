@@ -5,7 +5,7 @@ import dev.sbutler.bitflask.server.client_handling.connection.ClientConnectionMa
 import dev.sbutler.bitflask.server.client_handling.processing.ClientMessageProcessor;
 import java.io.IOException;
 
-public class ClientRequestHandlerImpl implements ClientRequestHandler {
+class ClientRequestHandlerImpl implements ClientRequestHandler {
 
   private static final String TERMINATING_CONNECTION = "Terminating session.";
 
@@ -15,7 +15,7 @@ public class ClientRequestHandlerImpl implements ClientRequestHandler {
   private boolean shouldContinueRunning = true;
 
   @Inject
-  public ClientRequestHandlerImpl(ClientConnectionManager clientConnectionManager,
+  ClientRequestHandlerImpl(ClientConnectionManager clientConnectionManager,
       ClientMessageProcessor clientMessageProcessor) {
     this.clientConnectionManager = clientConnectionManager;
     this.clientMessageProcessor = clientMessageProcessor;

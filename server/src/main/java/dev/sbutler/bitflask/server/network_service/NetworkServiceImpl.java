@@ -6,8 +6,6 @@ import com.google.inject.Injector;
 import dev.sbutler.bitflask.resp.network.RespNetworkModule;
 import dev.sbutler.bitflask.server.client_handling.ClientRequestHandler;
 import dev.sbutler.bitflask.server.client_handling.ClientRequestModule;
-import dev.sbutler.bitflask.server.client_handling.connection.ClientConnectionModule;
-import dev.sbutler.bitflask.server.client_handling.processing.ClientProcessingModule;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.storage.StorageModule;
@@ -17,7 +15,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 
-public class NetworkServiceImpl implements NetworkService {
+class NetworkServiceImpl implements NetworkService {
 
   private static final String SERVER_SOCKET_CLOSED = "Server socket closed";
   private static final String SERVER_SOCKET_FAILURE = "Failed to accept incoming client connections";
@@ -27,7 +25,7 @@ public class NetworkServiceImpl implements NetworkService {
   private Injector rootInjector;
 
   @Inject
-  public NetworkServiceImpl(ExecutorService executorService,
+  NetworkServiceImpl(ExecutorService executorService,
       ServerSocketChannel serverSocketChannel) {
     this.executorService = executorService;
     this.serverSocketChannel = serverSocketChannel;
@@ -49,7 +47,8 @@ public class NetworkServiceImpl implements NetworkService {
   private void initialize() {
     rootInjector = Guice.createInjector(
         ServerModule.getInstance(),
-        StorageModule.getInstance()
+        StorageModule.getInstance(),
+        new CommandProcessingModule()
     );
   }
 
@@ -70,11 +69,8 @@ public class NetworkServiceImpl implements NetworkService {
 
   private Injector createChildInjector(SocketChannel clientSocketChannel) {
     return rootInjector.createChildInjector(
-        new ClientRequestModule(),
-        new CommandProcessingModule(),
-        new ClientConnectionModule(clientSocketChannel),
-        new RespNetworkModule(),
-        new ClientProcessingModule()
+        new ClientRequestModule(clientSocketChannel),
+        new RespNetworkModule()
     );
   }
 

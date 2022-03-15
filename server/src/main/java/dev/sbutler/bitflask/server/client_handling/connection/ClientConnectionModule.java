@@ -5,20 +5,8 @@ import com.google.inject.Provides;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.channels.SocketChannel;
 
 public class ClientConnectionModule extends AbstractModule {
-
-  private final SocketChannel socketChannel;
-
-  public ClientConnectionModule(SocketChannel socketChannel) {
-    this.socketChannel = socketChannel;
-  }
-
-  @Provides
-  SocketChannel provideSocket() {
-    return socketChannel;
-  }
 
   @Provides
   ClientConnectionManager provideClientConnectionManager(

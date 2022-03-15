@@ -10,7 +10,7 @@ import dev.sbutler.bitflask.server.command_processing.ServerCommand;
 import java.io.EOFException;
 import java.io.IOException;
 
-public class ClientMessageProcessorImpl implements ClientMessageProcessor {
+class ClientMessageProcessorImpl implements ClientMessageProcessor {
 
   private final CommandProcessor commandProcessor;
   private final RespReader respReader;

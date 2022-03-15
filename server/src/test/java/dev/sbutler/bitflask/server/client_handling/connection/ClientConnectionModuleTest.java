@@ -8,27 +8,11 @@ import static org.mockito.Mockito.mock;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 public class ClientConnectionModuleTest {
 
-  @InjectMocks
-  private ClientConnectionModule clientConnectionModule;
-
-  @Mock
-  private SocketChannel socketChannel;
-
-  @Test
-  void socket() {
-    SocketChannel socketChannel = clientConnectionModule.provideSocket();
-    assertEquals(this.socketChannel, socketChannel);
-  }
+  private final ClientConnectionModule clientConnectionModule = new ClientConnectionModule();
 
   @Test
   void provideClientConnectionManager() {

@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.SocketChannel;
 
-public class ClientConnectionManagerImpl implements ClientConnectionManager {
+class ClientConnectionManagerImpl implements ClientConnectionManager {
 
   private final SocketChannel socketChannel;
 

@@ -5,12 +5,12 @@ import dev.sbutler.bitflask.storage.Storage;
 import java.io.IOException;
 import lombok.NonNull;
 
-public class CommandProcessorImpl implements CommandProcessor {
+class CommandProcessorImpl implements CommandProcessor {
 
   private final Storage storage;
 
   @Inject
-  public CommandProcessorImpl(Storage storage) {
+  CommandProcessorImpl(Storage storage) {
     this.storage = storage;
   }
 

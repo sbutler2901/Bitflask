@@ -13,7 +13,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import dev.sbutler.bitflask.server.client_handling.ClientRequestHandler;
-import dev.sbutler.bitflask.server.client_handling.ClientRequestHandlerImpl;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
@@ -64,7 +63,7 @@ public class NetworkServiceImplTest {
     doThrow(new ClosedChannelException()).when(serverSocketChannel).accept();
     when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
     networkService.run();
-    verify(executorService, times(0)).execute(any(ClientRequestHandlerImpl.class));
+    verify(executorService, times(0)).execute(any(ClientRequestHandler.class));
   }
 
   @Test
