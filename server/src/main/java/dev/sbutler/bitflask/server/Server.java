@@ -9,11 +9,15 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides support for getting and setting key value pairs with persistence
  */
 public class Server {
+
+  private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
   private final ExecutorService executorService;
   private final NetworkService networkService;
@@ -25,8 +29,6 @@ public class Server {
   }
 
   public static void main(String[] args) {
-    printConfigInfo();
-
     Injector injector = Guice.createInjector(ServerModule.getInstance());
     Server server = injector.getInstance(Server.class);
 
@@ -34,13 +36,14 @@ public class Server {
   }
 
   void run() {
+    printConfigInfo();
     registerShutdownHook();
 
     try {
       executorService.submit(networkService).get();
     } catch (InterruptedException | ExecutionException e) {
       // todo: determine best way to handle these exceptions
-      e.printStackTrace();
+      logger.error("Issue executing NetworkService", e);
     }
   }
 
@@ -57,7 +60,7 @@ public class Server {
     try {
       networkService.close();
     } catch (IOException e) {
-      System.out.println("Error closing NetworkService " + e.getMessage());
+      logger.error("Error closing NetworkService", e);
     }
   }
 
@@ -77,8 +80,7 @@ public class Server {
     }
   }
 
-  private static void printConfigInfo() {
-    System.out
-        .printf("Runtime processors available (%s)%n", Runtime.getRuntime().availableProcessors());
+  private void printConfigInfo() {
+    logger.info("Runtime processors available {}", Runtime.getRuntime().availableProcessors());
   }
 }
