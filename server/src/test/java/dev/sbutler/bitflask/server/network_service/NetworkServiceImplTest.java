@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import dev.sbutler.bitflask.server.client_processing.ClientRequestHandler;
+import dev.sbutler.bitflask.server.client_request.ClientRequestHandler;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;

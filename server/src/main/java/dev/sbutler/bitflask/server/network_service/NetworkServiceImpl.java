@@ -6,7 +6,7 @@ import com.google.inject.Injector;
 import dev.sbutler.bitflask.resp.network.RespNetworkModule;
 import dev.sbutler.bitflask.server.client_connection.ClientConnectionModule;
 import dev.sbutler.bitflask.server.client_processing.ClientProcessingModule;
-import dev.sbutler.bitflask.server.client_processing.ClientRequestHandler;
+import dev.sbutler.bitflask.server.client_request.ClientRequestHandler;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.storage.StorageModule;

@@ -1,7 +1,8 @@
-package dev.sbutler.bitflask.server.client_processing;
+package dev.sbutler.bitflask.server.client_request;
 
 import com.google.inject.Inject;
 import dev.sbutler.bitflask.server.client_connection.ClientConnectionManager;
+import dev.sbutler.bitflask.server.client_processing.ClientMessageProcessor;
 import java.io.Closeable;
 import java.io.IOException;
 

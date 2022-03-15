@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_processing;
+package dev.sbutler.bitflask.server.client_request;
 
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.doReturn;
@@ -7,6 +7,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import dev.sbutler.bitflask.server.client_connection.ClientConnectionManager;
+import dev.sbutler.bitflask.server.client_processing.ClientMessageProcessor;
 import java.io.IOException;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
