@@ -9,8 +9,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
-import dev.sbutler.bitflask.resp.network.reader.RespReader;
-import dev.sbutler.bitflask.resp.network.writer.RespWriter;
 import dev.sbutler.bitflask.server.client_handling.connection.ClientConnectionManager;
 import dev.sbutler.bitflask.server.client_handling.processing.ClientMessageProcessor;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
@@ -61,8 +59,6 @@ public class ClientRequestModuleTest {
     @Override
     @SuppressWarnings("unchecked")
     protected void configure() {
-      bind(RespReader.class).toProvider(mock(Provider.class));
-      bind(RespWriter.class).toProvider(mock(Provider.class));
       bind(CommandProcessor.class).toProvider(mock(Provider.class));
     }
   }

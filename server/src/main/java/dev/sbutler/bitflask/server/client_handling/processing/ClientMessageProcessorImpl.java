@@ -33,7 +33,8 @@ class ClientMessageProcessorImpl implements ClientMessageProcessor {
     } catch (EOFException e) {
       System.out.println("Client disconnected.");
     } catch (IOException e) {
-      System.out.println(e.getMessage());
+      // todo: test more
+      System.out.println("Server shutdown while reading client next message");
     }
     return false;
   }

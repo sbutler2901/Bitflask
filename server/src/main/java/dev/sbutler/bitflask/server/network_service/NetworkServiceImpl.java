@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.server.network_service;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.resp.network.RespNetworkModule;
 import dev.sbutler.bitflask.server.client_handling.ClientRequestHandler;
 import dev.sbutler.bitflask.server.client_handling.ClientRequestModule;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessingModule;
@@ -68,10 +67,7 @@ class NetworkServiceImpl implements NetworkService {
   }
 
   private Injector createChildInjector(SocketChannel clientSocketChannel) {
-    return rootInjector.createChildInjector(
-        new ClientRequestModule(clientSocketChannel),
-        new RespNetworkModule()
-    );
+    return rootInjector.createChildInjector(new ClientRequestModule(clientSocketChannel));
   }
 
   public void close() throws IOException {
