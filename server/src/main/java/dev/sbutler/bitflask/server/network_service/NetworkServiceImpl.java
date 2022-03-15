@@ -6,7 +6,7 @@ import com.google.inject.Injector;
 import dev.sbutler.bitflask.resp.network.RespNetworkModule;
 import dev.sbutler.bitflask.server.client_connection.ClientConnectionModule;
 import dev.sbutler.bitflask.server.client_processing.ClientProcessingModule;
-import dev.sbutler.bitflask.server.client_request.ClientRequestHandler;
+import dev.sbutler.bitflask.server.client_request.ClientRequestHandlerImpl;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.storage.StorageModule;
@@ -56,8 +56,8 @@ public class NetworkServiceImpl implements NetworkService {
     try {
       SocketChannel socketChannel = serverSocketChannel.accept();
       Injector injector = createChildInjector(socketChannel);
-      ClientRequestHandler clientRequestHandler = injector.getInstance(
-          ClientRequestHandler.class);
+      ClientRequestHandlerImpl clientRequestHandler = injector.getInstance(
+          ClientRequestHandlerImpl.class);
 
       printClientConnectionInfo(socketChannel);
 

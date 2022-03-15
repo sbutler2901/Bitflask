@@ -6,7 +6,7 @@ import dev.sbutler.bitflask.server.client_processing.ClientMessageProcessor;
 import java.io.Closeable;
 import java.io.IOException;
 
-public class ClientRequestHandler implements Runnable, Closeable {
+public class ClientRequestHandlerImpl implements Runnable, Closeable {
 
   private static final String TERMINATING_CONNECTION = "Terminating session.";
 
@@ -16,7 +16,7 @@ public class ClientRequestHandler implements Runnable, Closeable {
   private boolean shouldContinueRunning = true;
 
   @Inject
-  public ClientRequestHandler(ClientConnectionManager clientConnectionManager,
+  public ClientRequestHandlerImpl(ClientConnectionManager clientConnectionManager,
       ClientMessageProcessor clientMessageProcessor) {
     this.clientConnectionManager = clientConnectionManager;
     this.clientMessageProcessor = clientMessageProcessor;

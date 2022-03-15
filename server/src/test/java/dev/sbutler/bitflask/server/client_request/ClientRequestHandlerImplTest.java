@@ -17,10 +17,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ClientRequestHandlerTest {
+public class ClientRequestHandlerImplTest {
 
   @InjectMocks
-  ClientRequestHandler clientRequestHandler;
+  ClientRequestHandlerImpl clientRequestHandler;
 
   @Mock
   ClientConnectionManager clientConnectionManager;
