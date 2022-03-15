@@ -2,18 +2,19 @@ package dev.sbutler.bitflask.server.client_handling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Binding;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
 import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.network.writer.RespWriter;
+import dev.sbutler.bitflask.server.client_handling.connection.ClientConnectionManager;
+import dev.sbutler.bitflask.server.client_handling.processing.ClientMessageProcessor;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,8 +33,12 @@ public class ClientRequestModuleTest {
   @Test
   void configure() {
     Injector injector = Guice.createInjector(new MockModule(), clientRequestModule);
-    Binding<?> test = injector.getBinding(ArrayList.class);
-    System.out.println("test");
+    try {
+      injector.getBinding(ClientConnectionManager.class);
+      injector.getBinding(ClientMessageProcessor.class);
+    } catch (Exception e) {
+      fail(e.getMessage());
+    }
   }
 
   @Test
