@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import dev.sbutler.bitflask.server.client_request.ClientRequestHandler;
 import dev.sbutler.bitflask.server.client_request.ClientRequestHandlerImpl;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
@@ -48,9 +49,9 @@ public class NetworkServiceImplTest {
       when(serverSocketChannel.accept()).thenReturn(socketChannel)
           .thenThrow(new IOException("test: loop termination"));
 
-      ClientRequestHandlerImpl mockedClientRequestHandler = mock(ClientRequestHandlerImpl.class);
+      ClientRequestHandler mockedClientRequestHandler = mock(ClientRequestHandler.class);
       doReturn(mockedClientRequestHandler).when(childInjector)
-          .getInstance(ClientRequestHandlerImpl.class);
+          .getInstance(ClientRequestHandler.class);
 
       networkService.run();
 

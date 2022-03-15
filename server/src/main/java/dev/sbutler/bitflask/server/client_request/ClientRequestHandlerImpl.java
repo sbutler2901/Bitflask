@@ -3,10 +3,9 @@ package dev.sbutler.bitflask.server.client_request;
 import com.google.inject.Inject;
 import dev.sbutler.bitflask.server.client_connection.ClientConnectionManager;
 import dev.sbutler.bitflask.server.client_processing.ClientMessageProcessor;
-import java.io.Closeable;
 import java.io.IOException;
 
-public class ClientRequestHandlerImpl implements Runnable, Closeable {
+public class ClientRequestHandlerImpl implements ClientRequestHandler {
 
   private static final String TERMINATING_CONNECTION = "Terminating session.";
 
