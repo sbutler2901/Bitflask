@@ -4,29 +4,29 @@ import com.google.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.Socket;
+import java.nio.channels.SocketChannel;
 
 public class ClientConnectionManagerImpl implements ClientConnectionManager {
 
-  private final Socket socket;
+  private final SocketChannel socketChannel;
 
   @Inject
-  ClientConnectionManagerImpl(Socket socket) {
-    this.socket = socket;
+  ClientConnectionManagerImpl(SocketChannel socketChannel) {
+    this.socketChannel = socketChannel;
   }
 
   @Override
   public void close() throws IOException {
-    socket.close();
+    socketChannel.close();
   }
 
   @Override
   public InputStream getInputStream() throws IOException {
-    return socket.getInputStream();
+    return socketChannel.socket().getInputStream();
   }
 
   @Override
   public OutputStream getOutputStream() throws IOException {
-    return socket.getOutputStream();
+    return socketChannel.socket().getOutputStream();
   }
 }

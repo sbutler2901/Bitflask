@@ -70,7 +70,7 @@ public class NetworkServiceImpl implements NetworkService {
   private Injector createChildInjector(SocketChannel clientSocketChannel) {
     return rootInjector.createChildInjector(
         new CommandProcessingModule(),
-        new ClientConnectionModule(clientSocketChannel.socket()),
+        new ClientConnectionModule(clientSocketChannel),
         new RespNetworkModule(),
         new ClientProcessingModule()
     );

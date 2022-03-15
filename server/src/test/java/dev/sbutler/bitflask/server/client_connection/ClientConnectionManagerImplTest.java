@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,29 +24,35 @@ public class ClientConnectionManagerImplTest {
   ClientConnectionManagerImpl clientConnectionManager;
 
   @Mock
-  Socket socket;
+  SocketChannel socketChannel;
 
   @Test
   void close() throws IOException {
     clientConnectionManager.close();
-    verify(socket, times(1)).close();
+    verify(socketChannel, times(1)).close();
   }
 
   @Test
   void getInputStream() throws IOException {
+    Socket socket = mock(Socket.class);
+    doReturn(socket).when(socketChannel).socket();
     InputStream mockInputStream = mock(InputStream.class);
     doReturn(mockInputStream).when(socket).getInputStream();
     InputStream inputStream = clientConnectionManager.getInputStream();
     assertEquals(mockInputStream, inputStream);
+    verify(socketChannel, times(1)).socket();
     verify(socket, times(1)).getInputStream();
   }
 
   @Test
   void getOutputStream() throws IOException {
+    Socket socket = mock(Socket.class);
+    doReturn(socket).when(socketChannel).socket();
     OutputStream mockOutputStream = mock(OutputStream.class);
     doReturn(mockOutputStream).when(socket).getOutputStream();
     OutputStream outputStream = clientConnectionManager.getOutputStream();
     assertEquals(mockOutputStream, outputStream);
+    verify(socketChannel, times(1)).socket();
     verify(socket, times(1)).getOutputStream();
   }
 }
