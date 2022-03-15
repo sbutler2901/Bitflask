@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_processing;
+package dev.sbutler.bitflask.server.client_handling.processing;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -8,11 +8,11 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import dev.sbutler.bitflask.resp.network.reader.RespReader;
+import dev.sbutler.bitflask.resp.network.writer.RespWriter;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
-import dev.sbutler.bitflask.resp.network.reader.RespReader;
-import dev.sbutler.bitflask.resp.network.writer.RespWriter;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.server.command_processing.ServerCommand;
 import java.io.EOFException;

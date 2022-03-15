@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_connection;
+package dev.sbutler.bitflask.server.client_handling.connection;
 
 import java.io.IOException;
 import java.io.InputStream;

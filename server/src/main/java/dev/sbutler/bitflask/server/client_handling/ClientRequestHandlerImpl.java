@@ -1,8 +1,8 @@
-package dev.sbutler.bitflask.server.client_request;
+package dev.sbutler.bitflask.server.client_handling;
 
 import com.google.inject.Inject;
-import dev.sbutler.bitflask.server.client_connection.ClientConnectionManager;
-import dev.sbutler.bitflask.server.client_processing.ClientMessageProcessor;
+import dev.sbutler.bitflask.server.client_handling.connection.ClientConnectionManager;
+import dev.sbutler.bitflask.server.client_handling.processing.ClientMessageProcessor;
 import java.io.IOException;
 
 public class ClientRequestHandlerImpl implements ClientRequestHandler {

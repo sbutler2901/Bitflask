@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_connection;
+package dev.sbutler.bitflask.server.client_handling.connection;
 
 import com.google.inject.Inject;
 import java.io.IOException;

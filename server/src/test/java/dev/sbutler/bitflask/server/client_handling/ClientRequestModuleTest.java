@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_request;
+package dev.sbutler.bitflask.server.client_handling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
