@@ -3,11 +3,7 @@ package dev.sbutler.bitflask.server.configuration;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import dev.sbutler.bitflask.server.network_service.NetworkService;
-import dev.sbutler.bitflask.server.network_service.NetworkServiceImpl;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.channels.ServerSocketChannel;
+import dev.sbutler.bitflask.server.network_service.NetworkServiceModule;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -16,13 +12,18 @@ public class ServerModule extends AbstractModule {
   private static final ServerModule instance = new ServerModule();
 
   private ExecutorService executorService;
-  private ServerSocketChannel serverSocketChannel;
 
   private ServerModule() {
   }
 
   public static ServerModule getInstance() {
     return instance;
+  }
+
+  @Override
+  protected void configure() {
+    super.configure();
+    install(new NetworkServiceModule());
   }
 
   @Provides
@@ -46,21 +47,4 @@ public class ServerModule extends AbstractModule {
     return executorService;
   }
 
-  @Provides
-  @Singleton
-  ServerSocketChannel provideServerSocketChannel(@ServerPort int port) throws IOException {
-    if (serverSocketChannel == null) {
-      serverSocketChannel = ServerSocketChannel.open();
-      InetSocketAddress inetSocketAddress = new InetSocketAddress(port);
-      serverSocketChannel.bind(inetSocketAddress);
-    }
-    return serverSocketChannel;
-  }
-
-  // todo: determine best place for this
-  @Provides
-  @Singleton
-  NetworkService provideNetworkService(NetworkServiceImpl networkService) {
-    return networkService;
-  }
 }

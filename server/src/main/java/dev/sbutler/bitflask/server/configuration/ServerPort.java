@@ -6,6 +6,6 @@ import javax.inject.Qualifier;
 
 @Qualifier
 @Retention(RetentionPolicy.RUNTIME)
-@interface ServerPort {
+public @interface ServerPort {
 
 }
