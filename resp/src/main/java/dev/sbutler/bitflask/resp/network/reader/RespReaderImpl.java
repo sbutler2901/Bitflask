@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.resp.network.reader;
 
-import com.google.inject.Inject;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespError;
@@ -10,11 +9,10 @@ import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
 
 class RespReaderImpl implements RespReader {
 

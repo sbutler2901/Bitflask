@@ -2,10 +2,10 @@ package dev.sbutler.bitflask.storage;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import javax.inject.Singleton;
 
 public class StorageModule extends AbstractModule {
 

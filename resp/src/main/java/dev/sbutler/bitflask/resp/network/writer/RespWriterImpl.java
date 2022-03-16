@@ -1,9 +1,9 @@
 package dev.sbutler.bitflask.resp.network.writer;
 
-import com.google.inject.Inject;
 import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.IOException;
 import java.io.OutputStream;
+import javax.inject.Inject;
 
 class RespWriterImpl implements RespWriter {
 

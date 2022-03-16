@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.client;
 
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.sun.jdi.InternalException;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessingModule;
@@ -11,6 +10,7 @@ import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import dev.sbutler.bitflask.client.connection.ConnectionModule;
 import dev.sbutler.bitflask.resp.network.RespNetworkModule;
 import java.io.IOException;
+import javax.inject.Inject;
 
 public class Client {
 

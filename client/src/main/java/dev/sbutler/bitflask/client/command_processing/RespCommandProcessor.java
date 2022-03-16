@@ -1,9 +1,9 @@
 package dev.sbutler.bitflask.client.command_processing;
 
-import com.google.inject.Inject;
 import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.network.writer.RespWriter;
 import java.io.IOException;
+import javax.inject.Inject;
 
 public class RespCommandProcessor implements CommandProcessor {
 
