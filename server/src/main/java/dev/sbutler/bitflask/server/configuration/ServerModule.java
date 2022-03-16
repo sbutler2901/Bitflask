@@ -3,8 +3,7 @@ package dev.sbutler.bitflask.server.configuration;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.matcher.Matchers;
-import dev.sbutler.bitflask.server.configuration.logging.Slf4jTypeListener;
+import dev.sbutler.bitflask.server.configuration.logging.LoggingModule;
 import dev.sbutler.bitflask.server.network_service.NetworkServiceModule;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,7 +25,7 @@ public class ServerModule extends AbstractModule {
   protected void configure() {
     super.configure();
     install(new NetworkServiceModule());
-    bindListener(Matchers.any(), new Slf4jTypeListener());
+    install(new LoggingModule());
   }
 
   @Provides
