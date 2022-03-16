@@ -6,11 +6,20 @@ import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.server.command_processing.ServerCommand;
+import dev.sbutler.bitflask.server.configuration.logging.InjectLogger;
 import java.io.EOFException;
 import java.io.IOException;
 import javax.inject.Inject;
+import org.slf4j.Logger;
 
 class ClientMessageProcessorImpl implements ClientMessageProcessor {
+
+  private static final String CLIENT_DISCONNECTED = "Client disconnected.";
+  private static final String CLIENT_READ_FAILURE = "Server shutdown while reading client next message";
+  private static final String CLIENT_MESSAGE_LOG = "{} received from client";
+
+  @InjectLogger
+  Logger logger;
 
   private final CommandProcessor commandProcessor;
   private final RespReader respReader;
@@ -31,10 +40,10 @@ class ClientMessageProcessorImpl implements ClientMessageProcessor {
       writeResponseMessage(response);
       return true;
     } catch (EOFException e) {
-      System.out.println("Client disconnected.");
+      logger.warn(CLIENT_DISCONNECTED);
     } catch (IOException e) {
       // todo: test more
-      System.out.println("Server shutdown while reading client next message");
+      logger.warn(CLIENT_READ_FAILURE);
     }
     return false;
   }
@@ -44,7 +53,7 @@ class ClientMessageProcessorImpl implements ClientMessageProcessor {
   }
 
   private RespType<?> getServerResponseToClient(RespType<?> clientMessage) throws IOException {
-    System.out.printf("S: received from client %s%n", clientMessage);
+    logger.info(CLIENT_MESSAGE_LOG, clientMessage);
 
     String response;
     try {

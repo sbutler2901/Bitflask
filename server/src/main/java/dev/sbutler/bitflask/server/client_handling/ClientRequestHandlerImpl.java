@@ -2,12 +2,18 @@ package dev.sbutler.bitflask.server.client_handling;
 
 import dev.sbutler.bitflask.server.client_handling.connection.ClientConnectionManager;
 import dev.sbutler.bitflask.server.client_handling.processing.ClientMessageProcessor;
+import dev.sbutler.bitflask.server.configuration.logging.InjectLogger;
 import java.io.IOException;
 import javax.inject.Inject;
+import org.slf4j.Logger;
 
 class ClientRequestHandlerImpl implements ClientRequestHandler {
 
-  private static final String TERMINATING_CONNECTION = "Terminating session.";
+  private static final String TERMINATING_CONNECTION = "Terminating client session.";
+  private static final String TERMINATING_CONNECTION_FAILURE = "Failed to correctly terminate the client session";
+
+  @InjectLogger
+  Logger logger;
 
   private final ClientConnectionManager clientConnectionManager;
   private final ClientMessageProcessor clientMessageProcessor;
@@ -26,8 +32,7 @@ class ClientRequestHandlerImpl implements ClientRequestHandler {
     while (!Thread.currentThread().isInterrupted() && shouldContinueRunning) {
       shouldContinueRunning = clientMessageProcessor.processNextMessage();
     }
-    System.out.printf("ClientRequestHandler: closing: isInterrupted [%b]\n",
-        Thread.currentThread().isInterrupted());
+    logger.debug("Closing. isInterrupted {}", Thread.currentThread().isInterrupted());
     close();
   }
 
@@ -35,9 +40,9 @@ class ClientRequestHandlerImpl implements ClientRequestHandler {
     try {
       shouldContinueRunning = false;
       clientConnectionManager.close();
-      System.out.println(TERMINATING_CONNECTION);
+      logger.info(TERMINATING_CONNECTION);
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.error(TERMINATING_CONNECTION_FAILURE, e);
     }
   }
 }

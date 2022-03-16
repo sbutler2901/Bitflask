@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -18,11 +19,13 @@ import dev.sbutler.bitflask.server.command_processing.ServerCommand;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
 
 @ExtendWith(MockitoExtension.class)
 public class ClientMessageProcessorImplTest {
@@ -36,6 +39,11 @@ public class ClientMessageProcessorImplTest {
   RespReader respReader;
   @Mock
   RespWriter respWriter;
+
+  @BeforeEach
+  void beforeEach() {
+    clientMessageProcessor.logger = mock(Logger.class);
+  }
 
   @Test
   void processRequest_success() throws IOException {

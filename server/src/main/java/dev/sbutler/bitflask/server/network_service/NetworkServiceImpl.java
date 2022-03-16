@@ -6,6 +6,7 @@ import dev.sbutler.bitflask.server.client_handling.ClientRequestHandler;
 import dev.sbutler.bitflask.server.client_handling.ClientRequestModule;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
+import dev.sbutler.bitflask.server.configuration.logging.InjectLogger;
 import dev.sbutler.bitflask.storage.StorageModule;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
@@ -13,11 +14,16 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
+import org.slf4j.Logger;
 
 class NetworkServiceImpl implements NetworkService {
 
   private static final String SERVER_SOCKET_CLOSED = "Server socket closed";
   private static final String SERVER_SOCKET_FAILURE = "Failed to accept incoming client connections";
+  private static final String INCOMING_CONNECTION = "Received incoming client connection from {}";
+
+  @InjectLogger
+  Logger logger;
 
   private final ExecutorService executorService;
   private final ServerSocketChannel serverSocketChannel;
@@ -39,7 +45,7 @@ class NetworkServiceImpl implements NetworkService {
         acceptAndExecuteNextClientConnection();
       }
     } catch (IOException e) {
-      System.out.println(SERVER_SOCKET_FAILURE);
+      logger.error(SERVER_SOCKET_FAILURE, e);
     }
   }
 
@@ -62,7 +68,7 @@ class NetworkServiceImpl implements NetworkService {
 
       executorService.execute(clientRequestHandler);
     } catch (ClosedChannelException e) {
-      System.out.println(SERVER_SOCKET_CLOSED);
+      logger.info(SERVER_SOCKET_CLOSED, e);
     }
   }
 
@@ -75,7 +81,6 @@ class NetworkServiceImpl implements NetworkService {
   }
 
   private void printClientConnectionInfo(SocketChannel socketChannel) throws IOException {
-    System.out.println(
-        "S: Received incoming client connection from " + socketChannel.getRemoteAddress());
+    logger.info(INCOMING_CONNECTION, socketChannel.getRemoteAddress());
   }
 }
