@@ -4,20 +4,21 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
+import dev.sbutler.bitflask.server.configuration.logging.InjectLogger;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Provides support for getting and setting key value pairs with persistence
  */
 public class Server {
 
-  private static final Logger logger = LoggerFactory.getLogger(Server.class);
+  @InjectLogger
+  Logger logger;
 
   private final ExecutorService executorService;
   private final NetworkService networkService;
@@ -38,7 +39,10 @@ public class Server {
   void run() {
     printConfigInfo();
     registerShutdownHook();
+    startNetworkService();
+  }
 
+  private void startNetworkService() {
     try {
       executorService.submit(networkService).get();
     } catch (InterruptedException | ExecutionException e) {
