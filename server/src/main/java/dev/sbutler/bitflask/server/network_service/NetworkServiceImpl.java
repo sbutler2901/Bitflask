@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 
 class NetworkServiceImpl implements NetworkService {
 
+  private static final String INITIALIZED_MSG = "Prepared to accept incoming connections";
   private static final String SERVER_SOCKET_CLOSED = "Server socket closed";
   private static final String SERVER_SOCKET_FAILURE = "Failed to accept incoming client connections";
   private static final String INCOMING_CONNECTION = "Received incoming client connection from {}";
@@ -39,14 +40,7 @@ class NetworkServiceImpl implements NetworkService {
   @Override
   public void run() {
     initialize();
-
-    try {
-      while (serverSocketChannel.isOpen()) {
-        acceptAndExecuteNextClientConnection();
-      }
-    } catch (IOException e) {
-      logger.error(SERVER_SOCKET_FAILURE, e);
-    }
+    start();
   }
 
   private void initialize() {
@@ -55,6 +49,17 @@ class NetworkServiceImpl implements NetworkService {
         StorageModule.getInstance(),
         new CommandProcessingModule()
     );
+    logger.info(INITIALIZED_MSG);
+  }
+
+  private void start() {
+    try {
+      while (serverSocketChannel.isOpen()) {
+        acceptAndExecuteNextClientConnection();
+      }
+    } catch (IOException e) {
+      logger.error(SERVER_SOCKET_FAILURE, e);
+    }
   }
 
   private void acceptAndExecuteNextClientConnection() throws IOException {
