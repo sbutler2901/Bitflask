@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.server.network_service;
 
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.client_handling.ClientRequestHandler;
 import dev.sbutler.bitflask.server.client_handling.ClientRequestModule;
@@ -13,6 +12,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
+import javax.inject.Inject;
 
 class NetworkServiceImpl implements NetworkService {
 

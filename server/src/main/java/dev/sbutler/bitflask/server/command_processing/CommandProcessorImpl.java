@@ -1,8 +1,8 @@
 package dev.sbutler.bitflask.server.command_processing;
 
-import com.google.inject.Inject;
 import dev.sbutler.bitflask.storage.Storage;
 import java.io.IOException;
+import javax.inject.Inject;
 import lombok.NonNull;
 
 class CommandProcessorImpl implements CommandProcessor {

@@ -2,11 +2,11 @@ package dev.sbutler.bitflask.server.configuration;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import dev.sbutler.bitflask.server.configuration.logging.LoggingModule;
 import dev.sbutler.bitflask.server.network_service.NetworkServiceModule;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import javax.inject.Singleton;
 
 public class ServerModule extends AbstractModule {
 

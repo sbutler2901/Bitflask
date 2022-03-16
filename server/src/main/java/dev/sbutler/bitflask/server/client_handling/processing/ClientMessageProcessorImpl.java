@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.server.client_handling.processing;
 
-import com.google.inject.Inject;
 import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.network.writer.RespWriter;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
@@ -9,6 +8,7 @@ import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.server.command_processing.ServerCommand;
 import java.io.EOFException;
 import java.io.IOException;
+import javax.inject.Inject;
 
 class ClientMessageProcessorImpl implements ClientMessageProcessor {
 

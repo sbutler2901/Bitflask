@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.server;
 
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.server.configuration.logging.InjectLogger;
@@ -10,6 +9,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 
 /**

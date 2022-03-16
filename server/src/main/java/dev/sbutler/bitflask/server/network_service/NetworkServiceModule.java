@@ -2,11 +2,11 @@ package dev.sbutler.bitflask.server.network_service;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import dev.sbutler.bitflask.server.configuration.ServerPort;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
+import javax.inject.Singleton;
 
 public class NetworkServiceModule extends AbstractModule {
 

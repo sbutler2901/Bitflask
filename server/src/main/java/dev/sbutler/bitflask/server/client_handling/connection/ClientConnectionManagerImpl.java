@@ -1,10 +1,10 @@
 package dev.sbutler.bitflask.server.client_handling.connection;
 
-import com.google.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.SocketChannel;
+import javax.inject.Inject;
 
 class ClientConnectionManagerImpl implements ClientConnectionManager {
 
