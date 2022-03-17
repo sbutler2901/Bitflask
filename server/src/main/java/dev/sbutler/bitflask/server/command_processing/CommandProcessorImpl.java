@@ -2,8 +2,8 @@ package dev.sbutler.bitflask.server.command_processing;
 
 import dev.sbutler.bitflask.storage.Storage;
 import java.io.IOException;
+import java.util.Objects;
 import javax.inject.Inject;
-import lombok.NonNull;
 
 class CommandProcessorImpl implements CommandProcessor {
 
@@ -14,7 +14,8 @@ class CommandProcessorImpl implements CommandProcessor {
     this.storage = storage;
   }
 
-  public String processServerCommand(@NonNull ServerCommand serverCommand) throws IOException {
+  public String processServerCommand(ServerCommand serverCommand) throws IOException {
+    Objects.requireNonNull(serverCommand);
     return switch (serverCommand.command()) {
       case GET -> processGetCommand(serverCommand);
       case SET -> processSetCommand(serverCommand);

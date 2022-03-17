@@ -5,9 +5,13 @@ import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.NonNull;
+import java.util.Objects;
 
-public record ClientCommand(@NonNull String command, List<String> args) {
+public record ClientCommand(String command, List<String> args) {
+
+  public ClientCommand {
+    Objects.requireNonNull(command);
+  }
 
   public RespArray getAsRespArray() {
     List<RespType<?>> arrayArgs = new ArrayList<>();

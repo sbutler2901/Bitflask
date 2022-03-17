@@ -1,7 +1,5 @@
 package dev.sbutler.bitflask.storage;
 
-import lombok.Getter;
-
 /**
  * Contains metadata regrading persisted data
  */
@@ -9,9 +7,7 @@ final class StorageEntry {
 
   private static final String INVALID_ARGS = "The provided constructor arguments were invalid";
 
-  @Getter
   private final long segmentOffset;
-  @Getter
   private final int keyLength, valueLength;
 
   /**
@@ -50,5 +46,17 @@ final class StorageEntry {
         ", keyLength=" + keyLength +
         ", valueLength=" + valueLength +
         '}';
+  }
+
+  public long getSegmentOffset() {
+    return segmentOffset;
+  }
+
+  public int getKeyLength() {
+    return keyLength;
+  }
+
+  public int getValueLength() {
+    return valueLength;
   }
 }

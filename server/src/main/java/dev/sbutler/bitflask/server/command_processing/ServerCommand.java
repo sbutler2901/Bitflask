@@ -5,18 +5,20 @@ import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.NonNull;
+import java.util.Objects;
 
-public record ServerCommand(@NonNull Command command, List<String> args) {
+public record ServerCommand(Command command, List<String> args) {
 
   public ServerCommand {
+    Objects.requireNonNull(command);
     if (!Command.isValidCommandArgs(command, args)) {
       throw new IllegalArgumentException(
           "Invalid arguments for the command: " + command + ", " + args);
     }
   }
 
-  public static ServerCommand valueOf(@NonNull RespType<?> commandMessage) {
+  public static ServerCommand valueOf(RespType<?> commandMessage) {
+    Objects.requireNonNull(commandMessage);
     if (!(commandMessage instanceof RespArray clientMessageRespArray)) {
       throw new IllegalArgumentException("Message must be a RespArray");
     }
