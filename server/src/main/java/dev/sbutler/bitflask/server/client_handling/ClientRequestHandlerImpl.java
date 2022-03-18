@@ -29,20 +29,29 @@ class ClientRequestHandlerImpl implements ClientRequestHandler {
 
   @Override
   public void run() {
+    processClientMessages();
+    closeClientConnection();
+  }
+
+  private void processClientMessages() {
     while (!Thread.currentThread().isInterrupted() && shouldContinueRunning) {
       shouldContinueRunning = clientMessageProcessor.processNextMessage();
     }
-    logger.debug("Closing. isInterrupted {}", Thread.currentThread().isInterrupted());
-    close();
   }
 
-  public void close() {
+  private void closeClientConnection() {
+    logger.info(TERMINATING_CONNECTION);
     try {
-      shouldContinueRunning = false;
-      clientConnectionManager.close();
-      logger.info(TERMINATING_CONNECTION);
+      close();
     } catch (IOException e) {
       logger.error(TERMINATING_CONNECTION_FAILURE, e);
     }
   }
+
+  @Override
+  public void close() throws IOException {
+    shouldContinueRunning = false;
+    clientConnectionManager.close();
+  }
+
 }

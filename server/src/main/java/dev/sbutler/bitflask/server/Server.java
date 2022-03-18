@@ -69,7 +69,6 @@ public class Server {
   }
 
   private void shutdownExecutorServiceAndAwaitTermination() {
-    System.out.println("Shutdown activated");
     executorService.shutdownNow();
     try {
       // Wait a while for tasks to respond to being cancelled

@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 class NetworkServiceImpl implements NetworkService {
 
   private static final String INITIALIZED_MSG = "Prepared to accept incoming connections";
-  private static final String SERVER_SOCKET_CLOSED = "Server socket closed";
+  private static final String SERVER_SOCKET_CLOSED = "Closed the server socket";
   private static final String SERVER_SOCKET_FAILURE = "Failed to accept incoming client connections";
   private static final String INCOMING_CONNECTION = "Received incoming client connection from {}";
 
@@ -73,7 +73,7 @@ class NetworkServiceImpl implements NetworkService {
 
       executorService.execute(clientRequestHandler);
     } catch (ClosedChannelException e) {
-      logger.info(SERVER_SOCKET_CLOSED, e);
+      logger.info(SERVER_SOCKET_CLOSED);
     }
   }
 
