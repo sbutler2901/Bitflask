@@ -18,7 +18,7 @@ class ClientRequestHandlerImpl implements ClientRequestHandler {
   private final ClientConnectionManager clientConnectionManager;
   private final ClientMessageProcessor clientMessageProcessor;
 
-  private boolean shouldContinueRunning = true;
+  private volatile boolean shouldContinueRunning = true;
 
   @Inject
   ClientRequestHandlerImpl(ClientConnectionManager clientConnectionManager,
