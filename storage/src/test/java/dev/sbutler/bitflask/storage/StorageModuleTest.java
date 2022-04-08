@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
@@ -34,10 +33,10 @@ public class StorageModuleTest {
   }
 
   @Test
-  void provideStorage() throws IOException {
+  void provideStorage() {
     try (MockedConstruction<StorageImpl> storageMockedConstruction = mockConstruction(
         StorageImpl.class)) {
-      Storage storage = storageModule.provideStorage(mock(ExecutorService.class));
+      Storage storage = storageModule.provideStorage(mock(StorageSegmentManager.class));
       Storage mockedStorage = storageMockedConstruction.constructed().get(0);
       assertEquals(mockedStorage, storage);
     }

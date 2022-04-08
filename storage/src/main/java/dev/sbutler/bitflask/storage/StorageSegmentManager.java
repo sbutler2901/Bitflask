@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage;
 
 import com.google.inject.Inject;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -30,7 +31,8 @@ class StorageSegmentManager {
   }
 
   Iterator<StorageSegment> getStorageSegmentsIterator() {
-    return segmentFilesDeque.iterator();
+    Deque<StorageSegment> copiedDeque = new ArrayDeque<>(segmentFilesDeque);
+    return copiedDeque.iterator();
   }
 
   private void createNewStorageSegment() throws IOException {
