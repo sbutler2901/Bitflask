@@ -104,7 +104,7 @@ public class SegmentImpl implements Segment {
 
     @Override
     public int getValueLength() {
-      return keyLength;
+      return valueLength;
     }
 
     @Override

@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 
-public class SegmentManagerImpl {
+public class SegmentManagerImpl implements SegmentManager {
 
   private final ExecutorService executorService;
   private final Deque<Segment> segmentFilesDeque = new ConcurrentLinkedDeque<>();
@@ -23,29 +23,31 @@ public class SegmentManagerImpl {
 
   private void initializeSegments() throws IOException {
     // todo: check for previous segments
-    createNewStorageSegment();
+    createNewSegment();
   }
 
+  @Override
   public Segment getActiveSegment() throws IOException {
-    checkAndCreateNewStorageSegment();
+    checkAndCreateNewSegment();
     return segmentFilesDeque.getFirst();
   }
 
-  public Iterator<Segment> getStorageSegmentsIterator() {
+  @Override
+  public Iterator<Segment> getSegmentsIterator() {
     Deque<Segment> copiedDeque = new ArrayDeque<>(segmentFilesDeque);
     return copiedDeque.iterator();
   }
 
-  private void createNewStorageSegment() throws IOException {
+  private void createNewSegment() throws IOException {
     SegmentFile segmentFile = new SegmentFile(executorService);
     Segment newSegment = new SegmentImpl(segmentFile);
     segmentFilesDeque.offerFirst(newSegment);
   }
 
-  private synchronized void checkAndCreateNewStorageSegment() throws IOException {
+  private synchronized void checkAndCreateNewSegment() throws IOException {
     Segment currentActiveSegment = segmentFilesDeque.getFirst();
     if (currentActiveSegment.exceedsStorageThreshold()) {
-      createNewStorageSegment();
+      createNewSegment();
     }
   }
 

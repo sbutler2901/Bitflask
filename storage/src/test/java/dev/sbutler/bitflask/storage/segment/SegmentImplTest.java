@@ -104,9 +104,9 @@ public class SegmentImplTest {
 
     @Test
     void entry_invalidArgs() {
-      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.EntryImpl(-1, 0, 10));
-      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.EntryImpl(0, -1, 10));
-      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.EntryImpl(0, 0, 0));
+      assertThrows(IllegalArgumentException.class, () -> new EntryImpl(-1, 0, 10));
+      assertThrows(IllegalArgumentException.class, () -> new EntryImpl(0, -1, 10));
+      assertThrows(IllegalArgumentException.class, () -> new EntryImpl(0, 0, 0));
     }
 
     @Test
@@ -120,7 +120,7 @@ public class SegmentImplTest {
 
     @Test
     void entry_toString() {
-      Segment.Entry entry = new SegmentImpl.EntryImpl(0, 5, 10);
+      Segment.Entry entry = new EntryImpl(0, 5, 10);
       String expected = "Entry{segmentOffset=0, keyLength=5, valueLength=10}";
       assertEquals(expected, entry.toString());
     }

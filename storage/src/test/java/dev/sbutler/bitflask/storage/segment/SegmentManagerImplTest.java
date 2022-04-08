@@ -55,7 +55,7 @@ public class SegmentManagerImplTest {
   }
 
   @Test
-  void getStorageSegmentsIterator_protected() throws IOException {
+  void getSegmentsIterator_protected() throws IOException {
     // Ensure Manager's underlying collection cannot be modified via published iterator
     try (MockedConstruction<SegmentFile> segmentFileMockedConstruction = mockConstruction(
         SegmentFile.class);
@@ -64,10 +64,10 @@ public class SegmentManagerImplTest {
     ) {
       SegmentManagerImpl segmentManager = new SegmentManagerImpl(executorService);
 
-      Iterator<Segment> storageSegmentIterator = segmentManager.getStorageSegmentsIterator();
-      while (storageSegmentIterator.hasNext()) {
-        storageSegmentIterator.next();
-        storageSegmentIterator.remove();
+      Iterator<Segment> segmentsIterator = segmentManager.getSegmentsIterator();
+      while (segmentsIterator.hasNext()) {
+        segmentsIterator.next();
+        segmentsIterator.remove();
       }
 
       try {

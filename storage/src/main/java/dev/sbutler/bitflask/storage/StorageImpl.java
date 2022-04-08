@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage;
 
 import dev.sbutler.bitflask.storage.segment.Segment;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl;
+import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Optional;
@@ -15,9 +15,9 @@ class StorageImpl implements Storage {
   private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null or empty";
   private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null or empty";
 
-  private final SegmentManagerImpl segmentManager;
+  private final SegmentManager segmentManager;
 
-  public StorageImpl(SegmentManagerImpl segmentManager) {
+  public StorageImpl(SegmentManager segmentManager) {
     this.segmentManager = segmentManager;
   }
 
@@ -72,7 +72,7 @@ class StorageImpl implements Storage {
    * @return the found storage segment, if one exists
    */
   private Optional<Segment> findLatestSegmentWithKey(String key) {
-    Iterator<Segment> segmentIterator = segmentManager.getStorageSegmentsIterator();
+    Iterator<Segment> segmentIterator = segmentManager.getSegmentsIterator();
     while (segmentIterator.hasNext()) {
       Segment segment = segmentIterator.next();
       if (segment.containsKey(key)) {

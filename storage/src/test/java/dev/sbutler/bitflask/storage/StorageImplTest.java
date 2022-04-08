@@ -10,7 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.sbutler.bitflask.storage.segment.Segment;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl;
+import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Optional;
@@ -26,7 +26,7 @@ class StorageImplTest {
   @InjectMocks
   StorageImpl storage;
   @Mock
-  SegmentManagerImpl segmentManager;
+  SegmentManager segmentManager;
 
   @Test
   void write() throws IOException {
@@ -56,7 +56,7 @@ class StorageImplTest {
     Iterator<Segment> segmentIterator = mock(Iterator.class);
     Segment activeSegment = mock(Segment.class);
 
-    doReturn(segmentIterator).when(segmentManager).getStorageSegmentsIterator();
+    doReturn(segmentIterator).when(segmentManager).getSegmentsIterator();
     when(segmentIterator.hasNext()).thenReturn(true).thenReturn(false);
     doReturn(activeSegment).when(segmentIterator).next();
     doReturn(true).when(activeSegment).containsKey(key);
@@ -74,7 +74,7 @@ class StorageImplTest {
     Iterator<Segment> segmentIterator = mock(Iterator.class);
     Segment activeSegment = mock(Segment.class);
 
-    doReturn(segmentIterator).when(segmentManager).getStorageSegmentsIterator();
+    doReturn(segmentIterator).when(segmentManager).getSegmentsIterator();
     when(segmentIterator.hasNext()).thenReturn(true).thenReturn(false);
     doReturn(activeSegment).when(segmentIterator).next();
     doReturn(false).when(activeSegment).containsKey(key);
