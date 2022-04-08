@@ -15,7 +15,7 @@ class StorageSegment {
   public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
 
   private final StorageSegmentFile storageSegmentFile;
-  private final ConcurrentMap<String, StorageEntry> keyStorageEntryMap = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, Entry> keyStorageEntryMap = new ConcurrentHashMap<>();
   private final AtomicLong currentFileWriteOffset = new AtomicLong(0);
 
   public StorageSegment(StorageSegmentFile storageSegmentFile) {
@@ -46,10 +46,10 @@ class StorageSegment {
   }
 
   private void createAndAddNewStorageEntry(String key, String value, long offset) {
-    StorageEntry storageEntry = new StorageEntry(offset, key.length(), value.length());
+    Entry storageEntry = new Entry(offset, key.length(), value.length());
     // Handle newer value being written and added in another thread for same key
     keyStorageEntryMap.merge(key, storageEntry, (retrievedStorageEntry, writtenStorageEntry) ->
-        retrievedStorageEntry.getSegmentOffset() < writtenStorageEntry.getSegmentOffset()
+        retrievedStorageEntry.segmentFileOffset < writtenStorageEntry.segmentFileOffset
             ? writtenStorageEntry
             : retrievedStorageEntry
     );
@@ -66,11 +66,11 @@ class StorageSegment {
       return Optional.empty();
     }
 
-    StorageEntry storageEntry = keyStorageEntryMap.get(key);
+    Entry storageEntry = keyStorageEntryMap.get(key);
     try {
       byte[] readBytes = storageSegmentFile.read(storageEntry.getTotalLength(),
-          storageEntry.getSegmentOffset());
-      String value = decodeValue(readBytes, storageEntry.getKeyLength());
+          storageEntry.segmentFileOffset);
+      String value = decodeValue(readBytes, storageEntry.keyLength);
       return Optional.of(value);
     } catch (IOException e) {
       e.printStackTrace();
@@ -103,4 +103,28 @@ class StorageSegment {
     return currentFileWriteOffset.get() > NEW_SEGMENT_THRESHOLD;
   }
 
+  record Entry(long segmentFileOffset, int keyLength, int valueLength) {
+
+    private static final String INVALID_ARGS = "Invalid entry values: %d, %d, %d";
+
+    Entry {
+      if (segmentFileOffset < 0 || keyLength <= 0 || valueLength <= 0) {
+        throw new IllegalArgumentException(
+            String.format(INVALID_ARGS, segmentFileOffset, keyLength, valueLength));
+      }
+    }
+
+    int getTotalLength() {
+      return keyLength + valueLength;
+    }
+
+    @Override
+    public String toString() {
+      return "Entry{" +
+          "segmentOffset=" + segmentFileOffset +
+          ", keyLength=" + keyLength +
+          ", valueLength=" + valueLength +
+          '}';
+    }
+  }
 }

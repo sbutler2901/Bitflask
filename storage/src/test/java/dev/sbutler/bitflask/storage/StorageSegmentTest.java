@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -97,4 +98,28 @@ public class StorageSegmentTest {
     storageSegment.write("key", thresholdSizedValue);
     assertTrue(storageSegment.exceedsStorageThreshold());
   }
+
+  public static class EntryTest {
+
+    @Test
+    void storageEntry_totalLength() {
+      StorageSegment.Entry storageEntry = new StorageSegment.Entry(0, 5, 10);
+      assertEquals(15, storageEntry.getTotalLength());
+    }
+
+    @Test
+    void storageEntry_invalidArgs() {
+      assertThrows(IllegalArgumentException.class, () -> new StorageSegment.Entry(-1, 0, 10));
+      assertThrows(IllegalArgumentException.class, () -> new StorageSegment.Entry(0, -1, 10));
+      assertThrows(IllegalArgumentException.class, () -> new StorageSegment.Entry(0, 0, 0));
+    }
+
+    @Test
+    void storageEntry_toString() {
+      StorageSegment.Entry storageEntry = new StorageSegment.Entry(0, 5, 10);
+      String expected = "Entry{segmentOffset=0, keyLength=5, valueLength=10}";
+      assertEquals(expected, storageEntry.toString());
+    }
+  }
+
 }
