@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 
-import dev.sbutler.bitflask.storage.segment.StorageSegmentManager;
+import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ public class StorageModuleTest {
   void provideStorage() {
     try (MockedConstruction<StorageImpl> storageMockedConstruction = mockConstruction(
         StorageImpl.class)) {
-      Storage storage = storageModule.provideStorage(mock(StorageSegmentManager.class));
+      Storage storage = storageModule.provideStorage(mock(SegmentManager.class));
       Storage mockedStorage = storageMockedConstruction.constructed().get(0);
       assertEquals(mockedStorage, storage);
     }

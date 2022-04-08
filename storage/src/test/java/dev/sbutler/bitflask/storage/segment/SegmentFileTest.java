@@ -21,7 +21,7 @@ import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class StorageSegmentFileTest {
+public class SegmentFileTest {
 
   @Test
   void write() throws IOException {
@@ -33,11 +33,11 @@ public class StorageSegmentFileTest {
               () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService);
+      SegmentFile segmentFile = new SegmentFile(executorService);
 
       doReturn(mock(Future.class)).when(asynchronousFileChannel)
           .write(any(ByteBuffer.class), anyLong());
-      storageSegmentFile.write(new byte[]{'a'}, 0L);
+      segmentFile.write(new byte[]{'a'}, 0L);
       verify(asynchronousFileChannel, times(1)).write(any(ByteBuffer.class), anyLong());
     }
   }
@@ -53,7 +53,7 @@ public class StorageSegmentFileTest {
               () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService);
+      SegmentFile segmentFile = new SegmentFile(executorService);
 
       Future<Integer> writeFuture = mock(Future.class);
       doReturn(writeFuture).when(asynchronousFileChannel)
@@ -61,7 +61,7 @@ public class StorageSegmentFileTest {
       doThrow(new InterruptedException("test: interruptException")).when(writeFuture).get();
 
       assertThrows(IOException.class,
-          () -> storageSegmentFile.write(new byte[]{'a'}, 0L));
+          () -> segmentFile.write(new byte[]{'a'}, 0L));
       verify(asynchronousFileChannel, times(1)).write(any(ByteBuffer.class), anyLong());
     }
   }
@@ -77,12 +77,12 @@ public class StorageSegmentFileTest {
               () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService);
+      SegmentFile segmentFile = new SegmentFile(executorService);
 
       Future<Integer> readFuture = mock(Future.class);
       doReturn(readFuture).when(asynchronousFileChannel).read(any(ByteBuffer.class), anyLong());
 
-      byte[] result = storageSegmentFile.read(0, 0L);
+      byte[] result = segmentFile.read(0, 0L);
       verify(asynchronousFileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
       assertEquals(0, result.length);
     }
@@ -99,13 +99,13 @@ public class StorageSegmentFileTest {
               () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService);
+      SegmentFile segmentFile = new SegmentFile(executorService);
 
       Future<Integer> readFuture = mock(Future.class);
       doReturn(readFuture).when(asynchronousFileChannel).read(any(ByteBuffer.class), anyLong());
       doThrow(new InterruptedException("test: interruptException")).when(readFuture).get();
 
-      assertThrows(IOException.class, () -> storageSegmentFile.read(0, 0L));
+      assertThrows(IOException.class, () -> segmentFile.read(0, 0L));
       verify(asynchronousFileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
     }
   }

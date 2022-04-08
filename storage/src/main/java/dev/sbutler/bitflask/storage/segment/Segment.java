@@ -10,16 +10,16 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Represents a single self-contained file for storing data
  */
-public class StorageSegment {
+public class Segment {
 
   public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
 
-  private final StorageSegmentFile storageSegmentFile;
+  private final SegmentFile segmentFile;
   private final ConcurrentMap<String, Entry> keyStorageEntryMap = new ConcurrentHashMap<>();
   private final AtomicLong currentFileWriteOffset = new AtomicLong(0);
 
-  public StorageSegment(StorageSegmentFile storageSegmentFile) {
-    this.storageSegmentFile = storageSegmentFile;
+  public Segment(SegmentFile segmentFile) {
+    this.segmentFile = segmentFile;
   }
 
   /**
@@ -33,7 +33,7 @@ public class StorageSegment {
     long writeOffset = currentFileWriteOffset.getAndAdd(encodedKeyAndValue.length);
 
     try {
-      storageSegmentFile.write(encodedKeyAndValue, writeOffset);
+      segmentFile.write(encodedKeyAndValue, writeOffset);
       createAndAddNewStorageEntry(key, value, writeOffset);
     } catch (IOException e) {
       e.printStackTrace();
@@ -68,7 +68,7 @@ public class StorageSegment {
 
     Entry storageEntry = keyStorageEntryMap.get(key);
     try {
-      byte[] readBytes = storageSegmentFile.read(storageEntry.getTotalLength(),
+      byte[] readBytes = segmentFile.read(storageEntry.getTotalLength(),
           storageEntry.segmentFileOffset);
       String value = decodeValue(readBytes, storageEntry.keyLength);
       return Optional.of(value);

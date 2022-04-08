@@ -9,13 +9,13 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 
-public class StorageSegmentManager {
+public class SegmentManager {
 
   private final ExecutorService executorService;
-  private final Deque<StorageSegment> segmentFilesDeque = new ConcurrentLinkedDeque<>();
+  private final Deque<Segment> segmentFilesDeque = new ConcurrentLinkedDeque<>();
 
   @Inject
-  StorageSegmentManager(@StorageExecutorService ExecutorService executorService)
+  SegmentManager(@StorageExecutorService ExecutorService executorService)
       throws IOException {
     this.executorService = executorService;
     initializeSegments();
@@ -26,25 +26,25 @@ public class StorageSegmentManager {
     createNewStorageSegment();
   }
 
-  public StorageSegment getActiveSegment() throws IOException {
+  public Segment getActiveSegment() throws IOException {
     checkAndCreateNewStorageSegment();
     return segmentFilesDeque.getFirst();
   }
 
-  public Iterator<StorageSegment> getStorageSegmentsIterator() {
-    Deque<StorageSegment> copiedDeque = new ArrayDeque<>(segmentFilesDeque);
+  public Iterator<Segment> getStorageSegmentsIterator() {
+    Deque<Segment> copiedDeque = new ArrayDeque<>(segmentFilesDeque);
     return copiedDeque.iterator();
   }
 
   private void createNewStorageSegment() throws IOException {
-    StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService);
-    StorageSegment newStorageSegment = new StorageSegment(storageSegmentFile);
-    segmentFilesDeque.offerFirst(newStorageSegment);
+    SegmentFile segmentFile = new SegmentFile(executorService);
+    Segment newSegment = new Segment(segmentFile);
+    segmentFilesDeque.offerFirst(newSegment);
   }
 
   private synchronized void checkAndCreateNewStorageSegment() throws IOException {
-    StorageSegment currentActiveStorageSegment = segmentFilesDeque.getFirst();
-    if (currentActiveStorageSegment.exceedsStorageThreshold()) {
+    Segment currentActiveSegment = segmentFilesDeque.getFirst();
+    if (currentActiveSegment.exceedsStorageThreshold()) {
       createNewStorageSegment();
     }
   }

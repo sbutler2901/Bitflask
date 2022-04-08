@@ -14,7 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class StorageSegmentFile {
+class SegmentFile {
 
   private static final String DEFAULT_SEGMENT_FILE_PATH = "store/segment%d.txt";
   private static final StandardOpenOption[] fileOptions = {StandardOpenOption.CREATE,
@@ -27,7 +27,7 @@ class StorageSegmentFile {
 
   private final AsynchronousFileChannel segmentFileChannel;
 
-  public StorageSegmentFile(ExecutorService executorService) throws IOException {
+  public SegmentFile(ExecutorService executorService) throws IOException {
     Path newSegmentFilePath = getFilePath();
     segmentFileChannel = AsynchronousFileChannel
         .open(newSegmentFilePath, fileChannelOptions, executorService);

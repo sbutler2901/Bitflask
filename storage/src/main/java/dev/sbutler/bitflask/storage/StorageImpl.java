@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage;
 
-import dev.sbutler.bitflask.storage.segment.StorageSegment;
-import dev.sbutler.bitflask.storage.segment.StorageSegmentManager;
+import dev.sbutler.bitflask.storage.segment.Segment;
+import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Optional;
@@ -15,10 +15,10 @@ class StorageImpl implements Storage {
   private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null or empty";
   private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null or empty";
 
-  private final StorageSegmentManager storageSegmentManager;
+  private final SegmentManager segmentManager;
 
-  public StorageImpl(StorageSegmentManager storageSegmentManager) {
-    this.storageSegmentManager = storageSegmentManager;
+  public StorageImpl(SegmentManager segmentManager) {
+    this.segmentManager = segmentManager;
   }
 
   /**
@@ -31,7 +31,7 @@ class StorageImpl implements Storage {
    */
   public void write(String key, String value) throws IOException {
     validateWriteArgs(key, value);
-    storageSegmentManager.getActiveSegment().write(key, value);
+    segmentManager.getActiveSegment().write(key, value);
   }
 
   private void validateWriteArgs(String key, String value) {
@@ -51,7 +51,7 @@ class StorageImpl implements Storage {
   public Optional<String> read(String key) {
     validateReadArgs(key);
 
-    Optional<StorageSegment> optionalStorageSegment = findLatestSegmentWithKey(key);
+    Optional<Segment> optionalStorageSegment = findLatestSegmentWithKey(key);
     if (optionalStorageSegment.isEmpty()) {
       return Optional.empty();
     }
@@ -71,12 +71,12 @@ class StorageImpl implements Storage {
    * @param key the key to be found
    * @return the found storage segment, if one exists
    */
-  private Optional<StorageSegment> findLatestSegmentWithKey(String key) {
-    Iterator<StorageSegment> segmentIterator = storageSegmentManager.getStorageSegmentsIterator();
+  private Optional<Segment> findLatestSegmentWithKey(String key) {
+    Iterator<Segment> segmentIterator = segmentManager.getStorageSegmentsIterator();
     while (segmentIterator.hasNext()) {
-      StorageSegment storageSegment = segmentIterator.next();
-      if (storageSegment.containsKey(key)) {
-        return Optional.of(storageSegment);
+      Segment segment = segmentIterator.next();
+      if (segment.containsKey(key)) {
+        return Optional.of(segment);
       }
     }
     return Optional.empty();

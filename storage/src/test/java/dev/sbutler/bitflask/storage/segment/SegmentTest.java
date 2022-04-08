@@ -21,31 +21,31 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class StorageSegmentTest {
+public class SegmentTest {
 
   @InjectMocks
-  StorageSegment storageSegment;
+  Segment segment;
   @Mock
-  StorageSegmentFile storageSegmentFile;
+  SegmentFile segmentFile;
 
   @Test
   void write() throws IOException {
     String key = "key", value0 = "value0", value1 = "value1";
 
-    storageSegment.write(key, value0);
-    verify(storageSegmentFile, times(1)).write(any(), anyLong());
+    segment.write(key, value0);
+    verify(segmentFile, times(1)).write(any(), anyLong());
 
-    storageSegment.write(key, value1);
-    verify(storageSegmentFile, times(2)).write(any(), anyLong());
+    segment.write(key, value1);
+    verify(segmentFile, times(2)).write(any(), anyLong());
   }
 
   @Test
   void write_Exception() throws IOException {
     String key = "key", value = "value";
 
-    doThrow(IOException.class).when(storageSegmentFile).write(any(), anyLong());
-    storageSegment.write(key, value);
-    verify(storageSegmentFile, times(1)).write(any(), anyLong());
+    doThrow(IOException.class).when(segmentFile).write(any(), anyLong());
+    segment.write(key, value);
+    verify(segmentFile, times(1)).write(any(), anyLong());
   }
 
   @Test
@@ -53,16 +53,16 @@ public class StorageSegmentTest {
     String key = "key", value = "value", combined = key + value;
 
     // write before reading
-    storageSegment.write(key, value);
+    segment.write(key, value);
 
     // read
-    doReturn(combined.getBytes()).when(storageSegmentFile).read(anyInt(), anyLong());
+    doReturn(combined.getBytes()).when(segmentFile).read(anyInt(), anyLong());
 
-    Optional<String> result = storageSegment.read(key);
+    Optional<String> result = segment.read(key);
 
     assertTrue(result.isPresent());
     assertEquals(value, result.get());
-    verify(storageSegmentFile, times(1)).read(anyInt(), anyLong());
+    verify(segmentFile, times(1)).read(anyInt(), anyLong());
   }
 
   @Test
@@ -70,53 +70,53 @@ public class StorageSegmentTest {
     String key = "key", value = "value", combined = key + value;
 
     // write before reading
-    storageSegment.write(key, value);
+    segment.write(key, value);
 
     // read
-    doThrow(IOException.class).when(storageSegmentFile).read(anyInt(), anyLong());
+    doThrow(IOException.class).when(segmentFile).read(anyInt(), anyLong());
 
-    Optional<String> result = storageSegment.read(key);
+    Optional<String> result = segment.read(key);
 
     assertTrue(result.isEmpty());
-    verify(storageSegmentFile, times(1)).read(anyInt(), anyLong());
+    verify(segmentFile, times(1)).read(anyInt(), anyLong());
   }
 
   @Test
   void read_keyNotFound() throws IOException {
     String key = "key";
 
-    assertTrue(storageSegment.read(key).isEmpty());
-    verify(storageSegmentFile, times(0)).read(anyInt(), anyLong());
+    assertTrue(segment.read(key).isEmpty());
+    verify(segmentFile, times(0)).read(anyInt(), anyLong());
   }
 
   @Test
   void exceedsStorageThreshold() {
-    assertFalse(storageSegment.exceedsStorageThreshold());
+    assertFalse(segment.exceedsStorageThreshold());
     // key bytes + 1MiB from value to exceed
     int oneMiB = 1048576;
     String thresholdSizedValue = new String(new char[oneMiB]);
-    storageSegment.write("key", thresholdSizedValue);
-    assertTrue(storageSegment.exceedsStorageThreshold());
+    segment.write("key", thresholdSizedValue);
+    assertTrue(segment.exceedsStorageThreshold());
   }
 
   public static class EntryTest {
 
     @Test
     void storageEntry_totalLength() {
-      StorageSegment.Entry storageEntry = new StorageSegment.Entry(0, 5, 10);
+      Segment.Entry storageEntry = new Segment.Entry(0, 5, 10);
       assertEquals(15, storageEntry.getTotalLength());
     }
 
     @Test
     void storageEntry_invalidArgs() {
-      assertThrows(IllegalArgumentException.class, () -> new StorageSegment.Entry(-1, 0, 10));
-      assertThrows(IllegalArgumentException.class, () -> new StorageSegment.Entry(0, -1, 10));
-      assertThrows(IllegalArgumentException.class, () -> new StorageSegment.Entry(0, 0, 0));
+      assertThrows(IllegalArgumentException.class, () -> new Segment.Entry(-1, 0, 10));
+      assertThrows(IllegalArgumentException.class, () -> new Segment.Entry(0, -1, 10));
+      assertThrows(IllegalArgumentException.class, () -> new Segment.Entry(0, 0, 0));
     }
 
     @Test
     void storageEntry_toString() {
-      StorageSegment.Entry storageEntry = new StorageSegment.Entry(0, 5, 10);
+      Segment.Entry storageEntry = new Segment.Entry(0, 5, 10);
       String expected = "Entry{segmentOffset=0, keyLength=5, valueLength=10}";
       assertEquals(expected, storageEntry.toString());
     }

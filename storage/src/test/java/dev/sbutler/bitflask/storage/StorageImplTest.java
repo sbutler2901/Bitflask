@@ -9,8 +9,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.storage.segment.StorageSegment;
-import dev.sbutler.bitflask.storage.segment.StorageSegmentManager;
+import dev.sbutler.bitflask.storage.segment.Segment;
+import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Optional;
@@ -26,15 +26,15 @@ class StorageImplTest {
   @InjectMocks
   StorageImpl storage;
   @Mock
-  StorageSegmentManager storageSegmentManager;
+  SegmentManager segmentManager;
 
   @Test
   void write() throws IOException {
     String key = "key", value = "value";
-    StorageSegment storageSegment = mock(StorageSegment.class);
-    doReturn(storageSegment).when(storageSegmentManager).getActiveSegment();
+    Segment segment = mock(Segment.class);
+    doReturn(segment).when(segmentManager).getActiveSegment();
     storage.write(key, value);
-    verify(storageSegment, times(1)).write(key, value);
+    verify(segment, times(1)).write(key, value);
   }
 
   @Test
@@ -53,14 +53,14 @@ class StorageImplTest {
   @SuppressWarnings("unchecked")
   void read_keyFound() {
     String key = "key", value = "value";
-    Iterator<StorageSegment> segmentIterator = mock(Iterator.class);
-    StorageSegment activeStorageSegment = mock(StorageSegment.class);
+    Iterator<Segment> segmentIterator = mock(Iterator.class);
+    Segment activeSegment = mock(Segment.class);
 
-    doReturn(segmentIterator).when(storageSegmentManager).getStorageSegmentsIterator();
+    doReturn(segmentIterator).when(segmentManager).getStorageSegmentsIterator();
     when(segmentIterator.hasNext()).thenReturn(true).thenReturn(false);
-    doReturn(activeStorageSegment).when(segmentIterator).next();
-    doReturn(true).when(activeStorageSegment).containsKey(key);
-    doReturn(Optional.of(value)).when(activeStorageSegment).read(key);
+    doReturn(activeSegment).when(segmentIterator).next();
+    doReturn(true).when(activeSegment).containsKey(key);
+    doReturn(Optional.of(value)).when(activeSegment).read(key);
 
     Optional<String> result = storage.read(key);
     assertTrue(result.isPresent());
@@ -71,13 +71,13 @@ class StorageImplTest {
   @SuppressWarnings("unchecked")
   void read_keyNotFound() {
     String key = "key";
-    Iterator<StorageSegment> segmentIterator = mock(Iterator.class);
-    StorageSegment activeStorageSegment = mock(StorageSegment.class);
+    Iterator<Segment> segmentIterator = mock(Iterator.class);
+    Segment activeSegment = mock(Segment.class);
 
-    doReturn(segmentIterator).when(storageSegmentManager).getStorageSegmentsIterator();
+    doReturn(segmentIterator).when(segmentManager).getStorageSegmentsIterator();
     when(segmentIterator.hasNext()).thenReturn(true).thenReturn(false);
-    doReturn(activeStorageSegment).when(segmentIterator).next();
-    doReturn(false).when(activeStorageSegment).containsKey(key);
+    doReturn(activeSegment).when(segmentIterator).next();
+    doReturn(false).when(activeSegment).containsKey(key);
 
     Optional<String> result = storage.read(key);
     assertTrue(result.isEmpty());
