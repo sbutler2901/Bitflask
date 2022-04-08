@@ -1,12 +1,8 @@
 package dev.sbutler.bitflask.storage;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ListIterator;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Manages persisting and retrieving data
@@ -17,29 +13,10 @@ class StorageImpl implements Storage {
   private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null or empty";
   private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null or empty";
 
-  private final AtomicInteger activeStorageSegmentIndex = new AtomicInteger(-1);
+  private final StorageSegmentManager storageSegmentManager;
 
-  private final ExecutorService executorService;
-  private final List<StorageSegment> segmentFilesList = new CopyOnWriteArrayList<>();
-
-  /**
-   * Creates a new storage instance for managing getting and setting key-value pairs
-   *
-   * @param executorService the thread pool executor service for which this storage instance will
-   *                        execute operations
-   * @throws IOException when creating the initial storage file fails
-   */
-  public StorageImpl(ExecutorService executorService) throws IOException {
-    this.executorService = executorService;
-    createNewStorageSegment();
-  }
-
-  private void createNewStorageSegment() throws IOException {
-    int newStorageSegmentIndex = activeStorageSegmentIndex.incrementAndGet();
-    StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService,
-        newStorageSegmentIndex);
-    StorageSegment newStorageSegment = new StorageSegment(storageSegmentFile);
-    segmentFilesList.add(newStorageSegmentIndex, newStorageSegment);
+  public StorageImpl(StorageSegmentManager storageSegmentManager) {
+    this.storageSegmentManager = storageSegmentManager;
   }
 
   /**
@@ -52,12 +29,7 @@ class StorageImpl implements Storage {
    */
   public void write(String key, String value) throws IOException {
     validateWriteArgs(key, value);
-
-    int activeIndex = activeStorageSegmentIndex.get();
-    StorageSegment activeStorageSegment = segmentFilesList.get(activeIndex);
-    activeStorageSegment.write(key, value);
-
-    checkAndCreateNewStorageSegment();
+    storageSegmentManager.getActiveSegment().write(key, value);
   }
 
   private void validateWriteArgs(String key, String value) {
@@ -65,20 +37,6 @@ class StorageImpl implements Storage {
       throw new IllegalArgumentException(WRITE_ERR_BAD_KEY);
     } else if (value == null || value.length() <= 0) {
       throw new IllegalArgumentException(WRITE_ERR_BAD_VALUE);
-    }
-  }
-
-  /**
-   * Checks if a new storage segment should be created and creates it if needed
-   *
-   * @throws IOException when there is an error creating the new segment file
-   */
-  private synchronized void checkAndCreateNewStorageSegment() throws IOException {
-    int activeIndex = activeStorageSegmentIndex.get();
-    StorageSegment activeStorageSegment = segmentFilesList.get(activeIndex);
-
-    if (activeStorageSegment.exceedsStorageThreshold()) {
-      createNewStorageSegment();
     }
   }
 
@@ -112,8 +70,7 @@ class StorageImpl implements Storage {
    * @return the found storage segment, if one exists
    */
   private Optional<StorageSegment> findLatestSegmentWithKey(String key) {
-    int lastIndex = segmentFilesList.size();
-    ListIterator<StorageSegment> segmentListIterator = segmentFilesList.listIterator(lastIndex);
+    ListIterator<StorageSegment> segmentListIterator = storageSegmentManager.getStorageSegmentsIteratorReversed();
     while (segmentListIterator.hasPrevious()) {
       StorageSegment storageSegment = segmentListIterator.previous();
       if (storageSegment.containsKey(key)) {
