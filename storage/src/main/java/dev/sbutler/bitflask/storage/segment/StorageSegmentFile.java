@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage;
+package dev.sbutler.bitflask.storage.segment;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

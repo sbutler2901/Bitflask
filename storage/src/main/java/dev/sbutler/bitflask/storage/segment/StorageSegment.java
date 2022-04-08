@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage;
+package dev.sbutler.bitflask.storage.segment;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Represents a single self-contained file for storing data
  */
-class StorageSegment {
+public class StorageSegment {
 
   public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
 

@@ -9,6 +9,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.sbutler.bitflask.storage.segment.StorageSegment;
+import dev.sbutler.bitflask.storage.segment.StorageSegmentManager;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Optional;

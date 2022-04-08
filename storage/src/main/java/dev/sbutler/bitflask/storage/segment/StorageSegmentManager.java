@@ -1,6 +1,7 @@
-package dev.sbutler.bitflask.storage;
+package dev.sbutler.bitflask.storage.segment;
 
 import com.google.inject.Inject;
+import dev.sbutler.bitflask.storage.StorageExecutorService;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -8,7 +9,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 
-class StorageSegmentManager {
+public class StorageSegmentManager {
 
   private final ExecutorService executorService;
   private final Deque<StorageSegment> segmentFilesDeque = new ConcurrentLinkedDeque<>();
@@ -25,12 +26,12 @@ class StorageSegmentManager {
     createNewStorageSegment();
   }
 
-  StorageSegment getActiveSegment() throws IOException {
+  public StorageSegment getActiveSegment() throws IOException {
     checkAndCreateNewStorageSegment();
     return segmentFilesDeque.getFirst();
   }
 
-  Iterator<StorageSegment> getStorageSegmentsIterator() {
+  public Iterator<StorageSegment> getStorageSegmentsIterator() {
     Deque<StorageSegment> copiedDeque = new ArrayDeque<>(segmentFilesDeque);
     return copiedDeque.iterator();
   }

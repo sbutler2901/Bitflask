@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage;
+package dev.sbutler.bitflask.storage.segment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
