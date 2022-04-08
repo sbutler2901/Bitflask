@@ -26,7 +26,7 @@ public class SegmentManagerImplTest {
     ) {
       SegmentManagerImpl segmentManager = new SegmentManagerImpl(executorService);
 
-      SegmentImpl segment = segmentMockedConstruction.constructed().get(0);
+      Segment segment = segmentMockedConstruction.constructed().get(0);
       doReturn(false).when(segment).exceedsStorageThreshold();
 
       assertEquals(segment, segmentManager.getActiveSegment());
@@ -42,14 +42,14 @@ public class SegmentManagerImplTest {
     ) {
       SegmentManagerImpl segmentManager = new SegmentManagerImpl(executorService);
 
-      SegmentImpl segmentFirst = segmentMockedConstruction.constructed().get(0);
+      Segment segmentFirst = segmentMockedConstruction.constructed().get(0);
       doReturn(true).when(segmentFirst).exceedsStorageThreshold();
 
-      SegmentImpl active = segmentManager.getActiveSegment();
+      Segment active = segmentManager.getActiveSegment();
 
       assertEquals(2, segmentFileMockedConstruction.constructed().size());
       assertEquals(2, segmentMockedConstruction.constructed().size());
-      SegmentImpl segmentSecond = segmentMockedConstruction.constructed().get(1);
+      Segment segmentSecond = segmentMockedConstruction.constructed().get(1);
       assertEquals(segmentSecond, active);
     }
   }
@@ -64,7 +64,7 @@ public class SegmentManagerImplTest {
     ) {
       SegmentManagerImpl segmentManager = new SegmentManagerImpl(executorService);
 
-      Iterator<SegmentImpl> storageSegmentIterator = segmentManager.getStorageSegmentsIterator();
+      Iterator<Segment> storageSegmentIterator = segmentManager.getStorageSegmentsIterator();
       while (storageSegmentIterator.hasNext()) {
         storageSegmentIterator.next();
         storageSegmentIterator.remove();

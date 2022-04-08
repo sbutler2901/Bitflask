@@ -9,7 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.storage.segment.SegmentImpl;
+import dev.sbutler.bitflask.storage.segment.Segment;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl;
 import java.io.IOException;
 import java.util.Iterator;
@@ -31,7 +31,7 @@ class StorageImplTest {
   @Test
   void write() throws IOException {
     String key = "key", value = "value";
-    SegmentImpl segment = mock(SegmentImpl.class);
+    Segment segment = mock(Segment.class);
     doReturn(segment).when(segmentManager).getActiveSegment();
     storage.write(key, value);
     verify(segment, times(1)).write(key, value);
@@ -53,8 +53,8 @@ class StorageImplTest {
   @SuppressWarnings("unchecked")
   void read_keyFound() {
     String key = "key", value = "value";
-    Iterator<SegmentImpl> segmentIterator = mock(Iterator.class);
-    SegmentImpl activeSegment = mock(SegmentImpl.class);
+    Iterator<Segment> segmentIterator = mock(Iterator.class);
+    Segment activeSegment = mock(Segment.class);
 
     doReturn(segmentIterator).when(segmentManager).getStorageSegmentsIterator();
     when(segmentIterator.hasNext()).thenReturn(true).thenReturn(false);
@@ -71,8 +71,8 @@ class StorageImplTest {
   @SuppressWarnings("unchecked")
   void read_keyNotFound() {
     String key = "key";
-    Iterator<SegmentImpl> segmentIterator = mock(Iterator.class);
-    SegmentImpl activeSegment = mock(SegmentImpl.class);
+    Iterator<Segment> segmentIterator = mock(Iterator.class);
+    Segment activeSegment = mock(Segment.class);
 
     doReturn(segmentIterator).when(segmentManager).getStorageSegmentsIterator();
     when(segmentIterator.hasNext()).thenReturn(true).thenReturn(false);

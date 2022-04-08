@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.storage;
 
-import dev.sbutler.bitflask.storage.segment.SegmentImpl;
+import dev.sbutler.bitflask.storage.segment.Segment;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl;
 import java.io.IOException;
 import java.util.Iterator;
@@ -51,12 +51,12 @@ class StorageImpl implements Storage {
   public Optional<String> read(String key) {
     validateReadArgs(key);
 
-    Optional<SegmentImpl> optionalStorageSegment = findLatestSegmentWithKey(key);
-    if (optionalStorageSegment.isEmpty()) {
+    Optional<Segment> optionalSegment = findLatestSegmentWithKey(key);
+    if (optionalSegment.isEmpty()) {
       return Optional.empty();
     }
 
-    return optionalStorageSegment.get().read(key);
+    return optionalSegment.get().read(key);
   }
 
   private void validateReadArgs(String key) {
@@ -71,10 +71,10 @@ class StorageImpl implements Storage {
    * @param key the key to be found
    * @return the found storage segment, if one exists
    */
-  private Optional<SegmentImpl> findLatestSegmentWithKey(String key) {
-    Iterator<SegmentImpl> segmentIterator = segmentManager.getStorageSegmentsIterator();
+  private Optional<Segment> findLatestSegmentWithKey(String key) {
+    Iterator<Segment> segmentIterator = segmentManager.getStorageSegmentsIterator();
     while (segmentIterator.hasNext()) {
-      SegmentImpl segment = segmentIterator.next();
+      Segment segment = segmentIterator.next();
       if (segment.containsKey(key)) {
         return Optional.of(segment);
       }

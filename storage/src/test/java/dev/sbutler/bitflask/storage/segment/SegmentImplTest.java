@@ -12,6 +12,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import dev.sbutler.bitflask.storage.segment.SegmentImpl.EntryImpl;
 import java.io.IOException;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -99,26 +100,29 @@ public class SegmentImplTest {
     assertTrue(segment.exceedsStorageThreshold());
   }
 
-  public static class EntryTest {
+  public static class EntryImplTest {
 
     @Test
-    void storageEntry_totalLength() {
-      SegmentImpl.Entry storageEntry = new SegmentImpl.Entry(0, 5, 10);
-      assertEquals(15, storageEntry.getTotalLength());
+    void entry_invalidArgs() {
+      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.EntryImpl(-1, 0, 10));
+      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.EntryImpl(0, -1, 10));
+      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.EntryImpl(0, 0, 0));
     }
 
     @Test
-    void storageEntry_invalidArgs() {
-      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.Entry(-1, 0, 10));
-      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.Entry(0, -1, 10));
-      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.Entry(0, 0, 0));
+    void entry_getters() {
+      Segment.Entry entry = new EntryImpl(0, 5, 10);
+      assertEquals(0, entry.getSegmentFileOffset());
+      assertEquals(5, entry.getKeyLength());
+      assertEquals(10, entry.getValueLength());
+      assertEquals(15, entry.getTotalLength());
     }
 
     @Test
-    void storageEntry_toString() {
-      SegmentImpl.Entry storageEntry = new SegmentImpl.Entry(0, 5, 10);
+    void entry_toString() {
+      Segment.Entry entry = new SegmentImpl.EntryImpl(0, 5, 10);
       String expected = "Entry{segmentOffset=0, keyLength=5, valueLength=10}";
-      assertEquals(expected, storageEntry.toString());
+      assertEquals(expected, entry.toString());
     }
   }
 
