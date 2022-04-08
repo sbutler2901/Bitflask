@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class StorageSegmentFile {
 
@@ -22,16 +23,18 @@ class StorageSegmentFile {
   private static final Set<StandardOpenOption> fileChannelOptions = new HashSet<>(
       Arrays.asList(fileOptions));
 
+  private static final AtomicInteger nextSegmentIndex = new AtomicInteger(0);
+
   private final AsynchronousFileChannel segmentFileChannel;
 
-  public StorageSegmentFile(ExecutorService executorService, int segmentIndex)
-      throws IOException {
-    Path newSegmentFilePath = getFilePath(segmentIndex);
+  public StorageSegmentFile(ExecutorService executorService) throws IOException {
+    Path newSegmentFilePath = getFilePath();
     segmentFileChannel = AsynchronousFileChannel
         .open(newSegmentFilePath, fileChannelOptions, executorService);
   }
 
-  private Path getFilePath(int segmentIndex) {
+  private Path getFilePath() {
+    int segmentIndex = nextSegmentIndex.getAndIncrement();
     return Paths.get(String.format(DEFAULT_SEGMENT_FILE_PATH, segmentIndex));
   }
 

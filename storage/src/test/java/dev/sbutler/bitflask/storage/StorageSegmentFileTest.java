@@ -33,7 +33,7 @@ public class StorageSegmentFileTest {
               () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService, 0);
+      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService);
 
       doReturn(mock(Future.class)).when(asynchronousFileChannel)
           .write(any(ByteBuffer.class), anyLong());
@@ -53,7 +53,7 @@ public class StorageSegmentFileTest {
               () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService, 0);
+      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService);
 
       Future<Integer> writeFuture = mock(Future.class);
       doReturn(writeFuture).when(asynchronousFileChannel)
@@ -77,7 +77,7 @@ public class StorageSegmentFileTest {
               () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService, 0);
+      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService);
 
       Future<Integer> readFuture = mock(Future.class);
       doReturn(readFuture).when(asynchronousFileChannel).read(any(ByteBuffer.class), anyLong());
@@ -99,7 +99,7 @@ public class StorageSegmentFileTest {
               () -> AsynchronousFileChannel.open(any(Path.class), any(), any(ExecutorService.class)))
           .thenReturn(asynchronousFileChannel);
 
-      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService, 0);
+      StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService);
 
       Future<Integer> readFuture = mock(Future.class);
       doReturn(readFuture).when(asynchronousFileChannel).read(any(ByteBuffer.class), anyLong());

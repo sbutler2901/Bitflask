@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage;
 
 import java.io.IOException;
-import java.util.ListIterator;
+import java.util.Iterator;
 import java.util.Optional;
 
 /**
@@ -70,9 +70,9 @@ class StorageImpl implements Storage {
    * @return the found storage segment, if one exists
    */
   private Optional<StorageSegment> findLatestSegmentWithKey(String key) {
-    ListIterator<StorageSegment> segmentListIterator = storageSegmentManager.getStorageSegmentsIteratorReversed();
-    while (segmentListIterator.hasPrevious()) {
-      StorageSegment storageSegment = segmentListIterator.previous();
+    Iterator<StorageSegment> segmentIterator = storageSegmentManager.getStorageSegmentsIterator();
+    while (segmentIterator.hasNext()) {
+      StorageSegment storageSegment = segmentIterator.next();
       if (storageSegment.containsKey(key)) {
         return Optional.of(storageSegment);
       }

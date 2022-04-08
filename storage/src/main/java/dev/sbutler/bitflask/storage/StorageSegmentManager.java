@@ -2,17 +2,15 @@ package dev.sbutler.bitflask.storage;
 
 import com.google.inject.Inject;
 import java.io.IOException;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 
 class StorageSegmentManager {
 
   private final ExecutorService executorService;
-  private final AtomicInteger activeStorageSegmentIndex = new AtomicInteger(-1);
-  private final List<StorageSegment> segmentFilesList = new CopyOnWriteArrayList<>();
+  private final Deque<StorageSegment> segmentFilesDeque = new ConcurrentLinkedDeque<>();
 
   @Inject
   StorageSegmentManager(@StorageExecutorService ExecutorService executorService)
@@ -26,29 +24,23 @@ class StorageSegmentManager {
     createNewStorageSegment();
   }
 
-  public StorageSegment getActiveSegment() throws IOException {
+  StorageSegment getActiveSegment() throws IOException {
     checkAndCreateNewStorageSegment();
-    int activeIndex = activeStorageSegmentIndex.get();
-    return segmentFilesList.get(activeIndex);
+    return segmentFilesDeque.getFirst();
   }
 
-  ListIterator<StorageSegment> getStorageSegmentsIteratorReversed() {
-    int lastIndex = segmentFilesList.size();
-    return segmentFilesList.listIterator(lastIndex);
+  Iterator<StorageSegment> getStorageSegmentsIterator() {
+    return segmentFilesDeque.iterator();
   }
 
-  private synchronized void createNewStorageSegment() throws IOException {
-    int newStorageSegmentIndex = activeStorageSegmentIndex.incrementAndGet();
-    StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService,
-        newStorageSegmentIndex);
+  private void createNewStorageSegment() throws IOException {
+    StorageSegmentFile storageSegmentFile = new StorageSegmentFile(executorService);
     StorageSegment newStorageSegment = new StorageSegment(storageSegmentFile);
-    segmentFilesList.add(newStorageSegmentIndex, newStorageSegment);
+    segmentFilesDeque.offerFirst(newStorageSegment);
   }
 
   private synchronized void checkAndCreateNewStorageSegment() throws IOException {
-    int currentActiveStorageSegmentIndex = activeStorageSegmentIndex.get();
-    StorageSegment currentActiveStorageSegment = segmentFilesList.get(
-        currentActiveStorageSegmentIndex);
+    StorageSegment currentActiveStorageSegment = segmentFilesDeque.getFirst();
     if (currentActiveStorageSegment.exceedsStorageThreshold()) {
       createNewStorageSegment();
     }
