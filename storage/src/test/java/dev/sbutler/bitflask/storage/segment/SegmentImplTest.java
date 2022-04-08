@@ -21,10 +21,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class SegmentTest {
+public class SegmentImplTest {
 
   @InjectMocks
-  Segment segment;
+  SegmentImpl segment;
   @Mock
   SegmentFile segmentFile;
 
@@ -103,20 +103,20 @@ public class SegmentTest {
 
     @Test
     void storageEntry_totalLength() {
-      Segment.Entry storageEntry = new Segment.Entry(0, 5, 10);
+      SegmentImpl.Entry storageEntry = new SegmentImpl.Entry(0, 5, 10);
       assertEquals(15, storageEntry.getTotalLength());
     }
 
     @Test
     void storageEntry_invalidArgs() {
-      assertThrows(IllegalArgumentException.class, () -> new Segment.Entry(-1, 0, 10));
-      assertThrows(IllegalArgumentException.class, () -> new Segment.Entry(0, -1, 10));
-      assertThrows(IllegalArgumentException.class, () -> new Segment.Entry(0, 0, 0));
+      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.Entry(-1, 0, 10));
+      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.Entry(0, -1, 10));
+      assertThrows(IllegalArgumentException.class, () -> new SegmentImpl.Entry(0, 0, 0));
     }
 
     @Test
     void storageEntry_toString() {
-      Segment.Entry storageEntry = new Segment.Entry(0, 5, 10);
+      SegmentImpl.Entry storageEntry = new SegmentImpl.Entry(0, 5, 10);
       String expected = "Entry{segmentOffset=0, keyLength=5, valueLength=10}";
       assertEquals(expected, storageEntry.toString());
     }

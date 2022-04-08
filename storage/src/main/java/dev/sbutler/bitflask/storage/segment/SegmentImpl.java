@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Represents a single self-contained file for storing data
  */
-public class Segment {
+public class SegmentImpl {
 
   public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
 
@@ -18,7 +18,7 @@ public class Segment {
   private final ConcurrentMap<String, Entry> keyStorageEntryMap = new ConcurrentHashMap<>();
   private final AtomicLong currentFileWriteOffset = new AtomicLong(0);
 
-  public Segment(SegmentFile segmentFile) {
+  public SegmentImpl(SegmentFile segmentFile) {
     this.segmentFile = segmentFile;
   }
 

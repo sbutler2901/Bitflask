@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 
-public class SegmentManagerTest {
+public class SegmentManagerImplTest {
 
   ExecutorService executorService = mock(ExecutorService.class);
 
@@ -21,12 +21,12 @@ public class SegmentManagerTest {
   void getActiveSegment() throws IOException {
     try (MockedConstruction<SegmentFile> segmentFileMockedConstruction = mockConstruction(
         SegmentFile.class);
-        MockedConstruction<Segment> segmentMockedConstruction = mockConstruction(
-            Segment.class)
+        MockedConstruction<SegmentImpl> segmentMockedConstruction = mockConstruction(
+            SegmentImpl.class)
     ) {
-      SegmentManager segmentManager = new SegmentManager(executorService);
+      SegmentManagerImpl segmentManager = new SegmentManagerImpl(executorService);
 
-      Segment segment = segmentMockedConstruction.constructed().get(0);
+      SegmentImpl segment = segmentMockedConstruction.constructed().get(0);
       doReturn(false).when(segment).exceedsStorageThreshold();
 
       assertEquals(segment, segmentManager.getActiveSegment());
@@ -37,19 +37,19 @@ public class SegmentManagerTest {
   void getActiveSegment_thresholdExceeded() throws IOException {
     try (MockedConstruction<SegmentFile> segmentFileMockedConstruction = mockConstruction(
         SegmentFile.class);
-        MockedConstruction<Segment> segmentMockedConstruction = mockConstruction(
-            Segment.class)
+        MockedConstruction<SegmentImpl> segmentMockedConstruction = mockConstruction(
+            SegmentImpl.class)
     ) {
-      SegmentManager segmentManager = new SegmentManager(executorService);
+      SegmentManagerImpl segmentManager = new SegmentManagerImpl(executorService);
 
-      Segment segmentFirst = segmentMockedConstruction.constructed().get(0);
+      SegmentImpl segmentFirst = segmentMockedConstruction.constructed().get(0);
       doReturn(true).when(segmentFirst).exceedsStorageThreshold();
 
-      Segment active = segmentManager.getActiveSegment();
+      SegmentImpl active = segmentManager.getActiveSegment();
 
       assertEquals(2, segmentFileMockedConstruction.constructed().size());
       assertEquals(2, segmentMockedConstruction.constructed().size());
-      Segment segmentSecond = segmentMockedConstruction.constructed().get(1);
+      SegmentImpl segmentSecond = segmentMockedConstruction.constructed().get(1);
       assertEquals(segmentSecond, active);
     }
   }
@@ -59,12 +59,12 @@ public class SegmentManagerTest {
     // Ensure Manager's underlying collection cannot be modified via published iterator
     try (MockedConstruction<SegmentFile> segmentFileMockedConstruction = mockConstruction(
         SegmentFile.class);
-        MockedConstruction<Segment> segmentMockedConstruction = mockConstruction(
-            Segment.class)
+        MockedConstruction<SegmentImpl> segmentMockedConstruction = mockConstruction(
+            SegmentImpl.class)
     ) {
-      SegmentManager segmentManager = new SegmentManager(executorService);
+      SegmentManagerImpl segmentManager = new SegmentManagerImpl(executorService);
 
-      Iterator<Segment> storageSegmentIterator = segmentManager.getStorageSegmentsIterator();
+      Iterator<SegmentImpl> storageSegmentIterator = segmentManager.getStorageSegmentsIterator();
       while (storageSegmentIterator.hasNext()) {
         storageSegmentIterator.next();
         storageSegmentIterator.remove();
@@ -73,7 +73,7 @@ public class SegmentManagerTest {
       try {
         segmentManager.getActiveSegment();
       } catch (NoSuchElementException e) {
-        fail("SegmentManager's collection should not be modifiable via published iterator");
+        fail("SegmentManagerImpl's collection should not be modifiable via published iterator");
       }
     }
   }

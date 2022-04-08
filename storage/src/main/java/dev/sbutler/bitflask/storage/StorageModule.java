@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.storage;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import dev.sbutler.bitflask.storage.segment.SegmentManager;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.inject.Singleton;
@@ -39,7 +39,7 @@ public class StorageModule extends AbstractModule {
 
   @Provides
   @Singleton
-  Storage provideStorage(SegmentManager segmentManager) {
+  Storage provideStorage(SegmentManagerImpl segmentManager) {
     if (storage == null) {
       storage = new StorageImpl(segmentManager);
     }
