@@ -44,20 +44,18 @@ public class SegmentManagerImpl implements SegmentManager {
   private void initializeSegments() throws IOException {
     boolean loadNextSegment = true;
     while (loadNextSegment) {
-      Segment nextSegment = createNewSegment();
-      addNewSegment(nextSegment);
+      Segment nextSegment = createAndAddNextActiveSegment();
       loadNextSegment = nextSegment.exceedsStorageThreshold();
     }
   }
 
-  private void addNewSegment(Segment segment) {
-    segmentFilesDeque.offerFirst(segment);
-  }
-
   @Override
-  public Segment getActiveSegment() throws IOException {
-    checkAndCreateNewSegment();
-    return segmentFilesDeque.getFirst();
+  public synchronized Segment getActiveSegment() throws IOException {
+    Segment currentActiveSegment = segmentFilesDeque.getFirst();
+    if (currentActiveSegment.exceedsStorageThreshold()) {
+      return createAndAddNextActiveSegment();
+    }
+    return currentActiveSegment;
   }
 
   @Override
@@ -65,24 +63,12 @@ public class SegmentManagerImpl implements SegmentManager {
     return Collections.unmodifiableCollection(segmentFilesDeque).iterator();
   }
 
-  /**
-   * Checks if the active segment has exceeded its threshold and creates a new one if so. This
-   * method blocks other writes while a new segment is being created
-   *
-   * @throws IOException if there is an issue creating a new segment file
-   */
-  private synchronized void checkAndCreateNewSegment() throws IOException {
-    Segment currentActiveSegment = segmentFilesDeque.getFirst();
-    if (currentActiveSegment.exceedsStorageThreshold()) {
-      Segment newSegment = createNewSegment();
-      addNewSegment(newSegment);
-    }
-  }
-
-  private synchronized Segment createNewSegment() throws IOException {
+  private synchronized Segment createAndAddNextActiveSegment() throws IOException {
     AsynchronousFileChannel segmentFileChannel = getNextSegmentFileChannel();
     SegmentFile segmentFile = new SegmentFile(segmentFileChannel);
-    return new SegmentImpl(segmentFile);
+    Segment segment = new SegmentImpl(segmentFile);
+    segmentFilesDeque.offerFirst(segment);
+    return segment;
   }
 
   private AsynchronousFileChannel getNextSegmentFileChannel() throws IOException {
