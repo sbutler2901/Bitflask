@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -31,13 +32,11 @@ public class SegmentImplTest {
 
   @Test
   void write() throws IOException {
-    String key = "key", value0 = "value0", value1 = "value1";
+    String key = "key", value = "value";
 
-    segment.write(key, value0);
-    verify(segmentFile, times(1)).write(any(), anyLong());
-
-    segment.write(key, value1);
-    verify(segmentFile, times(2)).write(any(), anyLong());
+    segment.write(key, value);
+    byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
+    verify(segmentFile, times(1)).write(aryEq(encoded), anyLong());
   }
 
   @Test
@@ -51,13 +50,14 @@ public class SegmentImplTest {
 
   @Test
   void read() throws IOException {
-    String key = "key", value = "value", combined = key + value;
+    String key = "key", value = "value";
+    byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
 
     // write before reading
     segment.write(key, value);
 
     // read
-    doReturn(combined.getBytes()).when(segmentFile).read(anyInt(), anyLong());
+    doReturn(encoded).when(segmentFile).read(anyInt(), anyLong());
 
     Optional<String> result = segment.read(key);
 

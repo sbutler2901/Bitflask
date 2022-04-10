@@ -7,9 +7,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class SegmentImpl implements Segment {
+class SegmentImpl implements Segment {
 
   public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
+
+  private static final String DELIMITER = ";";
+  private static final String ENCODING_FORMAT = "%s" + DELIMITER + "%s" + DELIMITER;
 
   private final SegmentFile segmentFile;
   private final ConcurrentMap<String, Entry> keyEntryMap = new ConcurrentHashMap<>();
@@ -32,9 +35,9 @@ public class SegmentImpl implements Segment {
     }
   }
 
-  private byte[] encodeKeyAndValue(String key, String value) {
-    String keyAndValueCombined = key + value;
-    return keyAndValueCombined.getBytes(StandardCharsets.UTF_8);
+  static byte[] encodeKeyAndValue(String key, String value) {
+    String encoded = String.format(ENCODING_FORMAT, key, value);
+    return encoded.getBytes(StandardCharsets.UTF_8);
   }
 
   private void createAndAddNewEntry(String key, String value, long offset) {
@@ -66,9 +69,9 @@ public class SegmentImpl implements Segment {
     return Optional.empty();
   }
 
-  private String decodeValue(byte[] readBytes, int keyLength) {
+  static String decodeValue(byte[] readBytes, int keyLength) {
     String entry = new String(readBytes).trim();
-    return entry.substring(keyLength);
+    return entry.substring(keyLength + 1, readBytes.length - 1);
   }
 
   @Override
