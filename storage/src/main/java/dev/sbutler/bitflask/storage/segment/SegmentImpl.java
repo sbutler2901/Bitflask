@@ -11,7 +11,9 @@ class SegmentImpl implements Segment {
 
   public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
 
-  private static final String DELIMITER = ";";
+  private static final int INITIALIZE_READ_SIZE = (int) (2 * NEW_SEGMENT_THRESHOLD);
+
+  private static final char DELIMITER = ';';
   private static final String ENCODING_FORMAT = "%s" + DELIMITER + "%s" + DELIMITER;
 
   private final SegmentFile segmentFile;
@@ -20,6 +22,55 @@ class SegmentImpl implements Segment {
 
   public SegmentImpl(SegmentFile segmentFile) {
     this.segmentFile = segmentFile;
+    initialize();
+  }
+
+  private void initialize() {
+    try {
+      long fileSize = segmentFile.size();
+      if (fileSize > 0) {
+        currentFileWriteOffset.set(fileSize);
+        loadFileEntries();
+      }
+    } catch (IOException e) {
+      System.out.println("Failed to load the file's previous entry, it will be overwritten!");
+    }
+  }
+
+  private void loadFileEntries() throws IOException {
+    if (currentFileWriteOffset.get() > INITIALIZE_READ_SIZE) {
+      throw new InternalError("Segment file larger than INITIALIZE_READ_SIZE");
+    }
+
+    byte[] loadedFile = segmentFile.read(INITIALIZE_READ_SIZE, 0);
+
+    StringBuilder keyBuilder = new StringBuilder();
+    StringBuilder valueBuilder = new StringBuilder();
+    boolean keyCompleted = false;
+    long nextEntryOffsetStart = 0;
+    for (int i = 0; loadedFile[i] > 0; i++) {
+      char nextChar = (char) loadedFile[i];
+      if (nextChar == DELIMITER) {
+        if (keyCompleted) {
+          createAndAddNewEntry(keyBuilder.toString(), valueBuilder.toString(),
+              nextEntryOffsetStart);
+
+          // reset for next entry
+          keyBuilder.setLength(0);
+          valueBuilder.setLength(0);
+          nextEntryOffsetStart = i + 1;
+          keyCompleted = false;
+        } else {
+          keyCompleted = true;
+        }
+      } else {
+        if (keyCompleted) {
+          valueBuilder.append(nextChar);
+        } else {
+          keyBuilder.append(nextChar);
+        }
+      }
+    }
   }
 
   @Override
@@ -112,7 +163,8 @@ class SegmentImpl implements Segment {
 
     @Override
     public int getTotalLength() {
-      return keyLength + valueLength;
+      // Include delimiters for entry
+      return 2 + keyLength + valueLength;
     }
 
     @Override

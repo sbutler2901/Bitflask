@@ -3,13 +3,33 @@ package dev.sbutler.bitflask.storage.segment;
 import com.google.inject.Inject;
 import dev.sbutler.bitflask.storage.StorageExecutorService;
 import java.io.IOException;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SegmentManagerImpl implements SegmentManager {
+
+  private static final String DEFAULT_SEGMENT_FILE_PATH = "store/segment%d.txt";
+  private static final StandardOpenOption[] fileOptions = {
+      StandardOpenOption.CREATE,
+      StandardOpenOption.READ,
+      StandardOpenOption.WRITE,
+//      StandardOpenOption.TRUNCATE_EXISTING
+  };
+  private static final Set<StandardOpenOption> fileChannelOptions = new HashSet<>(
+      Arrays.asList(fileOptions));
+
+  private static final AtomicInteger nextSegmentIndex = new AtomicInteger(0);
 
   private final ExecutorService executorService;
   private final Deque<Segment> segmentFilesDeque = new ConcurrentLinkedDeque<>();
@@ -22,8 +42,16 @@ public class SegmentManagerImpl implements SegmentManager {
   }
 
   private void initializeSegments() throws IOException {
-    // todo: check for previous segments
-    createNewSegment();
+    boolean loadNextSegment = true;
+    while (loadNextSegment) {
+      Segment nextSegment = createNewSegment();
+      addNewSegment(nextSegment);
+      loadNextSegment = nextSegment.exceedsStorageThreshold();
+    }
+  }
+
+  private void addNewSegment(Segment segment) {
+    segmentFilesDeque.offerFirst(segment);
   }
 
   @Override
@@ -37,12 +65,6 @@ public class SegmentManagerImpl implements SegmentManager {
     return Collections.unmodifiableCollection(segmentFilesDeque).iterator();
   }
 
-  private synchronized void createNewSegment() throws IOException {
-    SegmentFile segmentFile = new SegmentFile(executorService);
-    Segment newSegment = new SegmentImpl(segmentFile);
-    segmentFilesDeque.offerFirst(newSegment);
-  }
-
   /**
    * Checks if the active segment has exceeded its threshold and creates a new one if so. This
    * method blocks other writes while a new segment is being created
@@ -52,8 +74,26 @@ public class SegmentManagerImpl implements SegmentManager {
   private synchronized void checkAndCreateNewSegment() throws IOException {
     Segment currentActiveSegment = segmentFilesDeque.getFirst();
     if (currentActiveSegment.exceedsStorageThreshold()) {
-      createNewSegment();
+      Segment newSegment = createNewSegment();
+      addNewSegment(newSegment);
     }
+  }
+
+  private synchronized Segment createNewSegment() throws IOException {
+    AsynchronousFileChannel segmentFileChannel = getNextSegmentFileChannel();
+    SegmentFile segmentFile = new SegmentFile(segmentFileChannel);
+    return new SegmentImpl(segmentFile);
+  }
+
+  private AsynchronousFileChannel getNextSegmentFileChannel() throws IOException {
+    Path newSegmentFilePath = getNextSegmentFilePath();
+    return AsynchronousFileChannel
+        .open(newSegmentFilePath, fileChannelOptions, executorService);
+  }
+
+  private Path getNextSegmentFilePath() {
+    int segmentIndex = nextSegmentIndex.getAndIncrement();
+    return Paths.get(String.format(DEFAULT_SEGMENT_FILE_PATH, segmentIndex));
   }
 
 }

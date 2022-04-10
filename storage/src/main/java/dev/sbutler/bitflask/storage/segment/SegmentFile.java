@@ -3,39 +3,15 @@ package dev.sbutler.bitflask.storage.segment;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 
 class SegmentFile {
 
-  private static final String DEFAULT_SEGMENT_FILE_PATH = "store/segment%d.txt";
-  private static final StandardOpenOption[] fileOptions = {StandardOpenOption.CREATE,
-      StandardOpenOption.READ,
-      StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING};
-  private static final Set<StandardOpenOption> fileChannelOptions = new HashSet<>(
-      Arrays.asList(fileOptions));
-
-  private static final AtomicInteger nextSegmentIndex = new AtomicInteger(0);
-
   private final AsynchronousFileChannel segmentFileChannel;
 
-  public SegmentFile(ExecutorService executorService) throws IOException {
-    Path newSegmentFilePath = getFilePath();
-    segmentFileChannel = AsynchronousFileChannel
-        .open(newSegmentFilePath, fileChannelOptions, executorService);
-  }
-
-  private Path getFilePath() {
-    int segmentIndex = nextSegmentIndex.getAndIncrement();
-    return Paths.get(String.format(DEFAULT_SEGMENT_FILE_PATH, segmentIndex));
+  public SegmentFile(AsynchronousFileChannel segmentFileChannel) {
+    this.segmentFileChannel = segmentFileChannel;
   }
 
   void write(byte[] data, long fileOffset) throws IOException {
@@ -62,4 +38,9 @@ class SegmentFile {
 
     return readBytesBuffer.array();
   }
+
+  long size() throws IOException {
+    return segmentFileChannel.size();
+  }
+
 }
