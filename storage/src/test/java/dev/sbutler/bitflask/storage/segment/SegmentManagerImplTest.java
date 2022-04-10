@@ -1,14 +1,13 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
@@ -63,18 +62,9 @@ public class SegmentManagerImplTest {
             SegmentImpl.class)
     ) {
       SegmentManagerImpl segmentManager = new SegmentManagerImpl(executorService);
-
       Iterator<Segment> segmentsIterator = segmentManager.getSegmentsIterator();
-      while (segmentsIterator.hasNext()) {
-        segmentsIterator.next();
-        segmentsIterator.remove();
-      }
-
-      try {
-        segmentManager.getActiveSegment();
-      } catch (NoSuchElementException e) {
-        fail("SegmentManagerImpl's collection should not be modifiable via published iterator");
-      }
+      segmentsIterator.next();
+      assertThrows(UnsupportedOperationException.class, segmentsIterator::remove);
     }
   }
 }

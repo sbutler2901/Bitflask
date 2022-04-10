@@ -17,6 +17,7 @@ public interface SegmentManager {
    * Gets an iterator of all managed segments
    *
    * @return an iterator of all managed segments
+   * @throws UnsupportedOperationException if a modification is attempted via the iterator
    */
   Iterator<Segment> getSegmentsIterator();
 
