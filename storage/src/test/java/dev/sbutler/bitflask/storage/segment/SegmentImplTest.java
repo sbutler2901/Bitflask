@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -100,6 +101,19 @@ public class SegmentImplTest {
     assertTrue(segment.exceedsStorageThreshold());
   }
 
+  @Test
+  void initialize() throws IOException {
+    String testEntry = "test;value;other;value;";
+    SegmentFile mockSegmentFile = mock(SegmentFile.class);
+    doReturn((long) testEntry.length()).when(mockSegmentFile).size();
+    doReturn(testEntry.getBytes()).when(mockSegmentFile).read(anyInt(), anyLong());
+
+    Segment segment = new SegmentImpl(mockSegmentFile);
+
+    assertTrue(segment.containsKey("test"));
+    assertTrue(segment.containsKey("other"));
+  }
+
   public static class EntryImplTest {
 
     @Test
@@ -115,7 +129,7 @@ public class SegmentImplTest {
       assertEquals(0, entry.getSegmentFileOffset());
       assertEquals(5, entry.getKeyLength());
       assertEquals(10, entry.getValueLength());
-      assertEquals(15, entry.getTotalLength());
+      assertEquals(17, entry.getTotalLength()); // include delimiter length
     }
 
     @Test

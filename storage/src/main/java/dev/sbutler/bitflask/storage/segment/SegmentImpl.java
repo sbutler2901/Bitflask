@@ -11,44 +11,30 @@ class SegmentImpl implements Segment {
 
   public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
 
-  private static final int INITIALIZE_READ_SIZE = (int) (2 * NEW_SEGMENT_THRESHOLD);
-
   private static final char DELIMITER = ';';
   private static final String ENCODING_FORMAT = "%s" + DELIMITER + "%s" + DELIMITER;
 
   private final SegmentFile segmentFile;
   private final ConcurrentMap<String, Entry> keyEntryMap = new ConcurrentHashMap<>();
-  private final AtomicLong currentFileWriteOffset = new AtomicLong(0);
+  private final AtomicLong currentFileWriteOffset = new AtomicLong();
 
-  public SegmentImpl(SegmentFile segmentFile) {
+  public SegmentImpl(SegmentFile segmentFile) throws IOException {
     this.segmentFile = segmentFile;
-    initialize();
-  }
 
-  private void initialize() {
-    try {
-      long fileSize = segmentFile.size();
-      if (fileSize > 0) {
-        currentFileWriteOffset.set(fileSize);
-        loadFileEntries();
-      }
-    } catch (IOException e) {
-      System.out.println("Failed to load the file's previous entry, it will be overwritten!");
+    currentFileWriteOffset.set(segmentFile.size());
+    if (currentFileWriteOffset.get() > 0) {
+      loadFileEntries();
     }
   }
 
   private void loadFileEntries() throws IOException {
-    if (currentFileWriteOffset.get() > INITIALIZE_READ_SIZE) {
-      throw new InternalError("Segment file larger than INITIALIZE_READ_SIZE");
-    }
-
-    byte[] loadedFile = segmentFile.read(INITIALIZE_READ_SIZE, 0);
+    byte[] loadedFile = segmentFile.read((int) currentFileWriteOffset.get(), 0);
 
     StringBuilder keyBuilder = new StringBuilder();
     StringBuilder valueBuilder = new StringBuilder();
     boolean keyCompleted = false;
     long nextEntryOffsetStart = 0;
-    for (int i = 0; loadedFile[i] > 0; i++) {
+    for (int i = 0; i < loadedFile.length; i++) {
       char nextChar = (char) loadedFile[i];
       if (nextChar == DELIMITER) {
         if (keyCompleted) {
