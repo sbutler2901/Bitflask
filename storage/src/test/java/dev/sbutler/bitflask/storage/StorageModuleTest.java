@@ -1,12 +1,16 @@
 package dev.sbutler.bitflask.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 
-import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Key;
+import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
@@ -16,6 +20,18 @@ import org.mockito.MockedStatic;
 public class StorageModuleTest {
 
   private final StorageModule storageModule = StorageModule.getInstance();
+
+  @Test
+  void configure() {
+    Injector injector = Guice.createInjector(StorageModule.getInstance());
+    try {
+      injector.getBinding(
+          Key.get(ExecutorService.class).withAnnotation(StorageExecutorService.class));
+      injector.getBinding(Storage.class);
+    } catch (Exception e) {
+      fail(e.getMessage());
+    }
+  }
 
   @Test
   void provideStorageNumThreads() {
@@ -37,7 +53,7 @@ public class StorageModuleTest {
   void provideStorage() {
     try (MockedConstruction<StorageImpl> storageMockedConstruction = mockConstruction(
         StorageImpl.class)) {
-      Storage storage = storageModule.provideStorage(mock(SegmentManagerImpl.class));
+      Storage storage = storageModule.provideStorage(mock(SegmentManager.class));
       Storage mockedStorage = storageMockedConstruction.constructed().get(0);
       assertEquals(mockedStorage, storage);
     }

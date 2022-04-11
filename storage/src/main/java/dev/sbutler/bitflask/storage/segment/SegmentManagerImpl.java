@@ -17,9 +17,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SegmentManagerImpl implements SegmentManager {
+class SegmentManagerImpl implements SegmentManager {
 
-  private static final String DEFAULT_SEGMENT_FILE_PATH = "store/segment%d.txt";
+  private static final String DEFAULT_SEGMENT_FILE_PATH = "store/segment_%d.txt";
   private static final StandardOpenOption[] fileOptions = {
       StandardOpenOption.CREATE,
       StandardOpenOption.READ,
