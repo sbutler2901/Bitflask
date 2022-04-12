@@ -38,34 +38,4 @@ public interface Segment {
    */
   boolean exceedsStorageThreshold();
 
-  interface Entry {
-
-    /**
-     * The entry's offset within the segment
-     *
-     * @return the offset
-     */
-    long getSegmentFileOffset();
-
-    /**
-     * The entry's key's byte length
-     *
-     * @return the key's byte length
-     */
-    int getKeyLength();
-
-    /**
-     * The entry's value's byte length
-     *
-     * @return the value's byte length
-     */
-    int getValueLength();
-
-    /**
-     * The entry's total length including the key and value
-     *
-     * @return the total entry's byte length
-     */
-    int getTotalLength();
-  }
 }

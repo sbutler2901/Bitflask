@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.storage.segment;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
@@ -14,8 +13,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.storage.segment.SegmentImpl.EntryImpl;
 import java.io.IOException;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -35,7 +34,9 @@ public class SegmentImplTest {
   @Test
   void encodedKeyAndValue() {
     String key = "key", value = "value";
-    byte[] expected = (key + ';' + value + ';').getBytes();
+    char keyLengthEncoded = (char) key.length();
+    char valueLengthEncoded = (char) value.length();
+    byte[] expected = (keyLengthEncoded + key + valueLengthEncoded + value).getBytes();
     byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
     assertArrayEquals(expected, encoded);
   }
@@ -43,7 +44,9 @@ public class SegmentImplTest {
   @Test
   void decodedValue() {
     String key = "key", value = "value";
-    byte[] encoded = (key + ';' + value + ';').getBytes();
+    char keyLengthEncoded = (char) key.length();
+    char valueLengthEncoded = (char) value.length();
+    byte[] encoded = (keyLengthEncoded + key + valueLengthEncoded + value).getBytes();
     assertEquals(value, SegmentImpl.decodeValue(encoded, key.length()));
   }
 
@@ -68,13 +71,12 @@ public class SegmentImplTest {
   @Test
   void read() throws IOException {
     String key = "key", value = "value";
-    byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
-
     // write before reading
     segment.write(key, value);
 
     // read
-    doReturn(encoded).when(segmentFile).read(anyInt(), anyLong());
+    doReturn((byte) 5).when(segmentFile).readByte(anyLong());
+    doReturn(value.getBytes()).when(segmentFile).read(anyInt(), anyLong());
 
     Optional<String> result = segment.read(key);
 
@@ -119,41 +121,17 @@ public class SegmentImplTest {
 
   @Test
   void initialize() throws IOException {
-    String testEntry = "test;value;other;value;";
+    String key = "key", value = "value";
+    byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
+
     SegmentFile mockSegmentFile = mock(SegmentFile.class);
-    doReturn((long) testEntry.length()).when(mockSegmentFile).size();
-    doReturn(testEntry.getBytes()).when(mockSegmentFile).read(anyInt(), anyLong());
+    doReturn((long) encoded.length).when(mockSegmentFile).size();
+    when(mockSegmentFile.readByte(anyLong())).thenReturn((byte) 3).thenReturn((byte) 5);
+    doReturn(key.getBytes()).when(mockSegmentFile).read(anyInt(), anyLong());
 
     Segment segment = new SegmentImpl(mockSegmentFile);
 
-    assertTrue(segment.containsKey("test"));
-    assertTrue(segment.containsKey("other"));
-  }
-
-  public static class EntryImplTest {
-
-    @Test
-    void entry_invalidArgs() {
-      assertThrows(IllegalArgumentException.class, () -> new EntryImpl(-1, 0, 10));
-      assertThrows(IllegalArgumentException.class, () -> new EntryImpl(0, -1, 10));
-      assertThrows(IllegalArgumentException.class, () -> new EntryImpl(0, 0, 0));
-    }
-
-    @Test
-    void entry_getters() {
-      Segment.Entry entry = new EntryImpl(0, 5, 10);
-      assertEquals(0, entry.getSegmentFileOffset());
-      assertEquals(5, entry.getKeyLength());
-      assertEquals(10, entry.getValueLength());
-      assertEquals(17, entry.getTotalLength()); // include delimiter length
-    }
-
-    @Test
-    void entry_toString() {
-      Segment.Entry entry = new EntryImpl(0, 5, 10);
-      String expected = "Entry{segmentOffset=0, keyLength=5, valueLength=10}";
-      assertEquals(expected, entry.toString());
-    }
+    assertTrue(segment.containsKey("key"));
   }
 
 }
