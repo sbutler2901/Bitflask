@@ -11,9 +11,9 @@ import java.util.Optional;
  */
 class StorageImpl implements Storage {
 
-  private static final String WRITE_ERR_BAD_KEY = "Error writing data, provided key was null or empty";
-  private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null or empty";
-  private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null or empty";
+  private static final String WRITE_ERR_BAD_KEY = "Error writing data, provided key was null, empty, or longer than 256 characters";
+  private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null, empty, or longer than 256 characters";
+  private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null, empty, or longer than 256 characters";
 
   private final SegmentManager segmentManager;
 
@@ -35,9 +35,9 @@ class StorageImpl implements Storage {
   }
 
   private void validateWriteArgs(String key, String value) {
-    if (key == null || key.length() <= 0) {
+    if (key == null || key.length() <= 0 || key.length() > 256) {
       throw new IllegalArgumentException(WRITE_ERR_BAD_KEY);
-    } else if (value == null || value.length() <= 0) {
+    } else if (value == null || value.length() <= 0 || value.length() > 256) {
       throw new IllegalArgumentException(WRITE_ERR_BAD_VALUE);
     }
   }
@@ -60,7 +60,7 @@ class StorageImpl implements Storage {
   }
 
   private void validateReadArgs(String key) {
-    if (key == null || key.length() <= 0) {
+    if (key == null || key.length() <= 0 || key.length() > 256) {
       throw new IllegalArgumentException(READ_ERR_BAD_KEY);
     }
   }
