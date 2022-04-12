@@ -12,10 +12,11 @@ class SegmentImpl implements Segment {
   public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
 
   private static final char DELIMITER = ';';
-  private static final String ENCODING_FORMAT = "%s" + DELIMITER + "%s" + DELIMITER;
+  private static final String ENCODING_FORMAT = "%c%s%c%s";
 
   private final SegmentFile segmentFile;
   private final ConcurrentMap<String, Entry> keyEntryMap = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap = new ConcurrentHashMap<>();
   private final AtomicLong currentFileWriteOffset = new AtomicLong();
 
   public SegmentImpl(SegmentFile segmentFile) throws IOException {
@@ -66,15 +67,14 @@ class SegmentImpl implements Segment {
 
     try {
       segmentFile.write(encodedKeyAndValue, writeOffset);
-      createAndAddNewEntry(key, value, writeOffset);
+      keyedEntryFileOffsetMap.merge(key, writeOffset, (retrievedOffset, writtenOffset) ->
+          retrievedOffset < writtenOffset
+              ? writtenOffset
+              : retrievedOffset
+      );
     } catch (IOException e) {
       e.printStackTrace();
     }
-  }
-
-  static byte[] encodeKeyAndValue(String key, String value) {
-    String encoded = String.format(ENCODING_FORMAT, key, value);
-    return encoded.getBytes(StandardCharsets.UTF_8);
   }
 
   private void createAndAddNewEntry(String key, String value, long offset) {
@@ -93,17 +93,26 @@ class SegmentImpl implements Segment {
       return Optional.empty();
     }
 
-    Entry entry = keyEntryMap.get(key);
+    long entryFileOffset = keyedEntryFileOffsetMap.get(key);
     try {
-      byte[] readBytes = segmentFile.read(entry.getTotalLength(),
-          entry.getSegmentFileOffset());
-      String value = decodeValue(readBytes, entry.getKeyLength());
+      long valueLengthOffsetStart = entryFileOffset + 1 + key.length();
+      int valueLength = segmentFile.readByte(valueLengthOffsetStart);
+      byte[] valueBytes = segmentFile.read(valueLength, valueLengthOffsetStart + 1);
+      String value = new String(valueBytes);
       return Optional.of(value);
     } catch (IOException e) {
       e.printStackTrace();
     }
 
     return Optional.empty();
+  }
+
+  static byte[] encodeKeyAndValue(String key, String value) {
+    char encodedKeyLength = (char) key.length();
+    char encodedValueLength = (char) value.length();
+    String encoded = String.format(ENCODING_FORMAT, encodedKeyLength, key, encodedValueLength,
+        value);
+    return encoded.getBytes(StandardCharsets.UTF_8);
   }
 
   static String decodeValue(byte[] readBytes, int keyLength) {
@@ -113,7 +122,7 @@ class SegmentImpl implements Segment {
 
   @Override
   public boolean containsKey(String key) {
-    return keyEntryMap.containsKey(key);
+    return keyedEntryFileOffsetMap.containsKey(key);
   }
 
   @Override

@@ -39,6 +39,11 @@ class SegmentFile {
     return readBytesBuffer.array();
   }
 
+  byte readByte(long fileOffset) throws IOException {
+    byte[] readBytes = read(1, fileOffset);
+    return readBytes[0];
+  }
+
   long size() throws IOException {
     return segmentFileChannel.size();
   }
