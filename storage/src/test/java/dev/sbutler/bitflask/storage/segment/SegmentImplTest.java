@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -30,6 +31,21 @@ public class SegmentImplTest {
   SegmentImpl segment;
   @Mock
   SegmentFile segmentFile;
+
+  @Test
+  void encodedKeyAndValue() {
+    String key = "key", value = "value";
+    byte[] expected = (key + ';' + value + ';').getBytes();
+    byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
+    assertArrayEquals(expected, encoded);
+  }
+
+  @Test
+  void decodedValue() {
+    String key = "key", value = "value";
+    byte[] encoded = (key + ';' + value + ';').getBytes();
+    assertEquals(value, SegmentImpl.decodeValue(encoded, key.length()));
+  }
 
   @Test
   void write() throws IOException {
