@@ -11,8 +11,6 @@ class SegmentImpl implements Segment {
 
   public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
 
-  private static final String ENCODING_FORMAT = "%c%s%c%s";
-
   private final SegmentFile segmentFile;
   private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap = new ConcurrentHashMap<>();
   private final AtomicLong currentFileWriteOffset = new AtomicLong();
@@ -30,11 +28,14 @@ class SegmentImpl implements Segment {
     long nextOffsetStart = 0;
     while (nextOffsetStart < currentFileWriteOffset.get()) {
       long entryStartOffset = nextOffsetStart;
+
+      // Get key and update offset map
       int keyLength = segmentFile.readByte(nextOffsetStart++);
       String key = segmentFile.readAsString(keyLength, nextOffsetStart);
+      nextOffsetStart += keyLength;
       keyedEntryFileOffsetMap.put(key, entryStartOffset);
 
-      nextOffsetStart += keyLength;
+      // Start next iteration offset after current entry's value
       int valueLength = segmentFile.readByte(nextOffsetStart++);
       nextOffsetStart += valueLength;
     }
@@ -77,12 +78,20 @@ class SegmentImpl implements Segment {
     return Optional.empty();
   }
 
+  /**
+   * Encodes a key and value into a byte array. Uses a single byte each for encoding key and value
+   * lengths (limiting them to a max length of 256)
+   *
+   * @param key   the key to be encoded
+   * @param value the value to be encoded
+   * @return the combined encoding of the key and value
+   */
   static byte[] encodeKeyAndValue(String key, String value) {
     verifyEncodedArgs(key, value);
 
     char encodedKeyLength = (char) key.length();
     char encodedValueLength = (char) value.length();
-    String encoded = String.format(ENCODING_FORMAT, encodedKeyLength, key, encodedValueLength,
+    String encoded = String.format("%c%s%c%s", encodedKeyLength, key, encodedValueLength,
         value);
     return encoded.getBytes(StandardCharsets.UTF_8);
   }
