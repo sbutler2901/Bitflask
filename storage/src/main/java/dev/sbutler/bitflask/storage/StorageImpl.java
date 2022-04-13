@@ -6,9 +6,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Optional;
 
-/**
- * Manages persisting and retrieving data
- */
 class StorageImpl implements Storage {
 
   private static final String WRITE_ERR_BAD_KEY = "Error writing data, provided key was null, empty, or longer than 256 characters";
@@ -21,14 +18,6 @@ class StorageImpl implements Storage {
     this.segmentManager = segmentManager;
   }
 
-  /**
-   * Writes the provided data to the current segment file
-   *
-   * @param key   the key for retrieving data once written. Expected to be a non-blank string.
-   * @param value the data to be written. Expected to be a non-blank string.
-   * @throws IOException              when creating a new segment file fails
-   * @throws IllegalArgumentException when the provided key or value is invalid
-   */
   public void write(String key, String value) throws IOException {
     validateWriteArgs(key, value);
     segmentManager.getActiveSegment().write(key, value);
@@ -42,12 +31,6 @@ class StorageImpl implements Storage {
     }
   }
 
-  /**
-   * Reads the provided key's value from storage
-   *
-   * @param key the key used for retrieving stored data. Expected to be a non-blank string.
-   * @return the read value, if found
-   */
   public Optional<String> read(String key) {
     validateReadArgs(key);
 

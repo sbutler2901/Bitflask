@@ -62,6 +62,28 @@ public class SegmentImplTest {
   }
 
   @Test
+  void write_merge() throws IOException {
+    try (MockedConstruction<AtomicLong> atomicLongMockedConstruction = mockConstruction(
+        AtomicLong.class)) {
+      SegmentFile mockSegmentFile = mock(SegmentFile.class);
+      doReturn(0L).when(mockSegmentFile).size();
+
+      Segment segment = new SegmentImpl(mockSegmentFile);
+      AtomicLong mockedAtomicLong = atomicLongMockedConstruction.constructed().get(0);
+      // force merge comparison when writing to simulate another thread having written
+      when(mockedAtomicLong.getAndAdd(anyLong())).thenReturn(0L).thenReturn(2L).thenReturn(1L);
+
+      String key = "key", value = "value";
+      segment.write(key, value);
+      segment.write(key, value);
+      segment.write(key, value);
+      doReturn("value").when(mockSegmentFile).readAsString(anyInt(), anyLong());
+      segment.read(key);
+      verify(mockSegmentFile, times(1)).readByte(2L + 1 + 3);
+    }
+  }
+
+  @Test
   void write_Exception() throws IOException {
     String key = "key", value = "value";
 
