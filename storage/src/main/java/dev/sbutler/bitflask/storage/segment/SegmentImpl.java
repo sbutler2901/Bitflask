@@ -31,8 +31,7 @@ class SegmentImpl implements Segment {
     while (nextOffsetStart < currentFileWriteOffset.get()) {
       long entryStartOffset = nextOffsetStart;
       int keyLength = segmentFile.readByte(nextOffsetStart++);
-      byte[] keyBytes = segmentFile.read(keyLength, nextOffsetStart);
-      String key = new String(keyBytes);
+      String key = segmentFile.readAsString(keyLength, nextOffsetStart);
       keyedEntryFileOffsetMap.put(key, entryStartOffset);
 
       nextOffsetStart += keyLength;
@@ -66,11 +65,10 @@ class SegmentImpl implements Segment {
 
     long entryFileOffset = keyedEntryFileOffsetMap.get(key);
     long valueLengthOffsetStart = entryFileOffset + 1 + key.length();
+    long valueOffsetStart = valueLengthOffsetStart + 1;
     try {
       int valueLength = segmentFile.readByte(valueLengthOffsetStart);
-      long valueOffsetStart = valueLengthOffsetStart + 1;
-      byte[] valueBytes = segmentFile.read(valueLength, valueOffsetStart);
-      String value = new String(valueBytes);
+      String value = segmentFile.readAsString(valueLength, valueOffsetStart);
       return Optional.of(value);
     } catch (IOException e) {
       e.printStackTrace();
@@ -80,6 +78,8 @@ class SegmentImpl implements Segment {
   }
 
   static byte[] encodeKeyAndValue(String key, String value) {
+    verifyEncodedArgs(key, value);
+
     char encodedKeyLength = (char) key.length();
     char encodedValueLength = (char) value.length();
     String encoded = String.format(ENCODING_FORMAT, encodedKeyLength, key, encodedValueLength,
@@ -87,9 +87,12 @@ class SegmentImpl implements Segment {
     return encoded.getBytes(StandardCharsets.UTF_8);
   }
 
-  static String decodeValue(byte[] readBytes, int keyLength) {
-    String entry = new String(readBytes).trim();
-    return entry.substring(keyLength + 1, readBytes.length - 1);
+  private static void verifyEncodedArgs(String key, String value) {
+    if (key.length() > 256) {
+      throw new IllegalArgumentException("A key longer than 256 chars cannot be encoded");
+    } else if (value.length() > 256) {
+      throw new IllegalArgumentException("A value longer than 256 chars cannot be encoded");
+    }
   }
 
   @Override

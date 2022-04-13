@@ -74,6 +74,17 @@ public class SegmentFileTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  void readAsString() throws IOException {
+    Future<Integer> readFuture = mock(Future.class);
+    doReturn(readFuture).when(asynchronousFileChannel).read(any(ByteBuffer.class), anyLong());
+
+    String result = segmentFile.readAsString(0, 0L);
+    verify(asynchronousFileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
+    assertEquals(0, result.length());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   void readByte() throws IOException {
     Future<Integer> readFuture = mock(Future.class);
 

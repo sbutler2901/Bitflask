@@ -39,6 +39,10 @@ class SegmentFile {
     return readBytesBuffer.array();
   }
 
+  String readAsString(int readLength, long fileOffset) throws IOException {
+    return new String(read(readLength, fileOffset));
+  }
+
   byte readByte(long fileOffset) throws IOException {
     byte[] readBytes = read(1, fileOffset);
     return readBytes[0];
