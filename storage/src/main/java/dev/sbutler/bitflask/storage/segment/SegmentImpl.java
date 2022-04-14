@@ -2,7 +2,9 @@ package dev.sbutler.bitflask.storage.segment;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -112,6 +114,17 @@ class SegmentImpl implements Segment {
   @Override
   public boolean exceedsStorageThreshold() {
     return currentFileWriteOffset.get() > NEW_SEGMENT_THRESHOLD;
+  }
+
+  @Override
+  public Set<String> getSegmentKeys() {
+    return keyedEntryFileOffsetMap.keySet();
+  }
+
+  @Override
+  public void closeAndDelete() throws IOException {
+    segmentFile.close();
+    Files.delete(segmentFile.getSegmentFilePath());
   }
 
 }

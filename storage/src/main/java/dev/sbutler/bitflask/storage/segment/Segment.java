@@ -1,6 +1,8 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import java.io.IOException;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Represents a single self-contained file for storing data
@@ -37,5 +39,17 @@ public interface Segment {
    * @return whether it exceeds the threshold, or not
    */
   boolean exceedsStorageThreshold();
+
+  /**
+   * Returns all keys stored by the segment
+   *
+   * @return a set of the keys stored by the segment
+   */
+  Set<String> getSegmentKeys();
+
+  /**
+   * Deletes the segment from the filesystem
+   */
+  void closeAndDelete() throws IOException;
 
 }

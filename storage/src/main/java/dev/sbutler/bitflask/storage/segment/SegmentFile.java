@@ -3,15 +3,18 @@ package dev.sbutler.bitflask.storage.segment;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 class SegmentFile {
 
   private final AsynchronousFileChannel segmentFileChannel;
+  private final Path segmentFilePath;
 
-  public SegmentFile(AsynchronousFileChannel segmentFileChannel) {
+  public SegmentFile(AsynchronousFileChannel segmentFileChannel, Path segmentFilePath) {
     this.segmentFileChannel = segmentFileChannel;
+    this.segmentFilePath = segmentFilePath;
   }
 
   void write(byte[] data, long fileOffset) throws IOException {
@@ -50,6 +53,14 @@ class SegmentFile {
 
   long size() throws IOException {
     return segmentFileChannel.size();
+  }
+
+  Path getSegmentFilePath() {
+    return segmentFilePath;
+  }
+
+  void close() throws IOException {
+    segmentFileChannel.close();
   }
 
 }

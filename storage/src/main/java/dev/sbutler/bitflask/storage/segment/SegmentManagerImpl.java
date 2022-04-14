@@ -10,14 +10,19 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class SegmentManagerImpl implements SegmentManager {
+
+  private static final int DEFAULT_COMPACTION_THRESHOLD = 2;
 
   private static final String DEFAULT_SEGMENT_FILE_PATH = "store/segment_%d.txt";
   private static final StandardOpenOption[] fileOptions = {
@@ -29,6 +34,7 @@ class SegmentManagerImpl implements SegmentManager {
   private static final Set<StandardOpenOption> fileChannelOptions = new HashSet<>(
       Arrays.asList(fileOptions));
 
+  // todo: handle detecting previous segments after compaction
   private static final AtomicInteger nextSegmentIndex = new AtomicInteger(0);
 
   private final ExecutorService executorService;
@@ -53,9 +59,19 @@ class SegmentManagerImpl implements SegmentManager {
   public synchronized Segment getActiveSegment() throws IOException {
     Segment currentActiveSegment = segmentFilesDeque.getFirst();
     if (currentActiveSegment.exceedsStorageThreshold()) {
-      return createAndAddNextActiveSegment();
+      return getNextActiveSegment();
     }
     return currentActiveSegment;
+  }
+
+  private synchronized Segment getNextActiveSegment() throws IOException {
+    // blocks writing until new segment is created or compaction is completed
+    if (shouldPerformCompaction()) {
+      compactSegments();
+    } else {
+      createAndAddNextActiveSegment();
+    }
+    return segmentFilesDeque.getFirst();
   }
 
   @Override
@@ -63,23 +79,83 @@ class SegmentManagerImpl implements SegmentManager {
     return Collections.unmodifiableCollection(segmentFilesDeque).iterator();
   }
 
-  private synchronized Segment createAndAddNextActiveSegment() throws IOException {
-    AsynchronousFileChannel segmentFileChannel = getNextSegmentFileChannel();
-    SegmentFile segmentFile = new SegmentFile(segmentFileChannel);
-    Segment segment = new SegmentImpl(segmentFile);
+  private Segment createNewSegment() throws IOException {
+    Path segmentPath = getNextSegmentFilePath();
+    AsynchronousFileChannel segmentFileChannel = getNextSegmentFileChannel(segmentPath);
+    SegmentFile segmentFile = new SegmentFile(segmentFileChannel, segmentPath);
+    return new SegmentImpl(segmentFile);
+  }
+
+  private Segment createAndAddNextActiveSegment() throws IOException {
+    Segment segment = createNewSegment();
     segmentFilesDeque.offerFirst(segment);
     return segment;
   }
 
-  private AsynchronousFileChannel getNextSegmentFileChannel() throws IOException {
-    Path newSegmentFilePath = getNextSegmentFilePath();
+  private AsynchronousFileChannel getNextSegmentFileChannel(Path nextSegmentFilePath)
+      throws IOException {
     return AsynchronousFileChannel
-        .open(newSegmentFilePath, fileChannelOptions, executorService);
+        .open(nextSegmentFilePath, fileChannelOptions, executorService);
   }
 
   private Path getNextSegmentFilePath() {
     int segmentIndex = nextSegmentIndex.getAndIncrement();
     return Paths.get(String.format(DEFAULT_SEGMENT_FILE_PATH, segmentIndex));
+  }
+
+  private boolean shouldPerformCompaction() {
+    return segmentFilesDeque.size() % DEFAULT_COMPACTION_THRESHOLD == 0;
+  }
+
+  private synchronized void compactSegments() throws IOException {
+    Map<String, Segment> keySegmentMap = createKeySegmentMap();
+    Segment compactedSegment = createCompactedSegment(keySegmentMap);
+    deleteCompactedSegments();
+    finalizeCompaction(compactedSegment);
+  }
+
+  private Map<String, Segment> createKeySegmentMap() {
+    Map<String, Segment> keySegmentMap = new HashMap<>();
+    for (Segment segment : segmentFilesDeque) {
+      Set<String> segmentKeys = segment.getSegmentKeys();
+      for (String key : segmentKeys) {
+        if (!keySegmentMap.containsKey(key)) {
+          keySegmentMap.put(key, segment);
+        }
+      }
+    }
+    return keySegmentMap;
+  }
+
+  private Segment createCompactedSegment(Map<String, Segment> keySegmentMap) throws IOException {
+    Segment compactedSegment = createNewSegment();
+
+    for (Map.Entry<String, Segment> entry : keySegmentMap.entrySet()) {
+      String key = entry.getKey();
+      Optional<String> valueOptional = entry.getValue().read(key);
+      if (valueOptional.isEmpty()) {
+        throw new RuntimeException("Compaction failure: value not found while reading segment");
+      }
+      compactedSegment.write(key, valueOptional.get());
+    }
+
+    return compactedSegment;
+  }
+
+
+  private void deleteCompactedSegments() {
+    for (Segment segment : segmentFilesDeque) {
+      try {
+        segment.closeAndDelete();
+      } catch (IOException e) {
+        System.err.println("Failure to close segment: " + e.getMessage());
+      }
+    }
+  }
+
+  private void finalizeCompaction(Segment compactedSegment) {
+    segmentFilesDeque.clear();
+    segmentFilesDeque.offerFirst(compactedSegment);
   }
 
 }
