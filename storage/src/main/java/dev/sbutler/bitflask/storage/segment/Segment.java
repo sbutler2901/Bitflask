@@ -48,6 +48,13 @@ interface Segment {
   Set<String> getSegmentKeys();
 
   /**
+   * Returns the segment's file's key
+   *
+   * @return the segment's file's key
+   */
+  String getSegmentFileKey();
+
+  /**
    * Deletes the segment from the filesystem
    */
   void closeAndDelete() throws IOException;

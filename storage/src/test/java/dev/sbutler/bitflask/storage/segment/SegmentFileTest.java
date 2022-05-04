@@ -13,21 +13,24 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 public class SegmentFileTest {
 
-  @InjectMocks
   SegmentFile segmentFile;
-  @Mock
   AsynchronousFileChannel asynchronousFileChannel;
+  Path path = Path.of("test-path");
+  String segmentFileKey = "test-key";
+
+  @BeforeEach
+  void beforeEach() {
+    asynchronousFileChannel = mock(AsynchronousFileChannel.class);
+    segmentFile = new SegmentFile(asynchronousFileChannel, path, segmentFileKey);
+  }
 
   @Test
   void write() throws IOException {
@@ -99,5 +102,22 @@ public class SegmentFileTest {
   void size() throws IOException {
     doReturn(0L).when(asynchronousFileChannel).size();
     assertEquals(0L, segmentFile.size());
+  }
+
+  @Test
+  void getSegmentFilePath() {
+    assertEquals(path, segmentFile.getSegmentFilePath());
+    assertEquals(segmentFileKey, segmentFile.getSegmentFileKey());
+  }
+
+  @Test
+  void getSegmentFileKey() {
+    assertEquals(segmentFileKey, segmentFile.getSegmentFileKey());
+  }
+
+  @Test
+  void close() throws IOException {
+    segmentFile.close();
+    verify(asynchronousFileChannel, times(1)).close();
   }
 }

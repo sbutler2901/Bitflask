@@ -12,4 +12,10 @@ public class SegmentModule extends AbstractModule {
     return segmentManager;
   }
 
+  @Provides
+  @Singleton
+  SegmentFactory provideSegmentFactory(SegmentFactoryImpl segmentFactory) {
+    return segmentFactory;
+  }
+
 }

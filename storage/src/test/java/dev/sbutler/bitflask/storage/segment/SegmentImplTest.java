@@ -2,8 +2,10 @@ package dev.sbutler.bitflask.storage.segment;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -12,18 +14,22 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,21 +41,18 @@ public class SegmentImplTest {
   SegmentFile segmentFile;
 
   @Test
-  void encodedKeyAndValue() {
+  void loadFileEntries() throws IOException {
     String key = "key", value = "value";
-    char keyLengthEncoded = (char) key.length();
-    char valueLengthEncoded = (char) value.length();
-    byte[] expected = (keyLengthEncoded + key + valueLengthEncoded + value).getBytes();
     byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
-    assertArrayEquals(expected, encoded);
-  }
 
-  @Test
-  void encodedKeyAndValue_IllegalArgumentException() {
-    String key = new String(new byte[257]);
-    String value = new String(new byte[257]);
-    assertThrows(IllegalArgumentException.class, () -> SegmentImpl.encodeKeyAndValue(key, "value"));
-    assertThrows(IllegalArgumentException.class, () -> SegmentImpl.encodeKeyAndValue("key", value));
+    SegmentFile mockSegmentFile = mock(SegmentFile.class);
+    doReturn((long) encoded.length).when(mockSegmentFile).size();
+    when(mockSegmentFile.readByte(anyLong())).thenReturn((byte) 3).thenReturn((byte) 5);
+    doReturn(key).when(mockSegmentFile).readAsString(anyInt(), anyLong());
+
+    Segment segment = new SegmentImpl(mockSegmentFile);
+
+    assertTrue(segment.containsKey("key"));
   }
 
   @Test
@@ -134,6 +137,32 @@ public class SegmentImplTest {
   }
 
   @Test
+  void encodedKeyAndValue() {
+    String key = "key", value = "value";
+    char keyLengthEncoded = (char) key.length();
+    char valueLengthEncoded = (char) value.length();
+    byte[] expected = (keyLengthEncoded + key + valueLengthEncoded + value).getBytes();
+    byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
+    assertArrayEquals(expected, encoded);
+  }
+
+  @Test
+  void encodedKeyAndValue_IllegalArgumentException() {
+    String key = new String(new byte[257]);
+    String value = new String(new byte[257]);
+    assertThrows(IllegalArgumentException.class, () -> SegmentImpl.encodeKeyAndValue(key, "value"));
+    assertThrows(IllegalArgumentException.class, () -> SegmentImpl.encodeKeyAndValue("key", value));
+  }
+
+  @Test
+  void containsKey() {
+    String key = "key", value = "value";
+    assertFalse(segment.containsKey(key));
+    segment.write(key, value);
+    assertTrue(segment.containsKey(key));
+  }
+
+  @Test
   void exceedsStorageThreshold() throws IOException {
     try (MockedConstruction<AtomicLong> atomicLongMockedConstruction = mockConstruction(
         AtomicLong.class)) {
@@ -150,18 +179,34 @@ public class SegmentImplTest {
   }
 
   @Test
-  void loadFileEntries() throws IOException {
+  void getSegmentKeys() {
     String key = "key", value = "value";
-    byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
-
-    SegmentFile mockSegmentFile = mock(SegmentFile.class);
-    doReturn((long) encoded.length).when(mockSegmentFile).size();
-    when(mockSegmentFile.readByte(anyLong())).thenReturn((byte) 3).thenReturn((byte) 5);
-    doReturn(key).when(mockSegmentFile).readAsString(anyInt(), anyLong());
-
-    Segment segment = new SegmentImpl(mockSegmentFile);
-
-    assertTrue(segment.containsKey("key"));
+    Set<String> keySet = segment.getSegmentKeys();
+    assertTrue(keySet.isEmpty());
+    segment.write(key, value);
+    keySet = segment.getSegmentKeys();
+    assertTrue(keySet.contains(key));
   }
 
+  @Test
+  void getSegmentFileKey() {
+    String fileKey = "file-key";
+    doReturn(fileKey).when(segmentFile).getSegmentFileKey();
+    assertEquals(fileKey, segment.getSegmentFileKey());
+  }
+
+  @Test
+  void closeAndDelete() throws IOException {
+    try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      segment.closeAndDelete();
+      verify(segmentFile, times(1)).close();
+      filesMockedStatic.verify(() -> {
+        try {
+          Files.delete(any());
+        } catch (IOException e) {
+          fail();
+        }
+      }, times(1));
+    }
+  }
 }

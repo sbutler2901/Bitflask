@@ -122,6 +122,11 @@ class SegmentImpl implements Segment {
   }
 
   @Override
+  public String getSegmentFileKey() {
+    return segmentFile.getSegmentFileKey();
+  }
+
+  @Override
   public void closeAndDelete() throws IOException {
     segmentFile.close();
     Files.delete(segmentFile.getSegmentFilePath());

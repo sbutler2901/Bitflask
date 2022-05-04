@@ -34,6 +34,15 @@ public class SegmentModuleTest {
     assertInstanceOf(SegmentManager.class, segmentManager);
   }
 
+  @Test
+  void provideSegmentFactory() {
+    SegmentModule segmentModule = new SegmentModule();
+    SegmentFactoryImpl segmentFactoryImpl = mock(SegmentFactoryImpl.class);
+    SegmentFactory segmentFactory = segmentModule.provideSegmentFactory(segmentFactoryImpl);
+    assertEquals(segmentFactoryImpl, segmentFactory);
+    assertInstanceOf(SegmentFactory.class, segmentFactory);
+  }
+
   private static class MockModule extends AbstractModule {
 
     @Override

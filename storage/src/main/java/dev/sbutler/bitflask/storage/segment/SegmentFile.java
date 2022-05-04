@@ -11,10 +11,13 @@ class SegmentFile {
 
   private final AsynchronousFileChannel segmentFileChannel;
   private final Path segmentFilePath;
+  private final String segmentFileKey;
 
-  public SegmentFile(AsynchronousFileChannel segmentFileChannel, Path segmentFilePath) {
+  public SegmentFile(AsynchronousFileChannel segmentFileChannel, Path segmentFilePath,
+      String segmentFileKey) {
     this.segmentFileChannel = segmentFileChannel;
     this.segmentFilePath = segmentFilePath;
+    this.segmentFileKey = segmentFileKey;
   }
 
   void write(byte[] data, long fileOffset) throws IOException {
@@ -57,6 +60,10 @@ class SegmentFile {
 
   Path getSegmentFilePath() {
     return segmentFilePath;
+  }
+
+  String getSegmentFileKey() {
+    return segmentFileKey;
   }
 
   void close() throws IOException {
