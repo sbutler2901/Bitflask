@@ -2,17 +2,12 @@ package dev.sbutler.bitflask.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.storage.segment.Segment;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,10 +26,8 @@ class StorageImplTest {
   @Test
   void write() throws IOException {
     String key = "key", value = "value";
-    Segment segment = mock(Segment.class);
-    doReturn(segment).when(segmentManager).getActiveSegment();
     storage.write(key, value);
-    verify(segment, times(1)).write(key, value);
+    verify(segmentManager, times(1)).write(key, value);
   }
 
   @Test
@@ -54,37 +47,12 @@ class StorageImplTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  void read_keyFound() {
+  void read() {
     String key = "key", value = "value";
-    Iterator<Segment> segmentIterator = mock(Iterator.class);
-    Segment activeSegment = mock(Segment.class);
-
-    doReturn(segmentIterator).when(segmentManager).getSegmentsIterator();
-    when(segmentIterator.hasNext()).thenReturn(true).thenReturn(false);
-    doReturn(activeSegment).when(segmentIterator).next();
-    doReturn(true).when(activeSegment).containsKey(key);
-    doReturn(Optional.of(value)).when(activeSegment).read(key);
-
-    Optional<String> result = storage.read(key);
-    assertTrue(result.isPresent());
-    assertEquals(value, result.get());
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  void read_keyNotFound() {
-    String key = "key";
-    Iterator<Segment> segmentIterator = mock(Iterator.class);
-    Segment activeSegment = mock(Segment.class);
-
-    doReturn(segmentIterator).when(segmentManager).getSegmentsIterator();
-    when(segmentIterator.hasNext()).thenReturn(true).thenReturn(false);
-    doReturn(activeSegment).when(segmentIterator).next();
-    doReturn(false).when(activeSegment).containsKey(key);
-
-    Optional<String> result = storage.read(key);
-    assertTrue(result.isEmpty());
+    Optional<String> optionalValue = Optional.of(value);
+    doReturn(optionalValue).when(segmentManager).read(key);
+    Optional<String> readValueOptional = storage.read(key);
+    assertEquals(optionalValue, readValueOptional);
   }
 
   @Test

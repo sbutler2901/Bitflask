@@ -8,11 +8,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -56,6 +54,35 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   @Override
+  public synchronized void write(String key, String value) throws IOException {
+    Segment activeSegment = getActiveSegment();
+    activeSegment.write(key, value);
+  }
+
+  @Override
+  public Optional<String> read(String key) {
+    Optional<Segment> optionalSegment = findLatestSegmentWithKey(key);
+    if (optionalSegment.isEmpty()) {
+      return Optional.empty();
+    }
+    return optionalSegment.get().read(key);
+  }
+
+  /**
+   * Attempts to find a key in the list of storage segments starting with the most recently created
+   *
+   * @param key the key to be found
+   * @return the found storage segment, if one exists
+   */
+  private Optional<Segment> findLatestSegmentWithKey(String key) {
+    for (Segment segment : segmentFilesDeque) {
+      if (segment.containsKey(key)) {
+        return Optional.of(segment);
+      }
+    }
+    return Optional.empty();
+  }
+
   public synchronized Segment getActiveSegment() throws IOException {
     Segment currentActiveSegment = segmentFilesDeque.getFirst();
     if (currentActiveSegment.exceedsStorageThreshold()) {
@@ -72,11 +99,6 @@ class SegmentManagerImpl implements SegmentManager {
       createAndAddNextActiveSegment();
     }
     return segmentFilesDeque.getFirst();
-  }
-
-  @Override
-  public Iterator<Segment> getSegmentsIterator() {
-    return Collections.unmodifiableCollection(segmentFilesDeque).iterator();
   }
 
   private Segment createNewSegment() throws IOException {
