@@ -47,7 +47,7 @@ class StorageImplTest {
   }
 
   @Test
-  void read() {
+  void read() throws IOException {
     String key = "key", value = "value";
     Optional<String> optionalValue = Optional.of(value);
     doReturn(optionalValue).when(segmentManager).read(key);

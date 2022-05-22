@@ -70,4 +70,8 @@ class SegmentFile {
     segmentFileChannel.close();
   }
 
+  boolean isOpen() {
+    return segmentFileChannel.isOpen();
+  }
+
 }

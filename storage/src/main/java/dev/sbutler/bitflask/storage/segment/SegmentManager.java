@@ -20,7 +20,9 @@ public interface SegmentManager {
    * @param key the key to find associated value
    * @return an Optional containing the value associated with the provided key if found, an empty
    * Optional otherwise
+   * @throws IOException if there is an issue finding the provided key, or reading its associated
+   *                     value
    */
-  Optional<String> read(String key);
+  Optional<String> read(String key) throws IOException;
 
 }

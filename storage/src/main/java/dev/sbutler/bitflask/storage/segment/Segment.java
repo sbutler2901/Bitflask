@@ -15,7 +15,7 @@ interface Segment {
    * @param key   the key to be written and saved for retrieving data
    * @param value the associated data value to be written
    */
-  void write(String key, String value);
+  void write(String key, String value) throws IOException;
 
   /**
    * Reads the provided key's value from the segment file
@@ -23,7 +23,7 @@ interface Segment {
    * @param key the key to find the data in the segment file
    * @return the value for the key from the segment file, if it exists
    */
-  Optional<String> read(String key);
+  Optional<String> read(String key) throws IOException;
 
   /**
    * Checks if the segment contains the provided key

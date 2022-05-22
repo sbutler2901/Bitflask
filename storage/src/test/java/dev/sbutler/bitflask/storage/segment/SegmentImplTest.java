@@ -91,7 +91,7 @@ public class SegmentImplTest {
     String key = "key", value = "value";
 
     doThrow(IOException.class).when(segmentFile).write(any(), anyLong());
-    segment.write(key, value);
+    assertThrows(IOException.class, () -> segment.write(key, value));
     verify(segmentFile, times(1)).write(any(), anyLong());
   }
 
@@ -122,9 +122,7 @@ public class SegmentImplTest {
     // read
     doThrow(IOException.class).when(segmentFile).readAsString(anyInt(), anyLong());
 
-    Optional<String> result = segment.read(key);
-
-    assertTrue(result.isEmpty());
+    assertThrows(IOException.class, () -> segment.read(key));
     verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
   }
 
@@ -155,7 +153,7 @@ public class SegmentImplTest {
   }
 
   @Test
-  void containsKey() {
+  void containsKey() throws IOException {
     String key = "key", value = "value";
     assertFalse(segment.containsKey(key));
     segment.write(key, value);
@@ -179,7 +177,7 @@ public class SegmentImplTest {
   }
 
   @Test
-  void getSegmentKeys() {
+  void getSegmentKeys() throws IOException {
     String key = "key", value = "value";
     Set<String> keySet = segment.getSegmentKeys();
     assertTrue(keySet.isEmpty());

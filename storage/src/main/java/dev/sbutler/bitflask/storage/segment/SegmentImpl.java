@@ -44,24 +44,20 @@ class SegmentImpl implements Segment {
   }
 
   @Override
-  public void write(String key, String value) {
+  public void write(String key, String value) throws IOException {
     byte[] encodedKeyAndValue = encodeKeyAndValue(key, value);
     long writeOffset = currentFileWriteOffset.getAndAdd(encodedKeyAndValue.length);
 
-    try {
-      segmentFile.write(encodedKeyAndValue, writeOffset);
-      keyedEntryFileOffsetMap.merge(key, writeOffset, (retrievedOffset, writtenOffset) ->
-          retrievedOffset < writtenOffset
-              ? writtenOffset
-              : retrievedOffset
-      );
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    segmentFile.write(encodedKeyAndValue, writeOffset);
+    keyedEntryFileOffsetMap.merge(key, writeOffset, (retrievedOffset, writtenOffset) ->
+        retrievedOffset < writtenOffset
+            ? writtenOffset
+            : retrievedOffset
+    );
   }
 
   @Override
-  public Optional<String> read(String key) {
+  public Optional<String> read(String key) throws IOException {
     if (!containsKey(key)) {
       return Optional.empty();
     }
@@ -69,15 +65,10 @@ class SegmentImpl implements Segment {
     long entryFileOffset = keyedEntryFileOffsetMap.get(key);
     long valueLengthOffsetStart = entryFileOffset + 1 + key.length();
     long valueOffsetStart = valueLengthOffsetStart + 1;
-    try {
-      int valueLength = segmentFile.readByte(valueLengthOffsetStart);
-      String value = segmentFile.readAsString(valueLength, valueOffsetStart);
-      return Optional.of(value);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
 
-    return Optional.empty();
+    int valueLength = segmentFile.readByte(valueLengthOffsetStart);
+    String value = segmentFile.readAsString(valueLength, valueOffsetStart);
+    return Optional.of(value);
   }
 
   /**

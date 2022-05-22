@@ -31,7 +31,13 @@ class StorageImpl implements Storage {
 
   public Optional<String> read(String key) {
     validateReadArgs(key);
-    return segmentManager.read(key);
+    try {
+      return segmentManager.read(key);
+    } catch (IOException e) {
+      // todo: improve
+      e.printStackTrace();
+      return Optional.empty();
+    }
   }
 
   private void validateReadArgs(String key) {
