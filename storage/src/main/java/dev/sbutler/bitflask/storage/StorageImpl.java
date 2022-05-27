@@ -3,6 +3,9 @@ package dev.sbutler.bitflask.storage;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 class StorageImpl implements Storage {
 
@@ -10,15 +13,22 @@ class StorageImpl implements Storage {
   private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null, empty, or longer than 256 characters";
   private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null, empty, or longer than 256 characters";
 
+  private final ExecutorService executorService;
   private final SegmentManager segmentManager;
 
-  public StorageImpl(SegmentManager segmentManager) {
+  public StorageImpl(@StorageExecutorService ExecutorService executorService,
+      SegmentManager segmentManager) {
+    this.executorService = executorService;
     this.segmentManager = segmentManager;
   }
 
-  public void write(String key, String value) throws IOException {
+  public Future<?> write(String key, String value) throws IOException {
     validateWriteArgs(key, value);
-    segmentManager.write(key, value);
+    Callable<?> writeTask = () -> {
+      segmentManager.write(key, value);
+      return null;
+    };
+    return executorService.submit(writeTask);
   }
 
   private void validateWriteArgs(String key, String value) {
@@ -29,15 +39,10 @@ class StorageImpl implements Storage {
     }
   }
 
-  public Optional<String> read(String key) {
+  public Future<Optional<String>> read(String key) {
     validateReadArgs(key);
-    try {
-      return segmentManager.read(key);
-    } catch (IOException e) {
-      // todo: improve
-      e.printStackTrace();
-      return Optional.empty();
-    }
+    Callable<Optional<String>> readTask = () -> segmentManager.read(key);
+    return executorService.submit(readTask);
   }
 
   private void validateReadArgs(String key) {

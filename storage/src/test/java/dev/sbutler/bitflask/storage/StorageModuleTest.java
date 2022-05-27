@@ -53,7 +53,8 @@ public class StorageModuleTest {
   void provideStorage() {
     try (MockedConstruction<StorageImpl> storageMockedConstruction = mockConstruction(
         StorageImpl.class)) {
-      Storage storage = storageModule.provideStorage(mock(SegmentManager.class));
+      Storage storage = storageModule.provideStorage(mock(ExecutorService.class),
+          mock(SegmentManager.class));
       Storage mockedStorage = storageMockedConstruction.constructed().get(0);
       assertEquals(mockedStorage, storage);
     }

@@ -2,13 +2,16 @@ package dev.sbutler.bitflask.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mock;
 
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,13 +24,18 @@ class StorageImplTest {
   @InjectMocks
   StorageImpl storage;
   @Mock
+  ExecutorService executorService;
+  @Mock
   SegmentManager segmentManager;
 
   @Test
+  @SuppressWarnings("unchecked")
   void write() throws IOException {
     String key = "key", value = "value";
-    storage.write(key, value);
-    verify(segmentManager, times(1)).write(key, value);
+    Future<?> mockFuture = mock(Future.class);
+    doReturn(mockFuture).when(executorService).submit(any(Callable.class));
+    Future<?> future = storage.write(key, value);
+    assertEquals(mockFuture, future);
   }
 
   @Test
@@ -47,12 +55,13 @@ class StorageImplTest {
   }
 
   @Test
-  void read() throws IOException {
+  @SuppressWarnings("unchecked")
+  void read() {
     String key = "key", value = "value";
-    Optional<String> optionalValue = Optional.of(value);
-    doReturn(optionalValue).when(segmentManager).read(key);
-    Optional<String> readValueOptional = storage.read(key);
-    assertEquals(optionalValue, readValueOptional);
+    Future<Optional<String>> mockFuture = mock(Future.class);
+    doReturn(mockFuture).when(executorService).submit(any(Callable.class));
+    Future<Optional<String>> returnedFuture = storage.read(key);
+    assertEquals(mockFuture, returnedFuture);
   }
 
   @Test

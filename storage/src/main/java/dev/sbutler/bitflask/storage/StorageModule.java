@@ -46,9 +46,10 @@ public class StorageModule extends AbstractModule {
 
   @Provides
   @Singleton
-  Storage provideStorage(SegmentManager segmentManager) {
+  Storage provideStorage(@StorageExecutorService ExecutorService executorService,
+      SegmentManager segmentManager) {
     if (storage == null) {
-      storage = new StorageImpl(segmentManager);
+      storage = new StorageImpl(executorService, segmentManager);
     }
     return storage;
   }
