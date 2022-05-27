@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.storage;
 
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -22,7 +21,7 @@ class StorageImpl implements Storage {
     this.segmentManager = segmentManager;
   }
 
-  public Future<?> write(String key, String value) throws IOException {
+  public Future<?> write(String key, String value) {
     validateWriteArgs(key, value);
     Callable<?> writeTask = () -> {
       segmentManager.write(key, value);

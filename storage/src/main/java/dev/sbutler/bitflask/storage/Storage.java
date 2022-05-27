@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.storage;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.Future;
 
@@ -14,10 +13,9 @@ public interface Storage {
    *
    * @param key   the key for retrieving data once written. Expected to be a non-blank string.
    * @param value the data to be written. Expected to be a non-blank string.
-   * @throws IOException              when there is an issue writing
    * @throws IllegalArgumentException when the provided key or value is invalid
    */
-  Future<?> write(String key, String value) throws IOException;
+  Future<?> write(String key, String value);
 
   /**
    * Reads the provided key's value from storage
