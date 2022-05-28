@@ -9,6 +9,7 @@ import java.util.concurrent.Future;
 
 class SegmentFile {
 
+  // todo: convert to synchronous FileChannel?
   private final AsynchronousFileChannel segmentFileChannel;
   private final Path segmentFilePath;
   private final String segmentFileKey;
