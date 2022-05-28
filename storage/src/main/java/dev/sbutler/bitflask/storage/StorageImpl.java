@@ -21,9 +21,9 @@ class StorageImpl implements Storage {
     this.segmentManager = segmentManager;
   }
 
-  public Future<?> write(String key, String value) {
+  public Future<Void> write(String key, String value) {
     validateWriteArgs(key, value);
-    Callable<?> writeTask = () -> {
+    Callable<Void> writeTask = () -> {
       segmentManager.write(key, value);
       return null;
     };

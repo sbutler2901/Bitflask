@@ -15,7 +15,7 @@ public interface Storage {
    * @param value the data to be written. Expected to be a non-blank string.
    * @throws IllegalArgumentException when the provided key or value is invalid
    */
-  Future<?> write(String key, String value);
+  Future<Void> write(String key, String value);
 
   /**
    * Reads the provided key's value from storage
