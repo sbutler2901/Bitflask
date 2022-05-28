@@ -2,19 +2,16 @@ package dev.sbutler.bitflask.storage.segment;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 class SegmentFile {
 
-  // todo: convert to synchronous FileChannel?
-  private final AsynchronousFileChannel segmentFileChannel;
+  private final FileChannel segmentFileChannel;
   private final Path segmentFilePath;
   private final String segmentFileKey;
 
-  public SegmentFile(AsynchronousFileChannel segmentFileChannel, Path segmentFilePath,
+  public SegmentFile(FileChannel segmentFileChannel, Path segmentFilePath,
       String segmentFileKey) {
     this.segmentFileChannel = segmentFileChannel;
     this.segmentFilePath = segmentFilePath;
@@ -22,27 +19,12 @@ class SegmentFile {
   }
 
   void write(byte[] data, long fileOffset) throws IOException {
-    Future<Integer> writeFuture = segmentFileChannel.write(ByteBuffer.wrap(data), fileOffset);
-    try {
-      writeFuture.get();
-    } catch (InterruptedException | ExecutionException e) {
-      String message = String.format("Failed to write the provided date at fileOffset [%d]",
-          fileOffset);
-      throw new IOException(message, e);
-    }
+    segmentFileChannel.write(ByteBuffer.wrap(data), fileOffset);
   }
 
   byte[] read(int readLength, long fileOffset) throws IOException {
     ByteBuffer readBytesBuffer = ByteBuffer.allocate(readLength);
-    Future<Integer> readFuture = segmentFileChannel.read(readBytesBuffer, fileOffset);
-
-    try {
-      readFuture.get();
-    } catch (InterruptedException | ExecutionException e) {
-      String message = String.format("Failed to read the date at fileOffset [%d]", fileOffset);
-      throw new IOException(message, e);
-    }
-
+    segmentFileChannel.read(readBytesBuffer, fileOffset);
     return readBytesBuffer.array();
   }
 

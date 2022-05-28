@@ -5,6 +5,7 @@ import com.google.inject.Inject;
 import dev.sbutler.bitflask.storage.StorageExecutorService;
 import java.io.IOException;
 import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -39,7 +40,7 @@ class SegmentFactoryImpl implements SegmentFactory {
   private SegmentFile createSegmentFile() throws IOException {
     String segmentIndex = getNextSegmentKey();
     Path segmentPath = getNextSegmentFilePath(segmentIndex);
-    AsynchronousFileChannel segmentFileChannel = getNextSegmentFileChannel(segmentPath);
+    FileChannel segmentFileChannel = getNextSegmentFileChannel(segmentPath);
     return new SegmentFile(segmentFileChannel, segmentPath, segmentIndex);
   }
 
@@ -51,7 +52,12 @@ class SegmentFactoryImpl implements SegmentFactory {
     return Paths.get(String.format(DEFAULT_SEGMENT_FILE_PATH, segmentKey));
   }
 
-  private AsynchronousFileChannel getNextSegmentFileChannel(Path nextSegmentFilePath)
+  private FileChannel getNextSegmentFileChannel(Path nextSegmentFilePath)
+      throws IOException {
+    return FileChannel.open(nextSegmentFilePath, fileChannelOptions);
+  }
+
+  private AsynchronousFileChannel getNextSegmentAsynchronousFileChannel(Path nextSegmentFilePath)
       throws IOException {
     return AsynchronousFileChannel
         .open(nextSegmentFilePath, fileChannelOptions, executorService);

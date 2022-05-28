@@ -1,7 +1,9 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -12,95 +14,65 @@ import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class SegmentFileTest {
 
   SegmentFile segmentFile;
-  AsynchronousFileChannel asynchronousFileChannel;
+  FileChannel fileChannel;
   Path path = Path.of("test-path");
   String segmentFileKey = "test-key";
 
   @BeforeEach
   void beforeEach() {
-    asynchronousFileChannel = mock(AsynchronousFileChannel.class);
-    segmentFile = new SegmentFile(asynchronousFileChannel, path, segmentFileKey);
+    fileChannel = mock(FileChannel.class);
+    segmentFile = new SegmentFile(fileChannel, path, segmentFileKey);
   }
 
   @Test
   void write() throws IOException {
-    doReturn(mock(Future.class)).when(asynchronousFileChannel)
-        .write(any(ByteBuffer.class), anyLong());
     segmentFile.write(new byte[]{'a'}, 0L);
-    verify(asynchronousFileChannel, times(1)).write(any(ByteBuffer.class), anyLong());
+    verify(fileChannel, times(1)).write(any(ByteBuffer.class), anyLong());
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  void write_exception() throws ExecutionException, InterruptedException {
-    Future<Integer> writeFuture = mock(Future.class);
-    doReturn(writeFuture).when(asynchronousFileChannel)
-        .write(any(ByteBuffer.class), anyLong());
-    doThrow(new InterruptedException("test: interruptException")).when(writeFuture).get();
-
-    assertThrows(IOException.class,
-        () -> segmentFile.write(new byte[]{'a'}, 0L));
-    verify(asynchronousFileChannel, times(1)).write(any(ByteBuffer.class), anyLong());
+  void write_exception() throws IOException {
+    doThrow(IOException.class).when(fileChannel).write(any(ByteBuffer.class), anyLong());
+    assertThrows(IOException.class, () -> segmentFile.write(new byte[]{'a'}, 0L));
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void read() throws IOException {
-    Future<Integer> readFuture = mock(Future.class);
-    doReturn(readFuture).when(asynchronousFileChannel).read(any(ByteBuffer.class), anyLong());
-
-    byte[] result = segmentFile.read(0, 0L);
-    verify(asynchronousFileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
-    assertEquals(0, result.length);
+    segmentFile.read(0, 0L);
+    verify(fileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  void read_exception() throws ExecutionException, InterruptedException {
-    Future<Integer> readFuture = mock(Future.class);
-    doReturn(readFuture).when(asynchronousFileChannel).read(any(ByteBuffer.class), anyLong());
-    doThrow(new InterruptedException("test: interruptException")).when(readFuture).get();
+  void read_exception() throws IOException {
+    doThrow(IOException.class).when(fileChannel).read(any(ByteBuffer.class), anyLong());
 
     assertThrows(IOException.class, () -> segmentFile.read(0, 0L));
-    verify(asynchronousFileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void readAsString() throws IOException {
-    Future<Integer> readFuture = mock(Future.class);
-    doReturn(readFuture).when(asynchronousFileChannel).read(any(ByteBuffer.class), anyLong());
-
     String result = segmentFile.readAsString(0, 0L);
-    verify(asynchronousFileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
     assertEquals(0, result.length());
+    verify(fileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void readByte() throws IOException {
-    Future<Integer> readFuture = mock(Future.class);
-
-    doReturn(readFuture).when(asynchronousFileChannel).read(any(ByteBuffer.class), anyLong());
-
     byte result = segmentFile.readByte(0L);
-    verify(asynchronousFileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
-    assertEquals(0, result);
+    verify(fileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
   }
 
   @Test
   void size() throws IOException {
-    doReturn(0L).when(asynchronousFileChannel).size();
+    doReturn(0L).when(fileChannel).size();
     assertEquals(0L, segmentFile.size());
   }
 
@@ -118,6 +90,17 @@ public class SegmentFileTest {
   @Test
   void close() throws IOException {
     segmentFile.close();
-    verify(asynchronousFileChannel, times(1)).close();
+    verify(fileChannel, times(1)).close();
+  }
+
+  @Test
+  void isOpen() {
+    // open
+    doReturn(true).when(fileChannel).isOpen();
+    assertTrue(segmentFile.isOpen());
+
+    // closed
+    doReturn(false).when(fileChannel).isOpen();
+    assertFalse(segmentFile.isOpen());
   }
 }
