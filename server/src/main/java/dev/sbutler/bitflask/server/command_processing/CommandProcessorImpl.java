@@ -40,7 +40,7 @@ class CommandProcessorImpl implements CommandProcessor {
     String key = getCommand.args().get(0);
     Future<Optional<String>> readFuture = storage.read(key);
     try {
-      return readFuture.get().orElse(READ_NOT_FOUND);
+      return readFuture.get().orElse(String.format(READ_NOT_FOUND, key));
     } catch (InterruptedException e) {
       logger.error("Interrupted while waiting for response from Storage", e);
       return String.format(READ_ERROR, key);

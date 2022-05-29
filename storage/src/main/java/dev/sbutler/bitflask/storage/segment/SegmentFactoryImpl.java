@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.storage.segment;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
+import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
@@ -12,6 +13,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.slf4j.Logger;
 
 class SegmentFactoryImpl implements SegmentFactory {
 
@@ -23,7 +25,10 @@ class SegmentFactoryImpl implements SegmentFactory {
 //      StandardOpenOption.TRUNCATE_EXISTING
   );
 
-  ExecutorService executorService;
+  @InjectStorageLogger
+  Logger logger;
+
+  private final ExecutorService executorService;
   private final AtomicInteger nextSegmentIndex = new AtomicInteger(0);
 
   @Inject
@@ -34,7 +39,9 @@ class SegmentFactoryImpl implements SegmentFactory {
   @Override
   public Segment createSegment() throws IOException {
     SegmentFile segmentFile = createSegmentFile();
-    return new SegmentImpl(segmentFile);
+    Segment newSegment = new SegmentImpl(segmentFile);
+    logger.info("Created new segment with fileKey [{}]", newSegment.getSegmentFileKey());
+    return newSegment;
   }
 
   private SegmentFile createSegmentFile() throws IOException {

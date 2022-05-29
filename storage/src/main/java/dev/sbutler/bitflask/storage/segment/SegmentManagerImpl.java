@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import com.google.inject.Inject;
+import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
 import java.util.Deque;
 import java.util.HashMap;
@@ -8,10 +9,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import org.slf4j.Logger;
 
 class SegmentManagerImpl implements SegmentManager {
 
   private static final int DEFAULT_COMPACTION_THRESHOLD = 2;
+
+  @InjectStorageLogger
+  Logger logger;
 
   private final Compactor compactor = new Compactor();
   private final SegmentFactory segmentFactory;
@@ -37,9 +42,12 @@ class SegmentManagerImpl implements SegmentManager {
   public Optional<String> read(String key) throws IOException {
     Optional<Segment> optionalSegment = findLatestSegmentWithKey(key);
     if (optionalSegment.isEmpty()) {
+      logger.info("Could not find a segment containing key [{}]", key);
       return Optional.empty();
     }
-    return optionalSegment.get().read(key);
+    Segment segment = optionalSegment.get();
+    logger.info("Reading value of [{}] from segment [{}]", key, segment.getSegmentFileKey());
+    return segment.read(key);
   }
 
   private Optional<Segment> findLatestSegmentWithKey(String key) {
@@ -54,6 +62,8 @@ class SegmentManagerImpl implements SegmentManager {
   @Override
   public synchronized void write(String key, String value) throws IOException {
     Segment activeSegment = getActiveSegment();
+    logger.info("Writing [{}] : [{}] to segment [{}]", key, value,
+        activeSegment.getSegmentFileKey());
     activeSegment.write(key, value);
   }
 
