@@ -9,7 +9,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
-import dev.sbutler.bitflask.storage.StorageExecutorService;
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 

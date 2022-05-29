@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
-import dev.sbutler.bitflask.storage.StorageExecutorService;
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import java.io.IOException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;

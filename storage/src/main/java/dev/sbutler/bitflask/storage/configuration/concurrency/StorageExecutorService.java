@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage;
+package dev.sbutler.bitflask.storage.configuration.concurrency;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

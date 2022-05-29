@@ -3,11 +3,14 @@ package dev.sbutler.bitflask.storage.segment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import java.io.IOException;
-import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,13 +28,13 @@ public class SegmentFactoryImplTest {
   ExecutorService executorService;
 
   @Test
+  @SuppressWarnings("unchecked")
   void createSegment() throws IOException {
-    try (MockedStatic<AsynchronousFileChannel> asynchronousFileChannelMockedStatic = mockStatic(
-        AsynchronousFileChannel.class)) {
-      AsynchronousFileChannel asynchronousFileChannel = mock(AsynchronousFileChannel.class);
-      asynchronousFileChannelMockedStatic.when(
-              () -> AsynchronousFileChannel.open(any(), any(), any(ExecutorService.class)))
-          .thenReturn(asynchronousFileChannel);
+    try (MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(FileChannel.class)) {
+      FileChannel fileChannel = mock(FileChannel.class);
+      fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
+          .thenReturn(fileChannel);
+      doReturn(0L).when(fileChannel).size();
 
       Segment segment = segmentFactory.createSegment();
       assertFalse(segment.exceedsStorageThreshold());
@@ -39,13 +42,13 @@ public class SegmentFactoryImplTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   void setSegmentStartIndex() throws IOException {
-    try (MockedStatic<AsynchronousFileChannel> asynchronousFileChannelMockedStatic = mockStatic(
-        AsynchronousFileChannel.class)) {
-      AsynchronousFileChannel asynchronousFileChannel = mock(AsynchronousFileChannel.class);
-      asynchronousFileChannelMockedStatic.when(
-              () -> AsynchronousFileChannel.open(any(), any(), any(ExecutorService.class)))
-          .thenReturn(asynchronousFileChannel);
+    try (MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(FileChannel.class)) {
+      FileChannel fileChannel = mock(FileChannel.class);
+      fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
+          .thenReturn(fileChannel);
+      doReturn(0L).when(fileChannel).size();
 
       int segmentStartIndex = 10;
       segmentFactory.setSegmentStartIndex(segmentStartIndex);
