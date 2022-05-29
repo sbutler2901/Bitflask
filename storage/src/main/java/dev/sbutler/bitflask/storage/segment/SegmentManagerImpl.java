@@ -20,12 +20,12 @@ class SegmentManagerImpl implements SegmentManager {
 
   private final Compactor compactor = new Compactor();
   private final SegmentFactory segmentFactory;
-  private Deque<Segment> segmentFilesDeque = new ConcurrentLinkedDeque<>();
+  private Deque<Segment> segmentFilesDeque;
 
   @Inject
-  SegmentManagerImpl(SegmentFactory segmentFactory) throws IOException {
+  SegmentManagerImpl(SegmentFactory segmentFactory, SegmentLoader segmentLoader) {
     this.segmentFactory = segmentFactory;
-    initializeSegments();
+    this.segmentFilesDeque = segmentLoader.loadExistingSegments();
   }
 
   // todo: create segment loader for pre-existing segments

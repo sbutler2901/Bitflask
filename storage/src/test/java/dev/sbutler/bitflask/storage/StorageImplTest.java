@@ -7,16 +7,17 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
 
 @ExtendWith(MockitoExtension.class)
 class StorageImplTest {
@@ -28,9 +29,14 @@ class StorageImplTest {
   @Mock
   SegmentManager segmentManager;
 
+  @BeforeEach
+  void beforeEach() {
+    storage.logger = mock(Logger.class);
+  }
+
   @Test
   @SuppressWarnings("unchecked")
-  void write() throws IOException {
+  void write() {
     String key = "key", value = "value";
     Future<?> mockFuture = mock(Future.class);
     doReturn(mockFuture).when(executorService).submit(any(Callable.class));

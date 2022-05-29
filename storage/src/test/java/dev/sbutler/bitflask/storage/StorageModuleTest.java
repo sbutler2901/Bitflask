@@ -3,16 +3,13 @@ package dev.sbutler.bitflask.storage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockConstruction;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
 
 public class StorageModuleTest {
 
@@ -32,12 +29,8 @@ public class StorageModuleTest {
 
   @Test
   void provideStorage() {
-    try (MockedConstruction<StorageImpl> storageMockedConstruction = mockConstruction(
-        StorageImpl.class)) {
-      Storage storage = storageModule.provideStorage(mock(ExecutorService.class),
-          mock(SegmentManager.class));
-      Storage mockedStorage = storageMockedConstruction.constructed().get(0);
-      assertEquals(mockedStorage, storage);
-    }
+    StorageImpl mockStorage = mock(StorageImpl.class);
+    Storage storage = storageModule.provideStorage(mockStorage);
+    assertEquals(mockStorage, storage);
   }
 }

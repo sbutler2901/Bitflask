@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
@@ -31,7 +30,6 @@ public class SegmentModuleTest {
     SegmentManagerImpl segmentManagerImpl = mock(SegmentManagerImpl.class);
     SegmentManager segmentManager = segmentModule.provideSegmentManager(segmentManagerImpl);
     assertEquals(segmentManagerImpl, segmentManager);
-    assertInstanceOf(SegmentManager.class, segmentManager);
   }
 
   @Test
@@ -40,7 +38,14 @@ public class SegmentModuleTest {
     SegmentFactoryImpl segmentFactoryImpl = mock(SegmentFactoryImpl.class);
     SegmentFactory segmentFactory = segmentModule.provideSegmentFactory(segmentFactoryImpl);
     assertEquals(segmentFactoryImpl, segmentFactory);
-    assertInstanceOf(SegmentFactory.class, segmentFactory);
+  }
+
+  @Test
+  void provideSegmentLoader() {
+    SegmentModule segmentModule = new SegmentModule();
+    SegmentLoaderImpl segmentLoaderImpl = mock(SegmentLoaderImpl.class);
+    SegmentLoader segmentLoader = segmentModule.provideSegmentLoader(segmentLoaderImpl);
+    assertEquals(segmentLoaderImpl, segmentLoader);
   }
 
   private static class MockModule extends AbstractModule {
@@ -48,8 +53,7 @@ public class SegmentModuleTest {
     @Override
     @SuppressWarnings("unchecked")
     protected void configure() {
-      bind(ExecutorService.class)
-          .annotatedWith(StorageExecutorService.class)
+      bind(ExecutorService.class).annotatedWith(StorageExecutorService.class)
           .toProvider(mock(Provider.class));
     }
 

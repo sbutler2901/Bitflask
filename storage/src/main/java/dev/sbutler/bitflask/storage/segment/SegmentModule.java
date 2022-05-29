@@ -18,4 +18,9 @@ public class SegmentModule extends AbstractModule {
     return segmentFactory;
   }
 
+  @Provides
+  SegmentLoader provideSegmentLoader(SegmentLoaderImpl segmentLoader) {
+    return segmentLoader;
+  }
+
 }
