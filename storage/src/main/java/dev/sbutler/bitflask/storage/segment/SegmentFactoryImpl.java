@@ -1,7 +1,5 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import com.google.common.collect.Sets;
-import com.google.inject.Inject;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
@@ -13,12 +11,14 @@ import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 
 class SegmentFactoryImpl implements SegmentFactory {
 
-  private static final String DEFAULT_SEGMENT_FILE_PATH = "store/segment_%s.txt";
-  private static final Set<StandardOpenOption> fileChannelOptions = Sets.newHashSet(
+  private static final String DEFAULT_SEGMENT_FILENAME = "%s_segment.txt";
+  private static final String DEFAULT_SEGMENT_FILE_PATH = "~/.bitflask/store/";
+  private static final Set<StandardOpenOption> fileChannelOptions = Set.of(
       StandardOpenOption.CREATE,
       StandardOpenOption.READ,
       StandardOpenOption.WRITE
@@ -56,7 +56,9 @@ class SegmentFactoryImpl implements SegmentFactory {
   }
 
   private Path getNextSegmentFilePath(String segmentKey) {
-    return Paths.get(String.format(DEFAULT_SEGMENT_FILE_PATH, segmentKey));
+    String segmentFilename = String.format(DEFAULT_SEGMENT_FILENAME, segmentKey);
+    String segmentFilePath = DEFAULT_SEGMENT_FILE_PATH + segmentFilename;
+    return Paths.get(segmentFilePath);
   }
 
   private FileChannel getNextSegmentFileChannel(Path nextSegmentFilePath)
@@ -73,6 +75,11 @@ class SegmentFactoryImpl implements SegmentFactory {
   @Override
   public void setSegmentStartIndex(int segmentStartIndex) {
     nextSegmentIndex.set(segmentStartIndex);
+  }
+
+  @Override
+  public String getSegmentStoreFilePath() {
+    return DEFAULT_SEGMENT_FILE_PATH;
   }
 
 }

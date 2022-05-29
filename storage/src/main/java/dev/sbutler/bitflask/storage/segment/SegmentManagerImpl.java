@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import com.google.inject.Inject;
 import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
 import java.util.Deque;
@@ -9,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 
 class SegmentManagerImpl implements SegmentManager {
