@@ -16,7 +16,7 @@ class SegmentManagerImpl implements SegmentManager {
   private static final int DEFAULT_COMPACTION_THRESHOLD = 2;
 
   @InjectStorageLogger
-  Logger logger;
+  static Logger logger;
 
   private final Compactor compactor = new Compactor();
   private final SegmentFactory segmentFactory;
@@ -26,25 +26,18 @@ class SegmentManagerImpl implements SegmentManager {
   SegmentManagerImpl(SegmentFactory segmentFactory, SegmentLoader segmentLoader)
       throws IOException {
     this.segmentFactory = segmentFactory;
-    this.segmentFilesDeque = initializeSegmentsDeque(segmentLoader);
+    initializeSegmentsDeque(segmentLoader);
   }
 
-  private Deque<Segment> initializeSegmentsDeque(SegmentLoader segmentLoader) throws IOException {
-    Deque<Segment> segmentDeque;
-
+  private void initializeSegmentsDeque(SegmentLoader segmentLoader) throws IOException {
     boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
-    if (segmentStoreDirCreated) {
-      segmentDeque = new ConcurrentLinkedDeque<>();
-    } else {
-      segmentDeque = segmentLoader.loadExistingSegments();
-    }
+    this.segmentFilesDeque = segmentStoreDirCreated ? new ConcurrentLinkedDeque<>()
+        : segmentLoader.loadExistingSegments();
 
-    if (segmentDeque.isEmpty()) {
+    if (this.segmentFilesDeque.isEmpty()) {
       logger.info("Segments deque is empty. Creating new active segment");
       createAndAddNextActiveSegment();
     }
-
-    return segmentDeque;
   }
 
   @Override
