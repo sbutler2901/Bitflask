@@ -1,26 +1,23 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
-import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 
 class SegmentFactoryImpl implements SegmentFactory {
 
-  private static final String DEFAULT_SEGMENT_FILENAME = "%d_segment.txt";
-  private static final String DEFAULT_SEGMENT_DIR_PATH =
+  static final String DEFAULT_SEGMENT_FILENAME = "%d_segment.txt";
+  static final String DEFAULT_SEGMENT_DIR_PATH =
       System.getProperty("user.home") + "/.bitflask/store/";
-  private static final Set<StandardOpenOption> fileChannelOptions = Set.of(
+  static final Set<StandardOpenOption> fileChannelOptions = Set.of(
       StandardOpenOption.CREATE,
       StandardOpenOption.READ,
       StandardOpenOption.WRITE
@@ -30,12 +27,10 @@ class SegmentFactoryImpl implements SegmentFactory {
   @InjectStorageLogger
   Logger logger;
 
-  private final ExecutorService executorService;
   private final AtomicInteger nextSegmentIndex = new AtomicInteger(0);
 
   @Inject
-  SegmentFactoryImpl(@StorageExecutorService ExecutorService executorService) {
-    this.executorService = executorService;
+  SegmentFactoryImpl() {
   }
 
   @Override
@@ -65,12 +60,6 @@ class SegmentFactoryImpl implements SegmentFactory {
   private FileChannel getNextSegmentFileChannel(Path nextSegmentFilePath)
       throws IOException {
     return FileChannel.open(nextSegmentFilePath, fileChannelOptions);
-  }
-
-  private AsynchronousFileChannel getNextSegmentAsynchronousFileChannel(Path nextSegmentFilePath)
-      throws IOException {
-    return AsynchronousFileChannel
-        .open(nextSegmentFilePath, fileChannelOptions, executorService);
   }
 
   @Override
