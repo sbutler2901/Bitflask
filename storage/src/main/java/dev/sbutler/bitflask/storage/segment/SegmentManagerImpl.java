@@ -26,17 +26,24 @@ class SegmentManagerImpl implements SegmentManager {
   SegmentManagerImpl(SegmentFactory segmentFactory, SegmentLoader segmentLoader)
       throws IOException {
     this.segmentFactory = segmentFactory;
-    this.segmentFilesDeque = segmentLoader.loadExistingSegments();
+    this.segmentFilesDeque = initializeSegmentsDeque(segmentLoader);
   }
 
-  // todo: create segment loader for pre-existing segments
-  public void initializeSegments() throws IOException {
-    // todo: handle detecting previous segments after compaction
-    boolean loadNextSegment = true;
-    while (loadNextSegment) {
-      Segment nextSegment = createAndAddNextActiveSegment();
-      loadNextSegment = nextSegment.exceedsStorageThreshold();
+  private Deque<Segment> initializeSegmentsDeque(SegmentLoader segmentLoader) throws IOException {
+    Deque<Segment> segmentDeque;
+
+    boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
+    if (segmentStoreDirCreated) {
+      segmentDeque = new ConcurrentLinkedDeque<>();
+    } else {
+      segmentDeque = segmentLoader.loadExistingSegments();
     }
+
+    if (segmentDeque.isEmpty()) {
+      createAndAddNextActiveSegment();
+    }
+
+    return segmentDeque;
   }
 
   @Override
@@ -86,10 +93,9 @@ class SegmentManagerImpl implements SegmentManager {
     return segmentFilesDeque.getFirst();
   }
 
-  private Segment createAndAddNextActiveSegment() throws IOException {
+  private void createAndAddNextActiveSegment() throws IOException {
     Segment segment = segmentFactory.createSegment();
     segmentFilesDeque.offerFirst(segment);
-    return segment;
   }
 
   private boolean shouldPerformCompaction() {

@@ -9,6 +9,15 @@ interface SegmentFactory {
 
   void setSegmentStartIndex(int segmentStartIndex);
 
+  /**
+   * Creates the segment store directory if it doesn't exist.
+   *
+   * @return true if the directory was created
+   */
+  boolean createSegmentStoreDir() throws IOException;
+
   Path getSegmentStoreDirPath();
+
+  String getSegmentKeyFromPath(Path path);
 
 }

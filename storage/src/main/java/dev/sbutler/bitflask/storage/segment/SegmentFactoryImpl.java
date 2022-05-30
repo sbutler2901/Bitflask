@@ -5,6 +5,7 @@ import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -17,7 +18,8 @@ import org.slf4j.Logger;
 class SegmentFactoryImpl implements SegmentFactory {
 
   private static final String DEFAULT_SEGMENT_FILENAME = "%s_segment.txt";
-  private static final String DEFAULT_SEGMENT_DIR_PATH = "~/.bitflask/store/";
+  private static final String DEFAULT_SEGMENT_DIR_PATH =
+      System.getProperty("user.home") + "/.bitflask/store/";
   private static final Set<StandardOpenOption> fileChannelOptions = Set.of(
       StandardOpenOption.CREATE,
       StandardOpenOption.READ,
@@ -57,8 +59,7 @@ class SegmentFactoryImpl implements SegmentFactory {
 
   private Path getNextSegmentFilePath(String segmentKey) {
     String segmentFilename = String.format(DEFAULT_SEGMENT_FILENAME, segmentKey);
-    String segmentFilePath = DEFAULT_SEGMENT_DIR_PATH + segmentFilename;
-    return Paths.get(segmentFilePath);
+    return Paths.get(DEFAULT_SEGMENT_DIR_PATH, segmentFilename);
   }
 
   private FileChannel getNextSegmentFileChannel(Path nextSegmentFilePath)
@@ -78,8 +79,25 @@ class SegmentFactoryImpl implements SegmentFactory {
   }
 
   @Override
+  public boolean createSegmentStoreDir() throws IOException {
+    boolean segmentStoreDirExists = Files.isDirectory(getSegmentStoreDirPath());
+    if (!segmentStoreDirExists) {
+      Files.createDirectories(getSegmentStoreDirPath());
+      return true;
+    }
+    return false;
+  }
+
+  @Override
   public Path getSegmentStoreDirPath() {
     return Paths.get(DEFAULT_SEGMENT_DIR_PATH);
+  }
+
+  @Override
+  public String getSegmentKeyFromPath(Path path) {
+    String segmentFileName = path.getFileName().toString();
+    int keyEndIndex = segmentFileName.indexOf('_');
+    return segmentFileName.substring(0, keyEndIndex);
   }
 
 }
