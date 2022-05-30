@@ -24,7 +24,7 @@ public class SegmentFileTest {
   SegmentFile segmentFile;
   FileChannel fileChannel;
   Path path = Path.of("test-path");
-  String segmentFileKey = "test-key";
+  int segmentFileKey = 0;
 
   @BeforeEach
   void beforeEach() {

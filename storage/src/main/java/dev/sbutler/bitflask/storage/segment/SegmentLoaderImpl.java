@@ -48,8 +48,8 @@ class SegmentLoaderImpl implements SegmentLoader {
     }
 
     sortFilePathsByModifiedDate(segmentFilePaths);
-    List<FileChannel> openSegmentFileChannels = openSegmentFiles(segmentFilePaths);
-    List<SegmentFile> segmentFiles = loadSegmentFiles(openSegmentFileChannels, segmentFilePaths);
+    List<FileChannel> segmentFileChannels = openSegmentFileChannels(segmentFilePaths);
+    List<SegmentFile> segmentFiles = loadSegmentFiles(segmentFileChannels, segmentFilePaths);
     List<Segment> segments = loadSegments(segmentFiles);
     updateSegmentFactorySegmentStartIndex(segments);
     loadedSegments.addAll(segments);
@@ -81,10 +81,11 @@ class SegmentLoaderImpl implements SegmentLoader {
         (path0, path1) -> pathFileTimeMap.get(path1).compareTo(pathFileTimeMap.get(path0)));
   }
 
-  private List<FileChannel> openSegmentFiles(List<Path> filePaths) throws IOException {
+  private List<FileChannel> openSegmentFileChannels(List<Path> filePaths) throws IOException {
     List<FileChannel> openFiles = new ArrayList<>();
     for (Path path : filePaths) {
-      FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ);
+      FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ,
+          StandardOpenOption.WRITE);
       openFiles.add(fileChannel);
     }
     return openFiles;

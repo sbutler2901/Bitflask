@@ -24,7 +24,7 @@ public class SegmentManagerImplTest {
   Segment segment;
 
   @BeforeEach
-  void beforeEach() {
+  void beforeEach() throws IOException {
     segmentFactory = mock(SegmentFactory.class);
     segmentLoader = mock(SegmentLoader.class);
     segment = mock(Segment.class);
