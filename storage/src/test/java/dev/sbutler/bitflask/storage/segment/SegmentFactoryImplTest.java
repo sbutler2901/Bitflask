@@ -60,7 +60,7 @@ public class SegmentFactoryImplTest {
       int segmentStartIndex = 10;
       segmentFactory.setSegmentStartIndex(segmentStartIndex);
       Segment segment = segmentFactory.createSegment();
-      assertEquals(String.valueOf(segmentStartIndex), segment.getSegmentFileKey());
+      assertEquals(segmentStartIndex, segment.getSegmentFileKey());
     }
   }
 }

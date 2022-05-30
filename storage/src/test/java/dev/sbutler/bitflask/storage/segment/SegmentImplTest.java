@@ -188,7 +188,7 @@ public class SegmentImplTest {
 
   @Test
   void getSegmentFileKey() {
-    String fileKey = "file-key";
+    int fileKey = 0;
     doReturn(fileKey).when(segmentFile).getSegmentFileKey();
     assertEquals(fileKey, segment.getSegmentFileKey());
   }
