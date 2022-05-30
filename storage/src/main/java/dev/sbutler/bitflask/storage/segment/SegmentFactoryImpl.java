@@ -80,11 +80,14 @@ class SegmentFactoryImpl implements SegmentFactory {
 
   @Override
   public boolean createSegmentStoreDir() throws IOException {
-    boolean segmentStoreDirExists = Files.isDirectory(getSegmentStoreDirPath());
+    Path segmentStoreDirPath = getSegmentStoreDirPath();
+    boolean segmentStoreDirExists = Files.isDirectory(segmentStoreDirPath);
     if (!segmentStoreDirExists) {
       Files.createDirectories(getSegmentStoreDirPath());
+      logger.info("Created segment store directory at [{}]", segmentStoreDirPath);
       return true;
     }
+    logger.info("Segment store directory already existed at [{}]", segmentStoreDirPath);
     return false;
   }
 

@@ -44,6 +44,7 @@ class SegmentLoaderImpl implements SegmentLoader {
     Deque<Segment> loadedSegments = new ConcurrentLinkedDeque<>();
     List<Path> segmentFilePaths = getSegmentFilePaths();
     if (segmentFilePaths.isEmpty()) {
+      logger.info("No existing files found in segment store directory");
       return loadedSegments;
     }
 
@@ -53,6 +54,7 @@ class SegmentLoaderImpl implements SegmentLoader {
     List<Segment> segments = loadSegments(segmentFiles);
     updateSegmentFactorySegmentStartIndex(segments);
     loadedSegments.addAll(segments);
+    logger.info("Loaded [{}] preexisting segments", segments.size());
     return loadedSegments;
   }
 

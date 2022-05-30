@@ -40,6 +40,7 @@ class SegmentManagerImpl implements SegmentManager {
     }
 
     if (segmentDeque.isEmpty()) {
+      logger.info("Segments deque is empty. Creating new active segment");
       createAndAddNextActiveSegment();
     }
 
