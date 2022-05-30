@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 class SegmentFactoryImpl implements SegmentFactory {
 
   private static final String DEFAULT_SEGMENT_FILENAME = "%s_segment.txt";
-  private static final String DEFAULT_SEGMENT_FILE_PATH = "~/.bitflask/store/";
+  private static final String DEFAULT_SEGMENT_DIR_PATH = "~/.bitflask/store/";
   private static final Set<StandardOpenOption> fileChannelOptions = Set.of(
       StandardOpenOption.CREATE,
       StandardOpenOption.READ,
@@ -57,7 +57,7 @@ class SegmentFactoryImpl implements SegmentFactory {
 
   private Path getNextSegmentFilePath(String segmentKey) {
     String segmentFilename = String.format(DEFAULT_SEGMENT_FILENAME, segmentKey);
-    String segmentFilePath = DEFAULT_SEGMENT_FILE_PATH + segmentFilename;
+    String segmentFilePath = DEFAULT_SEGMENT_DIR_PATH + segmentFilename;
     return Paths.get(segmentFilePath);
   }
 
@@ -78,8 +78,8 @@ class SegmentFactoryImpl implements SegmentFactory {
   }
 
   @Override
-  public String getSegmentStoreFilePath() {
-    return DEFAULT_SEGMENT_FILE_PATH;
+  public Path getSegmentStoreDirPath() {
+    return Paths.get(DEFAULT_SEGMENT_DIR_PATH);
   }
 
 }

@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 interface SegmentFactory {
 
@@ -8,6 +9,6 @@ interface SegmentFactory {
 
   void setSegmentStartIndex(int segmentStartIndex);
 
-  String getSegmentStoreFilePath();
+  Path getSegmentStoreDirPath();
 
 }

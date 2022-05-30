@@ -23,7 +23,8 @@ class SegmentManagerImpl implements SegmentManager {
   private Deque<Segment> segmentFilesDeque;
 
   @Inject
-  SegmentManagerImpl(SegmentFactory segmentFactory, SegmentLoader segmentLoader) {
+  SegmentManagerImpl(SegmentFactory segmentFactory, SegmentLoader segmentLoader)
+      throws IOException {
     this.segmentFactory = segmentFactory;
     this.segmentFilesDeque = segmentLoader.loadExistingSegments();
   }
