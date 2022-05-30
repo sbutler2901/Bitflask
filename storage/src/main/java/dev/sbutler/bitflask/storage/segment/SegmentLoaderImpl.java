@@ -96,7 +96,7 @@ class SegmentLoaderImpl implements SegmentLoader {
     for (int i = 0; i < openSegmentFileChannels.size(); i++) {
       FileChannel segmentFileChannel = openSegmentFileChannels.get(i);
       Path segmentFilePath = segmentFilePaths.get(i);
-      String segmentKey = segmentFactory.getSegmentKeyFromPath(segmentFilePath);
+      int segmentKey = segmentFactory.getSegmentKeyFromPath(segmentFilePath);
       SegmentFile segmentFile = new SegmentFile(segmentFileChannel, segmentFilePath, segmentKey);
       segmentFiles.add(segmentFile);
     }
@@ -121,7 +121,7 @@ class SegmentLoaderImpl implements SegmentLoader {
   }
 
   private void updateSegmentFactorySegmentStartIndex(List<Segment> segments) {
-    int latestSegmentKey = Integer.parseInt(segments.get(0).getSegmentFileKey());
+    int latestSegmentKey = segments.get(0).getSegmentFileKey();
     segmentFactory.setSegmentStartIndex(++latestSegmentKey);
   }
 }

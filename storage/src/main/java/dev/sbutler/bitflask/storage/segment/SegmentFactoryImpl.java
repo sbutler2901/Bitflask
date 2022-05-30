@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 
 class SegmentFactoryImpl implements SegmentFactory {
 
-  private static final String DEFAULT_SEGMENT_FILENAME = "%s_segment.txt";
+  private static final String DEFAULT_SEGMENT_FILENAME = "%d_segment.txt";
   private static final String DEFAULT_SEGMENT_DIR_PATH =
       System.getProperty("user.home") + "/.bitflask/store/";
   private static final Set<StandardOpenOption> fileChannelOptions = Set.of(
@@ -47,17 +47,17 @@ class SegmentFactoryImpl implements SegmentFactory {
   }
 
   private SegmentFile createSegmentFile() throws IOException {
-    String segmentIndex = getNextSegmentKey();
+    int segmentIndex = getNextSegmentKey();
     Path segmentPath = getNextSegmentFilePath(segmentIndex);
     FileChannel segmentFileChannel = getNextSegmentFileChannel(segmentPath);
     return new SegmentFile(segmentFileChannel, segmentPath, segmentIndex);
   }
 
-  private String getNextSegmentKey() {
-    return String.valueOf(nextSegmentIndex.getAndIncrement());
+  private int getNextSegmentKey() {
+    return nextSegmentIndex.getAndIncrement();
   }
 
-  private Path getNextSegmentFilePath(String segmentKey) {
+  private Path getNextSegmentFilePath(int segmentKey) {
     String segmentFilename = String.format(DEFAULT_SEGMENT_FILENAME, segmentKey);
     return Paths.get(DEFAULT_SEGMENT_DIR_PATH, segmentFilename);
   }
@@ -94,10 +94,10 @@ class SegmentFactoryImpl implements SegmentFactory {
   }
 
   @Override
-  public String getSegmentKeyFromPath(Path path) {
+  public int getSegmentKeyFromPath(Path path) {
     String segmentFileName = path.getFileName().toString();
     int keyEndIndex = segmentFileName.indexOf('_');
-    return segmentFileName.substring(0, keyEndIndex);
+    return Integer.parseInt(segmentFileName.substring(0, keyEndIndex));
   }
 
 }

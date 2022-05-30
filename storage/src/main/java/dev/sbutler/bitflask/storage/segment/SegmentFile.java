@@ -9,10 +9,10 @@ class SegmentFile {
 
   private final FileChannel segmentFileChannel;
   private final Path segmentFilePath;
-  private final String segmentFileKey;
+  private final int segmentFileKey;
 
   public SegmentFile(FileChannel segmentFileChannel, Path segmentFilePath,
-      String segmentFileKey) {
+      int segmentFileKey) {
     this.segmentFileChannel = segmentFileChannel;
     this.segmentFilePath = segmentFilePath;
     this.segmentFileKey = segmentFileKey;
@@ -45,7 +45,7 @@ class SegmentFile {
     return segmentFilePath;
   }
 
-  String getSegmentFileKey() {
+  int getSegmentFileKey() {
     return segmentFileKey;
   }
 

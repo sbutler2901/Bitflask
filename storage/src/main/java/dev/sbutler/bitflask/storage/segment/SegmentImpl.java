@@ -113,7 +113,7 @@ class SegmentImpl implements Segment {
   }
 
   @Override
-  public String getSegmentFileKey() {
+  public int getSegmentFileKey() {
     return segmentFile.getSegmentFileKey();
   }
 

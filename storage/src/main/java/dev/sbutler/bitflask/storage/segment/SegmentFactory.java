@@ -18,6 +18,6 @@ interface SegmentFactory {
 
   Path getSegmentStoreDirPath();
 
-  String getSegmentKeyFromPath(Path path);
+  int getSegmentKeyFromPath(Path path);
 
 }

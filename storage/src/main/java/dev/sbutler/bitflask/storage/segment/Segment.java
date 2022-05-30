@@ -52,7 +52,7 @@ interface Segment {
    *
    * @return the segment's file's key
    */
-  String getSegmentFileKey();
+  int getSegmentFileKey();
 
   /**
    * Deletes the segment from the filesystem
