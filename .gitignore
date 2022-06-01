@@ -9,7 +9,6 @@
 
 /server/build
 /server/out
-/server/store
 
 /resp/build
 /resp/out
