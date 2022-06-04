@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 class SegmentImpl implements Segment {
@@ -16,6 +17,7 @@ class SegmentImpl implements Segment {
   private final SegmentFile segmentFile;
   private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap = new ConcurrentHashMap<>();
   private final AtomicLong currentFileWriteOffset = new AtomicLong();
+  private final AtomicBoolean hasBeenCompacted = new AtomicBoolean(false);
 
   public SegmentImpl(SegmentFile segmentFile) throws IOException {
     this.segmentFile = segmentFile;
@@ -121,6 +123,16 @@ class SegmentImpl implements Segment {
   public void closeAndDelete() throws IOException {
     segmentFile.close();
     Files.delete(segmentFile.getSegmentFilePath());
+  }
+
+  @Override
+  public boolean hasBeenCompacted() {
+    return hasBeenCompacted.get();
+  }
+
+  @Override
+  public void markCompacted() {
+    hasBeenCompacted.set(true);
   }
 
 }

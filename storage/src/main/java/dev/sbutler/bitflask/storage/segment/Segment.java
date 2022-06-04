@@ -59,4 +59,16 @@ interface Segment {
    */
   void closeAndDelete() throws IOException;
 
+  /**
+   * Checks if a segment has been compacted
+   *
+   * @return whether the segment has been compacted or not
+   */
+  boolean hasBeenCompacted();
+
+  /**
+   * Marks the segment has having been compacted
+   */
+  void markCompacted();
+
 }

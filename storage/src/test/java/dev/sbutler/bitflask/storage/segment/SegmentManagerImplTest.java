@@ -12,6 +12,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -19,12 +20,14 @@ import org.slf4j.Logger;
 public class SegmentManagerImplTest {
 
   SegmentManagerImpl segmentManager;
+  ExecutorService executorService;
   SegmentFactory segmentFactory;
   SegmentLoader segmentLoader;
   Segment segment;
 
   @BeforeEach
   void beforeEach_mocks() {
+    executorService = mock(ExecutorService.class);
     segmentFactory = mock(SegmentFactory.class);
     segmentLoader = mock(SegmentLoader.class);
     segment = mock(Segment.class);
@@ -36,7 +39,7 @@ public class SegmentManagerImplTest {
     doReturn(true).when(segmentFactory).createSegmentStoreDir();
     doReturn(segment).when(segmentFactory).createSegment();
 
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader);
+    segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
 
     verify(segmentFactory, times(1)).createSegment();
   }
@@ -50,7 +53,7 @@ public class SegmentManagerImplTest {
     doReturn(true).when(mockSegmentDeque).isEmpty();
     doReturn(segment).when(segmentFactory).createSegment();
 
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader);
+    segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
 
     verify(segmentFactory, times(1)).createSegment();
   }
@@ -63,7 +66,7 @@ public class SegmentManagerImplTest {
     doReturn(mockSegmentDeque).when(segmentLoader).loadExistingSegments();
     doReturn(false).when(mockSegmentDeque).isEmpty();
 
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader);
+    segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
 
     verify(segmentFactory, times(0)).createSegment();
   }
@@ -71,7 +74,7 @@ public class SegmentManagerImplTest {
   void beforeEach_defaultFunctionality() throws IOException {
     Deque<Segment> mockLoadedSegments = new ArrayDeque<>(List.of(segment));
     doReturn(mockLoadedSegments).when(segmentLoader).loadExistingSegments();
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader);
+    segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
   }
 
   @Test

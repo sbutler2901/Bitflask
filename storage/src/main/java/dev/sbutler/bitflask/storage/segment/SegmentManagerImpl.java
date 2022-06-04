@@ -1,43 +1,62 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 
 class SegmentManagerImpl implements SegmentManager {
 
-  private static final int DEFAULT_COMPACTION_THRESHOLD = 2;
+  private static final int DEFAULT_COMPACTION_THRESHOLD_INCREMENT = 2;
 
   @InjectStorageLogger
   static Logger logger;
 
-  private final Compactor compactor = new Compactor();
+  private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;
-  private Deque<Segment> segmentFilesDeque;
+
+  private Deque<Segment> frozenSegmentsDeque;
+  private Segment activeSegment;
+
+  private Future<Deque<Segment>> compactionFuture = null;
+  private final AtomicBoolean isCompactionFinalizing = new AtomicBoolean(false);
+  private final AtomicInteger nextCompactionThreshold = new AtomicInteger(
+      DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
 
   @Inject
-  SegmentManagerImpl(SegmentFactory segmentFactory, SegmentLoader segmentLoader)
+  SegmentManagerImpl(@StorageExecutorService ExecutorService executorService,
+      SegmentFactory segmentFactory, SegmentLoader segmentLoader)
       throws IOException {
+    this.executorService = executorService;
     this.segmentFactory = segmentFactory;
-    initializeSegmentsDeque(segmentLoader);
+    initialize(segmentLoader);
   }
 
-  private void initializeSegmentsDeque(SegmentLoader segmentLoader) throws IOException {
+  private void initialize(SegmentLoader segmentLoader) throws IOException {
     boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
-    this.segmentFilesDeque = segmentStoreDirCreated ? new ConcurrentLinkedDeque<>()
+    Deque<Segment> loadedSegments = segmentStoreDirCreated ? new ConcurrentLinkedDeque<>()
         : segmentLoader.loadExistingSegments();
 
-    if (this.segmentFilesDeque.isEmpty()) {
-      logger.info("Segments deque is empty. Creating new active segment");
-      createAndAddNextActiveSegment();
+    if (loadedSegments.isEmpty()) {
+      activeSegment = segmentFactory.createSegment();
+    } else if (loadedSegments.peekFirst().exceedsStorageThreshold()) {
+      activeSegment = segmentFactory.createSegment();
+    } else {
+      activeSegment = loadedSegments.pollFirst();
     }
+
+    this.frozenSegmentsDeque = loadedSegments;
   }
 
   @Override
@@ -53,7 +72,10 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private Optional<Segment> findLatestSegmentWithKey(String key) {
-    for (Segment segment : segmentFilesDeque) {
+    if (activeSegment.containsKey(key)) {
+      return Optional.of(activeSegment);
+    }
+    for (Segment segment : frozenSegmentsDeque) {
       if (segment.containsKey(key)) {
         return Optional.of(segment);
       }
@@ -62,96 +84,95 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   @Override
-  public synchronized void write(String key, String value) throws IOException {
-    Segment activeSegment = getActiveSegment();
+  public void write(String key, String value) throws IOException {
     logger.info("Writing [{}] : [{}] to segment [{}]", key, value,
         activeSegment.getSegmentFileKey());
     activeSegment.write(key, value);
+    checkActiveSegmentAndCompaction();
   }
 
-  private Segment getActiveSegment() throws IOException {
-    Segment currentActiveSegment = segmentFilesDeque.getFirst();
-    if (currentActiveSegment.exceedsStorageThreshold()) {
-      return getNextActiveSegment();
+  private synchronized void checkActiveSegmentAndCompaction() throws IOException {
+    checkActiveSegment();
+    checkCompaction();
+  }
+
+  private void checkActiveSegment() throws IOException {
+    if (activeSegment.exceedsStorageThreshold()) {
+      createNewActiveSegmentAndUpdate();
     }
-    return currentActiveSegment;
   }
 
-  private Segment getNextActiveSegment() throws IOException {
-    // blocks writing until new segment is created or compaction is completed
-    if (shouldPerformCompaction()) {
-      compactor.compactSegments();
-    } else {
-      createAndAddNextActiveSegment();
+  private void createNewActiveSegmentAndUpdate() throws IOException {
+    frozenSegmentsDeque.offerFirst(activeSegment);
+    activeSegment = segmentFactory.createSegment();
+  }
+
+  private void checkCompaction() {
+    if (isCompactionActive()) {
+      if (shouldFinalizeCompaction()) {
+        finalizeCompaction();
+      }
+    } else if (shouldPerformCompaction()) {
+      initiateCompaction();
     }
-    return segmentFilesDeque.getFirst();
   }
 
-  private void createAndAddNextActiveSegment() throws IOException {
-    Segment segment = segmentFactory.createSegment();
-    segmentFilesDeque.offerFirst(segment);
+  private synchronized boolean isCompactionActive() {
+    return compactionFuture != null || isCompactionFinalizing.get();
   }
 
-  private boolean shouldPerformCompaction() {
-    return segmentFilesDeque.size() >= DEFAULT_COMPACTION_THRESHOLD;
+  private synchronized boolean shouldFinalizeCompaction() {
+    return !isCompactionFinalizing.get();
   }
 
-  private class Compactor {
+  private synchronized boolean shouldPerformCompaction() {
+    return frozenSegmentsDeque.size() >= nextCompactionThreshold.get();
+  }
 
-    private void compactSegments() throws IOException {
-      Map<String, Segment> keySegmentMap = createKeySegmentMap();
-      Deque<Segment> compactedSegments = createCompactedSegments(keySegmentMap);
-      Deque<Segment> preCompactedSegments = segmentFilesDeque;
-      segmentFilesDeque = compactedSegments;
-      // todo: handle deletion with concurrent read active
-//      deletePreCompactionSegments(preCompactedSegments);
-    }
+  private void initiateCompaction() {
+    SegmentCompactor compactor = new SegmentCompactor(segmentFactory, frozenSegmentsDeque);
+    compactionFuture = executorService.submit(compactor);
+  }
 
-    private Map<String, Segment> createKeySegmentMap() {
-      Map<String, Segment> keySegmentMap = new HashMap<>();
-      for (Segment segment : segmentFilesDeque) {
-        Set<String> segmentKeys = segment.getSegmentKeys();
-        for (String key : segmentKeys) {
-          if (!keySegmentMap.containsKey(key)) {
-            keySegmentMap.put(key, segment);
-          }
+  private void finalizeCompaction() {
+    isCompactionFinalizing.set(true);
+    executorService.submit(() -> performCompactionFinalization(compactionFuture));
+    compactionFuture = null;
+  }
+
+  private void performCompactionFinalization(Future<Deque<Segment>> compactionFuture) {
+    try {
+      Deque<Segment> compactedSegments = compactionFuture.get();
+      Deque<Segment> newFrozenDeque = new ConcurrentLinkedDeque<>();
+      List<Segment> preCompactionSegments = new ArrayList<>();
+
+      for (Segment segment : frozenSegmentsDeque) {
+        if (segment.hasBeenCompacted()) {
+          preCompactionSegments.add(segment);
+        } else {
+          newFrozenDeque.offerLast(segment);
         }
       }
-      return keySegmentMap;
+      newFrozenDeque.addAll(compactedSegments);
+      nextCompactionThreshold.set(newFrozenDeque.size() + DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
+      frozenSegmentsDeque = newFrozenDeque;
+
+      closeAndDeleteSegments(preCompactionSegments);
+    } catch (InterruptedException | ExecutionException e) {
+      logger.error("Compaction could not be completed", e);
+    } finally {
+      isCompactionFinalizing.set(false);
     }
+  }
 
-    private Deque<Segment> createCompactedSegments(Map<String, Segment> keySegmentMap)
-        throws IOException {
-      Deque<Segment> compactedSegmentsDeque = new ConcurrentLinkedDeque<>();
-
-      Segment currentCompactedSegment = segmentFactory.createSegment();
-      for (Map.Entry<String, Segment> entry : keySegmentMap.entrySet()) {
-        String key = entry.getKey();
-        Optional<String> valueOptional = entry.getValue().read(key);
-        if (valueOptional.isEmpty()) {
-          throw new RuntimeException("Compaction failure: value not found while reading segment");
-        }
-
-        currentCompactedSegment.write(key, valueOptional.get());
-        if (currentCompactedSegment.exceedsStorageThreshold()) {
-          compactedSegmentsDeque.offerFirst(currentCompactedSegment);
-          currentCompactedSegment = segmentFactory.createSegment();
-        }
+  private void closeAndDeleteSegments(List<Segment> segments) {
+    for (Segment segment : segments) {
+      try {
+        segment.closeAndDelete();
+      } catch (IOException e) {
+        System.err.println("Failure to close segment: " + e.getMessage());
       }
-
-      return compactedSegmentsDeque;
     }
-
-    // todo: enabled segment deletion after compaction
-//    private void deletePreCompactionSegments(Deque<Segment> preCompactedSegments) {
-//      for (Segment segment : preCompactedSegments) {
-//        try {
-//          segment.closeAndDelete();
-//        } catch (IOException e) {
-//          System.err.println("Failure to close segment: " + e.getMessage());
-//        }
-//      }
-//    }
   }
 
 }

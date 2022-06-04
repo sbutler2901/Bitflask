@@ -20,6 +20,7 @@ class Slf4jMembersInjector<T> implements MembersInjector<T> {
     loggerField.setAccessible(true);
   }
 
+  // Injects after Object constructor has completed
   public void injectMembers(T classWithLoggerField) {
     try {
       loggerField.set(classWithLoggerField, logger);
