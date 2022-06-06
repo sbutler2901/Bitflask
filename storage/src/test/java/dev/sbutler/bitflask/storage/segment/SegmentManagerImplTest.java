@@ -35,7 +35,7 @@ public class SegmentManagerImplTest {
   }
 
   @Test
-  void initializeSegmentsDeque_storeCreated() throws IOException {
+  void initialize_dirStoreCreated() throws IOException {
     doReturn(true).when(segmentFactory).createSegmentStoreDir();
     doReturn(segment).when(segmentFactory).createSegment();
 
@@ -46,7 +46,7 @@ public class SegmentManagerImplTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void initializeSegmentsDeque_storeExisted_NoSegmentsLoaded() throws IOException {
+  void initialize_dirStoreExisted_NoSegmentsLoaded() throws IOException {
     Deque<Segment> mockSegmentDeque = mock(Deque.class);
     doReturn(false).when(segmentFactory).createSegmentStoreDir();
     doReturn(mockSegmentDeque).when(segmentLoader).loadExistingSegments();
@@ -60,11 +60,30 @@ public class SegmentManagerImplTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void initializeSegmentsDeque_storeExisted_SegmentsLoaded() throws IOException {
+  void initialize_dirStoreExisted_SegmentsLoaded_headExceedsThreshold() throws IOException {
     Deque<Segment> mockSegmentDeque = mock(Deque.class);
+    Segment segment = mock(Segment.class);
     doReturn(false).when(segmentFactory).createSegmentStoreDir();
     doReturn(mockSegmentDeque).when(segmentLoader).loadExistingSegments();
     doReturn(false).when(mockSegmentDeque).isEmpty();
+    doReturn(segment).when(mockSegmentDeque).peekFirst();
+    doReturn(true).when(segment).exceedsStorageThreshold();
+
+    segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
+
+    verify(segmentFactory, times(1)).createSegment();
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void initialize_dirStoreExisted_SegmentsLoaded_headBelowThreshold() throws IOException {
+    Deque<Segment> mockSegmentDeque = mock(Deque.class);
+    Segment segment = mock(Segment.class);
+    doReturn(false).when(segmentFactory).createSegmentStoreDir();
+    doReturn(mockSegmentDeque).when(segmentLoader).loadExistingSegments();
+    doReturn(false).when(mockSegmentDeque).isEmpty();
+    doReturn(segment).when(mockSegmentDeque).peekFirst();
+    doReturn(false).when(segment).exceedsStorageThreshold();
 
     segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
 
