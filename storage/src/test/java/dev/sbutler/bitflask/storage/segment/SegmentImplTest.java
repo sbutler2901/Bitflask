@@ -207,4 +207,12 @@ public class SegmentImplTest {
       }, times(1));
     }
   }
+
+  @Test
+  void compactedCheck() {
+    assertFalse(segment.hasBeenCompacted());
+    segment.markCompacted();
+    assertTrue(segment.hasBeenCompacted());
+  }
+
 }

@@ -126,13 +126,13 @@ class SegmentImpl implements Segment {
   }
 
   @Override
-  public boolean hasBeenCompacted() {
-    return hasBeenCompacted.get();
+  public void markCompacted() {
+    hasBeenCompacted.set(true);
   }
 
   @Override
-  public void markCompacted() {
-    hasBeenCompacted.set(true);
+  public boolean hasBeenCompacted() {
+    return hasBeenCompacted.get();
   }
 
 }

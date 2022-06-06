@@ -10,6 +10,12 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+/**
+ * Handler compacting the provided segments into new segments only keeping the latest key:value
+ * pairs.
+ * <p>
+ * Note: A copy of the provided preCompactedSegments will be made during construction.
+ */
 class SegmentCompactor implements Callable<Deque<Segment>> {
 
   private final SegmentFactory segmentFactory;
@@ -59,6 +65,7 @@ class SegmentCompactor implements Callable<Deque<Segment>> {
         currentCompactedSegment = segmentFactory.createSegment();
       }
     }
+    compactedSegmentsDeque.offerFirst(currentCompactedSegment);
 
     return compactedSegmentsDeque;
   }
