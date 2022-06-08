@@ -1,14 +1,13 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import java.io.IOException;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Handler compacting the provided segments into new segments only keeping the latest key:value
@@ -16,20 +15,20 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * <p>
  * Note: A copy of the provided preCompactedSegments will be made during construction.
  */
-class SegmentCompactor implements Callable<Deque<Segment>> {
+class SegmentCompactor implements Callable<List<Segment>> {
 
   private final SegmentFactory segmentFactory;
   private final List<Segment> preCompactedSegments;
 
-  SegmentCompactor(SegmentFactory segmentFactory, Deque<Segment> preCompactedSegments) {
+  SegmentCompactor(SegmentFactory segmentFactory, List<Segment> preCompactedSegments) {
     this.segmentFactory = segmentFactory;
     this.preCompactedSegments = List.copyOf(preCompactedSegments);
   }
 
   @Override
-  public Deque<Segment> call() throws IOException {
+  public List<Segment> call() throws IOException {
     Map<String, Segment> keySegmentMap = createKeySegmentMap();
-    Deque<Segment> compactedSegments = createCompactedSegments(keySegmentMap);
+    List<Segment> compactedSegments = createCompactedSegments(keySegmentMap);
     markSegmentsCompacted();
     return compactedSegments;
   }
@@ -47,9 +46,9 @@ class SegmentCompactor implements Callable<Deque<Segment>> {
     return keySegmentMap;
   }
 
-  private Deque<Segment> createCompactedSegments(Map<String, Segment> keySegmentMap)
+  private List<Segment> createCompactedSegments(Map<String, Segment> keySegmentMap)
       throws IOException {
-    Deque<Segment> compactedSegmentsDeque = new ConcurrentLinkedDeque<>();
+    List<Segment> compactedSegments = new CopyOnWriteArrayList<>();
 
     Segment currentCompactedSegment = segmentFactory.createSegment();
     for (Map.Entry<String, Segment> entry : keySegmentMap.entrySet()) {
@@ -61,13 +60,13 @@ class SegmentCompactor implements Callable<Deque<Segment>> {
 
       currentCompactedSegment.write(key, valueOptional.get());
       if (currentCompactedSegment.exceedsStorageThreshold()) {
-        compactedSegmentsDeque.offerFirst(currentCompactedSegment);
+        compactedSegments.add(0, currentCompactedSegment);
         currentCompactedSegment = segmentFactory.createSegment();
       }
     }
-    compactedSegmentsDeque.offerFirst(currentCompactedSegment);
+    compactedSegments.add(0, currentCompactedSegment);
 
-    return compactedSegmentsDeque;
+    return compactedSegments;
   }
 
   private void markSegmentsCompacted() {

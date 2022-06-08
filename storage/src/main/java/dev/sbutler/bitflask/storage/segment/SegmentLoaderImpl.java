@@ -12,12 +12,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -40,8 +39,8 @@ class SegmentLoaderImpl implements SegmentLoader {
   }
 
   @Override
-  public Deque<Segment> loadExistingSegments() throws IOException {
-    Deque<Segment> loadedSegments = new ConcurrentLinkedDeque<>();
+  public List<Segment> loadExistingSegments() throws IOException {
+    List<Segment> loadedSegments = new CopyOnWriteArrayList<>();
     List<Path> segmentFilePaths = getSegmentFilePaths();
     if (segmentFilePaths.isEmpty()) {
       logger.info("No existing files found in segment store directory");

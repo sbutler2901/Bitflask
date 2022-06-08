@@ -10,8 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -29,7 +28,7 @@ public class SegmentCompactorTest {
     segmentFactory = mock(SegmentFactory.class);
     preCompactedSegmentsList = List.of(mock(Segment.class), mock(Segment.class));
     segmentCompactor = new SegmentCompactor(segmentFactory,
-        new ArrayDeque<>(preCompactedSegmentsList));
+        new ArrayList<>(preCompactedSegmentsList));
   }
 
   @Test
@@ -48,7 +47,7 @@ public class SegmentCompactorTest {
     doReturn(createdSegment).when(segmentFactory).createSegment();
     doReturn(false).when(createdSegment).exceedsStorageThreshold();
 
-    Deque<Segment> compactedSegments = segmentCompactor.call();
+    List<Segment> compactedSegments = segmentCompactor.call();
 
     assertEquals(1, compactedSegments.size());
     verify(createdSegment, times(1)).write("0-key", "0-value");
@@ -89,7 +88,7 @@ public class SegmentCompactorTest {
     doReturn(createdSegment).when(segmentFactory).createSegment();
     when(createdSegment.exceedsStorageThreshold()).thenReturn(true).thenReturn(false);
 
-    Deque<Segment> compactedSegments = segmentCompactor.call();
+    List<Segment> compactedSegments = segmentCompactor.call();
 
     assertEquals(2, compactedSegments.size());
     verify(segmentFactory, times(2)).createSegment();

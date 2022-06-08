@@ -4,10 +4,9 @@ import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorSer
 import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -26,10 +25,10 @@ class SegmentManagerImpl implements SegmentManager {
   private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;
 
-  private Deque<Segment> frozenSegmentsDeque;
+  private List<Segment> frozenSegments;
   private Segment activeSegment;
 
-  private Future<Deque<Segment>> compactionFuture = null;
+  private Future<List<Segment>> compactionFuture = null;
   private final AtomicBoolean isCompactionFinalizing = new AtomicBoolean(false);
   private final AtomicInteger nextCompactionThreshold = new AtomicInteger(
       DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
@@ -45,18 +44,18 @@ class SegmentManagerImpl implements SegmentManager {
 
   private void initialize(SegmentLoader segmentLoader) throws IOException {
     boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
-    Deque<Segment> loadedSegments = segmentStoreDirCreated ? new ConcurrentLinkedDeque<>()
+    List<Segment> loadedSegments = segmentStoreDirCreated ? new CopyOnWriteArrayList<>()
         : segmentLoader.loadExistingSegments();
 
     if (loadedSegments.isEmpty()) {
       activeSegment = segmentFactory.createSegment();
-    } else if (loadedSegments.peekFirst().exceedsStorageThreshold()) {
+    } else if (loadedSegments.get(0).exceedsStorageThreshold()) {
       activeSegment = segmentFactory.createSegment();
     } else {
-      activeSegment = loadedSegments.pollFirst();
+      activeSegment = loadedSegments.remove(0);
     }
 
-    this.frozenSegmentsDeque = loadedSegments;
+    this.frozenSegments = loadedSegments;
   }
 
   @Override
@@ -75,7 +74,7 @@ class SegmentManagerImpl implements SegmentManager {
     if (activeSegment.containsKey(key)) {
       return Optional.of(activeSegment);
     }
-    for (Segment segment : frozenSegmentsDeque) {
+    for (Segment segment : frozenSegments) {
       if (segment.containsKey(key)) {
         return Optional.of(segment);
       }
@@ -103,7 +102,7 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private void createNewActiveSegmentAndUpdate() throws IOException {
-    frozenSegmentsDeque.offerFirst(activeSegment);
+    frozenSegments.add(0, activeSegment);
     activeSegment = segmentFactory.createSegment();
   }
 
@@ -126,11 +125,11 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private synchronized boolean shouldPerformCompaction() {
-    return frozenSegmentsDeque.size() >= nextCompactionThreshold.get();
+    return frozenSegments.size() >= nextCompactionThreshold.get();
   }
 
   private void initiateCompaction() {
-    SegmentCompactor compactor = new SegmentCompactor(segmentFactory, frozenSegmentsDeque);
+    SegmentCompactor compactor = new SegmentCompactor(segmentFactory, frozenSegments);
     compactionFuture = executorService.submit(compactor);
   }
 
@@ -140,22 +139,23 @@ class SegmentManagerImpl implements SegmentManager {
     compactionFuture = null;
   }
 
-  private void performCompactionFinalization(Future<Deque<Segment>> compactionFuture) {
+  private void performCompactionFinalization(Future<List<Segment>> compactionFuture) {
     try {
-      Deque<Segment> compactedSegments = compactionFuture.get();
-      Deque<Segment> newFrozenDeque = new ConcurrentLinkedDeque<>();
+      List<Segment> compactedSegments = compactionFuture.get();
+      List<Segment> newFrozenSegments = new CopyOnWriteArrayList<>();
       List<Segment> preCompactionSegments = new ArrayList<>();
 
-      for (Segment segment : frozenSegmentsDeque) {
+      for (Segment segment : frozenSegments) {
         if (segment.hasBeenCompacted()) {
           preCompactionSegments.add(segment);
         } else {
-          newFrozenDeque.offerLast(segment);
+          newFrozenSegments.add(0, segment);
         }
       }
-      newFrozenDeque.addAll(compactedSegments);
-      nextCompactionThreshold.set(newFrozenDeque.size() + DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
-      frozenSegmentsDeque = newFrozenDeque;
+      newFrozenSegments.addAll(compactedSegments);
+      nextCompactionThreshold.set(
+          newFrozenSegments.size() + DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
+      frozenSegments = newFrozenSegments;
 
       closeAndDeleteSegments(preCompactionSegments);
     } catch (InterruptedException | ExecutionException e) {

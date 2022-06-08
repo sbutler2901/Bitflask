@@ -8,8 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -49,10 +48,10 @@ public class SegmentManagerImplTest {
   @Test
   @SuppressWarnings("unchecked")
   void initialize_dirStoreExisted_NoSegmentsLoaded() throws IOException {
-    Deque<Segment> mockSegmentDeque = mock(Deque.class);
+    List<Segment> mockSegments = mock(List.class);
     doReturn(false).when(segmentFactory).createSegmentStoreDir();
-    doReturn(mockSegmentDeque).when(segmentLoader).loadExistingSegments();
-    doReturn(true).when(mockSegmentDeque).isEmpty();
+    doReturn(mockSegments).when(segmentLoader).loadExistingSegments();
+    doReturn(true).when(mockSegments).isEmpty();
     doReturn(activeSegment).when(segmentFactory).createSegment();
 
     segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
@@ -63,12 +62,12 @@ public class SegmentManagerImplTest {
   @Test
   @SuppressWarnings("unchecked")
   void initialize_dirStoreExisted_SegmentsLoaded_headExceedsThreshold() throws IOException {
-    Deque<Segment> mockSegmentDeque = mock(Deque.class);
+    List<Segment> mockSegments = mock(List.class);
     Segment segment = mock(Segment.class);
     doReturn(false).when(segmentFactory).createSegmentStoreDir();
-    doReturn(mockSegmentDeque).when(segmentLoader).loadExistingSegments();
-    doReturn(false).when(mockSegmentDeque).isEmpty();
-    doReturn(segment).when(mockSegmentDeque).peekFirst();
+    doReturn(mockSegments).when(segmentLoader).loadExistingSegments();
+    doReturn(false).when(mockSegments).isEmpty();
+    doReturn(segment).when(mockSegments).get(0);
     doReturn(true).when(segment).exceedsStorageThreshold();
 
     segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
@@ -79,12 +78,12 @@ public class SegmentManagerImplTest {
   @Test
   @SuppressWarnings("unchecked")
   void initialize_dirStoreExisted_SegmentsLoaded_headBelowThreshold() throws IOException {
-    Deque<Segment> mockSegmentDeque = mock(Deque.class);
+    List<Segment> mockSegments = mock(List.class);
     Segment segment = mock(Segment.class);
     doReturn(false).when(segmentFactory).createSegmentStoreDir();
-    doReturn(mockSegmentDeque).when(segmentLoader).loadExistingSegments();
-    doReturn(false).when(mockSegmentDeque).isEmpty();
-    doReturn(segment).when(mockSegmentDeque).peekFirst();
+    doReturn(mockSegments).when(segmentLoader).loadExistingSegments();
+    doReturn(false).when(mockSegments).isEmpty();
+    doReturn(segment).when(mockSegments).get(0);
     doReturn(false).when(segment).exceedsStorageThreshold();
 
     segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
@@ -97,7 +96,7 @@ public class SegmentManagerImplTest {
   }
 
   void beforeEach_defaultFunctionality(List<Segment> loadedSegments) throws IOException {
-    Deque<Segment> mockLoadedSegments = new ArrayDeque<>(loadedSegments);
+    List<Segment> mockLoadedSegments = new ArrayList<>(loadedSegments);
     doReturn(mockLoadedSegments).when(segmentLoader).loadExistingSegments();
     segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
   }
