@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 
 class SegmentManagerImpl implements SegmentManager {
 
-  private static final int DEFAULT_COMPACTION_THRESHOLD_INCREMENT = 2;
+  private static final int DEFAULT_COMPACTION_THRESHOLD_INCREMENT = 3;
 
   @InjectStorageLogger
   static Logger logger;

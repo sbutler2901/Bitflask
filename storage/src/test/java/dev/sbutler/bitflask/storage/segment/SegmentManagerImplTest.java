@@ -23,21 +23,23 @@ public class SegmentManagerImplTest {
   ExecutorService executorService;
   SegmentFactory segmentFactory;
   SegmentLoader segmentLoader;
-  Segment segment;
+  Segment activeSegment;
+  Segment frozenSegment;
 
   @BeforeEach
   void beforeEach_mocks() {
     executorService = mock(ExecutorService.class);
     segmentFactory = mock(SegmentFactory.class);
     segmentLoader = mock(SegmentLoader.class);
-    segment = mock(Segment.class);
+    activeSegment = mock(Segment.class);
+    frozenSegment = mock(Segment.class);
     SegmentManagerImpl.logger = mock(Logger.class);
   }
 
   @Test
   void initialize_dirStoreCreated() throws IOException {
     doReturn(true).when(segmentFactory).createSegmentStoreDir();
-    doReturn(segment).when(segmentFactory).createSegment();
+    doReturn(activeSegment).when(segmentFactory).createSegment();
 
     segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
 
@@ -51,7 +53,7 @@ public class SegmentManagerImplTest {
     doReturn(false).when(segmentFactory).createSegmentStoreDir();
     doReturn(mockSegmentDeque).when(segmentLoader).loadExistingSegments();
     doReturn(true).when(mockSegmentDeque).isEmpty();
-    doReturn(segment).when(segmentFactory).createSegment();
+    doReturn(activeSegment).when(segmentFactory).createSegment();
 
     segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
 
@@ -91,28 +93,37 @@ public class SegmentManagerImplTest {
   }
 
   void beforeEach_defaultFunctionality() throws IOException {
-    Deque<Segment> mockLoadedSegments = new ArrayDeque<>(List.of(segment));
+    beforeEach_defaultFunctionality(List.of(activeSegment, frozenSegment));
+  }
+
+  void beforeEach_defaultFunctionality(List<Segment> loadedSegments) throws IOException {
+    Deque<Segment> mockLoadedSegments = new ArrayDeque<>(loadedSegments);
     doReturn(mockLoadedSegments).when(segmentLoader).loadExistingSegments();
     segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
   }
 
   @Test
-  void write() throws IOException {
-    beforeEach_defaultFunctionality();
-    doReturn(false).when(segment).exceedsStorageThreshold();
-    String key = "key", value = "value";
-    segmentManager.write(key, value);
-    verify(segment, times(1)).write(key, value);
-  }
-
-  @Test
-  void read_keyFound() throws IOException {
+  void read_activeSegment_keyFound() throws IOException {
     beforeEach_defaultFunctionality();
     String key = "key", value = "value";
     Optional<String> valueOptional = Optional.of(value);
 
-    doReturn(true).when(segment).containsKey(key);
-    doReturn(valueOptional).when(segment).read(key);
+    doReturn(false).when(activeSegment).containsKey(key);
+    doReturn(true).when(frozenSegment).containsKey(key);
+    doReturn(valueOptional).when(frozenSegment).read(key);
+
+    Optional<String> readValueOptional = segmentManager.read(key);
+    assertEquals(valueOptional, readValueOptional);
+  }
+
+  @Test
+  void read_frozenSegments_keyFound() throws IOException {
+    beforeEach_defaultFunctionality();
+    String key = "key", value = "value";
+    Optional<String> valueOptional = Optional.of(value);
+
+    doReturn(true).when(activeSegment).containsKey(key);
+    doReturn(valueOptional).when(activeSegment).read(key);
 
     Optional<String> readValueOptional = segmentManager.read(key);
     assertEquals(valueOptional, readValueOptional);
@@ -126,4 +137,29 @@ public class SegmentManagerImplTest {
     assertTrue(valueOptional.isEmpty());
   }
 
+  @Test
+  void write() throws IOException {
+    beforeEach_defaultFunctionality();
+    String key = "key", value = "value";
+    doReturn(false).when(activeSegment).exceedsStorageThreshold();
+    segmentManager.write(key, value);
+    verify(activeSegment, times(1)).write(key, value);
+    verify(segmentFactory, times(0)).createSegment();
+  }
+
+  @Test
+  void write_createNewActiveSegment() throws IOException {
+    beforeEach_defaultFunctionality();
+    String key = "key", value = "value";
+    doReturn(true).when(activeSegment).exceedsStorageThreshold();
+    segmentManager.write(key, value);
+    verify(activeSegment, times(1)).write(key, value);
+    verify(segmentFactory, times(1)).createSegment();
+  }
+
+//  @Test
+//  void write_initiateCompaction() throws IOException {
+//    beforeEach_defaultFunctionality(List.of(activeSegment, frozenSegment, mock(Segment.class)));
+//
+//  }
 }
