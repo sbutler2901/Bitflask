@@ -1,12 +1,12 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -15,7 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * <p>
  * Note: A copy of the provided preCompactedSegments will be made during construction.
  */
-class SegmentCompactor implements Callable<List<Segment>> {
+class SegmentCompactor {
 
   private final SegmentFactory segmentFactory;
   private final List<Segment> preCompactedSegments;
@@ -25,8 +25,7 @@ class SegmentCompactor implements Callable<List<Segment>> {
     this.preCompactedSegments = List.copyOf(preCompactedSegments);
   }
 
-  @Override
-  public List<Segment> call() throws IOException {
+  public List<Segment> compactSegments() throws IOException {
     Map<String, Segment> keySegmentMap = createKeySegmentMap();
     List<Segment> compactedSegments = createCompactedSegments(keySegmentMap);
     markSegmentsCompacted();
@@ -75,4 +74,15 @@ class SegmentCompactor implements Callable<List<Segment>> {
     }
   }
 
+  public List<Segment> closeAndDeleteSegments() {
+    List<Segment> failedSegments = new ArrayList<>();
+    for (Segment segment : preCompactedSegments) {
+      try {
+        segment.closeAndDelete();
+      } catch (IOException e) {
+        failedSegments.add(segment);
+      }
+    }
+    return failedSegments;
+  }
 }

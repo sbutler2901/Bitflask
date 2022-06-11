@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -32,7 +33,7 @@ public class SegmentCompactorTest {
   }
 
   @Test
-  void duplicateRemoval() throws IOException {
+  void duplicateKeyValueRemoval() throws IOException {
     Segment headSegment = preCompactedSegmentsList.get(0);
     Segment tailSegment = preCompactedSegmentsList.get(1);
 
@@ -47,7 +48,7 @@ public class SegmentCompactorTest {
     doReturn(createdSegment).when(segmentFactory).createSegment();
     doReturn(false).when(createdSegment).exceedsStorageThreshold();
 
-    List<Segment> compactedSegments = segmentCompactor.call();
+    List<Segment> compactedSegments = segmentCompactor.compactSegments();
 
     assertEquals(1, compactedSegments.size());
     verify(createdSegment, times(1)).write("0-key", "0-value");
@@ -59,7 +60,7 @@ public class SegmentCompactorTest {
   }
 
   @Test
-  void runtimeException() throws IOException {
+  void compactionFailure_throwsRuntimeException() throws IOException {
     Segment headSegment = preCompactedSegmentsList.get(0);
     Segment tailSegment = preCompactedSegmentsList.get(1);
 
@@ -71,7 +72,7 @@ public class SegmentCompactorTest {
     Segment createdSegment = mock(Segment.class);
     doReturn(createdSegment).when(segmentFactory).createSegment();
 
-    assertThrows(RuntimeException.class, () -> segmentCompactor.call());
+    assertThrows(RuntimeException.class, () -> segmentCompactor.compactSegments());
   }
 
   @Test
@@ -88,10 +89,26 @@ public class SegmentCompactorTest {
     doReturn(createdSegment).when(segmentFactory).createSegment();
     when(createdSegment.exceedsStorageThreshold()).thenReturn(true).thenReturn(false);
 
-    List<Segment> compactedSegments = segmentCompactor.call();
+    List<Segment> compactedSegments = segmentCompactor.compactSegments();
 
     assertEquals(2, compactedSegments.size());
     verify(segmentFactory, times(2)).createSegment();
+  }
+
+  @Test
+  void closeAndDeleteSegments() throws IOException {
+    segmentCompactor.closeAndDeleteSegments();
+    verify(preCompactedSegmentsList.get(0), times(1)).closeAndDelete();
+    verify(preCompactedSegmentsList.get(1), times(1)).closeAndDelete();
+  }
+
+  @Test
+  void closeAndDeleteSegments_IOException() throws IOException {
+    Segment headSegment = preCompactedSegmentsList.get(0);
+    doThrow(IOException.class).when(headSegment).closeAndDelete();
+    List<Segment> failedSegments = segmentCompactor.closeAndDeleteSegments();
+    assertEquals(1, failedSegments.size());
+    assertEquals(headSegment, failedSegments.get(0));
   }
 
 }

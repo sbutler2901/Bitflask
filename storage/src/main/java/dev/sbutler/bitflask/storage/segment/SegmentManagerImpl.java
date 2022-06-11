@@ -3,14 +3,14 @@ package dev.sbutler.bitflask.storage.segment;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import org.slf4j.Logger;
@@ -28,8 +28,7 @@ class SegmentManagerImpl implements SegmentManager {
   private List<Segment> frozenSegments;
   private Segment activeSegment;
 
-  private Future<List<Segment>> compactionFuture = null;
-  private final AtomicBoolean isCompactionFinalizing = new AtomicBoolean(false);
+  private SegmentCompactor segmentCompactor;
   private final AtomicInteger nextCompactionThreshold = new AtomicInteger(
       DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
 
@@ -91,88 +90,72 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private synchronized void checkActiveSegmentAndCompaction() throws IOException {
-    checkActiveSegment();
-    checkCompaction();
-  }
-
-  private void checkActiveSegment() throws IOException {
-    if (activeSegment.exceedsStorageThreshold()) {
+    if (shouldCreateAndUpdateActiveSegment()) {
       createNewActiveSegmentAndUpdate();
     }
-  }
-
-  private void createNewActiveSegmentAndUpdate() throws IOException {
-    frozenSegments.add(0, activeSegment);
-    activeSegment = segmentFactory.createSegment();
-  }
-
-  private void checkCompaction() {
-    if (isCompactionActive()) {
-      if (shouldFinalizeCompaction()) {
-        finalizeCompaction();
-      }
-    } else if (shouldPerformCompaction()) {
+    if (shouldInitiateCompaction()) {
       initiateCompaction();
     }
   }
 
-  private synchronized boolean isCompactionActive() {
-    return compactionFuture != null || isCompactionFinalizing.get();
+  private boolean shouldCreateAndUpdateActiveSegment() {
+    return activeSegment.exceedsStorageThreshold();
   }
 
-  private synchronized boolean shouldFinalizeCompaction() {
-    return !isCompactionFinalizing.get();
+  private void createNewActiveSegmentAndUpdate() throws IOException {
+    logger.info("Creating new active segment");
+    frozenSegments.add(0, activeSegment);
+    activeSegment = segmentFactory.createSegment();
   }
 
-  private synchronized boolean shouldPerformCompaction() {
-    return frozenSegments.size() >= nextCompactionThreshold.get();
+  private boolean shouldInitiateCompaction() {
+    return segmentCompactor == null && frozenSegments.size() >= nextCompactionThreshold.get();
   }
 
   private void initiateCompaction() {
-    SegmentCompactor compactor = new SegmentCompactor(segmentFactory, frozenSegments);
-    compactionFuture = executorService.submit(compactor);
+    logger.info("Initiating Compaction");
+    segmentCompactor = new SegmentCompactor(segmentFactory, frozenSegments);
+    CompletableFuture
+        .supplyAsync(this::performCompaction, executorService)
+        .whenComplete((result, e) -> {
+          if (e != null) {
+            finalizeAfterCompactionFailure(e);
+          }
+        })
+        .thenAccept(this::updateAfterCompaction)
+        // todo: handle segments failed to be closed
+        .thenRunAsync(segmentCompactor::closeAndDeleteSegments, executorService)
+        .thenRun(this::finalizeAfterCompaction);
   }
 
-  private void finalizeCompaction() {
-    isCompactionFinalizing.set(true);
-    executorService.submit(() -> performCompactionFinalization(compactionFuture));
-    compactionFuture = null;
-  }
-
-  private void performCompactionFinalization(Future<List<Segment>> compactionFuture) {
+  private List<Segment> performCompaction() {
+    logger.info("Performing compaction");
     try {
-      List<Segment> compactedSegments = compactionFuture.get();
-      List<Segment> newFrozenSegments = new CopyOnWriteArrayList<>();
-      List<Segment> preCompactionSegments = new ArrayList<>();
-
-      for (Segment segment : frozenSegments) {
-        if (segment.hasBeenCompacted()) {
-          preCompactionSegments.add(segment);
-        } else {
-          newFrozenSegments.add(0, segment);
-        }
-      }
-      newFrozenSegments.addAll(compactedSegments);
-      nextCompactionThreshold.set(
-          newFrozenSegments.size() + DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
-      frozenSegments = newFrozenSegments;
-
-      closeAndDeleteSegments(preCompactionSegments);
-    } catch (InterruptedException | ExecutionException e) {
-      logger.error("Compaction could not be completed", e);
-    } finally {
-      isCompactionFinalizing.set(false);
+      return segmentCompactor.compactSegments();
+    } catch (IOException e) {
+      throw new CompletionException(e);
     }
   }
 
-  private void closeAndDeleteSegments(List<Segment> segments) {
-    for (Segment segment : segments) {
-      try {
-        segment.closeAndDelete();
-      } catch (IOException e) {
-        System.err.println("Failure to close segment: " + e.getMessage());
-      }
-    }
+  private synchronized void updateAfterCompaction(List<Segment> compactedSegments) {
+    logger.info("Updating after compaction");
+    Deque<Segment> newFrozenSegments = new ArrayDeque<>();
+    frozenSegments.stream().filter((segment) -> !segment.hasBeenCompacted())
+        .forEach(newFrozenSegments::offerFirst);
+    newFrozenSegments.addAll(compactedSegments);
+    nextCompactionThreshold.set(
+        newFrozenSegments.size() + DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
+    frozenSegments = new CopyOnWriteArrayList<>(newFrozenSegments);
+  }
+
+  private void finalizeAfterCompaction() {
+    segmentCompactor = null;
+    logger.info("Compaction completed");
+  }
+
+  private void finalizeAfterCompactionFailure(Throwable compactionThrowable) {
+    segmentCompactor = null;
+    logger.error("Failed to compact segments", compactionThrowable.getCause());
   }
 
 }
