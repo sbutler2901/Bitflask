@@ -15,12 +15,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * <p>
  * Note: A copy of the provided preCompactedSegments will be made during construction.
  */
-class SegmentCompactor {
+class SegmentCompactorImpl {
 
   private final SegmentFactory segmentFactory;
   private final List<Segment> preCompactedSegments;
 
-  SegmentCompactor(SegmentFactory segmentFactory, List<Segment> preCompactedSegments) {
+  SegmentCompactorImpl(SegmentFactory segmentFactory, List<Segment> preCompactedSegments) {
     this.segmentFactory = segmentFactory;
     this.preCompactedSegments = List.copyOf(preCompactedSegments);
   }

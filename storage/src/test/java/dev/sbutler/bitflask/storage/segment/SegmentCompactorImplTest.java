@@ -18,9 +18,9 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class SegmentCompactorTest {
+public class SegmentCompactorImplTest {
 
-  SegmentCompactor segmentCompactor;
+  SegmentCompactorImpl segmentCompactorImpl;
   SegmentFactory segmentFactory;
   List<Segment> preCompactedSegmentsList;
 
@@ -28,7 +28,7 @@ public class SegmentCompactorTest {
   void beforeEach() {
     segmentFactory = mock(SegmentFactory.class);
     preCompactedSegmentsList = List.of(mock(Segment.class), mock(Segment.class));
-    segmentCompactor = new SegmentCompactor(segmentFactory,
+    segmentCompactorImpl = new SegmentCompactorImpl(segmentFactory,
         new ArrayList<>(preCompactedSegmentsList));
   }
 
@@ -48,7 +48,7 @@ public class SegmentCompactorTest {
     doReturn(createdSegment).when(segmentFactory).createSegment();
     doReturn(false).when(createdSegment).exceedsStorageThreshold();
 
-    List<Segment> compactedSegments = segmentCompactor.compactSegments();
+    List<Segment> compactedSegments = segmentCompactorImpl.compactSegments();
 
     assertEquals(1, compactedSegments.size());
     verify(createdSegment, times(1)).write("0-key", "0-value");
@@ -72,7 +72,7 @@ public class SegmentCompactorTest {
     Segment createdSegment = mock(Segment.class);
     doReturn(createdSegment).when(segmentFactory).createSegment();
 
-    assertThrows(RuntimeException.class, () -> segmentCompactor.compactSegments());
+    assertThrows(RuntimeException.class, () -> segmentCompactorImpl.compactSegments());
   }
 
   @Test
@@ -89,7 +89,7 @@ public class SegmentCompactorTest {
     doReturn(createdSegment).when(segmentFactory).createSegment();
     when(createdSegment.exceedsStorageThreshold()).thenReturn(true).thenReturn(false);
 
-    List<Segment> compactedSegments = segmentCompactor.compactSegments();
+    List<Segment> compactedSegments = segmentCompactorImpl.compactSegments();
 
     assertEquals(2, compactedSegments.size());
     verify(segmentFactory, times(2)).createSegment();
@@ -97,7 +97,7 @@ public class SegmentCompactorTest {
 
   @Test
   void closeAndDeleteSegments() throws IOException {
-    segmentCompactor.closeAndDeleteSegments();
+    segmentCompactorImpl.closeAndDeleteSegments();
     verify(preCompactedSegmentsList.get(0), times(1)).closeAndDelete();
     verify(preCompactedSegmentsList.get(1), times(1)).closeAndDelete();
   }
@@ -106,7 +106,7 @@ public class SegmentCompactorTest {
   void closeAndDeleteSegments_IOException() throws IOException {
     Segment headSegment = preCompactedSegmentsList.get(0);
     doThrow(IOException.class).when(headSegment).closeAndDelete();
-    List<Segment> failedSegments = segmentCompactor.closeAndDeleteSegments();
+    List<Segment> failedSegments = segmentCompactorImpl.closeAndDeleteSegments();
     assertEquals(1, failedSegments.size());
     assertEquals(headSegment, failedSegments.get(0));
   }

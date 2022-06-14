@@ -28,7 +28,7 @@ class SegmentManagerImpl implements SegmentManager {
   private List<Segment> frozenSegments;
   private Segment activeSegment;
 
-  private SegmentCompactor segmentCompactor;
+  private SegmentCompactorImpl segmentCompactor;
   private final AtomicInteger nextCompactionThreshold = new AtomicInteger(
       DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
 
@@ -114,7 +114,7 @@ class SegmentManagerImpl implements SegmentManager {
 
   private void initiateCompaction() {
     logger.info("Initiating Compaction");
-    segmentCompactor = new SegmentCompactor(segmentFactory, frozenSegments);
+    segmentCompactor = new SegmentCompactorImpl(segmentFactory, frozenSegments);
     CompletableFuture
         .supplyAsync(this::performCompaction, executorService)
         .whenComplete((result, e) -> {
