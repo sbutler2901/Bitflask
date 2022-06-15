@@ -6,6 +6,11 @@ import javax.inject.Singleton;
 
 public class SegmentModule extends AbstractModule {
 
+  @Override
+  protected void configure() {
+    bind(SegmentCompactor.class).toProvider(SegmentCompactorProvider.class);
+  }
+
   @Provides
   @Singleton
   SegmentManager provideSegmentManager(SegmentManagerImpl segmentManager) {

@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
+import javax.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -19,17 +19,18 @@ import org.slf4j.Logger;
 public class SegmentManagerImplTest {
 
   SegmentManagerImpl segmentManager;
-  ExecutorService executorService;
   SegmentFactory segmentFactory;
   SegmentLoader segmentLoader;
+  Provider<SegmentCompactor> segmentCompactorProvider;
   Segment activeSegment;
   Segment frozenSegment;
 
   @BeforeEach
+  @SuppressWarnings("unchecked")
   void beforeEach_mocks() {
-    executorService = mock(ExecutorService.class);
     segmentFactory = mock(SegmentFactory.class);
     segmentLoader = mock(SegmentLoader.class);
+    segmentCompactorProvider = mock(Provider.class);
     activeSegment = mock(Segment.class);
     frozenSegment = mock(Segment.class);
     SegmentManagerImpl.logger = mock(Logger.class);
@@ -40,7 +41,8 @@ public class SegmentManagerImplTest {
     doReturn(true).when(segmentFactory).createSegmentStoreDir();
     doReturn(activeSegment).when(segmentFactory).createSegment();
 
-    segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
+    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
+        segmentCompactorProvider);
 
     verify(segmentFactory, times(1)).createSegment();
   }
@@ -54,7 +56,8 @@ public class SegmentManagerImplTest {
     doReturn(true).when(mockSegments).isEmpty();
     doReturn(activeSegment).when(segmentFactory).createSegment();
 
-    segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
+    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
+        segmentCompactorProvider);
 
     verify(segmentFactory, times(1)).createSegment();
   }
@@ -70,7 +73,8 @@ public class SegmentManagerImplTest {
     doReturn(segment).when(mockSegments).get(0);
     doReturn(true).when(segment).exceedsStorageThreshold();
 
-    segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
+    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
+        segmentCompactorProvider);
 
     verify(segmentFactory, times(1)).createSegment();
   }
@@ -86,7 +90,8 @@ public class SegmentManagerImplTest {
     doReturn(segment).when(mockSegments).get(0);
     doReturn(false).when(segment).exceedsStorageThreshold();
 
-    segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
+    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
+        segmentCompactorProvider);
 
     verify(segmentFactory, times(0)).createSegment();
   }
@@ -98,7 +103,8 @@ public class SegmentManagerImplTest {
   void beforeEach_defaultFunctionality(List<Segment> loadedSegments) throws IOException {
     List<Segment> mockLoadedSegments = new ArrayList<>(loadedSegments);
     doReturn(mockLoadedSegments).when(segmentLoader).loadExistingSegments();
-    segmentManager = new SegmentManagerImpl(executorService, segmentFactory, segmentLoader);
+    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
+        segmentCompactorProvider);
   }
 
   @Test

@@ -1,18 +1,16 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import org.slf4j.Logger;
 
 class SegmentManagerImpl implements SegmentManager {
@@ -22,22 +20,22 @@ class SegmentManagerImpl implements SegmentManager {
   @InjectStorageLogger
   static Logger logger;
 
-  private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;
+  private final Provider<SegmentCompactor> segmentCompactorProvider;
 
   private List<Segment> frozenSegments;
   private Segment activeSegment;
 
-  private SegmentCompactorImpl segmentCompactor;
+  private final AtomicBoolean compactionActive = new AtomicBoolean(false);
   private final AtomicInteger nextCompactionThreshold = new AtomicInteger(
       DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
 
   @Inject
-  SegmentManagerImpl(@StorageExecutorService ExecutorService executorService,
-      SegmentFactory segmentFactory, SegmentLoader segmentLoader)
+  SegmentManagerImpl(SegmentFactory segmentFactory, SegmentLoader segmentLoader,
+      Provider<SegmentCompactor> segmentCompactorProvider)
       throws IOException {
-    this.executorService = executorService;
     this.segmentFactory = segmentFactory;
+    this.segmentCompactorProvider = segmentCompactorProvider;
     initialize(segmentLoader);
   }
 
@@ -109,32 +107,18 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private boolean shouldInitiateCompaction() {
-    return segmentCompactor == null && frozenSegments.size() >= nextCompactionThreshold.get();
+    return !compactionActive.get() && frozenSegments.size() >= nextCompactionThreshold.get();
   }
 
   private void initiateCompaction() {
     logger.info("Initiating Compaction");
-    segmentCompactor = new SegmentCompactorImpl(segmentFactory, frozenSegments);
-    CompletableFuture
-        .supplyAsync(this::performCompaction, executorService)
-        .whenComplete((result, e) -> {
-          if (e != null) {
-            finalizeAfterCompactionFailure(e);
-          }
-        })
-        .thenAccept(this::updateAfterCompaction)
-        // todo: handle segments failed to be closed
-        .thenRunAsync(segmentCompactor::closeAndDeleteSegments, executorService)
-        .thenRun(this::finalizeAfterCompaction);
-  }
-
-  private List<Segment> performCompaction() {
-    logger.info("Performing compaction");
-    try {
-      return segmentCompactor.compactSegments();
-    } catch (IOException e) {
-      throw new CompletionException(e);
-    }
+    compactionActive.set(true);
+    SegmentCompactor segmentCompactor = segmentCompactorProvider.get();
+    segmentCompactor.setPreCompactedSegments(frozenSegments);
+    segmentCompactor.registerCompactionResultsConsumer(this::updateAfterCompaction);
+    segmentCompactor.registerCompactionCompletedRunnable(this::compactionCompleted);
+    segmentCompactor.registerCompactionFailedConsumer(this::compactionFailed);
+    segmentCompactor.compactSegments();
   }
 
   private synchronized void updateAfterCompaction(List<Segment> compactedSegments) {
@@ -148,14 +132,14 @@ class SegmentManagerImpl implements SegmentManager {
     frozenSegments = new CopyOnWriteArrayList<>(newFrozenSegments);
   }
 
-  private void finalizeAfterCompaction() {
-    segmentCompactor = null;
-    logger.info("Compaction completed");
+  private void compactionCompleted() {
+    logger.info("Segment compaction completed");
+    compactionActive.set(false);
   }
 
-  private void finalizeAfterCompactionFailure(Throwable compactionThrowable) {
-    segmentCompactor = null;
-    logger.error("Failed to compact segments", compactionThrowable.getCause());
+  private void compactionFailed(Throwable throwable) {
+    logger.error("Compaction failed", throwable);
+    compactionActive.set(false);
   }
 
 }
