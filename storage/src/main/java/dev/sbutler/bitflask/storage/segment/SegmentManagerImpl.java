@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,7 +42,7 @@ class SegmentManagerImpl implements SegmentManager {
 
   private void initialize(SegmentLoader segmentLoader) throws IOException {
     boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
-    List<Segment> loadedSegments = segmentStoreDirCreated ? new CopyOnWriteArrayList<>()
+    List<Segment> loadedSegments = segmentStoreDirCreated ? new ArrayList<>()
         : segmentLoader.loadExistingSegments();
 
     Segment writableSegment;
