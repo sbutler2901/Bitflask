@@ -3,12 +3,15 @@ package dev.sbutler.bitflask.storage.segment;
 import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import org.slf4j.Logger;
@@ -23,8 +26,7 @@ class SegmentManagerImpl implements SegmentManager {
   private final SegmentFactory segmentFactory;
   private final Provider<SegmentCompactor> segmentCompactorProvider;
 
-  private List<Segment> frozenSegments;
-  private Segment activeSegment;
+  private final AtomicReference<ManagedSegments> managedSegmentsAtomicReference = new AtomicReference<>();
 
   private final AtomicBoolean compactionActive = new AtomicBoolean(false);
   private final AtomicInteger nextCompactionThreshold = new AtomicInteger(
@@ -44,15 +46,16 @@ class SegmentManagerImpl implements SegmentManager {
     List<Segment> loadedSegments = segmentStoreDirCreated ? new CopyOnWriteArrayList<>()
         : segmentLoader.loadExistingSegments();
 
+    Segment writableSegment;
     if (loadedSegments.isEmpty()) {
-      activeSegment = segmentFactory.createSegment();
+      writableSegment = segmentFactory.createSegment();
     } else if (loadedSegments.get(0).exceedsStorageThreshold()) {
-      activeSegment = segmentFactory.createSegment();
+      writableSegment = segmentFactory.createSegment();
     } else {
-      activeSegment = loadedSegments.remove(0);
+      writableSegment = loadedSegments.remove(0);
     }
 
-    this.frozenSegments = loadedSegments;
+    this.managedSegmentsAtomicReference.set(new ManagedSegments(writableSegment, loadedSegments));
   }
 
   @Override
@@ -68,10 +71,11 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private Optional<Segment> findLatestSegmentWithKey(String key) {
-    if (activeSegment.containsKey(key)) {
-      return Optional.of(activeSegment);
+    ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
+    if (managedSegments.writableSegment.containsKey(key)) {
+      return Optional.of(managedSegments.writableSegment);
     }
-    for (Segment segment : frozenSegments) {
+    for (Segment segment : managedSegments.frozenSegments) {
       if (segment.containsKey(key)) {
         return Optional.of(segment);
       }
@@ -81,40 +85,48 @@ class SegmentManagerImpl implements SegmentManager {
 
   @Override
   public void write(String key, String value) throws IOException {
+    Segment writableSegment = managedSegmentsAtomicReference.get().writableSegment;
     logger.info("Writing [{}] : [{}] to segment [{}]", key, value,
-        activeSegment.getSegmentFileKey());
-    activeSegment.write(key, value);
-    checkActiveSegmentAndCompaction();
+        writableSegment.getSegmentFileKey());
+    writableSegment.write(key, value);
+    checkWritableSegmentAndCompaction();
   }
 
-  private synchronized void checkActiveSegmentAndCompaction() throws IOException {
-    if (shouldCreateAndUpdateActiveSegment()) {
-      createNewActiveSegmentAndUpdate();
+  private synchronized void checkWritableSegmentAndCompaction() throws IOException {
+    if (shouldCreateAndUpdateWritableSegment()) {
+      createNewWritableSegmentAndUpdateManagedSegments();
     }
     if (shouldInitiateCompaction()) {
       initiateCompaction();
     }
   }
 
-  private boolean shouldCreateAndUpdateActiveSegment() {
-    return activeSegment.exceedsStorageThreshold();
+  private boolean shouldCreateAndUpdateWritableSegment() {
+    return managedSegmentsAtomicReference.get().writableSegment.exceedsStorageThreshold();
   }
 
-  private void createNewActiveSegmentAndUpdate() throws IOException {
+  private synchronized void createNewWritableSegmentAndUpdateManagedSegments() throws IOException {
     logger.info("Creating new active segment");
-    frozenSegments.add(0, activeSegment);
-    activeSegment = segmentFactory.createSegment();
+    ManagedSegments currentManagedSegments = managedSegmentsAtomicReference.get();
+    Segment newWritableSegment = segmentFactory.createSegment();
+    List<Segment> newFrozenSegments = new ArrayList<>();
+
+    newFrozenSegments.add(currentManagedSegments.writableSegment);
+    newFrozenSegments.addAll(currentManagedSegments.frozenSegments);
+
+    managedSegmentsAtomicReference.set(new ManagedSegments(newWritableSegment, newFrozenSegments));
   }
 
   private boolean shouldInitiateCompaction() {
-    return !compactionActive.get() && frozenSegments.size() >= nextCompactionThreshold.get();
+    return !compactionActive.get() && managedSegmentsAtomicReference.get().frozenSegments.size()
+        >= nextCompactionThreshold.get();
   }
 
   private void initiateCompaction() {
     logger.info("Initiating Compaction");
     compactionActive.set(true);
     SegmentCompactor segmentCompactor = segmentCompactorProvider.get();
-    segmentCompactor.setPreCompactedSegments(frozenSegments);
+    segmentCompactor.setPreCompactedSegments(managedSegmentsAtomicReference.get().frozenSegments);
     segmentCompactor.registerCompactionResultsConsumer(this::updateAfterCompaction);
     segmentCompactor.registerCompactionCompletedRunnable(this::compactionCompleted);
     segmentCompactor.registerCompactionFailedConsumer(this::compactionFailed);
@@ -123,13 +135,19 @@ class SegmentManagerImpl implements SegmentManager {
 
   private synchronized void updateAfterCompaction(List<Segment> compactedSegments) {
     logger.info("Updating after compaction");
+    ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
     Deque<Segment> newFrozenSegments = new ArrayDeque<>();
-    frozenSegments.stream().filter((segment) -> !segment.hasBeenCompacted())
+
+    currentManagedSegment.frozenSegments.stream()
+        .filter((segment) -> !segment.hasBeenCompacted())
         .forEach(newFrozenSegments::offerFirst);
     newFrozenSegments.addAll(compactedSegments);
+
     nextCompactionThreshold.set(
         newFrozenSegments.size() + DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
-    frozenSegments = new CopyOnWriteArrayList<>(newFrozenSegments);
+
+    managedSegmentsAtomicReference.set(
+        new ManagedSegments(currentManagedSegment.writableSegment, newFrozenSegments));
   }
 
   private void compactionCompleted() {
@@ -142,4 +160,11 @@ class SegmentManagerImpl implements SegmentManager {
     compactionActive.set(false);
   }
 
+
+  record ManagedSegments(Segment writableSegment, List<Segment> frozenSegments) {
+
+    ManagedSegments(Segment writableSegment, Collection<Segment> frozenSegments) {
+      this(writableSegment, List.copyOf(frozenSegments));
+    }
+  }
 }
