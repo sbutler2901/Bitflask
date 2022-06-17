@@ -60,12 +60,24 @@ interface Segment {
   void closeAndDelete() throws IOException;
 
   /**
-   * Marks the segment has having been compacted
+   * Marks the segments as frozen, preventing any further writes
+   */
+  void markFrozen();
+
+  /**
+   * Checks if the segment has been marked as frozen
+   *
+   * @return whether the segment is frozen or not
+   */
+  boolean isFrozen();
+
+  /**
+   * Marks the segment as compacted
    */
   void markCompacted();
 
   /**
-   * Checks if a segment has been compacted
+   * Checks if a segment has been marked as compacted
    *
    * @return whether the segment has been compacted or not
    */

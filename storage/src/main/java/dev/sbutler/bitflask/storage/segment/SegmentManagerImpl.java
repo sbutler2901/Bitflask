@@ -54,6 +54,8 @@ class SegmentManagerImpl implements SegmentManager {
       writableSegment = loadedSegments.remove(0);
     }
 
+    loadedSegments.forEach(Segment::markFrozen);
+
     this.managedSegmentsAtomicReference.set(new ManagedSegments(writableSegment, loadedSegments));
   }
 
@@ -110,6 +112,7 @@ class SegmentManagerImpl implements SegmentManager {
     Segment newWritableSegment = segmentFactory.createSegment();
     List<Segment> newFrozenSegments = new ArrayList<>();
 
+    currentManagedSegments.writableSegment.markFrozen();
     newFrozenSegments.add(currentManagedSegments.writableSegment);
     newFrozenSegments.addAll(currentManagedSegments.frozenSegments);
 

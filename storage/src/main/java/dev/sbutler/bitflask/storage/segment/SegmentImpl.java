@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 class SegmentImpl implements Segment {
@@ -17,7 +16,8 @@ class SegmentImpl implements Segment {
   private final SegmentFile segmentFile;
   private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap = new ConcurrentHashMap<>();
   private final AtomicLong currentFileWriteOffset = new AtomicLong();
-  private final AtomicBoolean hasBeenCompacted = new AtomicBoolean(false);
+  private volatile boolean isFrozen = false;
+  private volatile boolean hasBeenCompacted = false;
 
   public SegmentImpl(SegmentFile segmentFile) throws IOException {
     this.segmentFile = segmentFile;
@@ -47,6 +47,10 @@ class SegmentImpl implements Segment {
 
   @Override
   public void write(String key, String value) throws IOException {
+    if (isFrozen) {
+      throw new RuntimeException("This segment has been frozen and cannot be written to");
+    }
+
     byte[] encodedKeyAndValue = encodeKeyAndValue(key, value);
     long writeOffset = currentFileWriteOffset.getAndAdd(encodedKeyAndValue.length);
 
@@ -126,13 +130,23 @@ class SegmentImpl implements Segment {
   }
 
   @Override
+  public void markFrozen() {
+    isFrozen = true;
+  }
+
+  @Override
+  public boolean isFrozen() {
+    return isFrozen;
+  }
+
+  @Override
   public void markCompacted() {
-    hasBeenCompacted.set(true);
+    hasBeenCompacted = true;
   }
 
   @Override
   public boolean hasBeenCompacted() {
-    return hasBeenCompacted.get();
+    return hasBeenCompacted;
   }
 
 }
