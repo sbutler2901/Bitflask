@@ -137,6 +137,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
     }
   }
 
+  // todo: convert to be asynchronous
   public List<Segment> closeAndDeleteSegments() {
     List<Segment> failedSegments = new ArrayList<>();
     for (Segment segment : preCompactedSegments) {

@@ -8,6 +8,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 class SegmentImpl implements Segment {
 
@@ -16,8 +18,10 @@ class SegmentImpl implements Segment {
   private final SegmentFile segmentFile;
   private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap = new ConcurrentHashMap<>();
   private final AtomicLong currentFileWriteOffset = new AtomicLong();
+  private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
   private volatile boolean isFrozen = false;
   private volatile boolean hasBeenCompacted = false;
+  private volatile boolean isClosed = false;
 
   public SegmentImpl(SegmentFile segmentFile) throws IOException {
     this.segmentFile = segmentFile;
@@ -28,6 +32,7 @@ class SegmentImpl implements Segment {
     }
   }
 
+  // todo: handle empty spaces that occur because of failed writes
   private void loadFileEntries() throws IOException {
     long nextOffsetStart = 0;
     while (nextOffsetStart < currentFileWriteOffset.get()) {
@@ -47,14 +52,22 @@ class SegmentImpl implements Segment {
 
   @Override
   public void write(String key, String value) throws IOException {
-    if (isFrozen) {
+    if (isClosed) {
+      throw new RuntimeException("This segment has been closed and cannot be written to");
+    } else if (isFrozen) {
       throw new RuntimeException("This segment has been frozen and cannot be written to");
     }
 
     byte[] encodedKeyAndValue = encodeKeyAndValue(key, value);
     long writeOffset = currentFileWriteOffset.getAndAdd(encodedKeyAndValue.length);
 
-    segmentFile.write(encodedKeyAndValue, writeOffset);
+    readWriteLock.writeLock().lock();
+    try {
+      segmentFile.write(encodedKeyAndValue, writeOffset);
+    } finally {
+      readWriteLock.writeLock().unlock();
+    }
+
     keyedEntryFileOffsetMap.merge(key, writeOffset, (retrievedOffset, writtenOffset) ->
         retrievedOffset < writtenOffset
             ? writtenOffset
@@ -64,6 +77,9 @@ class SegmentImpl implements Segment {
 
   @Override
   public Optional<String> read(String key) throws IOException {
+    if (isClosed) {
+      throw new RuntimeException("This segment has been closed and cannot be read from");
+    }
     if (!containsKey(key)) {
       return Optional.empty();
     }
@@ -72,9 +88,14 @@ class SegmentImpl implements Segment {
     long valueLengthOffsetStart = entryFileOffset + 1 + key.length();
     long valueOffsetStart = valueLengthOffsetStart + 1;
 
-    int valueLength = segmentFile.readByte(valueLengthOffsetStart);
-    String value = segmentFile.readAsString(valueLength, valueOffsetStart);
-    return Optional.of(value);
+    readWriteLock.readLock().lock();
+    try {
+      int valueLength = segmentFile.readByte(valueLengthOffsetStart);
+      String value = segmentFile.readAsString(valueLength, valueOffsetStart);
+      return Optional.of(value);
+    } finally {
+      readWriteLock.readLock().unlock();
+    }
   }
 
   /**
@@ -125,8 +146,14 @@ class SegmentImpl implements Segment {
 
   @Override
   public void closeAndDelete() throws IOException {
-    segmentFile.close();
-    Files.delete(segmentFile.getSegmentFilePath());
+    readWriteLock.writeLock().lock();
+    isClosed = true;
+    try {
+      segmentFile.close();
+      Files.delete(segmentFile.getSegmentFilePath());
+    } finally {
+      readWriteLock.writeLock().unlock();
+    }
   }
 
   @Override
@@ -147,6 +174,11 @@ class SegmentImpl implements Segment {
   @Override
   public boolean hasBeenCompacted() {
     return hasBeenCompacted;
+  }
+
+  @Override
+  public boolean isClosed() {
+    return isClosed;
   }
 
 }

@@ -83,4 +83,10 @@ interface Segment {
    */
   boolean hasBeenCompacted();
 
+  /**
+   * Checks if the file has been close and no longer able to be read or written
+   *
+   * @return whether the segment has been closed or not
+   */
+  boolean isClosed();
 }
