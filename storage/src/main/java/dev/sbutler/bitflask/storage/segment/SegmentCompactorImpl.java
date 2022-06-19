@@ -7,10 +7,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 /**
@@ -27,6 +30,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
   private final List<Runnable> compactionCompleteRunnables = new ArrayList<>();
   private final List<Consumer<Throwable>> compactionFailedConsumers = new ArrayList<>();
   private List<Segment> preCompactedSegments = null;
+  private volatile boolean compactionStarted = false;
 
   SegmentCompactorImpl(ExecutorService executorService, SegmentFactory segmentFactory) {
     this.executorService = executorService;
@@ -37,12 +41,14 @@ class SegmentCompactorImpl implements SegmentCompactor {
   public void compactSegments() {
     preCompactionValidation();
 
+    compactionStarted = true;
     CompletableFuture
         .supplyAsync(this::createKeySegmentMap, executorService)
         .thenApplyAsync(this::createCompactedSegments, executorService)
         .whenCompleteAsync(this::handleCompactionOutcome, executorService)
         .thenAcceptAsync(this::runRegisteredCompactionResultsConsumers, executorService)
-        .thenRunAsync(this::runRegisteredCompletionRunnables, executorService);
+        .thenRunAsync(this::runRegisteredCompletionRunnables, executorService)
+        .thenRunAsync(this::closeAndDeleteSegments, executorService);
   }
 
   private void preCompactionValidation() {
@@ -54,6 +60,10 @@ class SegmentCompactorImpl implements SegmentCompactor {
 
   @Override
   public void setPreCompactedSegments(List<Segment> preCompactedSegments) {
+    if (compactionStarted) {
+      throw new IllegalCallerException(
+          "Compaction has been started and segments cannot be changed");
+    }
     this.preCompactedSegments = List.copyOf(preCompactedSegments);
   }
 
@@ -137,16 +147,30 @@ class SegmentCompactorImpl implements SegmentCompactor {
     }
   }
 
-  // todo: convert to be asynchronous
-  public List<Segment> closeAndDeleteSegments() {
-    List<Segment> failedSegments = new ArrayList<>();
-    for (Segment segment : preCompactedSegments) {
-      try {
-        segment.closeAndDelete();
-      } catch (IOException e) {
-        failedSegments.add(segment);
+  private void closeAndDeleteSegments() {
+    try {
+      List<Future<Segment>> closeAndDeleteResults = executorService.invokeAll(
+          preCompactedSegments.stream().map(segment -> (Callable<Segment>) () -> {
+            segment.closeAndDelete();
+            return segment;
+          }).toList()
+      );
+      for (int i = 0; i < preCompactedSegments.size(); i++) {
+        Segment closedSegment = preCompactedSegments.get(i);
+        Future<Segment> closedSegmentResults = closeAndDeleteResults.get(i);
+
+        try {
+          closedSegmentResults.get();
+        } catch (InterruptedException e) {
+          System.err.printf("Segment [%s] interrupted while being closed\n",
+              closedSegment.getSegmentFileKey());
+        } catch (ExecutionException e) {
+          System.err.printf("Segment [%s] failed while being closed. %s\n",
+              closedSegment.getSegmentFileKey(), e.getCause().getMessage());
+        }
       }
+    } catch (InterruptedException e) {
+      System.err.println("Compactor interrupted while closing and deleting compacted segments");
     }
-    return failedSegments;
   }
 }
