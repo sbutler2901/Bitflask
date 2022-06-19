@@ -1,5 +1,7 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segment.compactor;
 
+import dev.sbutler.bitflask.storage.segment.Segment;
+import dev.sbutler.bitflask.storage.segment.SegmentFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;

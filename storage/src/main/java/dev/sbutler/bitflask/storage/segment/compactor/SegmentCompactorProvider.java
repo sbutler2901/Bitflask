@@ -1,11 +1,12 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segment.compactor;
 
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
+import dev.sbutler.bitflask.storage.segment.SegmentFactory;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
-public class SegmentCompactorProvider implements Provider<SegmentCompactor> {
+class SegmentCompactorProvider implements Provider<SegmentCompactor> {
 
   private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;

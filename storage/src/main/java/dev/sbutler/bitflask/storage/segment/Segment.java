@@ -7,7 +7,7 @@ import java.util.Set;
 /**
  * Represents a single self-contained file for storing data
  */
-interface Segment {
+public interface Segment {
 
   /**
    * Writes the provided key and value to the segment file
