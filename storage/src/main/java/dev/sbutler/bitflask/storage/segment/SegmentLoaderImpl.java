@@ -107,7 +107,7 @@ class SegmentLoaderImpl implements SegmentLoader {
   private List<Segment> loadSegments(List<SegmentFile> segmentFiles) throws IOException {
     List<Callable<Segment>> segmentCallables = new ArrayList<>();
     for (SegmentFile segmentFile : segmentFiles) {
-      segmentCallables.add(() -> new SegmentImpl(segmentFile));
+      segmentCallables.add(() -> segmentFactory.createSegmentFromFile(segmentFile));
     }
     try {
       List<Future<Segment>> segmentFutures = executorService.invokeAll(segmentCallables);

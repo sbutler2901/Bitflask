@@ -6,11 +6,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+// todo: implement tests
 @ExtendWith(MockitoExtension.class)
-class SegmentLoaderImpl {
+class SegmentLoaderImplTest {
 
   @InjectMocks
-  SegmentLoaderImpl segmentLoader;
+  SegmentLoaderImplTest segmentLoader;
   @Mock
   SegmentFactory segmentFactory;
 
