@@ -19,18 +19,12 @@ interface SegmentCompactor {
   void compactSegments();
 
   /**
-   * Registers a consumer of the compacted segments.
+   * Registers a consumer of compaction results that is called once compaction is completed.
    *
-   * @param compactionResultsConsumer the consumer to be called with the compacted segments
+   * @param compactionCompletedConsumer the consumer to be called with the compaction results.
    */
-  void registerCompactedSegmentsConsumer(Consumer<List<Segment>> compactionResultsConsumer);
-
-  /**
-   * Registers a runnable to be executed after compaction has completed.
-   *
-   * @param compactionCompletedRunnable the runnable to be called after compaction completion
-   */
-  void registerCompactionCompletedRunnable(Runnable compactionCompletedRunnable);
+  void registerCompactionCompletedConsumer(
+      Consumer<CompactionCompletionResults> compactionCompletedConsumer);
 
   /**
    * Registers a consumer of the error that caused compaction to fail.
@@ -38,4 +32,25 @@ interface SegmentCompactor {
    * @param compactionFailedConsumer the consumer to be called with the compaction failure
    */
   void registerCompactionFailedConsumer(Consumer<Throwable> compactionFailedConsumer);
+
+  /**
+   * Used to transfer the results of a successful compaction execution.
+   */
+  interface CompactionCompletionResults {
+
+    /**
+     * Provides the compacted segments resulting from running compaction.
+     *
+     * @return the compacted segments
+     */
+    List<Segment> compactedSegments();
+
+    /**
+     * Provides the pre-compacted segments used by the compactor during the compaction process.
+     *
+     * @return the pre-compacted segments
+     */
+    List<Segment> preCompactionSegments();
+  }
+
 }

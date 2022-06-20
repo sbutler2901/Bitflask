@@ -125,10 +125,16 @@ class SegmentManagerImpl implements SegmentManager {
     compactionActive.set(true);
     SegmentCompactor segmentCompactor = segmentCompactorFactory.create(
         managedSegmentsAtomicReference.get().frozenSegments);
-    segmentCompactor.registerCompactedSegmentsConsumer(this::updateAfterCompaction);
-    segmentCompactor.registerCompactionCompletedRunnable(this::compactionCompleted);
-    segmentCompactor.registerCompactionFailedConsumer(this::compactionFailed);
+    segmentCompactor.registerCompactionCompletedConsumer(this::handleCompactionCompleted);
+    segmentCompactor.registerCompactionFailedConsumer(this::handleCompactionFailed);
     segmentCompactor.compactSegments();
+  }
+
+  private void handleCompactionCompleted(
+      SegmentCompactor.CompactionCompletionResults compactionCompletionResults) {
+    updateAfterCompaction(compactionCompletionResults.compactedSegments());
+    queuePreCompactedSegmentsForDeletion(compactionCompletionResults.preCompactionSegments());
+    compactionActive.set(false);
   }
 
   private synchronized void updateAfterCompaction(List<Segment> compactedSegments) {
@@ -148,12 +154,12 @@ class SegmentManagerImpl implements SegmentManager {
         new ManagedSegments(currentManagedSegment.writableSegment, newFrozenSegments));
   }
 
-  private void compactionCompleted() {
-    logger.info("Segment compaction completed");
-    compactionActive.set(false);
+  private void queuePreCompactedSegmentsForDeletion(List<Segment> preCompactedSegments) {
+    logger.info("Queueing segments for deletion after compaction");
+    // todo
   }
 
-  private void compactionFailed(Throwable throwable) {
+  private void handleCompactionFailed(Throwable throwable) {
     logger.error("Compaction failed", throwable);
     compactionActive.set(false);
   }

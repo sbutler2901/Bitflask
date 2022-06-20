@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionCompletionResults;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -209,49 +210,28 @@ public class SegmentManagerImplTest {
     doReturn(false).when(newActiveSegment).containsKey(key);
     doReturn(true).when(compactedSegment).containsKey(key);
     doReturn(Optional.of(value)).when(compactedSegment).read(key);
+    CompactionCompletionResults compactionCompletionResults = mock(
+        CompactionCompletionResults.class);
+    doReturn(List.of(compactedSegment)).when(compactionCompletionResults).compactedSegments();
 
-    ArgumentCaptor<Consumer<List<Segment>>> consumerArgumentCaptor = ArgumentCaptor.forClass(
+    ArgumentCaptor<Consumer<CompactionCompletionResults>> consumerArgumentCaptor = ArgumentCaptor.forClass(
         Consumer.class);
     // Act
     /// Initiate compaction
     segmentManager.write(key, value);
     /// Active compaction results function
-    verify(segmentCompactor).registerCompactedSegmentsConsumer(consumerArgumentCaptor.capture());
-    Consumer<List<Segment>> compactionResultsConsumer = consumerArgumentCaptor.getValue();
-    compactionResultsConsumer.accept(List.of(compactedSegment));
+    verify(segmentCompactor).registerCompactionCompletedConsumer(consumerArgumentCaptor.capture());
+    Consumer<CompactionCompletionResults> compactionResultsConsumer = consumerArgumentCaptor.getValue();
+    compactionResultsConsumer.accept(compactionCompletionResults);
     /// Verify post update changes
     segmentManager.read(key);
+    segmentManager.write(key, value);
 
     // Assert
+    verify(segmentCompactor, times(1)).compactSegments();
     verify(compactedSegment, times(1)).containsKey(key);
     verify(compactedSegment, times(1)).read(key);
-  }
-
-  @Test
-  void write_compaction_completed() throws IOException {
-    // Arrange
-    /// Activate compaction initiation
-    beforeEach_defaultFunctionality(List.of(activeSegment, frozenSegment, mock(Segment.class)));
-    doReturn(true).when(activeSegment).exceedsStorageThreshold();
-    Segment newActiveSegment = mock(Segment.class);
-    doReturn(newActiveSegment).when(segmentFactory).createSegment();
-    /// Enable compaction mocking
-    SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
-    doReturn(segmentCompactor).when(segmentCompactorFactory).create(anyList());
-    // Setup for after compaction update
-    String key = "key", value = "value";
-    ArgumentCaptor<Runnable> runnableArgumentCaptor = ArgumentCaptor.forClass(Runnable.class);
-    // Act
-    /// Initiate compaction
-    segmentManager.write(key, value);
-    /// Active compaction results function
-    verify(segmentCompactor).registerCompactionCompletedRunnable(runnableArgumentCaptor.capture());
-    Runnable compactionCompletedRunnable = runnableArgumentCaptor.getValue();
-    compactionCompletedRunnable.run();
-    segmentManager.write(key, value);
-    // Assert
     verify(newActiveSegment, times(1)).write(key, value);
-    verify(segmentCompactor, times(2)).compactSegments();
   }
 
   @Test

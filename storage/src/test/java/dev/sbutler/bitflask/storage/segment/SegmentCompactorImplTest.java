@@ -13,15 +13,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionCompletionResults;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,22 +51,6 @@ public class SegmentCompactorImplTest {
     }).when(executorService).execute(any(Runnable.class));
   }
 
-  @SuppressWarnings("unchecked")
-  void mockCloseAndDeleteInvokeAll(List<Future<?>> results) throws InterruptedException {
-    doAnswer((InvocationOnMock invocation) -> {
-      List<Callable<?>> closeAndDeleteSegments =
-          ((List<Callable<?>>) invocation.getArguments()[0]);
-      closeAndDeleteSegments.forEach((callable) -> {
-        try {
-          callable.call();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      });
-      return results;
-    }).when(executorService).invokeAll(any(List.class));
-  }
-
   @Test
   void duplicateKeyValueRemoval() throws Exception {
     // Arrange
@@ -81,18 +64,14 @@ public class SegmentCompactorImplTest {
     doReturn(createdSegment).when(segmentFactory).createSegment();
     doReturn(false).when(createdSegment).exceedsStorageThreshold();
 
-    List<Segment> compactedSegments = new ArrayList<>();
-    segmentCompactorImpl.registerCompactedSegmentsConsumer(compactedSegments::addAll);
-
-    mockCloseAndDeleteInvokeAll(List.of(
-        CompletableFuture.completedFuture(Void.TYPE),
-        CompletableFuture.completedFuture(Void.TYPE)
-    ));
+    AtomicReference<CompactionCompletionResults> compactionCompletionResults = new AtomicReference<>();
+    segmentCompactorImpl.registerCompactionCompletedConsumer(compactionCompletionResults::set);
 
     // Act
     segmentCompactorImpl.compactSegments();
 
     // Assert
+    List<Segment> compactedSegments = compactionCompletionResults.get().compactedSegments();
     assertEquals(1, compactedSegments.size());
     assertEquals(createdSegment, compactedSegments.get(0));
     verify(createdSegment, times(1)).write("0-key", "0-value");
@@ -100,10 +79,6 @@ public class SegmentCompactorImplTest {
     verify(createdSegment, times(1)).write("key", "0-value");
     verify(headSegment, times(1)).markCompacted();
     verify(tailSegment, times(1)).markCompacted();
-    verify(headSegment, times(1)).close();
-    verify(tailSegment, times(1)).close();
-    verify(headSegment, times(1)).delete();
-    verify(tailSegment, times(1)).delete();
   }
 
   @Test
@@ -118,18 +93,14 @@ public class SegmentCompactorImplTest {
     doReturn(createdSegment).when(segmentFactory).createSegment();
     when(createdSegment.exceedsStorageThreshold()).thenReturn(true).thenReturn(false);
 
-    List<Segment> compactedSegments = new ArrayList<>();
-    segmentCompactorImpl.registerCompactedSegmentsConsumer(compactedSegments::addAll);
-
-    mockCloseAndDeleteInvokeAll(List.of(
-        CompletableFuture.completedFuture(Void.TYPE),
-        CompletableFuture.completedFuture(Void.TYPE)
-    ));
+    AtomicReference<CompactionCompletionResults> compactionCompletionResults = new AtomicReference<>();
+    segmentCompactorImpl.registerCompactionCompletedConsumer(compactionCompletionResults::set);
 
     // Act
     segmentCompactorImpl.compactSegments();
 
     // Assert
+    List<Segment> compactedSegments = compactionCompletionResults.get().compactedSegments();
     assertEquals(2, compactedSegments.size());
     verify(segmentFactory, times(2)).createSegment();
   }

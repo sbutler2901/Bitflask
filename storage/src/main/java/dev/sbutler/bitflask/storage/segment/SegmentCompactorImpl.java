@@ -10,13 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 class SegmentCompactorImpl implements SegmentCompactor {
@@ -24,8 +21,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
   private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;
   private final List<Segment> preCompactedSegments;
-  private final List<Consumer<List<Segment>>> compactionResultsConsumers = new ArrayList<>();
-  private final List<Runnable> compactionCompleteRunnables = new ArrayList<>();
+  private final List<Consumer<CompactionCompletionResults>> compactionCompletedConsumers = new ArrayList<>();
   private final List<Consumer<Throwable>> compactionFailedConsumers = new ArrayList<>();
   private volatile boolean compactionStarted = false;
 
@@ -48,33 +44,23 @@ class SegmentCompactorImpl implements SegmentCompactor {
     CompletableFuture
         .supplyAsync(this::createKeySegmentMap, executorService)
         .thenApplyAsync(this::createCompactedSegments, executorService)
-        .whenCompleteAsync(this::handleCompactionOutcome, executorService)
-        .thenAcceptAsync(this::runRegisteredCompactionResultsConsumers, executorService)
-        .thenRunAsync(this::runRegisteredCompletionRunnables, executorService)
-        .thenRunAsync(this::closeAndDeleteSegments, executorService);
+        .whenCompleteAsync(this::handleCompactionOutcome, executorService);
   }
 
   @Override
-  public void registerCompactedSegmentsConsumer(Consumer<List<Segment>> compactionResultsConsumer) {
-    compactionResultsConsumers.add(compactionResultsConsumer);
+  public void registerCompactionCompletedConsumer(
+      Consumer<CompactionCompletionResults> compactionCompletedConsumer) {
+    compactionCompletedConsumers.add(compactionCompletedConsumer);
   }
 
-  @Override
-  public void registerCompactionCompletedRunnable(Runnable compactionCompletedRunnable) {
-    compactionCompleteRunnables.add(compactionCompletedRunnable);
+  private void runRegisteredCompactionCompletedConsumers(
+      CompactionCompletionResults compactionCompletionResults) {
+    compactionCompletedConsumers.forEach(consumer -> consumer.accept(compactionCompletionResults));
   }
 
   @Override
   public void registerCompactionFailedConsumer(Consumer<Throwable> compactionFailedConsumer) {
     compactionFailedConsumers.add(compactionFailedConsumer);
-  }
-
-  private void runRegisteredCompactionResultsConsumers(List<Segment> compactedSegments) {
-    compactionResultsConsumers.forEach(consumer -> consumer.accept(compactedSegments));
-  }
-
-  private void runRegisteredCompletionRunnables() {
-    compactionCompleteRunnables.forEach(Runnable::run);
   }
 
   private void runRegisteredCompactionFailedConsumers(Throwable throwable) {
@@ -121,11 +107,13 @@ class SegmentCompactorImpl implements SegmentCompactor {
     return compactedSegments;
   }
 
-  private void handleCompactionOutcome(List<Segment> results, Throwable throwable) {
+  private void handleCompactionOutcome(List<Segment> compactedSegments, Throwable throwable) {
     if (throwable != null) {
       runRegisteredCompactionFailedConsumers(throwable.getCause());
     } else {
       markSegmentsCompacted();
+      runRegisteredCompactionCompletedConsumers(
+          new CompactionCompletionResultsImpl(compactedSegments, preCompactedSegments));
     }
   }
 
@@ -135,31 +123,39 @@ class SegmentCompactorImpl implements SegmentCompactor {
     }
   }
 
-  private void closeAndDeleteSegments() {
-    try {
-      List<Future<Void>> closeAndDeleteResults = executorService.invokeAll(
-          preCompactedSegments.stream().map(segment -> (Callable<Void>) () -> {
-            // todo: separate
-            segment.close();
-            segment.delete();
-            return null;
-          }).toList()
-      );
-      for (int i = 0; i < preCompactedSegments.size(); i++) {
-        Segment closedSegment = preCompactedSegments.get(i);
+  // todo: move to another class
+//  private void closeAndDeleteSegments() {
+//    try {
+//      List<Future<Void>> closeAndDeleteResults = executorService.invokeAll(
+//          preCompactedSegments.stream().map(segment -> (Callable<Void>) () -> {
+//            // todo: separate
+//            segment.close();
+//            segment.delete();
+//            return null;
+//          }).toList()
+//      );
+//      for (int i = 0; i < preCompactedSegments.size(); i++) {
+//        Segment closedSegment = preCompactedSegments.get(i);
+//
+//        try {
+//          closeAndDeleteResults.get(i).get();
+//        } catch (InterruptedException e) {
+//          System.err.printf("Segment [%s] interrupted while being closed\n",
+//              closedSegment.getSegmentFileKey());
+//        } catch (ExecutionException e) {
+//          System.err.printf("Segment [%s] failed while being closed. %s\n",
+//              closedSegment.getSegmentFileKey(), e.getCause().getMessage());
+//        }
+//      }
+//    } catch (InterruptedException e) {
+//      System.err.println("Compactor interrupted while closing and deleting compacted segments");
+//    }
+//  }
 
-        try {
-          closeAndDeleteResults.get(i).get();
-        } catch (InterruptedException e) {
-          System.err.printf("Segment [%s] interrupted while being closed\n",
-              closedSegment.getSegmentFileKey());
-        } catch (ExecutionException e) {
-          System.err.printf("Segment [%s] failed while being closed. %s\n",
-              closedSegment.getSegmentFileKey(), e.getCause().getMessage());
-        }
-      }
-    } catch (InterruptedException e) {
-      System.err.println("Compactor interrupted while closing and deleting compacted segments");
-    }
+  private record CompactionCompletionResultsImpl(List<Segment> compactedSegments,
+                                                 List<Segment> preCompactionSegments) implements
+      CompactionCompletionResults {
+
   }
+
 }
