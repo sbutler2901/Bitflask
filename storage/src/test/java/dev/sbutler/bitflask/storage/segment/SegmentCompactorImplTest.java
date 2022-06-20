@@ -82,7 +82,7 @@ public class SegmentCompactorImplTest {
     doReturn(false).when(createdSegment).exceedsStorageThreshold();
 
     List<Segment> compactedSegments = new ArrayList<>();
-    segmentCompactorImpl.registerCompactionResultsConsumer(compactedSegments::addAll);
+    segmentCompactorImpl.registerCompactedSegmentsConsumer(compactedSegments::addAll);
 
     mockCloseAndDeleteInvokeAll(List.of(
         CompletableFuture.completedFuture(Void.TYPE),
@@ -121,7 +121,7 @@ public class SegmentCompactorImplTest {
     when(createdSegment.exceedsStorageThreshold()).thenReturn(true).thenReturn(false);
 
     List<Segment> compactedSegments = new ArrayList<>();
-    segmentCompactorImpl.registerCompactionResultsConsumer(compactedSegments::addAll);
+    segmentCompactorImpl.registerCompactedSegmentsConsumer(compactedSegments::addAll);
 
     mockCloseAndDeleteInvokeAll(List.of(
         CompletableFuture.completedFuture(Void.TYPE),

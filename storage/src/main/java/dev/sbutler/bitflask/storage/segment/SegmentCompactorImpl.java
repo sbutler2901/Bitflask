@@ -68,7 +68,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
   }
 
   @Override
-  public void registerCompactionResultsConsumer(Consumer<List<Segment>> compactionResultsConsumer) {
+  public void registerCompactedSegmentsConsumer(Consumer<List<Segment>> compactionResultsConsumer) {
     compactionResultsConsumers.add(compactionResultsConsumer);
   }
 

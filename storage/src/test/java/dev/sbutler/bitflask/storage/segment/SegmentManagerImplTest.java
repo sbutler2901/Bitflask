@@ -217,7 +217,7 @@ public class SegmentManagerImplTest {
     /// Initiate compaction
     segmentManager.write(key, value);
     /// Active compaction results function
-    verify(segmentCompactor).registerCompactionResultsConsumer(consumerArgumentCaptor.capture());
+    verify(segmentCompactor).registerCompactedSegmentsConsumer(consumerArgumentCaptor.capture());
     Consumer<List<Segment>> compactionResultsConsumer = consumerArgumentCaptor.getValue();
     compactionResultsConsumer.accept(List.of(compactedSegment));
     /// Verify post update changes

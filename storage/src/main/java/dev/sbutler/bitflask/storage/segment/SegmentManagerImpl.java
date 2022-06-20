@@ -129,7 +129,7 @@ class SegmentManagerImpl implements SegmentManager {
     compactionActive.set(true);
     SegmentCompactor segmentCompactor = segmentCompactorProvider.get();
     segmentCompactor.setPreCompactedSegments(managedSegmentsAtomicReference.get().frozenSegments);
-    segmentCompactor.registerCompactionResultsConsumer(this::updateAfterCompaction);
+    segmentCompactor.registerCompactedSegmentsConsumer(this::updateAfterCompaction);
     segmentCompactor.registerCompactionCompletedRunnable(this::compactionCompleted);
     segmentCompactor.registerCompactionFailedConsumer(this::compactionFailed);
     segmentCompactor.compactSegments();
