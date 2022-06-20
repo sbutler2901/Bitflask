@@ -63,7 +63,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
   @Override
   public void setPreCompactedSegments(List<Segment> preCompactedSegments) {
     if (compactionStarted) {
-      throw new IllegalCallerException(
+      throw new IllegalStateException(
           "Compaction has been started and segments cannot be changed");
     }
     this.preCompactedSegments = List.copyOf(preCompactedSegments);
@@ -96,14 +96,6 @@ class SegmentCompactorImpl implements SegmentCompactor {
     compactionFailedConsumers.forEach(consumer -> consumer.accept(throwable));
   }
 
-  private void handleCompactionOutcome(List<Segment> results, Throwable throwable) {
-    if (throwable != null) {
-      runRegisteredCompactionFailedConsumers(throwable.getCause());
-    } else {
-      markSegmentsCompacted();
-    }
-  }
-
   private Map<String, Segment> createKeySegmentMap() {
     Map<String, Segment> keySegmentMap = new HashMap<>();
     for (Segment segment : preCompactedSegments) {
@@ -129,11 +121,12 @@ class SegmentCompactorImpl implements SegmentCompactor {
           throw new RuntimeException("Compaction failure: value not found while reading segment");
         }
 
-        currentCompactedSegment.write(key, valueOptional.get());
         if (currentCompactedSegment.exceedsStorageThreshold()) {
           compactedSegments.add(0, currentCompactedSegment);
           currentCompactedSegment = segmentFactory.createSegment();
         }
+
+        currentCompactedSegment.write(key, valueOptional.get());
       }
       compactedSegments.add(0, currentCompactedSegment);
     } catch (IOException e) {
@@ -141,6 +134,14 @@ class SegmentCompactorImpl implements SegmentCompactor {
     }
 
     return compactedSegments;
+  }
+
+  private void handleCompactionOutcome(List<Segment> results, Throwable throwable) {
+    if (throwable != null) {
+      runRegisteredCompactionFailedConsumers(throwable.getCause());
+    } else {
+      markSegmentsCompacted();
+    }
   }
 
   private void markSegmentsCompacted() {
@@ -151,18 +152,17 @@ class SegmentCompactorImpl implements SegmentCompactor {
 
   private void closeAndDeleteSegments() {
     try {
-      List<Future<Segment>> closeAndDeleteResults = executorService.invokeAll(
-          preCompactedSegments.stream().map(segment -> (Callable<Segment>) () -> {
+      List<Future<Void>> closeAndDeleteResults = executorService.invokeAll(
+          preCompactedSegments.stream().map(segment -> (Callable<Void>) () -> {
             segment.closeAndDelete();
-            return segment;
+            return null;
           }).toList()
       );
       for (int i = 0; i < preCompactedSegments.size(); i++) {
         Segment closedSegment = preCompactedSegments.get(i);
-        Future<Segment> closedSegmentResults = closeAndDeleteResults.get(i);
 
         try {
-          closedSegmentResults.get();
+          closeAndDeleteResults.get(i).get();
         } catch (InterruptedException e) {
           System.err.printf("Segment [%s] interrupted while being closed\n",
               closedSegment.getSegmentFileKey());
