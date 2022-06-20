@@ -36,6 +36,11 @@ class SegmentFactoryImpl implements SegmentFactory {
   @Override
   public Segment createSegment() throws IOException {
     SegmentFile segmentFile = createSegmentFile();
+    return createSegmentFromFile(segmentFile);
+  }
+
+  @Override
+  public Segment createSegmentFromFile(SegmentFile segmentFile) throws IOException {
     Segment newSegment = new SegmentImpl(segmentFile);
     logger.info("Created new segment with fileKey [{}]", newSegment.getSegmentFileKey());
     return newSegment;

@@ -7,6 +7,8 @@ public interface SegmentFactory {
 
   Segment createSegment() throws IOException;
 
+  Segment createSegmentFromFile(SegmentFile segmentFile) throws IOException;
+
   void setSegmentStartIndex(int segmentStartIndex);
 
   /**
