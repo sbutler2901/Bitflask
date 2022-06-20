@@ -3,6 +3,13 @@ package dev.sbutler.bitflask.storage.segment;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * Asynchronously compacts multiple segments by de-duplicating key:value pairs and create new
+ * segments to store the deduplicate pairs. The provided segments will be deleted after all have
+ * been successfully compacted.
+ * <p>
+ * Callbacks can be registered to be executed after the various stages of compaction complete.
+ */
 interface SegmentCompactor {
 
   /**

@@ -19,12 +19,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
-/**
- * Handler compacting the provided segments into new segments only keeping the latest key:value
- * pairs.
- * <p>
- * Note: A copy of the provided preCompactedSegments will be made during construction.
- */
 class SegmentCompactorImpl implements SegmentCompactor {
 
   private final ExecutorService executorService;
@@ -41,7 +35,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
       @Assisted List<Segment> preCompactedSegments) {
     this.executorService = executorService;
     this.segmentFactory = segmentFactory;
-    this.preCompactedSegments = preCompactedSegments;
+    this.preCompactedSegments = List.copyOf(preCompactedSegments);
   }
 
   @Override
