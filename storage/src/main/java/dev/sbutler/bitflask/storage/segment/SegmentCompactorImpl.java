@@ -139,7 +139,9 @@ class SegmentCompactorImpl implements SegmentCompactor {
     try {
       List<Future<Void>> closeAndDeleteResults = executorService.invokeAll(
           preCompactedSegments.stream().map(segment -> (Callable<Void>) () -> {
-            segment.closeAndDelete();
+            // todo: separate
+            segment.close();
+            segment.delete();
             return null;
           }).toList()
       );

@@ -100,8 +100,10 @@ public class SegmentCompactorImplTest {
     verify(createdSegment, times(1)).write("key", "0-value");
     verify(headSegment, times(1)).markCompacted();
     verify(tailSegment, times(1)).markCompacted();
-    verify(headSegment, times(1)).closeAndDelete();
-    verify(tailSegment, times(1)).closeAndDelete();
+    verify(headSegment, times(1)).close();
+    verify(tailSegment, times(1)).close();
+    verify(headSegment, times(1)).delete();
+    verify(tailSegment, times(1)).delete();
   }
 
   @Test

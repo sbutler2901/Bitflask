@@ -55,21 +55,25 @@ interface Segment {
   int getSegmentFileKey();
 
   /**
-   * Deletes the segment from the filesystem
-   */
-  void closeAndDelete() throws IOException;
-
-  /**
-   * Marks the segments as frozen, preventing any further writes
-   */
-  void markFrozen();
-
-  /**
-   * Checks if the segment has been marked as frozen
+   * Closes the segment for reading and writing
    *
-   * @return whether the segment is frozen or not
+   * @throws IOException if there is an issue closing the segment
    */
-  boolean isFrozen();
+  void close() throws IOException;
+
+  /**
+   * Checks if the segment is open and able to be read or written
+   *
+   * @return whether the segment is open or not
+   */
+  boolean isOpen();
+
+  /**
+   * Deletes the segment from the filesystem
+   *
+   * @throws IOException if there is an issue deleting the segment
+   */
+  void delete() throws IOException;
 
   /**
    * Marks the segment as compacted
@@ -83,10 +87,4 @@ interface Segment {
    */
   boolean hasBeenCompacted();
 
-  /**
-   * Checks if the file has been close and no longer able to be read or written
-   *
-   * @return whether the segment has been closed or not
-   */
-  boolean isClosed();
 }

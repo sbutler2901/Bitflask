@@ -19,9 +19,7 @@ class SegmentImpl implements Segment {
   private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap = new ConcurrentHashMap<>();
   private final AtomicLong currentFileWriteOffset = new AtomicLong();
   private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
-  private volatile boolean isFrozen = false;
   private volatile boolean hasBeenCompacted = false;
-  private volatile boolean isClosed = false;
 
   public SegmentImpl(SegmentFile segmentFile) throws IOException {
     this.segmentFile = segmentFile;
@@ -52,10 +50,8 @@ class SegmentImpl implements Segment {
 
   @Override
   public void write(String key, String value) throws IOException {
-    if (isClosed) {
+    if (!isOpen()) {
       throw new RuntimeException("This segment has been closed and cannot be written to");
-    } else if (isFrozen) {
-      throw new RuntimeException("This segment has been frozen and cannot be written to");
     }
 
     byte[] encodedKeyAndValue = encodeKeyAndValue(key, value);
@@ -77,7 +73,7 @@ class SegmentImpl implements Segment {
 
   @Override
   public Optional<String> read(String key) throws IOException {
-    if (isClosed) {
+    if (!isOpen()) {
       throw new RuntimeException("This segment has been closed and cannot be read from");
     }
     if (!containsKey(key)) {
@@ -145,25 +141,31 @@ class SegmentImpl implements Segment {
   }
 
   @Override
-  public void closeAndDelete() throws IOException {
+  public void close() throws IOException {
     readWriteLock.writeLock().lock();
-    isClosed = true;
     try {
       segmentFile.close();
-      Files.delete(segmentFile.getSegmentFilePath());
     } finally {
       readWriteLock.writeLock().unlock();
     }
   }
 
   @Override
-  public void markFrozen() {
-    isFrozen = true;
+  public boolean isOpen() {
+    return segmentFile.isOpen();
   }
 
   @Override
-  public boolean isFrozen() {
-    return isFrozen;
+  public void delete() throws IOException {
+    if (isOpen()) {
+      throw new RuntimeException("Segment should be closed before deleting");
+    }
+    readWriteLock.writeLock().lock();
+    try {
+      Files.delete(segmentFile.getSegmentFilePath());
+    } finally {
+      readWriteLock.writeLock().unlock();
+    }
   }
 
   @Override
@@ -174,11 +176,6 @@ class SegmentImpl implements Segment {
   @Override
   public boolean hasBeenCompacted() {
     return hasBeenCompacted;
-  }
-
-  @Override
-  public boolean isClosed() {
-    return isClosed;
   }
 
 }
