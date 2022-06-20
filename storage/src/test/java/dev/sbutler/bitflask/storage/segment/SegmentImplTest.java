@@ -22,7 +22,6 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +41,7 @@ public class SegmentImplTest {
 
   @Test
   void loadFileEntries() throws IOException {
+    // Arrange
     String key = "key", value = "value";
     byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
 
@@ -50,17 +50,21 @@ public class SegmentImplTest {
     when(mockSegmentFile.readByte(anyLong())).thenReturn((byte) 3).thenReturn((byte) 5);
     doReturn(key).when(mockSegmentFile).readAsString(anyInt(), anyLong());
 
+    // Act
     Segment segment = new SegmentImpl(mockSegmentFile);
 
+    // Assert
     assertTrue(segment.containsKey("key"));
   }
 
   @Test
   void write() throws IOException {
+    // Arrange
     String key = "key", value = "value";
-
-    segment.write(key, value);
     byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
+    // Act
+    segment.write(key, value);
+    // Assert
     verify(segmentFile, times(1)).write(aryEq(encoded), anyLong());
   }
 
@@ -68,20 +72,23 @@ public class SegmentImplTest {
   void write_merge() throws IOException {
     try (MockedConstruction<AtomicLong> atomicLongMockedConstruction = mockConstruction(
         AtomicLong.class)) {
+      // Arrange
       SegmentFile mockSegmentFile = mock(SegmentFile.class);
       doReturn(0L).when(mockSegmentFile).size();
 
       Segment segment = new SegmentImpl(mockSegmentFile);
       AtomicLong mockedAtomicLong = atomicLongMockedConstruction.constructed().get(0);
-      // force merge comparison when writing to simulate another thread having written
+      /// force merge comparison when writing to simulate another thread having written
       when(mockedAtomicLong.getAndAdd(anyLong())).thenReturn(0L).thenReturn(2L).thenReturn(1L);
-
-      String key = "key", value = "value";
-      segment.write(key, value);
-      segment.write(key, value);
-      segment.write(key, value);
       doReturn("value").when(mockSegmentFile).readAsString(anyInt(), anyLong());
+      String key = "key", value = "value";
+
+      // Act
+      segment.write(key, value);
+      segment.write(key, value);
+      segment.write(key, value);
       segment.read(key);
+      // Assert
       verify(mockSegmentFile, times(1)).readByte(2L + 1 + 3);
     }
   }
@@ -89,24 +96,35 @@ public class SegmentImplTest {
   @Test
   void write_Exception() throws IOException {
     String key = "key", value = "value";
-
     doThrow(IOException.class).when(segmentFile).write(any(), anyLong());
     assertThrows(IOException.class, () -> segment.write(key, value));
     verify(segmentFile, times(1)).write(any(), anyLong());
   }
 
   @Test
-  void read() throws IOException {
-    String key = "key", value = "value";
-    // write before reading
-    segment.write(key, value);
+  void write_afterFroze() {
+    segment.markFrozen();
+    assertThrows(RuntimeException.class, () -> segment.write("key", "value"));
+  }
 
-    // read
+  @Test
+  void write_afterClose() throws IOException {
+    try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      segment.closeAndDelete();
+      assertThrows(RuntimeException.class, () -> segment.write("key", "value"));
+    }
+  }
+
+  @Test
+  void read() throws IOException {
+    // Arrange
+    String key = "key", value = "value";
+    segment.write(key, value);
     doReturn((byte) 5).when(segmentFile).readByte(anyLong());
     doReturn(value).when(segmentFile).readAsString(anyInt(), anyLong());
-
+    // Act
     Optional<String> result = segment.read(key);
-
+    // Assert
     assertTrue(result.isPresent());
     assertEquals(value, result.get());
     verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
@@ -114,33 +132,45 @@ public class SegmentImplTest {
 
   @Test
   void read_exception() throws IOException {
+    // Arrange
     String key = "key", value = "value", combined = key + value;
-
-    // write before reading
     segment.write(key, value);
-
-    // read
     doThrow(IOException.class).when(segmentFile).readAsString(anyInt(), anyLong());
-
+    // Act
     assertThrows(IOException.class, () -> segment.read(key));
+    // Assert
     verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
   }
 
   @Test
   void read_keyNotFound() throws IOException {
+    // Arrange
     String key = "key";
-
-    assertTrue(segment.read(key).isEmpty());
+    // Act
+    Optional<String> readResults = segment.read(key);
+    // Assert
+    assertTrue(readResults.isEmpty());
     verify(segmentFile, times(0)).read(anyInt(), anyLong());
   }
 
   @Test
+  void read_afterClose() throws IOException {
+    try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      segment.closeAndDelete();
+      assertThrows(RuntimeException.class, () -> segment.read("key"));
+    }
+  }
+
+  @Test
   void encodedKeyAndValue() {
+    // Arrange
     String key = "key", value = "value";
     char keyLengthEncoded = (char) key.length();
     char valueLengthEncoded = (char) value.length();
     byte[] expected = (keyLengthEncoded + key + valueLengthEncoded + value).getBytes();
+    // Act
     byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
+    // Assert
     assertArrayEquals(expected, encoded);
   }
 
@@ -154,9 +184,12 @@ public class SegmentImplTest {
 
   @Test
   void containsKey() throws IOException {
+    // Arrange
     String key = "key", value = "value";
     assertFalse(segment.containsKey(key));
+    // Act
     segment.write(key, value);
+    // Assert
     assertTrue(segment.containsKey(key));
   }
 
@@ -164,40 +197,48 @@ public class SegmentImplTest {
   void exceedsStorageThreshold() throws IOException {
     try (MockedConstruction<AtomicLong> atomicLongMockedConstruction = mockConstruction(
         AtomicLong.class)) {
+      // Arrange
       SegmentFile mockSegmentFile = mock(SegmentFile.class);
       doReturn(0L).when(mockSegmentFile).size();
-
+      // Act
       Segment segment = new SegmentImpl(mockSegmentFile);
-
       AtomicLong mockedAtomicLong = atomicLongMockedConstruction.constructed().get(0);
       doReturn(1 + SegmentImpl.NEW_SEGMENT_THRESHOLD).when(mockedAtomicLong).get();
-
+      // Assert
       assertTrue(segment.exceedsStorageThreshold());
     }
   }
 
   @Test
   void getSegmentKeys() throws IOException {
+    // Arrange
     String key = "key", value = "value";
-    Set<String> keySet = segment.getSegmentKeys();
-    assertTrue(keySet.isEmpty());
+    assertTrue(segment.getSegmentKeys().isEmpty());
+    // Act
     segment.write(key, value);
-    keySet = segment.getSegmentKeys();
-    assertTrue(keySet.contains(key));
+    // Assert
+    assertTrue(segment.getSegmentKeys().contains(key));
   }
 
   @Test
   void getSegmentFileKey() {
+    // Arrange
     int fileKey = 0;
     doReturn(fileKey).when(segmentFile).getSegmentFileKey();
-    assertEquals(fileKey, segment.getSegmentFileKey());
+    // Act
+    int segmentFileKey = segment.getSegmentFileKey();
+    // Assert
+    assertEquals(fileKey, segmentFileKey);
   }
 
   @Test
   void closeAndDelete() throws IOException {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      // Act
       segment.closeAndDelete();
+      // Assert
       verify(segmentFile, times(1)).close();
+      assertTrue(segment.isClosed());
       filesMockedStatic.verify(() -> {
         try {
           Files.delete(any());
@@ -213,6 +254,13 @@ public class SegmentImplTest {
     assertFalse(segment.hasBeenCompacted());
     segment.markCompacted();
     assertTrue(segment.hasBeenCompacted());
+  }
+
+  @Test
+  void frozenCheck() {
+    assertFalse(segment.isFrozen());
+    segment.markFrozen();
+    assertTrue(segment.isFrozen());
   }
 
 }
