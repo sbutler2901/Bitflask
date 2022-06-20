@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Inject;
-import javax.inject.Provider;
 import org.slf4j.Logger;
 
 class SegmentManagerImpl implements SegmentManager {
@@ -23,7 +22,7 @@ class SegmentManagerImpl implements SegmentManager {
   static Logger logger;
 
   private final SegmentFactory segmentFactory;
-  private final Provider<SegmentCompactor> segmentCompactorProvider;
+  private final SegmentCompactorFactory segmentCompactorFactory;
 
   private final AtomicReference<ManagedSegments> managedSegmentsAtomicReference = new AtomicReference<>();
 
@@ -33,10 +32,10 @@ class SegmentManagerImpl implements SegmentManager {
 
   @Inject
   SegmentManagerImpl(SegmentFactory segmentFactory, SegmentLoader segmentLoader,
-      Provider<SegmentCompactor> segmentCompactorProvider)
+      SegmentCompactorFactory segmentCompactorFactory)
       throws IOException {
     this.segmentFactory = segmentFactory;
-    this.segmentCompactorProvider = segmentCompactorProvider;
+    this.segmentCompactorFactory = segmentCompactorFactory;
     initialize(segmentLoader);
   }
 
@@ -127,8 +126,8 @@ class SegmentManagerImpl implements SegmentManager {
   private void initiateCompaction() {
     logger.info("Initiating Compaction");
     compactionActive.set(true);
-    SegmentCompactor segmentCompactor = segmentCompactorProvider.get();
-    segmentCompactor.setPreCompactedSegments(managedSegmentsAtomicReference.get().frozenSegments);
+    SegmentCompactor segmentCompactor = segmentCompactorFactory.create(
+        managedSegmentsAtomicReference.get().frozenSegments);
     segmentCompactor.registerCompactedSegmentsConsumer(this::updateAfterCompaction);
     segmentCompactor.registerCompactionCompletedRunnable(this::compactionCompleted);
     segmentCompactor.registerCompactionFailedConsumer(this::compactionFailed);

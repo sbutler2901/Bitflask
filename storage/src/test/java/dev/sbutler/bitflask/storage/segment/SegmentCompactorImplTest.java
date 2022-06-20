@@ -25,7 +25,6 @@ import java.util.concurrent.Future;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -33,15 +32,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class SegmentCompactorImplTest {
 
-  @InjectMocks
   SegmentCompactorImpl segmentCompactorImpl;
   @Mock
   ExecutorService executorService;
   @Mock
   SegmentFactory segmentFactory;
+  @Mock
+  Segment headSegment;
+  @Mock
+  Segment tailSegment;
 
   @BeforeEach
   void beforeEach() {
+    segmentCompactorImpl = new SegmentCompactorImpl(executorService, segmentFactory,
+        List.of(headSegment, tailSegment));
     doAnswer((InvocationOnMock invocation) -> {
       ((Runnable) invocation.getArguments()[0]).run();
       return null;
@@ -67,10 +71,6 @@ public class SegmentCompactorImplTest {
   @Test
   void duplicateKeyValueRemoval() throws Exception {
     // Arrange
-    Segment headSegment = mock(Segment.class);
-    Segment tailSegment = mock(Segment.class);
-    segmentCompactorImpl.setPreCompactedSegments(List.of(headSegment, tailSegment));
-
     doReturn(Set.of("0-key", "key")).when(headSegment).getSegmentKeys();
     doReturn(Set.of("1-key", "key")).when(tailSegment).getSegmentKeys();
     doReturn(Optional.of("0-value")).when(headSegment).read("0-key");
@@ -107,10 +107,6 @@ public class SegmentCompactorImplTest {
   @Test
   void compactionSegmentStorageExceeded() throws Exception {
     // Arrange
-    Segment headSegment = mock(Segment.class);
-    Segment tailSegment = mock(Segment.class);
-    segmentCompactorImpl.setPreCompactedSegments(List.of(headSegment, tailSegment));
-
     doReturn(Set.of("0-key")).when(headSegment).getSegmentKeys();
     doReturn(Set.of("1-key")).when(tailSegment).getSegmentKeys();
     doReturn(Optional.of("0-value")).when(headSegment).read("0-key");
@@ -139,10 +135,6 @@ public class SegmentCompactorImplTest {
   @Test
   void compactionFailure_throwsRuntimeException() throws IOException {
     // Arrange
-    Segment headSegment = mock(Segment.class);
-    Segment tailSegment = mock(Segment.class);
-    segmentCompactorImpl.setPreCompactedSegments(List.of(headSegment, tailSegment));
-
     doReturn(Set.of("0-key")).when(headSegment).getSegmentKeys();
     doReturn(Set.of("1-key")).when(tailSegment).getSegmentKeys();
     doReturn(Optional.empty()).when(headSegment).read(anyString());
@@ -163,10 +155,6 @@ public class SegmentCompactorImplTest {
   @Test
   void compactionFailure_throwsIOException() throws IOException {
     // Arrange
-    Segment headSegment = mock(Segment.class);
-    Segment tailSegment = mock(Segment.class);
-    segmentCompactorImpl.setPreCompactedSegments(List.of(headSegment, tailSegment));
-
     doReturn(Set.of("0-key")).when(headSegment).getSegmentKeys();
     doReturn(Set.of("1-key")).when(tailSegment).getSegmentKeys();
     doThrow(IOException.class).when(headSegment).read(anyString());

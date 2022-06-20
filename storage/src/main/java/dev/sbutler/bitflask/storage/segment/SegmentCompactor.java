@@ -12,13 +12,6 @@ interface SegmentCompactor {
   void compactSegments();
 
   /**
-   * Sets the segments that will be compacted by the compactor.
-   *
-   * @param preCompactedSegments the segments to be compacted
-   */
-  void setPreCompactedSegments(List<Segment> preCompactedSegments);
-
-  /**
    * Registers a consumer of the compacted segments.
    *
    * @param compactionResultsConsumer the consumer to be called with the compacted segments

@@ -1,5 +1,8 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,20 +29,26 @@ class SegmentCompactorImpl implements SegmentCompactor {
 
   private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;
+  private final List<Segment> preCompactedSegments;
   private final List<Consumer<List<Segment>>> compactionResultsConsumers = new ArrayList<>();
   private final List<Runnable> compactionCompleteRunnables = new ArrayList<>();
   private final List<Consumer<Throwable>> compactionFailedConsumers = new ArrayList<>();
-  private List<Segment> preCompactedSegments = null;
   private volatile boolean compactionStarted = false;
 
-  SegmentCompactorImpl(ExecutorService executorService, SegmentFactory segmentFactory) {
+  @Inject
+  SegmentCompactorImpl(@StorageExecutorService ExecutorService executorService,
+      SegmentFactory segmentFactory,
+      @Assisted List<Segment> preCompactedSegments) {
     this.executorService = executorService;
     this.segmentFactory = segmentFactory;
+    this.preCompactedSegments = preCompactedSegments;
   }
 
   @Override
   public void compactSegments() {
-    preCompactionValidation();
+    if (compactionStarted) {
+      return;
+    }
 
     compactionStarted = true;
     CompletableFuture
@@ -49,22 +58,6 @@ class SegmentCompactorImpl implements SegmentCompactor {
         .thenAcceptAsync(this::runRegisteredCompactionResultsConsumers, executorService)
         .thenRunAsync(this::runRegisteredCompletionRunnables, executorService)
         .thenRunAsync(this::closeAndDeleteSegments, executorService);
-  }
-
-  private void preCompactionValidation() {
-    if (preCompactedSegments == null) {
-      throw new RuntimeException(
-          "Pre-compacted segments were not set prior to starting compaction");
-    }
-  }
-
-  @Override
-  public void setPreCompactedSegments(List<Segment> preCompactedSegments) {
-    if (compactionStarted) {
-      throw new IllegalStateException(
-          "Compaction has been started and segments cannot be changed");
-    }
-    this.preCompactedSegments = List.copyOf(preCompactedSegments);
   }
 
   @Override

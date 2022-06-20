@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.segment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -12,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import javax.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -23,16 +23,15 @@ public class SegmentManagerImplTest {
   SegmentManagerImpl segmentManager;
   SegmentFactory segmentFactory;
   SegmentLoader segmentLoader;
-  Provider<SegmentCompactor> segmentCompactorProvider;
+  SegmentCompactorFactory segmentCompactorFactory;
   Segment activeSegment;
   Segment frozenSegment;
 
   @BeforeEach
-  @SuppressWarnings("unchecked")
   void beforeEach_mocks() {
     segmentFactory = mock(SegmentFactory.class);
     segmentLoader = mock(SegmentLoader.class);
-    segmentCompactorProvider = mock(Provider.class);
+    segmentCompactorFactory = mock(SegmentCompactorFactory.class);
     activeSegment = mock(Segment.class);
     frozenSegment = mock(Segment.class);
     SegmentManagerImpl.logger = mock(Logger.class);
@@ -45,7 +44,7 @@ public class SegmentManagerImplTest {
     doReturn(activeSegment).when(segmentFactory).createSegment();
     // Act
     segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
-        segmentCompactorProvider);
+        segmentCompactorFactory);
     // Assert
     verify(segmentFactory, times(1)).createSegment();
   }
@@ -61,7 +60,7 @@ public class SegmentManagerImplTest {
     doReturn(activeSegment).when(segmentFactory).createSegment();
     // Act
     segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
-        segmentCompactorProvider);
+        segmentCompactorFactory);
     // Assert
     verify(segmentFactory, times(1)).createSegment();
   }
@@ -79,7 +78,7 @@ public class SegmentManagerImplTest {
     doReturn(true).when(segment).exceedsStorageThreshold();
     // Act
     segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
-        segmentCompactorProvider);
+        segmentCompactorFactory);
     // Assert
     verify(segmentFactory, times(1)).createSegment();
   }
@@ -97,7 +96,7 @@ public class SegmentManagerImplTest {
     doReturn(false).when(segment).exceedsStorageThreshold();
     // Act
     segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
-        segmentCompactorProvider);
+        segmentCompactorFactory);
     // Assert
     verify(segmentFactory, times(0)).createSegment();
   }
@@ -110,7 +109,7 @@ public class SegmentManagerImplTest {
     List<Segment> mockLoadedSegments = new ArrayList<>(loadedSegments);
     doReturn(mockLoadedSegments).when(segmentLoader).loadExistingSegments();
     segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
-        segmentCompactorProvider);
+        segmentCompactorFactory);
   }
 
   @Test
@@ -185,7 +184,7 @@ public class SegmentManagerImplTest {
     beforeEach_defaultFunctionality(List.of(activeSegment, frozenSegment, mock(Segment.class)));
     doReturn(true).when(activeSegment).exceedsStorageThreshold();
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
-    doReturn(segmentCompactor).when(segmentCompactorProvider).get();
+    doReturn(segmentCompactor).when(segmentCompactorFactory).create(anyList());
     // Act
     segmentManager.write("key", "value");
     // Assert
@@ -203,7 +202,7 @@ public class SegmentManagerImplTest {
     doReturn(newActiveSegment).when(segmentFactory).createSegment();
     /// Enable compaction mocking
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
-    doReturn(segmentCompactor).when(segmentCompactorProvider).get();
+    doReturn(segmentCompactor).when(segmentCompactorFactory).create(anyList());
     // Setup for after compaction update
     String key = "key", value = "value";
     Segment compactedSegment = mock(Segment.class);
@@ -238,7 +237,7 @@ public class SegmentManagerImplTest {
     doReturn(newActiveSegment).when(segmentFactory).createSegment();
     /// Enable compaction mocking
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
-    doReturn(segmentCompactor).when(segmentCompactorProvider).get();
+    doReturn(segmentCompactor).when(segmentCompactorFactory).create(anyList());
     // Setup for after compaction update
     String key = "key", value = "value";
     ArgumentCaptor<Runnable> runnableArgumentCaptor = ArgumentCaptor.forClass(Runnable.class);
@@ -266,8 +265,8 @@ public class SegmentManagerImplTest {
     doReturn(newActiveSegment).when(segmentFactory).createSegment();
     /// Enable compaction mocking
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
-    doReturn(segmentCompactor).when(segmentCompactorProvider).get();
-    // Setup for after compaction update
+    doReturn(segmentCompactor).when(segmentCompactorFactory).create(anyList());
+    /// Setup for after compaction update
     String key = "key", value = "value";
     ArgumentCaptor<Consumer<Throwable>> consumerArgumentCaptor = ArgumentCaptor.forClass(
         Consumer.class);
