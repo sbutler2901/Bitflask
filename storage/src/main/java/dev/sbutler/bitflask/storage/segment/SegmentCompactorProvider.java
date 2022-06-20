@@ -1,7 +1,6 @@
-package dev.sbutler.bitflask.storage.segment.compactor;
+package dev.sbutler.bitflask.storage.segment;
 
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import dev.sbutler.bitflask.storage.segment.SegmentFactory;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 import javax.inject.Provider;

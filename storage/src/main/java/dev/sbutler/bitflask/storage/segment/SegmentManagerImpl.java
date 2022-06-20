@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
-import dev.sbutler.bitflask.storage.segment.compactor.SegmentCompactor;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;

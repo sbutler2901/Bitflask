@@ -1,8 +1,7 @@
-package dev.sbutler.bitflask.storage.segment.compactor;
+package dev.sbutler.bitflask.storage.segment;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import dev.sbutler.bitflask.storage.segment.SegmentFactory;
 import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

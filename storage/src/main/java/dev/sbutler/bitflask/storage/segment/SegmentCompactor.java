@@ -1,10 +1,9 @@
-package dev.sbutler.bitflask.storage.segment.compactor;
+package dev.sbutler.bitflask.storage.segment;
 
-import dev.sbutler.bitflask.storage.segment.Segment;
 import java.util.List;
 import java.util.function.Consumer;
 
-public interface SegmentCompactor {
+interface SegmentCompactor {
 
   void compactSegments();
 
