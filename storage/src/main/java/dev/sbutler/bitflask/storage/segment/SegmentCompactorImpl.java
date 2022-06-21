@@ -20,7 +20,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
 
   private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;
-  private final List<Segment> preCompactedSegments;
+  private final List<Segment> preCompactionSegments;
   private final List<Consumer<CompactionCompletionResults>> compactionCompletedConsumers = new ArrayList<>();
   private final List<Consumer<Throwable>> compactionFailedConsumers = new ArrayList<>();
   private volatile boolean compactionStarted = false;
@@ -28,10 +28,10 @@ class SegmentCompactorImpl implements SegmentCompactor {
   @Inject
   SegmentCompactorImpl(@StorageExecutorService ExecutorService executorService,
       SegmentFactory segmentFactory,
-      @Assisted List<Segment> preCompactedSegments) {
+      @Assisted List<Segment> preCompactionSegments) {
     this.executorService = executorService;
     this.segmentFactory = segmentFactory;
-    this.preCompactedSegments = List.copyOf(preCompactedSegments);
+    this.preCompactionSegments = List.copyOf(preCompactionSegments);
   }
 
   @Override
@@ -69,7 +69,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
 
   private Map<String, Segment> createKeySegmentMap() {
     Map<String, Segment> keySegmentMap = new HashMap<>();
-    for (Segment segment : preCompactedSegments) {
+    for (Segment segment : preCompactionSegments) {
       Set<String> segmentKeys = segment.getSegmentKeys();
       for (String key : segmentKeys) {
         if (!keySegmentMap.containsKey(key)) {
@@ -113,12 +113,12 @@ class SegmentCompactorImpl implements SegmentCompactor {
     } else {
       markSegmentsCompacted();
       runRegisteredCompactionCompletedConsumers(
-          new CompactionCompletionResultsImpl(compactedSegments, preCompactedSegments));
+          new CompactionCompletionResultsImpl(compactedSegments, preCompactionSegments));
     }
   }
 
   private void markSegmentsCompacted() {
-    for (Segment segment : preCompactedSegments) {
+    for (Segment segment : preCompactionSegments) {
       segment.markCompacted();
     }
   }

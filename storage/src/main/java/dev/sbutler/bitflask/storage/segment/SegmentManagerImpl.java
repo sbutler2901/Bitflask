@@ -133,7 +133,7 @@ class SegmentManagerImpl implements SegmentManager {
   private void handleCompactionCompleted(
       SegmentCompactor.CompactionCompletionResults compactionCompletionResults) {
     updateAfterCompaction(compactionCompletionResults.compactedSegments());
-    queuePreCompactedSegmentsForDeletion(compactionCompletionResults.preCompactionSegments());
+    queuePreCompactionSegmentsForDeletion(compactionCompletionResults.preCompactionSegments());
     compactionActive.set(false);
   }
 
@@ -154,7 +154,7 @@ class SegmentManagerImpl implements SegmentManager {
         new ManagedSegments(currentManagedSegment.writableSegment, newFrozenSegments));
   }
 
-  private void queuePreCompactedSegmentsForDeletion(List<Segment> preCompactedSegments) {
+  private void queuePreCompactionSegmentsForDeletion(List<Segment> preCompactionSegments) {
     logger.info("Queueing segments for deletion after compaction");
     // todo
   }

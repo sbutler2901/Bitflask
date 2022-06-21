@@ -46,9 +46,9 @@ interface SegmentCompactor {
     List<Segment> compactedSegments();
 
     /**
-     * Provides the pre-compacted segments used by the compactor during the compaction process.
+     * Provides the pre-compaction segments used by the compactor during the compaction process.
      *
-     * @return the pre-compacted segments
+     * @return the pre-compaction segments
      */
     List<Segment> preCompactionSegments();
   }
