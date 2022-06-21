@@ -88,7 +88,6 @@ class SegmentDeleterImpl implements SegmentDeleter {
         segmentResult.get();
       } catch (InterruptedException e) {
         segmentFailuresMap.put(segment, e);
-        throw new RuntimeException(e);
       } catch (ExecutionException e) {
         segmentFailuresMap.put(segment, e.getCause());
       }
