@@ -13,13 +13,13 @@ import java.util.function.Consumer;
 interface SegmentCompactor {
 
   /**
-   * Initiates the compaction process. This should only be called once the segments to be compacted
-   * have been set.
+   * Initiates the compaction process.
    */
   void compactSegments();
 
   /**
-   * Registers a consumer of compaction results that is called once compaction is completed.
+   * Registers a consumer of compaction results that is called once compaction is completed
+   * successfully.
    *
    * @param compactionCompletedConsumer the consumer to be called with the compaction results.
    */

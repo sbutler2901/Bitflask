@@ -12,6 +12,9 @@ public class SegmentModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(SegmentCompactor.class, SegmentCompactorImpl.class)
         .build(SegmentCompactorFactory.class));
+    install(new FactoryModuleBuilder()
+        .implement(SegmentDeleter.class, SegmentDeleterImpl.class)
+        .build(SegmentDeleterFactory.class));
   }
 
   @Provides
