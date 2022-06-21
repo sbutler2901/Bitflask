@@ -2,7 +2,6 @@ package dev.sbutler.bitflask.storage.segment;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 interface SegmentDeleter {
@@ -47,7 +46,7 @@ interface SegmentDeleter {
      *
      * @return the reason for general failure
      */
-    Optional<Throwable> getGeneralFailureReason();
+    Throwable getGeneralFailureReason();
 
     /**
      * A map of specific segments and why they could not be successfully deleted. Will be populated
@@ -55,6 +54,6 @@ interface SegmentDeleter {
      *
      * @return the map of segment to failure reasons
      */
-    Optional<Map<Segment, Throwable>> getSegmentsFailureReasonsMap();
+    Map<Segment, Throwable> getSegmentsFailureReasonsMap();
   }
 }

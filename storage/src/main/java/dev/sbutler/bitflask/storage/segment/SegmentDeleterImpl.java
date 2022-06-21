@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -110,7 +109,7 @@ class SegmentDeleterImpl implements SegmentDeleter {
     private final Status status;
     private final List<Segment> segmentsToBeDeleted;
     private Throwable generalFailureReason = null;
-    private Map<Segment, Throwable> segmentsFailureReasonsMap = null;
+    private Map<Segment, Throwable> segmentsFailureReasonsMap = new HashMap<>();
 
     DeletionResultsImpl(List<Segment> segmentsToBeDeleted) {
       this.status = Status.SUCCESS;
@@ -141,13 +140,13 @@ class SegmentDeleterImpl implements SegmentDeleter {
     }
 
     @Override
-    public Optional<Throwable> getGeneralFailureReason() {
-      return Optional.ofNullable(generalFailureReason);
+    public Throwable getGeneralFailureReason() {
+      return generalFailureReason;
     }
 
     @Override
-    public Optional<Map<Segment, Throwable>> getSegmentsFailureReasonsMap() {
-      return Optional.ofNullable(segmentsFailureReasonsMap);
+    public Map<Segment, Throwable> getSegmentsFailureReasonsMap() {
+      return segmentsFailureReasonsMap;
     }
   }
 

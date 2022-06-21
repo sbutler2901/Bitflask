@@ -25,6 +25,7 @@ public class SegmentManagerImplTest {
   SegmentFactory segmentFactory;
   SegmentLoader segmentLoader;
   SegmentCompactorFactory segmentCompactorFactory;
+  SegmentDeleterFactory segmentDeleterFactory;
   Segment activeSegment;
   Segment frozenSegment;
 
@@ -33,6 +34,7 @@ public class SegmentManagerImplTest {
     segmentFactory = mock(SegmentFactory.class);
     segmentLoader = mock(SegmentLoader.class);
     segmentCompactorFactory = mock(SegmentCompactorFactory.class);
+    segmentDeleterFactory = mock(SegmentDeleterFactory.class);
     activeSegment = mock(Segment.class);
     frozenSegment = mock(Segment.class);
     SegmentManagerImpl.logger = mock(Logger.class);
@@ -44,8 +46,8 @@ public class SegmentManagerImplTest {
     doReturn(true).when(segmentFactory).createSegmentStoreDir();
     doReturn(activeSegment).when(segmentFactory).createSegment();
     // Act
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
-        segmentCompactorFactory);
+    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader, segmentCompactorFactory,
+        segmentDeleterFactory);
     // Assert
     verify(segmentFactory, times(1)).createSegment();
   }
@@ -60,8 +62,8 @@ public class SegmentManagerImplTest {
     doReturn(true).when(mockSegments).isEmpty();
     doReturn(activeSegment).when(segmentFactory).createSegment();
     // Act
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
-        segmentCompactorFactory);
+    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader, segmentCompactorFactory,
+        segmentDeleterFactory);
     // Assert
     verify(segmentFactory, times(1)).createSegment();
   }
@@ -78,8 +80,8 @@ public class SegmentManagerImplTest {
     doReturn(segment).when(mockSegments).get(0);
     doReturn(true).when(segment).exceedsStorageThreshold();
     // Act
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
-        segmentCompactorFactory);
+    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader, segmentCompactorFactory,
+        segmentDeleterFactory);
     // Assert
     verify(segmentFactory, times(1)).createSegment();
   }
@@ -96,8 +98,8 @@ public class SegmentManagerImplTest {
     doReturn(segment).when(mockSegments).get(0);
     doReturn(false).when(segment).exceedsStorageThreshold();
     // Act
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
-        segmentCompactorFactory);
+    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader, segmentCompactorFactory,
+        segmentDeleterFactory);
     // Assert
     verify(segmentFactory, times(0)).createSegment();
   }
@@ -109,8 +111,8 @@ public class SegmentManagerImplTest {
   void beforeEach_defaultFunctionality(List<Segment> loadedSegments) throws IOException {
     List<Segment> mockLoadedSegments = new ArrayList<>(loadedSegments);
     doReturn(mockLoadedSegments).when(segmentLoader).loadExistingSegments();
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader,
-        segmentCompactorFactory);
+    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader, segmentCompactorFactory,
+        segmentDeleterFactory);
   }
 
   @Test
@@ -213,6 +215,9 @@ public class SegmentManagerImplTest {
     CompactionCompletionResults compactionCompletionResults = mock(
         CompactionCompletionResults.class);
     doReturn(List.of(compactedSegment)).when(compactionCompletionResults).compactedSegments();
+    /// Enable Deletion mocking
+    SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
+    doReturn(segmentDeleter).when(segmentDeleterFactory).create(anyList());
 
     ArgumentCaptor<Consumer<CompactionCompletionResults>> consumerArgumentCaptor = ArgumentCaptor.forClass(
         Consumer.class);
@@ -232,6 +237,7 @@ public class SegmentManagerImplTest {
     verify(compactedSegment, times(1)).containsKey(key);
     verify(compactedSegment, times(1)).read(key);
     verify(newActiveSegment, times(1)).write(key, value);
+    verify(segmentDeleter, times(1)).deleteSegments();
   }
 
   @Test

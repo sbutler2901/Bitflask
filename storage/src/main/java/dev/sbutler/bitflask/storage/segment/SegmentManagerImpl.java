@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ class SegmentManagerImpl implements SegmentManager {
 
   private final SegmentFactory segmentFactory;
   private final SegmentCompactorFactory segmentCompactorFactory;
+  private final SegmentDeleterFactory segmentDeleterFactory;
 
   private final AtomicReference<ManagedSegments> managedSegmentsAtomicReference = new AtomicReference<>();
 
@@ -32,10 +34,11 @@ class SegmentManagerImpl implements SegmentManager {
 
   @Inject
   SegmentManagerImpl(SegmentFactory segmentFactory, SegmentLoader segmentLoader,
-      SegmentCompactorFactory segmentCompactorFactory)
+      SegmentCompactorFactory segmentCompactorFactory, SegmentDeleterFactory segmentDeleterFactory)
       throws IOException {
     this.segmentFactory = segmentFactory;
     this.segmentCompactorFactory = segmentCompactorFactory;
+    this.segmentDeleterFactory = segmentDeleterFactory;
     initialize(segmentLoader);
   }
 
@@ -137,13 +140,17 @@ class SegmentManagerImpl implements SegmentManager {
     compactionActive.set(false);
   }
 
+  private void handleCompactionFailed(Throwable throwable) {
+    logger.error("Compaction failed", throwable);
+    compactionActive.set(false);
+  }
+
   private synchronized void updateAfterCompaction(List<Segment> compactedSegments) {
     logger.info("Updating after compaction");
     ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
     Deque<Segment> newFrozenSegments = new ArrayDeque<>();
 
-    currentManagedSegment.frozenSegments.stream()
-        .filter((segment) -> !segment.hasBeenCompacted())
+    currentManagedSegment.frozenSegments.stream().filter((segment) -> !segment.hasBeenCompacted())
         .forEach(newFrozenSegments::offerFirst);
     newFrozenSegments.addAll(compactedSegments);
 
@@ -156,14 +163,57 @@ class SegmentManagerImpl implements SegmentManager {
 
   private void queuePreCompactionSegmentsForDeletion(List<Segment> preCompactionSegments) {
     logger.info("Queueing segments for deletion after compaction");
-    // todo
+    SegmentDeleter segmentDeleter = segmentDeleterFactory.create(preCompactionSegments);
+    segmentDeleter.registerDeletionResultsConsumer(this::handleDeletionResults);
+    segmentDeleter.deleteSegments();
   }
 
-  private void handleCompactionFailed(Throwable throwable) {
-    logger.error("Compaction failed", throwable);
-    compactionActive.set(false);
+  private void handleDeletionResults(DeletionResults deletionResults) {
+    switch (deletionResults.getStatus()) {
+      case SUCCESS -> logger.info(buildLogForDeletionSuccess(deletionResults));
+      case FAILED_GENERAL -> logger.error(buildLogForDeletionGeneralFailure(deletionResults),
+          deletionResults.getGeneralFailureReason());
+      case FAILED_SEGMENTS -> logger.error(buildLogForSegmentsFailure(deletionResults));
+    }
   }
 
+  private String buildLogForDeletionSuccess(DeletionResults deletionResults) {
+    StringBuilder log = new StringBuilder();
+    log.append("Compacted segments successfully deleted [");
+    log.append(System.lineSeparator());
+    deletionResults.getSegmentsToBeDeleted().forEach(segment -> {
+      log.append(segment.getSegmentFileKey());
+      log.append(System.lineSeparator());
+    });
+    log.append("]");
+    return log.toString();
+  }
+
+  private String buildLogForDeletionGeneralFailure(DeletionResults deletionResults) {
+    StringBuilder log = new StringBuilder();
+    log.append("Failure to delete compacted segments due to general failure [");
+    log.append(System.lineSeparator());
+    deletionResults.getSegmentsToBeDeleted().forEach(segment -> {
+      log.append(segment.getSegmentFileKey());
+      log.append(System.lineSeparator());
+    });
+    log.append("]");
+    return log.toString();
+  }
+
+  private String buildLogForSegmentsFailure(DeletionResults deletionResults) {
+    StringBuilder log = new StringBuilder();
+    log.append("Failure to delete compacted segments due to specific failures [");
+    log.append(System.lineSeparator());
+    deletionResults.getSegmentsFailureReasonsMap().forEach((segment, throwable) -> {
+      log.append(segment.getSegmentFileKey());
+      log.append(" , ");
+      log.append(throwable.getMessage());
+      log.append(System.lineSeparator());
+    });
+    log.append("]");
+    return log.toString();
+  }
 
   record ManagedSegments(Segment writableSegment, List<Segment> frozenSegments) {
 
