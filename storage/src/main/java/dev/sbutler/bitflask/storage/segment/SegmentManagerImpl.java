@@ -178,25 +178,24 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private String buildLogForDeletionSuccess(DeletionResults deletionResults) {
-    StringBuilder log = new StringBuilder();
-    log.append("Compacted segments successfully deleted [");
-    log.append(System.lineSeparator());
-    deletionResults.getSegmentsToBeDeleted().forEach(segment -> {
-      log.append(segment.getSegmentFileKey());
-      log.append(System.lineSeparator());
-    });
-    log.append("]");
-    return log.toString();
+    return "Compacted segments successfully deleted "
+        + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsToBeDeleted());
   }
 
   private String buildLogForDeletionGeneralFailure(DeletionResults deletionResults) {
+    return "Failure to delete compacted segments due to general failure"
+        + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsToBeDeleted());
+  }
+
+  private String buildLogForSegmentsToBeDeleted(List<Segment> segmentsToBeDeleted) {
     StringBuilder log = new StringBuilder();
-    log.append("Failure to delete compacted segments due to general failure [");
-    log.append(System.lineSeparator());
-    deletionResults.getSegmentsToBeDeleted().forEach(segment -> {
-      log.append(segment.getSegmentFileKey());
-      log.append(System.lineSeparator());
-    });
+    log.append("[");
+    for (int i = 0; i < segmentsToBeDeleted.size(); i++) {
+      log.append(segmentsToBeDeleted.get(i).getSegmentFileKey());
+      if (i + 1 < segmentsToBeDeleted.size()) {
+        log.append(",");
+      }
+    }
     log.append("]");
     return log.toString();
   }
