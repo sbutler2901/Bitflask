@@ -346,6 +346,9 @@ public class SegmentManagerImplTest {
         new InterruptedException("deletion1"))).when(segmentFailureResults)
         .getSegmentsFailureReasonsMap();
     deletionResultsConsumer.accept(segmentFailureResults);
+
+    // Assert
+    // todo: creation assertions
   }
 
 }
