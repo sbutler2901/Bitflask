@@ -9,9 +9,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionCompletionResults;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Status;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -221,12 +224,13 @@ public class SegmentManagerImplTest {
 
     ArgumentCaptor<Consumer<CompactionCompletionResults>> consumerArgumentCaptor = ArgumentCaptor.forClass(
         Consumer.class);
-    // Act
     /// Initiate compaction
     segmentManager.write(key, value);
     /// Active compaction results function
     verify(segmentCompactor).registerCompactionCompletedConsumer(consumerArgumentCaptor.capture());
     Consumer<CompactionCompletionResults> compactionResultsConsumer = consumerArgumentCaptor.getValue();
+
+    // Act
     compactionResultsConsumer.accept(compactionCompletionResults);
     /// Verify post update changes
     segmentManager.read(key);
@@ -256,16 +260,92 @@ public class SegmentManagerImplTest {
     String key = "key", value = "value";
     ArgumentCaptor<Consumer<Throwable>> consumerArgumentCaptor = ArgumentCaptor.forClass(
         Consumer.class);
-    // Act
     /// Initiate compaction
     segmentManager.write(key, value);
     /// Active compaction results function
     verify(segmentCompactor).registerCompactionFailedConsumer(consumerArgumentCaptor.capture());
     Consumer<Throwable> compactionFailedConsumer = consumerArgumentCaptor.getValue();
+
+    // Act
     compactionFailedConsumer.accept(new Throwable("test"));
     segmentManager.write(key, value);
     // Assert
     verify(newActiveSegment, times(1)).write(key, value);
     verify(segmentCompactor, times(2)).compactSegments();
+    verify(segmentDeleterFactory, times(0)).create(anyList());
   }
+
+  @Test
+  @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+  void write_deletion() throws IOException {
+    // Arrange
+    /// Activate compaction initiation
+    beforeEach_defaultFunctionality(List.of(activeSegment, frozenSegment, mock(Segment.class)));
+    doReturn(true).when(activeSegment).exceedsStorageThreshold();
+    Segment newActiveSegment = mock(Segment.class);
+    doReturn(newActiveSegment).when(segmentFactory).createSegment();
+    /// Enable compaction mocking
+    SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
+    doReturn(segmentCompactor).when(segmentCompactorFactory).create(anyList());
+    // Setup for after compaction update
+    String key = "key", value = "value";
+    Segment compactedSegment = mock(Segment.class);
+    doReturn(false).when(newActiveSegment).containsKey(key);
+    doReturn(true).when(compactedSegment).containsKey(key);
+    doReturn(Optional.of(value)).when(compactedSegment).read(key);
+    CompactionCompletionResults compactionCompletionResults = mock(
+        CompactionCompletionResults.class);
+    doReturn(List.of(compactedSegment)).when(compactionCompletionResults).compactedSegments();
+    /// Enable Deletion mocking
+    SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
+    doReturn(segmentDeleter).when(segmentDeleterFactory).create(anyList());
+
+    ArgumentCaptor<Consumer<CompactionCompletionResults>> compactionConsumerArgumentCaptor = ArgumentCaptor.forClass(
+        Consumer.class);
+    /// Initiate compaction
+    segmentManager.write(key, value);
+    /// Active compaction results function
+    verify(segmentCompactor).registerCompactionCompletedConsumer(
+        compactionConsumerArgumentCaptor.capture());
+    Consumer<CompactionCompletionResults> compactionResultsConsumer = compactionConsumerArgumentCaptor.getValue();
+    compactionResultsConsumer.accept(compactionCompletionResults);
+
+    /// Deletion results
+    Segment deletion0 = mock(Segment.class);
+    Segment deletion1 = mock(Segment.class);
+    doReturn(0).when(deletion0).getSegmentFileKey();
+    doReturn(1).when(deletion1).getSegmentFileKey();
+
+    /// Capture Deletion
+    ArgumentCaptor<Consumer<DeletionResults>> deletionConsumerArgumentCaptor = ArgumentCaptor.forClass(
+        Consumer.class);
+    verify(segmentDeleter).registerDeletionResultsConsumer(
+        deletionConsumerArgumentCaptor.capture());
+    Consumer<DeletionResults> deletionResultsConsumer = deletionConsumerArgumentCaptor.getValue();
+
+    // Act - Success
+    DeletionResults successResults = mock(DeletionResults.class);
+    doReturn(Status.SUCCESS).when(successResults).getStatus();
+    doReturn(List.of(deletion0, deletion1)).when(successResults).getSegmentsToBeDeleted();
+    deletionResultsConsumer.accept(successResults);
+
+    // Act - General Failure
+    DeletionResults generalFailureResults = mock(DeletionResults.class);
+    doReturn(Status.FAILED_GENERAL).when(generalFailureResults).getStatus();
+    doReturn(List.of(deletion0, deletion1)).when(generalFailureResults).getSegmentsToBeDeleted();
+    Throwable throwable = mock(Throwable.class);
+    doReturn("generalFailure").when(throwable).getMessage();
+    doReturn(throwable).when(generalFailureResults).getGeneralFailureReason();
+    deletionResultsConsumer.accept(generalFailureResults);
+
+    // Act - Segment Failure
+    DeletionResults segmentFailureResults = mock(DeletionResults.class);
+    doReturn(Status.FAILED_SEGMENTS).when(segmentFailureResults).getStatus();
+    doReturn(List.of(deletion0, deletion1)).when(segmentFailureResults).getSegmentsToBeDeleted();
+    doReturn(Map.of(deletion0, new IOException("deletion0"), deletion1,
+        new InterruptedException("deletion1"))).when(segmentFailureResults)
+        .getSegmentsFailureReasonsMap();
+    deletionResultsConsumer.accept(segmentFailureResults);
+  }
+
 }
