@@ -1,19 +1,17 @@
 package dev.sbutler.bitflask.server.client_handling;
 
+import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.server.client_handling.connection.ClientConnectionManager;
 import dev.sbutler.bitflask.server.client_handling.processing.ClientMessageProcessor;
-import dev.sbutler.bitflask.server.configuration.logging.InjectLogger;
 import java.io.IOException;
 import javax.inject.Inject;
-import org.slf4j.Logger;
 
 class ClientRequestHandlerImpl implements ClientRequestHandler {
 
   private static final String TERMINATING_CONNECTION = "Terminating client session.";
   private static final String TERMINATING_CONNECTION_FAILURE = "Failed to correctly terminate the client session";
 
-  @InjectLogger
-  Logger logger;
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ClientConnectionManager clientConnectionManager;
   private final ClientMessageProcessor clientMessageProcessor;
@@ -40,11 +38,11 @@ class ClientRequestHandlerImpl implements ClientRequestHandler {
   }
 
   private void closeClientConnection() {
-    logger.info(TERMINATING_CONNECTION);
+    logger.atInfo().log(TERMINATING_CONNECTION);
     try {
       close();
     } catch (IOException e) {
-      logger.error(TERMINATING_CONNECTION_FAILURE, e);
+      logger.atSevere().withCause(e).log(TERMINATING_CONNECTION_FAILURE);
     }
   }
 

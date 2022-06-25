@@ -1,12 +1,12 @@
 package dev.sbutler.bitflask.server.network_service;
 
+import com.google.common.flogger.FluentLogger;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.client_handling.ClientRequestHandler;
 import dev.sbutler.bitflask.server.client_handling.ClientRequestModule;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
-import dev.sbutler.bitflask.server.configuration.logging.InjectLogger;
 import dev.sbutler.bitflask.storage.StorageModule;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
@@ -14,17 +14,15 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
-import org.slf4j.Logger;
 
 class NetworkServiceImpl implements NetworkService {
 
   private static final String INITIALIZED_MSG = "Prepared to accept incoming connections";
   private static final String SERVER_SOCKET_CLOSED = "Closed the server socket";
   private static final String SERVER_SOCKET_FAILURE = "Failed to accept incoming client connections";
-  private static final String INCOMING_CONNECTION = "Received incoming client connection from {}";
+  private static final String INCOMING_CONNECTION = "Received incoming client connection from [%s]";
 
-  @InjectLogger
-  Logger logger;
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ExecutorService executorService;
   private final ServerSocketChannel serverSocketChannel;
@@ -49,7 +47,7 @@ class NetworkServiceImpl implements NetworkService {
         StorageModule.getInstance(),
         new CommandProcessingModule()
     );
-    logger.info(INITIALIZED_MSG);
+    logger.atInfo().log(INITIALIZED_MSG);
   }
 
   private void start() {
@@ -58,7 +56,7 @@ class NetworkServiceImpl implements NetworkService {
         acceptAndExecuteNextClientConnection();
       }
     } catch (IOException e) {
-      logger.error(SERVER_SOCKET_FAILURE, e);
+      logger.atSevere().withCause(e).log(SERVER_SOCKET_FAILURE);
     }
   }
 
@@ -73,7 +71,7 @@ class NetworkServiceImpl implements NetworkService {
 
       executorService.execute(clientRequestHandler);
     } catch (ClosedChannelException e) {
-      logger.info(SERVER_SOCKET_CLOSED);
+      logger.atInfo().log(SERVER_SOCKET_CLOSED);
     }
   }
 
@@ -86,6 +84,6 @@ class NetworkServiceImpl implements NetworkService {
   }
 
   private void printClientConnectionInfo(SocketChannel socketChannel) throws IOException {
-    logger.info(INCOMING_CONNECTION, socketChannel.getRemoteAddress());
+    logger.atInfo().log(INCOMING_CONNECTION, socketChannel.getRemoteAddress());
   }
 }

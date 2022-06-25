@@ -1,25 +1,23 @@
 package dev.sbutler.bitflask.server.client_handling.processing;
 
+import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.network.writer.RespWriter;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.server.command_processing.ServerCommand;
-import dev.sbutler.bitflask.server.configuration.logging.InjectLogger;
 import java.io.EOFException;
 import java.io.IOException;
 import javax.inject.Inject;
-import org.slf4j.Logger;
 
 class ClientMessageProcessorImpl implements ClientMessageProcessor {
 
   private static final String CLIENT_DISCONNECTED = "Client disconnected.";
   private static final String CLIENT_READ_FAILURE = "Server shutdown while reading client next message";
-  private static final String CLIENT_MESSAGE_LOG = "{} received from client";
+  private static final String CLIENT_MESSAGE_LOG = "[%s] received from client";
 
-  @InjectLogger
-  Logger logger;
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final CommandProcessor commandProcessor;
   private final RespReader respReader;
@@ -40,10 +38,10 @@ class ClientMessageProcessorImpl implements ClientMessageProcessor {
       writeResponseMessage(response);
       return true;
     } catch (EOFException e) {
-      logger.warn(CLIENT_DISCONNECTED);
+      logger.atWarning().log(CLIENT_DISCONNECTED);
     } catch (IOException e) {
       // todo: test more
-      logger.warn(CLIENT_READ_FAILURE);
+      logger.atSevere().withCause(e).log(CLIENT_READ_FAILURE);
     }
     return false;
   }
@@ -53,7 +51,7 @@ class ClientMessageProcessorImpl implements ClientMessageProcessor {
   }
 
   private RespType<?> getServerResponseToClient(RespType<?> clientMessage) throws IOException {
-    logger.info(CLIENT_MESSAGE_LOG, clientMessage);
+    logger.atInfo().log(CLIENT_MESSAGE_LOG, clientMessage);
 
     String response;
     try {

@@ -12,13 +12,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.Logger;
 
 @ExtendWith(MockitoExtension.class)
 public class CommandProcessorImplTest {
@@ -28,11 +26,6 @@ public class CommandProcessorImplTest {
 
   @Mock
   Storage storage;
-
-  @BeforeEach
-  void beforeEach() {
-    commandProcessor.logger = mock(Logger.class);
-  }
 
   @Test
   @SuppressWarnings("unchecked")

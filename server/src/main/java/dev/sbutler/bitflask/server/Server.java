@@ -1,24 +1,22 @@
 package dev.sbutler.bitflask.server;
 
+import com.google.common.flogger.FluentLogger;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
-import dev.sbutler.bitflask.server.configuration.logging.InjectLogger;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
-import org.slf4j.Logger;
 
 /**
  * Provides support for getting and setting key value pairs with persistence
  */
 public class Server {
 
-  @InjectLogger
-  Logger logger;
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ExecutorService executorService;
   private final NetworkService networkService;
@@ -47,7 +45,7 @@ public class Server {
       executorService.submit(networkService).get();
     } catch (InterruptedException | ExecutionException e) {
       // todo: determine best way to handle these exceptions
-      logger.error("Issue executing NetworkService", e);
+      logger.atSevere().withCause(e).log("Issue executing NetworkService");
     }
   }
 
@@ -64,7 +62,7 @@ public class Server {
     try {
       networkService.close();
     } catch (IOException e) {
-      logger.error("Error closing NetworkService", e);
+      logger.atSevere().withCause(e).log("Error closing NetworkService");
     }
   }
 
@@ -84,6 +82,7 @@ public class Server {
   }
 
   private void printConfigInfo() {
-    logger.info("Runtime processors available {}", Runtime.getRuntime().availableProcessors());
+    logger.atInfo()
+        .log("Runtime processors available [%d]", Runtime.getRuntime().availableProcessors());
   }
 }

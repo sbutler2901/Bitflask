@@ -1,13 +1,12 @@
 package dev.sbutler.bitflask.server.command_processing;
 
-import dev.sbutler.bitflask.server.configuration.logging.InjectLogger;
+import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.Storage;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
-import org.slf4j.Logger;
 
 class CommandProcessorImpl implements CommandProcessor {
 
@@ -17,8 +16,7 @@ class CommandProcessorImpl implements CommandProcessor {
   private static final String WRITE_SUCCESS = "OK";
   private static final String WRITE_ERROR = "Error writing [%s] : [%s]";
 
-  @InjectLogger
-  Logger logger;
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final Storage storage;
 
@@ -42,10 +40,10 @@ class CommandProcessorImpl implements CommandProcessor {
     try {
       return readFuture.get().orElse(String.format(READ_NOT_FOUND, key));
     } catch (InterruptedException e) {
-      logger.error("Interrupted while waiting for response from Storage", e);
+      logger.atSevere().withCause(e).log("Interrupted while waiting for response from Storage");
       return String.format(READ_ERROR, key);
     } catch (ExecutionException e) {
-      logger.error("Read failed because of an error", e.getCause());
+      logger.atSevere().withCause(e.getCause()).log("Read failed because of an error");
       return String.format(READ_ERROR, key);
     }
   }
@@ -57,10 +55,10 @@ class CommandProcessorImpl implements CommandProcessor {
     try {
       writeFuture.get();
     } catch (InterruptedException e) {
-      logger.error("Interrupted while waiting for response from Storage", e);
+      logger.atSevere().withCause(e).log("Interrupted while waiting for response from Storage");
       return String.format(WRITE_ERROR, key, value);
     } catch (ExecutionException e) {
-      logger.error("Write failed because of an error", e.getCause());
+      logger.atSevere().withCause(e.getCause()).log("Write failed because of an error");
       return String.format(WRITE_ERROR, key, value);
     }
     return WRITE_SUCCESS;
