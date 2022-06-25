@@ -15,7 +15,7 @@ class ClientMessageProcessorImpl implements ClientMessageProcessor {
 
   private static final String CLIENT_DISCONNECTED = "Client disconnected.";
   private static final String CLIENT_READ_FAILURE = "Server shutdown while reading client next message";
-  private static final String CLIENT_MESSAGE_LOG = "[%s] received from client";
+  private static final String CLIENT_MESSAGE_LOG = "%s received from client";
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
