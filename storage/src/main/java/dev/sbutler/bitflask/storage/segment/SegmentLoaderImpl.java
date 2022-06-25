@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryIteratorException;
@@ -20,12 +20,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
-import org.slf4j.Logger;
 
 class SegmentLoaderImpl implements SegmentLoader {
 
-  @InjectStorageLogger
-  Logger logger;
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;
@@ -42,7 +40,7 @@ class SegmentLoaderImpl implements SegmentLoader {
     List<Segment> loadedSegments = new ArrayList<>();
     List<Path> segmentFilePaths = getSegmentFilePaths();
     if (segmentFilePaths.isEmpty()) {
-      logger.info("No existing files found in segment store directory");
+      logger.atInfo().log("No existing files found in segment store directory");
       return loadedSegments;
     }
 
@@ -52,7 +50,7 @@ class SegmentLoaderImpl implements SegmentLoader {
     List<Segment> segments = loadSegments(segmentFiles);
     updateSegmentFactorySegmentStartIndex(segments);
     loadedSegments.addAll(segments);
-    logger.info("Loaded [{}] preexisting segments", segments.size());
+    logger.atInfo().log("Loaded [%d] preexisting segments", segments.size());
     return loadedSegments;
   }
 

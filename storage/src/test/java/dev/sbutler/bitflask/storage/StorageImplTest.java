@@ -14,14 +14,12 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.Logger;
 
 @ExtendWith(MockitoExtension.class)
 class StorageImplTest {
@@ -32,11 +30,6 @@ class StorageImplTest {
   ExecutorService executorService;
   @Mock
   SegmentManager segmentManager;
-
-  @BeforeEach
-  void beforeEach() {
-    storage.logger = mock(Logger.class);
-  }
 
   @Test
   @SuppressWarnings("unchecked")

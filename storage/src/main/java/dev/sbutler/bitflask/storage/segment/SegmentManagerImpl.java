@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
+import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -13,14 +13,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Inject;
-import org.slf4j.Logger;
 
 class SegmentManagerImpl implements SegmentManager {
 
   private static final int DEFAULT_COMPACTION_THRESHOLD_INCREMENT = 3;
 
-  @InjectStorageLogger
-  static Logger logger;
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final SegmentFactory segmentFactory;
   private final SegmentCompactorFactory segmentCompactorFactory;
@@ -63,11 +61,12 @@ class SegmentManagerImpl implements SegmentManager {
   public Optional<String> read(String key) throws IOException {
     Optional<Segment> optionalSegment = findLatestSegmentWithKey(key);
     if (optionalSegment.isEmpty()) {
-      logger.info("Could not find a segment containing key [{}]", key);
+      logger.atInfo().log("Could not find a segment containing key [%s]", key);
       return Optional.empty();
     }
     Segment segment = optionalSegment.get();
-    logger.info("Reading value of [{}] from segment [{}]", key, segment.getSegmentFileKey());
+    logger.atInfo()
+        .log("Reading value of [%s] from segment [%d]", key, segment.getSegmentFileKey());
     return segment.read(key);
   }
 
@@ -87,7 +86,7 @@ class SegmentManagerImpl implements SegmentManager {
   @Override
   public void write(String key, String value) throws IOException {
     Segment writableSegment = managedSegmentsAtomicReference.get().writableSegment;
-    logger.info("Writing [{}] : [{}] to segment [{}]", key, value,
+    logger.atInfo().log("Writing [%s] : [%s] to segment [%d]", key, value,
         writableSegment.getSegmentFileKey());
     writableSegment.write(key, value);
     checkWritableSegmentAndCompaction();
@@ -107,7 +106,7 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private synchronized void createNewWritableSegmentAndUpdateManagedSegments() throws IOException {
-    logger.info("Creating new active segment");
+    logger.atInfo().log("Creating new active segment");
     ManagedSegments currentManagedSegments = managedSegmentsAtomicReference.get();
     Segment newWritableSegment = segmentFactory.createSegment();
     List<Segment> newFrozenSegments = new ArrayList<>();
@@ -124,7 +123,7 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private void initiateCompaction() {
-    logger.info("Initiating Compaction");
+    logger.atInfo().log("Initiating Compaction");
     compactionActive.set(true);
     SegmentCompactor segmentCompactor = segmentCompactorFactory.create(
         managedSegmentsAtomicReference.get().frozenSegments);
@@ -141,12 +140,12 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private void handleCompactionFailed(Throwable throwable) {
-    logger.error("Compaction failed", throwable);
+    logger.atSevere().withCause(throwable).log("Compaction failed");
     compactionActive.set(false);
   }
 
   private synchronized void updateAfterCompaction(List<Segment> compactedSegments) {
-    logger.info("Updating after compaction");
+    logger.atInfo().log("Updating after compaction");
     ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
     Deque<Segment> newFrozenSegments = new ArrayDeque<>();
 
@@ -162,7 +161,7 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private void queuePreCompactionSegmentsForDeletion(List<Segment> preCompactionSegments) {
-    logger.info("Queueing segments for deletion after compaction");
+    logger.atInfo().log("Queueing segments for deletion after compaction");
     SegmentDeleter segmentDeleter = segmentDeleterFactory.create(preCompactionSegments);
     segmentDeleter.registerDeletionResultsConsumer(this::handleDeletionResults);
     segmentDeleter.deleteSegments();
@@ -170,10 +169,10 @@ class SegmentManagerImpl implements SegmentManager {
 
   private void handleDeletionResults(DeletionResults deletionResults) {
     switch (deletionResults.getStatus()) {
-      case SUCCESS -> logger.info(buildLogForDeletionSuccess(deletionResults));
-      case FAILED_GENERAL -> logger.error(buildLogForDeletionGeneralFailure(deletionResults),
-          deletionResults.getGeneralFailureReason());
-      case FAILED_SEGMENTS -> logger.error(buildLogForSegmentsFailure(deletionResults));
+      case SUCCESS -> logger.atInfo().log(buildLogForDeletionSuccess(deletionResults));
+      case FAILED_GENERAL -> logger.atSevere().withCause(deletionResults.getGeneralFailureReason())
+          .log(buildLogForDeletionGeneralFailure(deletionResults));
+      case FAILED_SEGMENTS -> logger.atSevere().log(buildLogForSegmentsFailure(deletionResults));
     }
   }
 
@@ -203,12 +202,12 @@ class SegmentManagerImpl implements SegmentManager {
   private String buildLogForSegmentsFailure(DeletionResults deletionResults) {
     StringBuilder log = new StringBuilder();
     log.append("Failure to delete compacted segments due to specific failures [");
-    log.append(System.lineSeparator());
     deletionResults.getSegmentsFailureReasonsMap().forEach((segment, throwable) -> {
+      log.append("(");
       log.append(segment.getSegmentFileKey());
-      log.append(" , ");
+      log.append(", ");
       log.append(throwable.getMessage());
-      log.append(System.lineSeparator());
+      log.append(")");
     });
     log.append("]");
     return log.toString();

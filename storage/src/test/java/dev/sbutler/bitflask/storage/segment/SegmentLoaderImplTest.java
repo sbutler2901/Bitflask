@@ -22,14 +22,12 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.Logger;
 
 // todo: implement tests
 @ExtendWith(MockitoExtension.class)
@@ -41,11 +39,6 @@ class SegmentLoaderImplTest {
   ExecutorService executorService;
   @Mock
   SegmentFactory segmentFactory;
-
-  @BeforeEach
-  void beforeEach() {
-    segmentLoader.logger = mock(Logger.class);
-  }
 
   @Test
   @SuppressWarnings("unchecked")

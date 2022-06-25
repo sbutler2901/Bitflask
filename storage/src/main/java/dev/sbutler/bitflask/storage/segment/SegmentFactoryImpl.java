@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
+import com.google.common.flogger.FluentLogger;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -10,22 +10,18 @@ import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
-import org.slf4j.Logger;
 
 class SegmentFactoryImpl implements SegmentFactory {
 
   static final String DEFAULT_SEGMENT_FILENAME = "%d_segment.txt";
   static final String DEFAULT_SEGMENT_DIR_PATH =
       System.getProperty("user.home") + "/.bitflask/store/";
-  static final Set<StandardOpenOption> fileChannelOptions = Set.of(
-      StandardOpenOption.CREATE,
-      StandardOpenOption.READ,
-      StandardOpenOption.WRITE
+  static final Set<StandardOpenOption> fileChannelOptions = Set.of(StandardOpenOption.CREATE,
+      StandardOpenOption.READ, StandardOpenOption.WRITE
 //      StandardOpenOption.TRUNCATE_EXISTING
   );
 
-  @InjectStorageLogger
-  Logger logger;
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final AtomicInteger nextSegmentIndex = new AtomicInteger(0);
 
@@ -42,7 +38,7 @@ class SegmentFactoryImpl implements SegmentFactory {
   @Override
   public Segment createSegmentFromFile(SegmentFile segmentFile) throws IOException {
     Segment newSegment = new SegmentImpl(segmentFile);
-    logger.info("Created new segment with fileKey [{}]", newSegment.getSegmentFileKey());
+    logger.atInfo().log("Created new segment with fileKey [%s]", newSegment.getSegmentFileKey());
     return newSegment;
   }
 
@@ -62,8 +58,7 @@ class SegmentFactoryImpl implements SegmentFactory {
     return Paths.get(DEFAULT_SEGMENT_DIR_PATH, segmentFilename);
   }
 
-  private FileChannel getNextSegmentFileChannel(Path nextSegmentFilePath)
-      throws IOException {
+  private FileChannel getNextSegmentFileChannel(Path nextSegmentFilePath) throws IOException {
     return FileChannel.open(nextSegmentFilePath, fileChannelOptions);
   }
 
@@ -78,10 +73,10 @@ class SegmentFactoryImpl implements SegmentFactory {
     boolean segmentStoreDirExists = Files.isDirectory(segmentStoreDirPath);
     if (!segmentStoreDirExists) {
       Files.createDirectories(getSegmentStoreDirPath());
-      logger.info("Created segment store directory at [{}]", segmentStoreDirPath);
+      logger.atInfo().log("Created segment store directory at [%s]", segmentStoreDirPath);
       return true;
     }
-    logger.info("Segment store directory already existed at [{}]", segmentStoreDirPath);
+    logger.atInfo().log("Segment store directory already existed at [{}]", segmentStoreDirPath);
     return false;
   }
 

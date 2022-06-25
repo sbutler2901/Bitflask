@@ -20,7 +20,6 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.slf4j.Logger;
 
 public class SegmentManagerImplTest {
 
@@ -40,7 +39,6 @@ public class SegmentManagerImplTest {
     segmentDeleterFactory = mock(SegmentDeleterFactory.class);
     activeSegment = mock(Segment.class);
     frozenSegment = mock(Segment.class);
-    SegmentManagerImpl.logger = mock(Logger.class);
   }
 
   @Test
@@ -267,7 +265,7 @@ public class SegmentManagerImplTest {
     Consumer<Throwable> compactionFailedConsumer = consumerArgumentCaptor.getValue();
 
     // Act
-    compactionFailedConsumer.accept(new Throwable("test"));
+    compactionFailedConsumer.accept(new Throwable("Compaction Failed"));
     segmentManager.write(key, value);
     // Assert
     verify(newActiveSegment, times(1)).write(key, value);
@@ -342,8 +340,8 @@ public class SegmentManagerImplTest {
     DeletionResults segmentFailureResults = mock(DeletionResults.class);
     doReturn(Status.FAILED_SEGMENTS).when(segmentFailureResults).getStatus();
     doReturn(List.of(deletion0, deletion1)).when(segmentFailureResults).getSegmentsToBeDeleted();
-    doReturn(Map.of(deletion0, new IOException("deletion0"), deletion1,
-        new InterruptedException("deletion1"))).when(segmentFailureResults)
+    doReturn(Map.of(deletion0, new IOException("deletion0 failed"), deletion1,
+        new InterruptedException("deletion1 failed"))).when(segmentFailureResults)
         .getSegmentsFailureReasonsMap();
     deletionResultsConsumer.accept(segmentFailureResults);
 

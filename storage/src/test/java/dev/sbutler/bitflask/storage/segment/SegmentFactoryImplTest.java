@@ -14,24 +14,17 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.Logger;
 
 @ExtendWith(MockitoExtension.class)
 public class SegmentFactoryImplTest {
 
   @InjectMocks
   SegmentFactoryImpl segmentFactory;
-
-  @BeforeEach
-  void beforeEach() {
-    segmentFactory.logger = mock(Logger.class);
-  }
 
   @Test
   @SuppressWarnings("unchecked")

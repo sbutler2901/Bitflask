@@ -1,14 +1,13 @@
 package dev.sbutler.bitflask.storage;
 
+import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import dev.sbutler.bitflask.storage.configuration.logging.InjectStorageLogger;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
-import org.slf4j.Logger;
 
 class StorageImpl implements Storage {
 
@@ -16,8 +15,7 @@ class StorageImpl implements Storage {
   private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null, empty, or longer than 256 characters";
   private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null, empty, or longer than 256 characters";
 
-  @InjectStorageLogger
-  Logger logger;
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ExecutorService executorService;
   private final SegmentManager segmentManager;
@@ -35,7 +33,7 @@ class StorageImpl implements Storage {
       segmentManager.write(key, value);
       return null;
     };
-    logger.info("Submitting write for [{}] : [{}]", key, value);
+    logger.atInfo().log("Submitting write for [%s] : [%s]", key, value);
     return executorService.submit(writeTask);
   }
 
@@ -50,7 +48,7 @@ class StorageImpl implements Storage {
   public Future<Optional<String>> read(String key) {
     validateReadArgs(key);
     Callable<Optional<String>> readTask = () -> segmentManager.read(key);
-    logger.info("Submitting read for [{}]", key);
+    logger.atInfo().log("Submitting read for [%s]", key);
     return executorService.submit(readTask);
   }
 
