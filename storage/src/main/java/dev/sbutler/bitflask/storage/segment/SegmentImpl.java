@@ -1,5 +1,8 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -113,11 +116,14 @@ class SegmentImpl implements Segment {
   }
 
   private static void verifyEncodedArgs(String key, String value) {
-    if (key.length() > 256) {
-      throw new IllegalArgumentException("A key longer than 256 chars cannot be encoded");
-    } else if (value.length() > 256) {
-      throw new IllegalArgumentException("A value longer than 256 chars cannot be encoded");
-    }
+    checkNotNull(key);
+    checkArgument(!key.isBlank(), "Expected non-blank key, but was [%s]", key);
+    checkArgument(key.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
+        key.length());
+    checkNotNull(value);
+    checkArgument(!value.isBlank(), "Expected non-blank key, but was [%s]", value);
+    checkArgument(value.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
+        value.length());
   }
 
   @Override

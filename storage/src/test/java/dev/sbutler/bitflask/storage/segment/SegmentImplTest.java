@@ -110,7 +110,7 @@ public class SegmentImplTest {
   }
 
   @Test
-  void write_afterClose() throws IOException {
+  void write_afterClose() {
     segment.close();
     assertThrows(RuntimeException.class, () -> segment.write("key", "value"));
   }
@@ -157,7 +157,7 @@ public class SegmentImplTest {
   }
 
   @Test
-  void read_afterClose() throws IOException {
+  void read_afterClose() {
     segment.close();
     assertThrows(RuntimeException.class, () -> segment.read("key"));
   }
@@ -176,11 +176,19 @@ public class SegmentImplTest {
   }
 
   @Test
-  void encodedKeyAndValue_IllegalArgumentException() {
-    String key = new String(new byte[257]);
-    String value = new String(new byte[257]);
-    assertThrows(IllegalArgumentException.class, () -> SegmentImpl.encodeKeyAndValue(key, "value"));
-    assertThrows(IllegalArgumentException.class, () -> SegmentImpl.encodeKeyAndValue("key", value));
+  void encodedKeyAndValue_key_invalidArg() {
+    assertThrows(NullPointerException.class, () -> SegmentImpl.encodeKeyAndValue(null, "value"));
+    assertThrows(IllegalArgumentException.class, () -> SegmentImpl.encodeKeyAndValue("", "value"));
+    assertThrows(IllegalArgumentException.class,
+        () -> SegmentImpl.encodeKeyAndValue(new String(new byte[257]), "value"));
+  }
+
+  @Test
+  void encodedKeyAndValue_value_invalidArg() {
+    assertThrows(NullPointerException.class, () -> SegmentImpl.encodeKeyAndValue("key", null));
+    assertThrows(IllegalArgumentException.class, () -> SegmentImpl.encodeKeyAndValue("key", ""));
+    assertThrows(IllegalArgumentException.class,
+        () -> SegmentImpl.encodeKeyAndValue("key", new String(new byte[257])));
   }
 
   @Test
@@ -234,7 +242,7 @@ public class SegmentImplTest {
   }
 
   @Test
-  void close() throws IOException {
+  void close() {
     // Act
     segment.close();
     // Assert

@@ -13,15 +13,17 @@ import javax.inject.Inject;
 
 class SegmentFactoryImpl implements SegmentFactory {
 
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
   static final String DEFAULT_SEGMENT_FILENAME = "%d_segment.txt";
   static final String DEFAULT_SEGMENT_DIR_PATH =
       System.getProperty("user.home") + "/.bitflask/store/";
-  static final Set<StandardOpenOption> fileChannelOptions = Set.of(StandardOpenOption.CREATE,
-      StandardOpenOption.READ, StandardOpenOption.WRITE
+  static final Set<StandardOpenOption> fileChannelOptions = Set.of(
+      StandardOpenOption.CREATE,
+      StandardOpenOption.READ,
+      StandardOpenOption.WRITE
 //      StandardOpenOption.TRUNCATE_EXISTING
   );
-
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final AtomicInteger nextSegmentIndex = new AtomicInteger(0);
 

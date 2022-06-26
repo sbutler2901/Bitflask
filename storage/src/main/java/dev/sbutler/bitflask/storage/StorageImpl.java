@@ -1,5 +1,8 @@
 package dev.sbutler.bitflask.storage;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
@@ -11,10 +14,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 class StorageImpl implements Storage {
-
-  private static final String WRITE_ERR_BAD_KEY = "Error writing data, provided key was null, empty, or longer than 256 characters";
-  private static final String WRITE_ERR_BAD_VALUE = "Error writing data, provided value was null, empty, or longer than 256 characters";
-  private static final String READ_ERR_BAD_KEY = "Error reading data, provided key was null, empty, or longer than 256 characters";
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -39,11 +38,14 @@ class StorageImpl implements Storage {
   }
 
   private void validateWriteArgs(String key, String value) {
-    if (key == null || key.length() <= 0 || key.length() > 256) {
-      throw new IllegalArgumentException(WRITE_ERR_BAD_KEY);
-    } else if (value == null || value.length() <= 0 || value.length() > 256) {
-      throw new IllegalArgumentException(WRITE_ERR_BAD_VALUE);
-    }
+    checkNotNull(key);
+    checkArgument(!key.isBlank(), "Expected non-blank key, but was [%s]", key);
+    checkArgument(key.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
+        key.length());
+    checkNotNull(value);
+    checkArgument(!value.isBlank(), "Expected non-blank key, but was [%s]", value);
+    checkArgument(value.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
+        value.length());
   }
 
   public Future<Optional<String>> read(String key) {
@@ -54,9 +56,10 @@ class StorageImpl implements Storage {
   }
 
   private void validateReadArgs(String key) {
-    if (key == null || key.length() <= 0 || key.length() > 256) {
-      throw new IllegalArgumentException(READ_ERR_BAD_KEY);
-    }
+    checkNotNull(key);
+    checkArgument(!key.isBlank(), "Expected non-blank key, but was [%s]", key);
+    checkArgument(key.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
+        key.length());
   }
 
   @Override

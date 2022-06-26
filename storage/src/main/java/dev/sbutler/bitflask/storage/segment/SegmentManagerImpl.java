@@ -16,9 +16,9 @@ import javax.inject.Inject;
 
 class SegmentManagerImpl implements SegmentManager {
 
-  private static final int DEFAULT_COMPACTION_THRESHOLD_INCREMENT = 3;
-
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
+  private static final int DEFAULT_COMPACTION_THRESHOLD_INCREMENT = 3;
 
   private final SegmentFactory segmentFactory;
   private final SegmentCompactorFactory segmentCompactorFactory;

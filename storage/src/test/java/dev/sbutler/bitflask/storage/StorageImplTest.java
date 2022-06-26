@@ -52,16 +52,16 @@ class StorageImplTest {
   }
 
   @Test
-  void write_IllegalArgumentException_key() {
-    assertThrows(IllegalArgumentException.class, () -> storage.write(null, "value"));
+  void write_key_invalidArg() {
+    assertThrows(NullPointerException.class, () -> storage.write(null, "value"));
     assertThrows(IllegalArgumentException.class, () -> storage.write("", "value"));
     assertThrows(IllegalArgumentException.class,
         () -> storage.write(new String(new byte[257]), "value"));
   }
 
   @Test
-  void write_IllegalArgumentException_value() {
-    assertThrows(IllegalArgumentException.class, () -> storage.write("key", null));
+  void write_value_invalidArg() {
+    assertThrows(NullPointerException.class, () -> storage.write("key", null));
     assertThrows(IllegalArgumentException.class, () -> storage.write("key", ""));
     assertThrows(IllegalArgumentException.class,
         () -> storage.write("key", new String(new byte[257])));
@@ -86,9 +86,10 @@ class StorageImplTest {
   }
 
   @Test
-  void read_IllegalArgumentException() {
-    assertThrows(IllegalArgumentException.class, () -> storage.read(null));
+  void read_key_invalidArg() {
+    assertThrows(NullPointerException.class, () -> storage.read(null));
     assertThrows(IllegalArgumentException.class, () -> storage.read(""));
+    assertThrows(IllegalArgumentException.class, () -> storage.read(new String(new byte[257])));
   }
 
   @Test
