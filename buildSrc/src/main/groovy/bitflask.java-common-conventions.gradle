@@ -23,6 +23,8 @@ dependencies {
     implementation 'com.google.inject:guice:5.1.0'
     implementation 'com.google.inject.extensions:guice-assistedinject:5.1.0'
 
+    implementation 'com.google.guava:guava:31.1-jre'
+
     implementation 'com.google.flogger:flogger:0.7.4'
     implementation 'com.google.flogger:flogger-log4j2-backend:0.7.4'
 
