@@ -112,17 +112,21 @@ public class SegmentCompactorImplTest {
     doReturn(Set.of("1-key")).when(tailSegment).getSegmentKeys();
     doReturn(Optional.empty()).when(headSegment).read(anyString());
 
-    List<Throwable> handledExceptions = new ArrayList<>();
-    segmentCompactorImpl.registerCompactionFailedConsumer(handledExceptions::add);
+    AtomicReference<Throwable> handledException = new AtomicReference<>();
+    List<Segment> failedCompactionSegments = new ArrayList<>();
+    segmentCompactorImpl.registerCompactionFailedConsumer((throwable, failedCompactionSegment) -> {
+      handledException.set(throwable);
+      failedCompactionSegments.addAll(failedCompactionSegment);
+    });
 
     // Act
     segmentCompactorImpl.compactSegments();
 
     // Assert
-    assertEquals(1, handledExceptions.size());
-    assertInstanceOf(RuntimeException.class, handledExceptions.get(0));
+    assertInstanceOf(RuntimeException.class, handledException.get());
     assertFalse(headSegment.hasBeenCompacted());
     assertFalse(tailSegment.hasBeenCompacted());
+    assertEquals(0, failedCompactionSegments.size());
   }
 
   @Test
@@ -132,17 +136,25 @@ public class SegmentCompactorImplTest {
     doReturn(Set.of("1-key")).when(tailSegment).getSegmentKeys();
     doThrow(IOException.class).when(headSegment).read(anyString());
 
-    List<Throwable> handledExceptions = new ArrayList<>();
-    segmentCompactorImpl.registerCompactionFailedConsumer(handledExceptions::add);
+    Segment segment = mock(Segment.class);
+    doReturn(segment).when(segmentFactory).createSegment();
+
+    AtomicReference<Throwable> handledException = new AtomicReference<>();
+    List<Segment> failedCompactionSegments = new ArrayList<>();
+    segmentCompactorImpl.registerCompactionFailedConsumer((throwable, failedCompactionSegment) -> {
+      handledException.set(throwable);
+      failedCompactionSegments.addAll(failedCompactionSegment);
+    });
 
     // Act
     segmentCompactorImpl.compactSegments();
 
     // Assert
-    assertEquals(1, handledExceptions.size());
-    assertInstanceOf(IOException.class, handledExceptions.get(0));
+    assertInstanceOf(IOException.class, handledException.get());
     assertFalse(headSegment.hasBeenCompacted());
     assertFalse(tailSegment.hasBeenCompacted());
+    assertEquals(1, failedCompactionSegments.size());
+    assertEquals(segment, failedCompactionSegments.get(0));
   }
 
 }

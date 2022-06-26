@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 class StorageImpl implements Storage {
@@ -55,6 +56,19 @@ class StorageImpl implements Storage {
   private void validateReadArgs(String key) {
     if (key == null || key.length() <= 0 || key.length() > 256) {
       throw new IllegalArgumentException(READ_ERR_BAD_KEY);
+    }
+  }
+
+  @Override
+  public void shutdown() throws InterruptedException {
+    try {
+      executorService.shutdown();
+      boolean shutdownBeforeTermination = executorService.awaitTermination(10L, TimeUnit.SECONDS);
+      if (!shutdownBeforeTermination) {
+        executorService.shutdownNow();
+      }
+    } finally {
+      segmentManager.close();
     }
   }
 

@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -56,16 +57,16 @@ class SegmentLoaderImpl implements SegmentLoader {
 
   private List<Path> getSegmentFilePaths() throws IOException {
     Path segmentStoreDirPath = segmentFactory.getSegmentStoreDirPath();
-    List<Path> result = new ArrayList<>();
+    List<Path> filePaths = new ArrayList<>();
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(segmentStoreDirPath)) {
       for (Path entry : stream) {
-        result.add(entry);
+        filePaths.add(entry);
       }
     } catch (DirectoryIteratorException ex) {
       // I/O error encountered during the iteration, the cause is an IOException
       throw ex.getCause();
     }
-    return result;
+    return filePaths;
   }
 
   private void sortFilePathsByModifiedDate(List<Path> segmentFilePaths) throws IOException {
@@ -81,10 +82,15 @@ class SegmentLoaderImpl implements SegmentLoader {
 
   private List<FileChannel> openSegmentFileChannels(List<Path> filePaths) throws IOException {
     List<FileChannel> openFiles = new ArrayList<>();
-    for (Path path : filePaths) {
-      FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ,
-          StandardOpenOption.WRITE);
-      openFiles.add(fileChannel);
+    try {
+      for (Path path : filePaths) {
+        FileChannel fileChannel = FileChannel.open(path, Set.of(StandardOpenOption.READ,
+            StandardOpenOption.WRITE));
+        openFiles.add(fileChannel);
+      }
+    } catch (IOException e) {
+      closeFileChannels(openFiles);
+      throw e;
     }
     return openFiles;
   }
@@ -115,8 +121,23 @@ class SegmentLoaderImpl implements SegmentLoader {
       }
       return segments;
     } catch (InterruptedException | ExecutionException e) {
+      closeSegmentFiles(segmentFiles);
       throw new IOException("Failed to load previous segments", e);
     }
+  }
+
+  private void closeFileChannels(List<FileChannel> fileChannels) {
+    fileChannels.forEach(fileChannel -> {
+      try {
+        fileChannel.close();
+      } catch (IOException ignored) {
+        // Best effort to close opened channels
+      }
+    });
+  }
+
+  private void closeSegmentFiles(List<SegmentFile> segmentFiles) {
+    segmentFiles.forEach(SegmentFile::close);
   }
 
   private void updateSegmentFactorySegmentStartIndex(List<Segment> segments) {

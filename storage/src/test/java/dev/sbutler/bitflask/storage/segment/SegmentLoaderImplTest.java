@@ -4,10 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -29,7 +32,6 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// todo: implement tests
 @ExtendWith(MockitoExtension.class)
 class SegmentLoaderImplTest {
 
@@ -62,7 +64,7 @@ class SegmentLoaderImplTest {
           .thenReturn(firstFileTime).thenReturn(secondFileTime);
 
       FileChannel fileChannel = mock(FileChannel.class);
-      fileChannelMockedStatic.when(() -> FileChannel.open(any(), any(), any()))
+      fileChannelMockedStatic.when(() -> FileChannel.open(any(), anySet()))
           .thenReturn(fileChannel);
 
       Segment firstSegment = mock(Segment.class);
@@ -100,7 +102,7 @@ class SegmentLoaderImplTest {
   }
 
   @Test
-  void loadExistingSegments_DirectoryIteratorException() {
+  void loadExistingSegments_filePathsDirectoryIteratorException() {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       // Arrange
       DirectoryIteratorException directoryIteratorException = mock(
@@ -115,7 +117,44 @@ class SegmentLoaderImplTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void loadExistingSegments_executorServiceInterruptedException() throws InterruptedException {
+  void loadExistingSegments_fileChannelsIOException() throws IOException {
+    try (MockedStatic<Files> filesMockedStatic = mockStatic(
+        Files.class); MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(
+        FileChannel.class)) {
+      // Arrange
+      DirectoryStream<Path> directoryStream = mock(DirectoryStream.class);
+      filesMockedStatic.when(() -> Files.newDirectoryStream(any())).thenReturn(directoryStream);
+      Iterator<Path> pathIterator = mock(Iterator.class);
+      when(pathIterator.hasNext()).thenReturn(true).thenReturn(true).thenReturn(true)
+          .thenReturn(false);
+      Path firstPath = mock(Path.class);
+      Path secondPath = mock(Path.class);
+      Path thirdPath = mock(Path.class);
+      when(pathIterator.next()).thenReturn(firstPath).thenReturn(secondPath).thenReturn(thirdPath);
+      doReturn(pathIterator).when(directoryStream).iterator();
+
+      FileTime firstFileTime = mock(FileTime.class);
+      FileTime secondFileTime = mock(FileTime.class);
+      FileTime thirdFileTime = mock(FileTime.class);
+      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
+          .thenReturn(firstFileTime).thenReturn(secondFileTime).thenReturn(thirdFileTime);
+
+      FileChannel firstFileChannel = mock(FileChannel.class);
+      FileChannel secondFileChannel = mock(FileChannel.class);
+      fileChannelMockedStatic.when(() -> FileChannel.open(any(), anySet()))
+          .thenReturn(firstFileChannel).thenReturn(secondFileChannel).thenThrow(IOException.class);
+      doThrow(IOException.class).when(secondFileChannel).close();
+
+      // Act / Assert
+      assertThrows(IOException.class, () -> segmentLoader.loadExistingSegments());
+      verify(firstFileChannel, times(1)).close();
+    }
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void loadExistingSegments_executorServiceInterruptedException()
+      throws InterruptedException, IOException {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(
         Files.class); MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(
         FileChannel.class)) {
@@ -129,13 +168,14 @@ class SegmentLoaderImplTest {
       doReturn(pathIterator).when(directoryStream).iterator();
 
       FileChannel fileChannel = mock(FileChannel.class);
-      fileChannelMockedStatic.when(() -> FileChannel.open(any(), any(), any()))
+      fileChannelMockedStatic.when(() -> FileChannel.open(any(), anySet()))
           .thenReturn(fileChannel);
 
       doThrow(InterruptedException.class).when(executorService).invokeAll(anyList());
 
       // Act / Assert
       assertThrows(IOException.class, () -> segmentLoader.loadExistingSegments());
+      verify(fileChannel, times(1)).close();
     }
   }
 

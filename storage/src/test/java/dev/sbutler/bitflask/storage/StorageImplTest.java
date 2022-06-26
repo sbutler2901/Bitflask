@@ -3,7 +3,9 @@ package dev.sbutler.bitflask.storage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -87,5 +89,25 @@ class StorageImplTest {
   void read_IllegalArgumentException() {
     assertThrows(IllegalArgumentException.class, () -> storage.read(null));
     assertThrows(IllegalArgumentException.class, () -> storage.read(""));
+  }
+
+  @Test
+  void shutdown() throws InterruptedException {
+    doReturn(true).when(executorService).awaitTermination(anyLong(), any());
+    storage.shutdown();
+    verify(executorService, times(1)).shutdown();
+    verify(executorService, times(1)).awaitTermination(anyLong(), any());
+    verify(executorService, times(0)).shutdownNow();
+    verify(segmentManager, times(1)).close();
+  }
+
+  @Test
+  void shutdown_timeLimitExceeded() throws InterruptedException {
+    doReturn(false).when(executorService).awaitTermination(anyLong(), any());
+    storage.shutdown();
+    verify(executorService, times(1)).shutdown();
+    verify(executorService, times(1)).awaitTermination(anyLong(), any());
+    verify(executorService, times(1)).shutdownNow();
+    verify(segmentManager, times(1)).close();
   }
 }

@@ -49,8 +49,11 @@ class SegmentFile {
     return segmentFileKey;
   }
 
-  void close() throws IOException {
-    segmentFileChannel.close();
+  void close() {
+    try {
+      segmentFileChannel.close();
+    } catch (IOException ignored) {
+    }
   }
 
   boolean isOpen() {

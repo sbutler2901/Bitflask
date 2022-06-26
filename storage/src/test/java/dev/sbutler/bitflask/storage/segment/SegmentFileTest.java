@@ -94,6 +94,13 @@ public class SegmentFileTest {
   }
 
   @Test
+  void close_IOException() throws IOException {
+    doThrow(IOException.class).when(fileChannel).close();
+    segmentFile.close();
+    verify(fileChannel, times(1)).close();
+  }
+
+  @Test
   void isOpen() {
     // open
     doReturn(true).when(fileChannel).isOpen();

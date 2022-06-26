@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -27,11 +28,14 @@ interface SegmentCompactor {
       Consumer<CompactionCompletionResults> compactionCompletedConsumer);
 
   /**
-   * Registers a consumer of the error that caused compaction to fail.
+   * Registers a consumer of the error that caused compaction to fail and any segments created
+   * during execution. The segments should not be considered complete and valid for usage.
    *
-   * @param compactionFailedConsumer the consumer to be called with the compaction failure
+   * @param compactionFailedConsumer the consumer to be called with the compaction failure and
+   *                                 created segments
    */
-  void registerCompactionFailedConsumer(Consumer<Throwable> compactionFailedConsumer);
+  void registerCompactionFailedConsumer(
+      BiConsumer<Throwable, List<Segment>> compactionFailedConsumer);
 
   /**
    * Used to transfer the results of a successful compaction execution.

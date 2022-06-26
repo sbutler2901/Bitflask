@@ -25,4 +25,5 @@ public interface Storage {
    */
   Future<Optional<String>> read(String key);
 
+  void shutdown() throws InterruptedException;
 }

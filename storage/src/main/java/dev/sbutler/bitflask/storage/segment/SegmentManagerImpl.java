@@ -92,6 +92,13 @@ class SegmentManagerImpl implements SegmentManager {
     checkWritableSegmentAndCompaction();
   }
 
+  @Override
+  public void close() {
+    ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
+    managedSegments.writableSegment.close();
+    managedSegments.frozenSegments.forEach(Segment::close);
+  }
+
   private synchronized void checkWritableSegmentAndCompaction() throws IOException {
     if (shouldCreateAndUpdateWritableSegment()) {
       createNewWritableSegmentAndUpdateManagedSegments();
@@ -134,13 +141,15 @@ class SegmentManagerImpl implements SegmentManager {
 
   private void handleCompactionCompleted(
       SegmentCompactor.CompactionCompletionResults compactionCompletionResults) {
+    logger.atInfo().log("Compaction completed");
     updateAfterCompaction(compactionCompletionResults.compactedSegments());
-    queuePreCompactionSegmentsForDeletion(compactionCompletionResults.preCompactionSegments());
+    queueSegmentsForDeletion(compactionCompletionResults.preCompactionSegments());
     compactionActive.set(false);
   }
 
-  private void handleCompactionFailed(Throwable throwable) {
+  private void handleCompactionFailed(Throwable throwable, List<Segment> failedCompactionSegments) {
     logger.atSevere().withCause(throwable).log("Compaction failed");
+    queueSegmentsForDeletion(failedCompactionSegments);
     compactionActive.set(false);
   }
 
@@ -160,9 +169,9 @@ class SegmentManagerImpl implements SegmentManager {
         new ManagedSegments(currentManagedSegment.writableSegment, newFrozenSegments));
   }
 
-  private void queuePreCompactionSegmentsForDeletion(List<Segment> preCompactionSegments) {
+  private void queueSegmentsForDeletion(List<Segment> segmentsForDeletion) {
     logger.atInfo().log("Queueing segments for deletion after compaction");
-    SegmentDeleter segmentDeleter = segmentDeleterFactory.create(preCompactionSegments);
+    SegmentDeleter segmentDeleter = segmentDeleterFactory.create(segmentsForDeletion);
     segmentDeleter.registerDeletionResultsConsumer(this::handleDeletionResults);
     segmentDeleter.deleteSegments();
   }

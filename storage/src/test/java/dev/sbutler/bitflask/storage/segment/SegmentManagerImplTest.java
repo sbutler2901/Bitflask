@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -256,21 +257,25 @@ public class SegmentManagerImplTest {
     doReturn(segmentCompactor).when(segmentCompactorFactory).create(anyList());
     /// Setup for after compaction update
     String key = "key", value = "value";
-    ArgumentCaptor<Consumer<Throwable>> consumerArgumentCaptor = ArgumentCaptor.forClass(
-        Consumer.class);
+    ArgumentCaptor<BiConsumer<Throwable, List<Segment>>> consumerArgumentCaptor = ArgumentCaptor.forClass(
+        BiConsumer.class);
+    /// Deletion of failed compaction segments
+    SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
+    doReturn(segmentDeleter).when(segmentDeleterFactory).create(anyList());
     /// Initiate compaction
     segmentManager.write(key, value);
     /// Active compaction results function
     verify(segmentCompactor).registerCompactionFailedConsumer(consumerArgumentCaptor.capture());
-    Consumer<Throwable> compactionFailedConsumer = consumerArgumentCaptor.getValue();
+    BiConsumer<Throwable, List<Segment>> compactionFailedConsumer = consumerArgumentCaptor.getValue();
 
     // Act
-    compactionFailedConsumer.accept(new Throwable("Compaction Failed"));
+    compactionFailedConsumer.accept(new Throwable("Compaction Failed"), new ArrayList<>());
     segmentManager.write(key, value);
     // Assert
     verify(newActiveSegment, times(1)).write(key, value);
     verify(segmentCompactor, times(2)).compactSegments();
-    verify(segmentDeleterFactory, times(0)).create(anyList());
+    verify(segmentDeleterFactory, times(1)).create(anyList());
+    verify(segmentDeleter, times(1)).deleteSegments();
   }
 
   @Test
@@ -349,4 +354,11 @@ public class SegmentManagerImplTest {
     // todo: creation assertions
   }
 
+  @Test
+  void close() throws IOException {
+    beforeEach_defaultFunctionality();
+    segmentManager.close();
+    verify(activeSegment, times(1)).close();
+    verify(frozenSegment, times(1)).close();
+  }
 }

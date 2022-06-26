@@ -56,10 +56,8 @@ interface Segment {
 
   /**
    * Closes the segment for reading and writing
-   *
-   * @throws IOException if there is an issue closing the segment
    */
-  void close() throws IOException;
+  void close();
 
   /**
    * Checks if the segment is open and able to be read or written

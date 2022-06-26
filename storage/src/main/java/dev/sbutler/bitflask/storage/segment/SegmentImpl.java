@@ -57,8 +57,8 @@ class SegmentImpl implements Segment {
     byte[] encodedKeyAndValue = encodeKeyAndValue(key, value);
     long writeOffset = currentFileWriteOffset.getAndAdd(encodedKeyAndValue.length);
 
-    readWriteLock.writeLock().lock();
     try {
+      readWriteLock.writeLock().lock();
       segmentFile.write(encodedKeyAndValue, writeOffset);
     } finally {
       readWriteLock.writeLock().unlock();
@@ -84,8 +84,8 @@ class SegmentImpl implements Segment {
     long valueLengthOffsetStart = entryFileOffset + 1 + key.length();
     long valueOffsetStart = valueLengthOffsetStart + 1;
 
-    readWriteLock.readLock().lock();
     try {
+      readWriteLock.readLock().lock();
       int valueLength = segmentFile.readByte(valueLengthOffsetStart);
       String value = segmentFile.readAsString(valueLength, valueOffsetStart);
       return Optional.of(value);
@@ -141,9 +141,9 @@ class SegmentImpl implements Segment {
   }
 
   @Override
-  public void close() throws IOException {
-    readWriteLock.writeLock().lock();
+  public void close() {
     try {
+      readWriteLock.writeLock().lock();
       segmentFile.close();
     } finally {
       readWriteLock.writeLock().unlock();
@@ -160,8 +160,8 @@ class SegmentImpl implements Segment {
     if (isOpen()) {
       throw new RuntimeException("Segment should be closed before deleting");
     }
-    readWriteLock.writeLock().lock();
     try {
+      readWriteLock.writeLock().lock();
       Files.delete(segmentFile.getSegmentFilePath());
     } finally {
       readWriteLock.writeLock().unlock();

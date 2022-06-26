@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 class SegmentCompactorImpl implements SegmentCompactor {
@@ -22,8 +23,10 @@ class SegmentCompactorImpl implements SegmentCompactor {
   private final SegmentFactory segmentFactory;
   private final List<Segment> preCompactionSegments;
   private final List<Consumer<CompactionCompletionResults>> compactionCompletedConsumers = new ArrayList<>();
-  private final List<Consumer<Throwable>> compactionFailedConsumers = new ArrayList<>();
+  private final List<BiConsumer<Throwable, List<Segment>>> compactionFailedConsumers = new ArrayList<>();
   private volatile boolean compactionStarted = false;
+
+  private final List<Segment> failedCompactedSegments = new CopyOnWriteArrayList<>();
 
   @Inject
   SegmentCompactorImpl(@StorageExecutorService ExecutorService executorService,
@@ -59,12 +62,14 @@ class SegmentCompactorImpl implements SegmentCompactor {
   }
 
   @Override
-  public void registerCompactionFailedConsumer(Consumer<Throwable> compactionFailedConsumer) {
+  public void registerCompactionFailedConsumer(
+      BiConsumer<Throwable, List<Segment>> compactionFailedConsumer) {
     compactionFailedConsumers.add(compactionFailedConsumer);
   }
 
   private void runRegisteredCompactionFailedConsumers(Throwable throwable) {
-    compactionFailedConsumers.forEach(consumer -> consumer.accept(throwable));
+    compactionFailedConsumers.forEach(
+        consumer -> consumer.accept(throwable, failedCompactedSegments));
   }
 
   private Map<String, Segment> createKeySegmentMap() {
@@ -81,10 +86,9 @@ class SegmentCompactorImpl implements SegmentCompactor {
   }
 
   private List<Segment> createCompactedSegments(Map<String, Segment> keySegmentMap) {
-    List<Segment> compactedSegments = new CopyOnWriteArrayList<>();
-
+    List<Segment> compactedSegments = new ArrayList<>();
     try {
-      Segment currentCompactedSegment = segmentFactory.createSegment();
+      compactedSegments.add(0, segmentFactory.createSegment());
       for (Map.Entry<String, Segment> entry : keySegmentMap.entrySet()) {
         String key = entry.getKey();
         Optional<String> valueOptional = entry.getValue().read(key);
@@ -92,15 +96,14 @@ class SegmentCompactorImpl implements SegmentCompactor {
           throw new RuntimeException("Compaction failure: value not found while reading segment");
         }
 
-        if (currentCompactedSegment.exceedsStorageThreshold()) {
-          compactedSegments.add(0, currentCompactedSegment);
-          currentCompactedSegment = segmentFactory.createSegment();
+        if (compactedSegments.get(0).exceedsStorageThreshold()) {
+          compactedSegments.add(0, segmentFactory.createSegment());
         }
 
-        currentCompactedSegment.write(key, valueOptional.get());
+        compactedSegments.get(0).write(key, valueOptional.get());
       }
-      compactedSegments.add(0, currentCompactedSegment);
     } catch (IOException e) {
+      failedCompactedSegments.addAll(compactedSegments);
       throw new CompletionException(e);
     }
 
@@ -122,35 +125,6 @@ class SegmentCompactorImpl implements SegmentCompactor {
       segment.markCompacted();
     }
   }
-
-  // todo: move to another class
-//  private void closeAndDeleteSegments() {
-//    try {
-//      List<Future<Void>> closeAndDeleteResults = executorService.invokeAll(
-//          preCompactedSegments.stream().map(segment -> (Callable<Void>) () -> {
-//            // todo: separate
-//            segment.close();
-//            segment.delete();
-//            return null;
-//          }).toList()
-//      );
-//      for (int i = 0; i < preCompactedSegments.size(); i++) {
-//        Segment closedSegment = preCompactedSegments.get(i);
-//
-//        try {
-//          closeAndDeleteResults.get(i).get();
-//        } catch (InterruptedException e) {
-//          System.err.printf("Segment [%s] interrupted while being closed\n",
-//              closedSegment.getSegmentFileKey());
-//        } catch (ExecutionException e) {
-//          System.err.printf("Segment [%s] failed while being closed. %s\n",
-//              closedSegment.getSegmentFileKey(), e.getCause().getMessage());
-//        }
-//      }
-//    } catch (InterruptedException e) {
-//      System.err.println("Compactor interrupted while closing and deleting compacted segments");
-//    }
-//  }
 
   private record CompactionCompletionResultsImpl(List<Segment> compactedSegments,
                                                  List<Segment> preCompactionSegments) implements

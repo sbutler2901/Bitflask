@@ -25,4 +25,6 @@ public interface SegmentManager {
    */
   Optional<String> read(String key) throws IOException;
 
+  void close();
+
 }
