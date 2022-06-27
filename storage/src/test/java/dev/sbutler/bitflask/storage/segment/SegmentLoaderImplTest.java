@@ -1,12 +1,15 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -25,8 +28,10 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -58,14 +63,15 @@ class SegmentLoaderImplTest {
       when(pathIterator.next()).thenReturn(firstPath).thenReturn(secondPath);
       doReturn(pathIterator).when(directoryStream).iterator();
 
-      FileTime firstFileTime = mock(FileTime.class);
-      FileTime secondFileTime = mock(FileTime.class);
+      FileTime firstFileTime = FileTime.from(0L, TimeUnit.SECONDS);
+      FileTime secondFileTime = FileTime.from(10L, TimeUnit.SECONDS);
       filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
           .thenReturn(firstFileTime).thenReturn(secondFileTime);
 
       FileChannel fileChannel = mock(FileChannel.class);
       fileChannelMockedStatic.when(() -> FileChannel.open(any(), anySet()))
           .thenReturn(fileChannel);
+      InOrder fileChannelOrder = inOrder(FileChannel.class);
 
       Segment firstSegment = mock(Segment.class);
       Future<Segment> firstSegmentFuture = mock(Future.class);
@@ -81,6 +87,15 @@ class SegmentLoaderImplTest {
 
       // Assert
       assertEquals(2, loadedSegments.size());
+      // Verify segment order maintained
+      assertArrayEquals(
+          List.of(firstSegment, secondSegment).toArray(),
+          loadedSegments.toArray());
+      // Verify path sorted order maintained
+      fileChannelOrder.verify(fileChannelMockedStatic,
+          () -> FileChannel.open(eq(secondPath), anySet()));
+      fileChannelOrder.verify(fileChannelMockedStatic,
+          () -> FileChannel.open(eq(firstPath), anySet()));
     }
   }
 
@@ -166,6 +181,10 @@ class SegmentLoaderImplTest {
       Path path = mock(Path.class);
       doReturn(path).when(pathIterator).next();
       doReturn(pathIterator).when(directoryStream).iterator();
+
+      FileTime firstFileTime = mock(FileTime.class);
+      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
+          .thenReturn(firstFileTime);
 
       FileChannel fileChannel = mock(FileChannel.class);
       fileChannelMockedStatic.when(() -> FileChannel.open(any(), anySet()))

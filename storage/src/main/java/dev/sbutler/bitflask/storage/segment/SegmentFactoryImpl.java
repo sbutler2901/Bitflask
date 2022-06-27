@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -7,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 
@@ -18,7 +18,7 @@ class SegmentFactoryImpl implements SegmentFactory {
   static final String DEFAULT_SEGMENT_FILENAME = "%d_segment.txt";
   static final String DEFAULT_SEGMENT_DIR_PATH =
       System.getProperty("user.home") + "/.bitflask/store/";
-  static final Set<StandardOpenOption> fileChannelOptions = Set.of(
+  static final ImmutableSet<StandardOpenOption> fileChannelOptions = ImmutableSet.of(
       StandardOpenOption.CREATE,
       StandardOpenOption.READ,
       StandardOpenOption.WRITE

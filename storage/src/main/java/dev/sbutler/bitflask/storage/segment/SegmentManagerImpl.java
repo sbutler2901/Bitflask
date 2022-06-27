@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import java.io.IOException;
@@ -42,7 +43,7 @@ class SegmentManagerImpl implements SegmentManager {
 
   private void initialize(SegmentLoader segmentLoader) throws IOException {
     boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
-    List<Segment> loadedSegments = segmentStoreDirCreated ? new ArrayList<>()
+    ImmutableList<Segment> loadedSegments = segmentStoreDirCreated ? ImmutableList.of()
         : segmentLoader.loadExistingSegments();
 
     Segment writableSegment;
@@ -51,7 +52,8 @@ class SegmentManagerImpl implements SegmentManager {
     } else if (loadedSegments.get(0).exceedsStorageThreshold()) {
       writableSegment = segmentFactory.createSegment();
     } else {
-      writableSegment = loadedSegments.remove(0);
+      writableSegment = loadedSegments.get(0);
+      loadedSegments = loadedSegments.subList(1, loadedSegments.size());
     }
 
     this.managedSegmentsAtomicReference.set(new ManagedSegments(writableSegment, loadedSegments));

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionCompletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Status;
@@ -58,7 +59,7 @@ public class SegmentManagerImplTest {
   @SuppressWarnings("unchecked")
   void initialize_dirStoreExisted_NoSegmentsLoaded() throws IOException {
     // Arrange
-    List<Segment> mockSegments = mock(List.class);
+    ImmutableList<Segment> mockSegments = mock(ImmutableList.class);
     doReturn(false).when(segmentFactory).createSegmentStoreDir();
     doReturn(mockSegments).when(segmentLoader).loadExistingSegments();
     doReturn(true).when(mockSegments).isEmpty();
@@ -74,7 +75,7 @@ public class SegmentManagerImplTest {
   @SuppressWarnings("unchecked")
   void initialize_dirStoreExisted_SegmentsLoaded_headExceedsThreshold() throws IOException {
     // Arrange
-    List<Segment> mockSegments = mock(List.class);
+    ImmutableList<Segment> mockSegments = mock(ImmutableList.class);
     Segment segment = mock(Segment.class);
     doReturn(false).when(segmentFactory).createSegmentStoreDir();
     doReturn(mockSegments).when(segmentLoader).loadExistingSegments();
@@ -92,7 +93,7 @@ public class SegmentManagerImplTest {
   @SuppressWarnings("unchecked")
   void initialize_dirStoreExisted_SegmentsLoaded_headBelowThreshold() throws IOException {
     // Arrange
-    List<Segment> mockSegments = mock(List.class);
+    ImmutableList<Segment> mockSegments = mock(ImmutableList.class);
     Segment segment = mock(Segment.class);
     doReturn(false).when(segmentFactory).createSegmentStoreDir();
     doReturn(mockSegments).when(segmentLoader).loadExistingSegments();
@@ -107,11 +108,11 @@ public class SegmentManagerImplTest {
   }
 
   void beforeEach_defaultFunctionality() throws IOException {
-    beforeEach_defaultFunctionality(List.of(activeSegment, frozenSegment));
+    beforeEach_defaultFunctionality(ImmutableList.of(activeSegment, frozenSegment));
   }
 
-  void beforeEach_defaultFunctionality(List<Segment> loadedSegments) throws IOException {
-    List<Segment> mockLoadedSegments = new ArrayList<>(loadedSegments);
+  void beforeEach_defaultFunctionality(ImmutableList<Segment> mockLoadedSegments)
+      throws IOException {
     doReturn(mockLoadedSegments).when(segmentLoader).loadExistingSegments();
     segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader, segmentCompactorFactory,
         segmentDeleterFactory);
@@ -186,7 +187,8 @@ public class SegmentManagerImplTest {
   @Test
   void write_compaction_initiate() throws IOException {
     // Arrange
-    beforeEach_defaultFunctionality(List.of(activeSegment, frozenSegment, mock(Segment.class)));
+    beforeEach_defaultFunctionality(
+        ImmutableList.of(activeSegment, frozenSegment, mock(Segment.class)));
     doReturn(true).when(activeSegment).exceedsStorageThreshold();
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
     doReturn(segmentCompactor).when(segmentCompactorFactory).create(anyList());
@@ -201,7 +203,8 @@ public class SegmentManagerImplTest {
   void write_compaction_updateAfter() throws IOException {
     // Arrange
     /// Activate compaction initiation
-    beforeEach_defaultFunctionality(List.of(activeSegment, frozenSegment, mock(Segment.class)));
+    beforeEach_defaultFunctionality(
+        ImmutableList.of(activeSegment, frozenSegment, mock(Segment.class)));
     doReturn(true).when(activeSegment).exceedsStorageThreshold();
     Segment newActiveSegment = mock(Segment.class);
     doReturn(newActiveSegment).when(segmentFactory).createSegment();
@@ -248,7 +251,8 @@ public class SegmentManagerImplTest {
   void write_compaction_failed() throws IOException {
     // Arrange
     /// Activate compaction initiation
-    beforeEach_defaultFunctionality(List.of(activeSegment, frozenSegment, mock(Segment.class)));
+    beforeEach_defaultFunctionality(
+        ImmutableList.of(activeSegment, frozenSegment, mock(Segment.class)));
     doReturn(true).when(activeSegment).exceedsStorageThreshold();
     Segment newActiveSegment = mock(Segment.class);
     doReturn(newActiveSegment).when(segmentFactory).createSegment();
@@ -283,7 +287,8 @@ public class SegmentManagerImplTest {
   void write_deletion() throws IOException {
     // Arrange
     /// Activate compaction initiation
-    beforeEach_defaultFunctionality(List.of(activeSegment, frozenSegment, mock(Segment.class)));
+    beforeEach_defaultFunctionality(
+        ImmutableList.of(activeSegment, frozenSegment, mock(Segment.class)));
     doReturn(true).when(activeSegment).exceedsStorageThreshold();
     Segment newActiveSegment = mock(Segment.class);
     doReturn(newActiveSegment).when(segmentFactory).createSegment();

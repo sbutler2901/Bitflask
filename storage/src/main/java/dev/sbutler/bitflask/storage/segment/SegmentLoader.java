@@ -1,10 +1,10 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
-import java.util.List;
 
 interface SegmentLoader {
 
-  List<Segment> loadExistingSegments() throws IOException;
+  ImmutableList<Segment> loadExistingSegments() throws IOException;
 
 }
