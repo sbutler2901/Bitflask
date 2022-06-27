@@ -5,10 +5,7 @@ import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import java.io.IOException;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Deque;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -118,10 +115,10 @@ class SegmentManagerImpl implements SegmentManager {
     logger.atInfo().log("Creating new active segment");
     ManagedSegments currentManagedSegments = managedSegmentsAtomicReference.get();
     Segment newWritableSegment = segmentFactory.createSegment();
-    List<Segment> newFrozenSegments = new ArrayList<>();
-
-    newFrozenSegments.add(currentManagedSegments.writableSegment);
-    newFrozenSegments.addAll(currentManagedSegments.frozenSegments);
+    ImmutableList<Segment> newFrozenSegments = new ImmutableList.Builder<Segment>()
+        .add(currentManagedSegments.writableSegment)
+        .addAll(currentManagedSegments.frozenSegments)
+        .build();
 
     managedSegmentsAtomicReference.set(new ManagedSegments(newWritableSegment, newFrozenSegments));
   }
@@ -149,13 +146,14 @@ class SegmentManagerImpl implements SegmentManager {
     compactionActive.set(false);
   }
 
-  private void handleCompactionFailed(Throwable throwable, List<Segment> failedCompactionSegments) {
+  private void handleCompactionFailed(Throwable throwable,
+      ImmutableList<Segment> failedCompactionSegments) {
     logger.atSevere().withCause(throwable).log("Compaction failed");
     queueSegmentsForDeletion(failedCompactionSegments);
     compactionActive.set(false);
   }
 
-  private synchronized void updateAfterCompaction(List<Segment> compactedSegments) {
+  private synchronized void updateAfterCompaction(ImmutableList<Segment> compactedSegments) {
     logger.atInfo().log("Updating after compaction");
     ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
     Deque<Segment> newFrozenSegments = new ArrayDeque<>();
@@ -168,10 +166,11 @@ class SegmentManagerImpl implements SegmentManager {
         newFrozenSegments.size() + DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
 
     managedSegmentsAtomicReference.set(
-        new ManagedSegments(currentManagedSegment.writableSegment, newFrozenSegments));
+        new ManagedSegments(currentManagedSegment.writableSegment,
+            ImmutableList.copyOf(newFrozenSegments)));
   }
 
-  private void queueSegmentsForDeletion(List<Segment> segmentsForDeletion) {
+  private void queueSegmentsForDeletion(ImmutableList<Segment> segmentsForDeletion) {
     logger.atInfo().log("Queueing segments for deletion after compaction");
     SegmentDeleter segmentDeleter = segmentDeleterFactory.create(segmentsForDeletion);
     segmentDeleter.registerDeletionResultsConsumer(this::handleDeletionResults);
@@ -197,7 +196,7 @@ class SegmentManagerImpl implements SegmentManager {
         + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsToBeDeleted());
   }
 
-  private String buildLogForSegmentsToBeDeleted(List<Segment> segmentsToBeDeleted) {
+  private String buildLogForSegmentsToBeDeleted(ImmutableList<Segment> segmentsToBeDeleted) {
     StringBuilder log = new StringBuilder();
     log.append("[");
     for (int i = 0; i < segmentsToBeDeleted.size(); i++) {
@@ -224,10 +223,7 @@ class SegmentManagerImpl implements SegmentManager {
     return log.toString();
   }
 
-  record ManagedSegments(Segment writableSegment, List<Segment> frozenSegments) {
+  record ManagedSegments(Segment writableSegment, ImmutableList<Segment> frozenSegments) {
 
-    ManagedSegments(Segment writableSegment, Collection<Segment> frozenSegments) {
-      this(writableSegment, List.copyOf(frozenSegments));
-    }
   }
 }

@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
@@ -21,20 +23,20 @@ class SegmentCompactorImpl implements SegmentCompactor {
 
   private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;
-  private final List<Segment> preCompactionSegments;
-  private final List<Consumer<CompactionCompletionResults>> compactionCompletedConsumers = new ArrayList<>();
-  private final List<BiConsumer<Throwable, List<Segment>>> compactionFailedConsumers = new ArrayList<>();
+  private final ImmutableList<Segment> preCompactionSegments;
+  private final List<Consumer<CompactionCompletionResults>> compactionCompletedConsumers = new CopyOnWriteArrayList<>();
+  private final List<BiConsumer<Throwable, ImmutableList<Segment>>> compactionFailedConsumers = new CopyOnWriteArrayList<>();
   private volatile boolean compactionStarted = false;
 
-  private final List<Segment> failedCompactedSegments = new CopyOnWriteArrayList<>();
+  private ImmutableList<Segment> failedCompactedSegments = ImmutableList.of();
 
   @Inject
   SegmentCompactorImpl(@StorageExecutorService ExecutorService executorService,
       SegmentFactory segmentFactory,
-      @Assisted List<Segment> preCompactionSegments) {
+      @Assisted ImmutableList<Segment> preCompactionSegments) {
     this.executorService = executorService;
     this.segmentFactory = segmentFactory;
-    this.preCompactionSegments = List.copyOf(preCompactionSegments);
+    this.preCompactionSegments = preCompactionSegments;
   }
 
   @Override
@@ -63,7 +65,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
 
   @Override
   public void registerCompactionFailedConsumer(
-      BiConsumer<Throwable, List<Segment>> compactionFailedConsumer) {
+      BiConsumer<Throwable, ImmutableList<Segment>> compactionFailedConsumer) {
     compactionFailedConsumers.add(compactionFailedConsumer);
   }
 
@@ -72,7 +74,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
         consumer -> consumer.accept(throwable, failedCompactedSegments));
   }
 
-  private Map<String, Segment> createKeySegmentMap() {
+  private ImmutableMap<String, Segment> createKeySegmentMap() {
     Map<String, Segment> keySegmentMap = new HashMap<>();
     for (Segment segment : preCompactionSegments) {
       Set<String> segmentKeys = segment.getSegmentKeys();
@@ -82,10 +84,11 @@ class SegmentCompactorImpl implements SegmentCompactor {
         }
       }
     }
-    return keySegmentMap;
+    return ImmutableMap.copyOf(keySegmentMap);
   }
 
-  private List<Segment> createCompactedSegments(Map<String, Segment> keySegmentMap) {
+  private ImmutableList<Segment> createCompactedSegments(
+      ImmutableMap<String, Segment> keySegmentMap) {
     List<Segment> compactedSegments = new ArrayList<>();
     try {
       compactedSegments.add(0, segmentFactory.createSegment());
@@ -103,14 +106,15 @@ class SegmentCompactorImpl implements SegmentCompactor {
         compactedSegments.get(0).write(key, valueOptional.get());
       }
     } catch (IOException e) {
-      failedCompactedSegments.addAll(compactedSegments);
+      failedCompactedSegments = ImmutableList.copyOf(compactedSegments);
       throw new CompletionException(e);
     }
 
-    return compactedSegments;
+    return ImmutableList.copyOf(compactedSegments);
   }
 
-  private void handleCompactionOutcome(List<Segment> compactedSegments, Throwable throwable) {
+  private void handleCompactionOutcome(ImmutableList<Segment> compactedSegments,
+      Throwable throwable) {
     if (throwable != null) {
       runRegisteredCompactionFailedConsumers(throwable.getCause());
     } else {
@@ -126,8 +130,8 @@ class SegmentCompactorImpl implements SegmentCompactor {
     }
   }
 
-  private record CompactionCompletionResultsImpl(List<Segment> compactedSegments,
-                                                 List<Segment> preCompactionSegments) implements
+  private record CompactionCompletionResultsImpl(ImmutableList<Segment> compactedSegments,
+                                                 ImmutableList<Segment> preCompactionSegments) implements
       CompactionCompletionResults {
 
   }

@@ -1,8 +1,8 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import java.util.List;
+import com.google.common.collect.ImmutableList;
 
 interface SegmentCompactorFactory {
 
-  SegmentCompactor create(List<Segment> preCompactionSegments);
+  SegmentCompactor create(ImmutableList<Segment> preCompactionSegments);
 }

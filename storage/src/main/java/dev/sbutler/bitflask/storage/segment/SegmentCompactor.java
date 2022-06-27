@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import java.util.List;
+import com.google.common.collect.ImmutableList;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -35,7 +35,7 @@ interface SegmentCompactor {
    *                                 created segments
    */
   void registerCompactionFailedConsumer(
-      BiConsumer<Throwable, List<Segment>> compactionFailedConsumer);
+      BiConsumer<Throwable, ImmutableList<Segment>> compactionFailedConsumer);
 
   /**
    * Used to transfer the results of a successful compaction execution.
@@ -47,14 +47,14 @@ interface SegmentCompactor {
      *
      * @return the compacted segments
      */
-    List<Segment> compactedSegments();
+    ImmutableList<Segment> compactedSegments();
 
     /**
      * Provides the pre-compaction segments used by the compactor during the compaction process.
      *
      * @return the pre-compaction segments
      */
-    List<Segment> preCompactionSegments();
+    ImmutableList<Segment> preCompactionSegments();
   }
 
 }

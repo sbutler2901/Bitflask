@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Status;
 import java.io.IOException;
@@ -44,7 +45,8 @@ public class SegmentDeleterImplTest {
 
   @BeforeEach
   void beforeEach() {
-    segmentDeleterImpl = new SegmentDeleterImpl(executorService, List.of(headSegment, tailSegment));
+    segmentDeleterImpl = new SegmentDeleterImpl(executorService,
+        ImmutableList.of(headSegment, tailSegment));
     doAnswer((InvocationOnMock invocation) -> {
       ((Runnable) invocation.getArguments()[0]).run();
       return null;

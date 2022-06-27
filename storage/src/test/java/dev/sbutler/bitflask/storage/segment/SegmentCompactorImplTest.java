@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionCompletionResults;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ public class SegmentCompactorImplTest {
   @BeforeEach
   void beforeEach() {
     segmentCompactorImpl = new SegmentCompactorImpl(executorService, segmentFactory,
-        List.of(headSegment, tailSegment));
+        ImmutableList.of(headSegment, tailSegment));
     doAnswer((InvocationOnMock invocation) -> {
       ((Runnable) invocation.getArguments()[0]).run();
       return null;
