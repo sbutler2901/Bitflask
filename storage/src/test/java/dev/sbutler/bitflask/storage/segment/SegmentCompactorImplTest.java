@@ -14,12 +14,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionCompletionResults;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,8 +55,8 @@ public class SegmentCompactorImplTest {
   @Test
   void duplicateKeyValueRemoval() throws Exception {
     // Arrange
-    doReturn(Set.of("0-key", "key")).when(headSegment).getSegmentKeys();
-    doReturn(Set.of("1-key", "key")).when(tailSegment).getSegmentKeys();
+    doReturn(ImmutableSet.of("0-key", "key")).when(headSegment).getSegmentKeys();
+    doReturn(ImmutableSet.of("1-key", "key")).when(tailSegment).getSegmentKeys();
     doReturn(Optional.of("0-value")).when(headSegment).read("0-key");
     doReturn(Optional.of("0-value")).when(headSegment).read("key");
     doReturn(Optional.of("1-value")).when(tailSegment).read("1-key");
@@ -85,8 +85,8 @@ public class SegmentCompactorImplTest {
   @Test
   void compactionSegmentStorageExceeded() throws Exception {
     // Arrange
-    doReturn(Set.of("0-key")).when(headSegment).getSegmentKeys();
-    doReturn(Set.of("1-key")).when(tailSegment).getSegmentKeys();
+    doReturn(ImmutableSet.of("0-key")).when(headSegment).getSegmentKeys();
+    doReturn(ImmutableSet.of("1-key")).when(tailSegment).getSegmentKeys();
     doReturn(Optional.of("0-value")).when(headSegment).read("0-key");
     doReturn(Optional.of("1-value")).when(tailSegment).read("1-key");
 
@@ -109,8 +109,8 @@ public class SegmentCompactorImplTest {
   @Test
   void compactionFailure_throwsRuntimeException() throws IOException {
     // Arrange
-    doReturn(Set.of("0-key")).when(headSegment).getSegmentKeys();
-    doReturn(Set.of("1-key")).when(tailSegment).getSegmentKeys();
+    doReturn(ImmutableSet.of("0-key")).when(headSegment).getSegmentKeys();
+    doReturn(ImmutableSet.of("1-key")).when(tailSegment).getSegmentKeys();
     doReturn(Optional.empty()).when(headSegment).read(anyString());
 
     AtomicReference<Throwable> handledException = new AtomicReference<>();
@@ -133,8 +133,8 @@ public class SegmentCompactorImplTest {
   @Test
   void compactionFailure_throwsIOException() throws IOException {
     // Arrange
-    doReturn(Set.of("0-key")).when(headSegment).getSegmentKeys();
-    doReturn(Set.of("1-key")).when(tailSegment).getSegmentKeys();
+    doReturn(ImmutableSet.of("0-key")).when(headSegment).getSegmentKeys();
+    doReturn(ImmutableSet.of("1-key")).when(tailSegment).getSegmentKeys();
     doThrow(IOException.class).when(headSegment).read(anyString());
 
     Segment segment = mock(Segment.class);

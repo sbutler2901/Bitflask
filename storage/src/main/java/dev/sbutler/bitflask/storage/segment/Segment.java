@@ -1,8 +1,8 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Represents a single self-contained file for storing data
@@ -45,7 +45,7 @@ interface Segment {
    *
    * @return a set of the keys stored by the segment
    */
-  Set<String> getSegmentKeys();
+  ImmutableSet<String> getSegmentKeys();
 
   /**
    * Returns the segment's file's key

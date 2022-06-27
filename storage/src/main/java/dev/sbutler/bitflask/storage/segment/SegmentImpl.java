@@ -3,11 +3,11 @@ package dev.sbutler.bitflask.storage.segment;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -137,8 +137,8 @@ class SegmentImpl implements Segment {
   }
 
   @Override
-  public Set<String> getSegmentKeys() {
-    return keyedEntryFileOffsetMap.keySet();
+  public ImmutableSet<String> getSegmentKeys() {
+    return ImmutableSet.copyOf(keyedEntryFileOffsetMap.keySet());
   }
 
   @Override
