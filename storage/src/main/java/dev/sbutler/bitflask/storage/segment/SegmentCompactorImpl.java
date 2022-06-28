@@ -23,7 +23,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
 
   private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;
-  private final ImmutableList<Segment> preCompactionSegments;
+  private final ImmutableList<Segment> segmentsToBeCompacted;
   private final List<Consumer<CompactionCompletionResults>> compactionCompletedConsumers = new CopyOnWriteArrayList<>();
   private final List<BiConsumer<Throwable, ImmutableList<Segment>>> compactionFailedConsumers = new CopyOnWriteArrayList<>();
   private volatile boolean compactionStarted = false;
@@ -33,10 +33,10 @@ class SegmentCompactorImpl implements SegmentCompactor {
   @Inject
   SegmentCompactorImpl(@StorageExecutorService ExecutorService executorService,
       SegmentFactory segmentFactory,
-      @Assisted ImmutableList<Segment> preCompactionSegments) {
+      @Assisted ImmutableList<Segment> segmentsToBeCompacted) {
     this.executorService = executorService;
     this.segmentFactory = segmentFactory;
-    this.preCompactionSegments = preCompactionSegments;
+    this.segmentsToBeCompacted = segmentsToBeCompacted;
   }
 
   @Override
@@ -74,9 +74,14 @@ class SegmentCompactorImpl implements SegmentCompactor {
         consumer -> consumer.accept(throwable, failedCompactedSegments));
   }
 
+  /**
+   * Creates a map of keys to the segment with the most up-to-date value for key.
+   *
+   * @return a map of keys to the Segment from which its corresponding value should be read
+   */
   private ImmutableMap<String, Segment> createKeySegmentMap() {
     Map<String, Segment> keySegmentMap = new HashMap<>();
-    for (Segment segment : preCompactionSegments) {
+    for (Segment segment : segmentsToBeCompacted) {
       Set<String> segmentKeys = segment.getSegmentKeys();
       for (String key : segmentKeys) {
         if (!keySegmentMap.containsKey(key)) {
@@ -87,6 +92,13 @@ class SegmentCompactorImpl implements SegmentCompactor {
     return ImmutableMap.copyOf(keySegmentMap);
   }
 
+  /**
+   * Creates compacted segments using the most up-to-date value for each key.
+   *
+   * @param keySegmentMap a map of keys to the Segment from which its corresponding value should be
+   *                      read
+   * @return all compacted segments created
+   */
   private ImmutableList<Segment> createCompactedSegments(
       ImmutableMap<String, Segment> keySegmentMap) {
     List<Segment> compactedSegments = new ArrayList<>();
@@ -120,18 +132,18 @@ class SegmentCompactorImpl implements SegmentCompactor {
     } else {
       markSegmentsCompacted();
       runRegisteredCompactionCompletedConsumers(
-          new CompactionCompletionResultsImpl(compactedSegments, preCompactionSegments));
+          new CompactionCompletionResultsImpl(compactedSegments, segmentsToBeCompacted));
     }
   }
 
   private void markSegmentsCompacted() {
-    for (Segment segment : preCompactionSegments) {
+    for (Segment segment : segmentsToBeCompacted) {
       segment.markCompacted();
     }
   }
 
   private record CompactionCompletionResultsImpl(ImmutableList<Segment> compactedSegments,
-                                                 ImmutableList<Segment> preCompactionSegments) implements
+                                                 ImmutableList<Segment> segmentsProvidedForCompaction) implements
       CompactionCompletionResults {
 
   }

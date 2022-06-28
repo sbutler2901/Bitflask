@@ -4,8 +4,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.function.Consumer;
 
+/**
+ * Asynchronously deletes multiple segments Handles the process of deleting multiple Segments from
+ * the file system.
+ * <p>
+ * A callback can be registered to consume the result of deletion.
+ */
 interface SegmentDeleter {
 
+  /**
+   * Starts the deletion process for all Segments provided.
+   */
   void deleteSegments();
 
   /**
@@ -17,10 +26,13 @@ interface SegmentDeleter {
   void registerDeletionResultsConsumer(Consumer<DeletionResults> deletionResultsConsumer);
 
   /**
-   * Used to indicate the status of executing the SegmentDeleter.
+   * Relays the results of deleting the Segments.
    */
   interface DeletionResults {
 
+    /**
+     * Used to indicate the status of executing the SegmentDeleter.
+     */
     enum Status {
       SUCCESS,
       FAILED_GENERAL,
@@ -38,7 +50,7 @@ interface SegmentDeleter {
      *
      * @return the segments provided for deletion
      */
-    ImmutableList<Segment> getSegmentsToBeDeleted();
+    ImmutableList<Segment> getSegmentsProvidedForDeletion();
 
     /**
      * The reason for a general failure to delete the provided segments. Will be populated when the

@@ -334,14 +334,15 @@ public class SegmentManagerImplTest {
     // Act - Success
     DeletionResults successResults = mock(DeletionResults.class);
     doReturn(Status.SUCCESS).when(successResults).getStatus();
-    doReturn(ImmutableList.of(deletion0, deletion1)).when(successResults).getSegmentsToBeDeleted();
+    doReturn(ImmutableList.of(deletion0, deletion1)).when(successResults)
+        .getSegmentsProvidedForDeletion();
     deletionResultsConsumer.accept(successResults);
 
     // Act - General Failure
     DeletionResults generalFailureResults = mock(DeletionResults.class);
     doReturn(Status.FAILED_GENERAL).when(generalFailureResults).getStatus();
     doReturn(ImmutableList.of(deletion0, deletion1)).when(generalFailureResults)
-        .getSegmentsToBeDeleted();
+        .getSegmentsProvidedForDeletion();
     Throwable throwable = mock(Throwable.class);
     doReturn("generalFailure").when(throwable).getMessage();
     doReturn(throwable).when(generalFailureResults).getGeneralFailureReason();
@@ -351,7 +352,7 @@ public class SegmentManagerImplTest {
     DeletionResults segmentFailureResults = mock(DeletionResults.class);
     doReturn(Status.FAILED_SEGMENTS).when(segmentFailureResults).getStatus();
     doReturn(ImmutableList.of(deletion0, deletion1)).when(segmentFailureResults)
-        .getSegmentsToBeDeleted();
+        .getSegmentsProvidedForDeletion();
     doReturn(ImmutableMap.of(deletion0, new IOException("deletion0 failed"), deletion1,
         new InterruptedException("deletion1 failed"))).when(segmentFailureResults)
         .getSegmentsFailureReasonsMap();

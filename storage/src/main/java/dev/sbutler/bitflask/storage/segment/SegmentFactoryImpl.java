@@ -25,7 +25,7 @@ class SegmentFactoryImpl implements SegmentFactory {
 //      StandardOpenOption.TRUNCATE_EXISTING
   );
 
-  private final AtomicInteger nextSegmentIndex = new AtomicInteger(0);
+  private final AtomicInteger nextSegmentKey = new AtomicInteger(0);
 
   @Inject
   SegmentFactoryImpl() {
@@ -52,7 +52,7 @@ class SegmentFactoryImpl implements SegmentFactory {
   }
 
   private int getNextSegmentKey() {
-    return nextSegmentIndex.getAndIncrement();
+    return nextSegmentKey.getAndIncrement();
   }
 
   private Path getNextSegmentFilePath(int segmentKey) {
@@ -65,8 +65,8 @@ class SegmentFactoryImpl implements SegmentFactory {
   }
 
   @Override
-  public void setSegmentStartIndex(int segmentStartIndex) {
-    nextSegmentIndex.set(segmentStartIndex);
+  public void setSegmentStartKey(int segmentStartKey) {
+    nextSegmentKey.set(segmentStartKey);
   }
 
   @Override

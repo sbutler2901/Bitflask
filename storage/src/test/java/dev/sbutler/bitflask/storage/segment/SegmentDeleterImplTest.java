@@ -81,8 +81,8 @@ public class SegmentDeleterImplTest {
     // Assert
     DeletionResults deletionResults = deletionResultsAtomicReference.get();
     assertEquals(Status.SUCCESS, deletionResults.getStatus());
-    assertEquals(headSegment, deletionResults.getSegmentsToBeDeleted().get(0));
-    assertEquals(tailSegment, deletionResults.getSegmentsToBeDeleted().get(1));
+    assertEquals(headSegment, deletionResults.getSegmentsProvidedForDeletion().get(0));
+    assertEquals(tailSegment, deletionResults.getSegmentsProvidedForDeletion().get(1));
     verify(headSegment, times(1)).close();
     verify(headSegment, times(1)).delete();
     verify(tailSegment, times(1)).close();

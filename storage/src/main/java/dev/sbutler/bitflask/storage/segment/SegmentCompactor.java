@@ -4,12 +4,15 @@ import com.google.common.collect.ImmutableList;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+// Todo: Simply consumers using a single result object like SegmentDeleter
+
 /**
  * Asynchronously compacts multiple segments by de-duplicating key:value pairs and create new
- * segments to store the deduplicate pairs. The provided segments will be deleted after all have
- * been successfully compacted.
+ * segments to store the deduplicate pairs. Assumes Segments are in order from most recently written
+ * to the earliest written.
  * <p>
- * Callbacks can be registered to be executed after the various stages of compaction complete.
+ * Callbacks can be registered to consume the results of the compaction in the case of success or
+ * failure.
  */
 interface SegmentCompactor {
 
@@ -50,11 +53,11 @@ interface SegmentCompactor {
     ImmutableList<Segment> compactedSegments();
 
     /**
-     * Provides the pre-compaction segments used by the compactor during the compaction process.
+     * Provides the segments that were used by the compactor during the compaction process.
      *
-     * @return the pre-compaction segments
+     * @return the segments provided for compaction.
      */
-    ImmutableList<Segment> preCompactionSegments();
+    ImmutableList<Segment> segmentsProvidedForCompaction();
   }
 
 }

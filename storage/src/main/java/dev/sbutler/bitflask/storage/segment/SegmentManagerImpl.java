@@ -38,6 +38,12 @@ class SegmentManagerImpl implements SegmentManager {
     initialize(segmentLoader);
   }
 
+  /**
+   * Attempts to load preexisting segments, if they exists
+   *
+   * @param segmentLoader handles loading preexisting segments
+   * @throws IOException if and issue occurs while loading preexisting segments
+   */
   private void initialize(SegmentLoader segmentLoader) throws IOException {
     boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
     ImmutableList<Segment> loadedSegments = segmentStoreDirCreated ? ImmutableList.of()
@@ -98,6 +104,11 @@ class SegmentManagerImpl implements SegmentManager {
     managedSegments.frozenSegments.forEach(Segment::close);
   }
 
+  /**
+   * Determine if a new writable segment and / or compaction should be performed.
+   *
+   * @throws IOException if an error occurs creating a new writable segment.
+   */
   private synchronized void checkWritableSegmentAndCompaction() throws IOException {
     if (shouldCreateAndUpdateWritableSegment()) {
       createNewWritableSegmentAndUpdateManagedSegments();
@@ -138,14 +149,26 @@ class SegmentManagerImpl implements SegmentManager {
     segmentCompactor.compactSegments();
   }
 
+  /**
+   * Called by a compactor when compaction has completed successfully.
+   *
+   * @param compactionCompletionResults the results of compaction
+   */
   private void handleCompactionCompleted(
       SegmentCompactor.CompactionCompletionResults compactionCompletionResults) {
     logger.atInfo().log("Compaction completed");
     updateAfterCompaction(compactionCompletionResults.compactedSegments());
-    queueSegmentsForDeletion(compactionCompletionResults.preCompactionSegments());
+    queueSegmentsForDeletion(compactionCompletionResults.segmentsProvidedForCompaction());
     compactionActive.set(false);
   }
 
+  /**
+   * Called by a compactor when compaction fails.
+   *
+   * @param throwable                the reason compaction failed
+   * @param failedCompactionSegments possibly incomplete / invalid segments created during
+   *                                 compaction prior to failure
+   */
   private void handleCompactionFailed(Throwable throwable,
       ImmutableList<Segment> failedCompactionSegments) {
     logger.atSevere().withCause(throwable).log("Compaction failed");
@@ -188,12 +211,12 @@ class SegmentManagerImpl implements SegmentManager {
 
   private String buildLogForDeletionSuccess(DeletionResults deletionResults) {
     return "Compacted segments successfully deleted "
-        + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsToBeDeleted());
+        + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsProvidedForDeletion());
   }
 
   private String buildLogForDeletionGeneralFailure(DeletionResults deletionResults) {
     return "Failure to delete compacted segments due to general failure"
-        + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsToBeDeleted());
+        + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsProvidedForDeletion());
   }
 
   private String buildLogForSegmentsToBeDeleted(ImmutableList<Segment> segmentsToBeDeleted) {

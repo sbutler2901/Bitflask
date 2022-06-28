@@ -3,6 +3,10 @@ package dev.sbutler.bitflask.storage.segment;
 import java.io.IOException;
 import java.util.Optional;
 
+/**
+ * Manages the various Segments used by Storage ensuring segment sizes are controlled and filesystem
+ * space is conserved.
+ */
 public interface SegmentManager {
 
   /**
@@ -25,6 +29,9 @@ public interface SegmentManager {
    */
   Optional<String> read(String key) throws IOException;
 
+  /**
+   * Closes all Segments currently being managed
+   */
   void close();
 
 }

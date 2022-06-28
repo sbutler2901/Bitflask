@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.concurrent.Future;
 
 /**
- * Manages persisting and retrieving data
+ * Manages persisting and retrieving data.
  */
 public interface Storage {
 
@@ -25,5 +25,12 @@ public interface Storage {
    */
   Future<Optional<String>> read(String key);
 
+  /**
+   * Initiates the shutdown procedure cleaning up utilized resources and stopping tasks. Will wait
+   * for executing tasks to complete for an unspecified amount of time. If they aren't complete
+   * within the timeframe they will be canceled.
+   *
+   * @throws InterruptedException if shutdown is interrupted while waiting
+   */
   void shutdown() throws InterruptedException;
 }

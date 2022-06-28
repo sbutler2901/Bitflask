@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.assistedinject.Assisted;
@@ -13,7 +15,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 class SegmentDeleterImpl implements SegmentDeleter {
@@ -54,21 +55,35 @@ class SegmentDeleterImpl implements SegmentDeleter {
     deletionResultsConsumers.forEach(consumer -> consumer.accept(deletionResults));
   }
 
-  ImmutableList<Future<Void>> closeAndDeleteSegments() {
+  /**
+   * Initiates asynchronous closing and deleting of segments.
+   *
+   * @return a map of segments to their corresponding deletion futures
+   */
+  private ImmutableMap<Segment, Future<Void>> closeAndDeleteSegments() {
+    ImmutableList<Future<Void>> deletionFutures;
     try {
-      return ImmutableList.copyOf(executorService.invokeAll(
-          segmentsToBeDeleted.stream().map(segment -> (Callable<Void>) () -> {
-            segment.close();
-            segment.delete();
-            return null;
-          }).collect(Collectors.toList())
+      deletionFutures = ImmutableList.copyOf(executorService.invokeAll(
+          segmentsToBeDeleted.stream()
+              .map(segment -> (Callable<Void>) () -> {
+                segment.close();
+                segment.delete();
+                return null;
+              }).collect(toImmutableList())
       ));
     } catch (InterruptedException e) {
       throw new CompletionException(e);
     }
+
+    ImmutableMap.Builder<Segment, Future<Void>> segmentDeletionFutureMap = ImmutableMap.builder();
+    for (int i = 0; i < segmentsToBeDeleted.size(); i++) {
+      segmentDeletionFutureMap.put(segmentsToBeDeleted.get(i), deletionFutures.get(i));
+    }
+    return segmentDeletionFutureMap.build();
   }
 
-  void handleCloseAndDeleteSegmentsOutcome(ImmutableList<Future<Void>> segmentFutureResults,
+  private void handleCloseAndDeleteSegmentsOutcome(
+      ImmutableMap<Segment, Future<Void>> segmentFutureResults,
       Throwable throwable) {
     if (throwable != null) {
       runRegisteredDeletionResultsConsumers(
@@ -76,25 +91,29 @@ class SegmentDeleterImpl implements SegmentDeleter {
     }
   }
 
-  ImmutableMap<Segment, Throwable> mapPotentialSegmentFailures(
-      ImmutableList<Future<Void>> segmentFutureResults) {
+  /**
+   * Checks the result of each Segment's deletion and creates a map from the segment to its reason
+   * for failure, if its deletion failed.
+   *
+   * @param segmentDeletionFutures a map of segments to their corresponding deletion future
+   * @return a map of segments which failed to be deleted and their reason for failure
+   */
+  private ImmutableMap<Segment, Throwable> mapPotentialSegmentFailures(
+      ImmutableMap<Segment, Future<Void>> segmentDeletionFutures) {
     ImmutableMap.Builder<Segment, Throwable> segmentFailuresMap = ImmutableMap.builder();
-    for (int i = 0; i < segmentsToBeDeleted.size(); i++) {
-      Segment segment = segmentsToBeDeleted.get(i);
-      Future<Void> segmentResult = segmentFutureResults.get(i);
-
+    segmentDeletionFutures.forEach((segment, deletionFuture) -> {
       try {
-        segmentResult.get();
+        deletionFuture.get();
       } catch (InterruptedException e) {
         segmentFailuresMap.put(segment, e);
       } catch (ExecutionException e) {
         segmentFailuresMap.put(segment, e.getCause());
       }
-    }
+    });
     return segmentFailuresMap.build();
   }
 
-  void handlePotentialSegmentFailuresOutcome(
+  private void handlePotentialSegmentFailuresOutcome(
       ImmutableMap<Segment, Throwable> potentialSegmentFailures) {
     DeletionResultsImpl deletionResults;
     if (potentialSegmentFailures.isEmpty()) {
@@ -108,25 +127,25 @@ class SegmentDeleterImpl implements SegmentDeleter {
   private static class DeletionResultsImpl implements DeletionResults {
 
     private final Status status;
-    private final ImmutableList<Segment> segmentsToBeDeleted;
+    private final ImmutableList<Segment> getSegmentsProvidedForDeletion;
     private Throwable generalFailureReason = null;
     private ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap;
 
     DeletionResultsImpl(ImmutableList<Segment> segmentsToBeDeleted) {
       this.status = Status.SUCCESS;
-      this.segmentsToBeDeleted = segmentsToBeDeleted;
+      this.getSegmentsProvidedForDeletion = segmentsToBeDeleted;
     }
 
     DeletionResultsImpl(ImmutableList<Segment> segmentsToBeDeleted, Throwable throwable) {
       this.status = Status.FAILED_GENERAL;
-      this.segmentsToBeDeleted = segmentsToBeDeleted;
+      this.getSegmentsProvidedForDeletion = segmentsToBeDeleted;
       this.generalFailureReason = throwable;
     }
 
     DeletionResultsImpl(ImmutableList<Segment> segmentsToBeDeleted,
         ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap) {
       this.status = Status.FAILED_SEGMENTS;
-      this.segmentsToBeDeleted = segmentsToBeDeleted;
+      this.getSegmentsProvidedForDeletion = segmentsToBeDeleted;
       this.segmentsFailureReasonsMap = segmentsFailureReasonsMap;
     }
 
@@ -136,8 +155,8 @@ class SegmentDeleterImpl implements SegmentDeleter {
     }
 
     @Override
-    public ImmutableList<Segment> getSegmentsToBeDeleted() {
-      return segmentsToBeDeleted;
+    public ImmutableList<Segment> getSegmentsProvidedForDeletion() {
+      return getSegmentsProvidedForDeletion;
     }
 
     @Override

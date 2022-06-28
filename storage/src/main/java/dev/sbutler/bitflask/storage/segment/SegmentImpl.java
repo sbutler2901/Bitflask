@@ -29,12 +29,19 @@ class SegmentImpl implements Segment {
 
     currentFileWriteOffset.set(segmentFile.size());
     if (currentFileWriteOffset.get() > 0) {
-      loadFileEntries();
+      populateKeyOffsetMapFromSegmentFile();
     }
   }
 
   // todo: handle empty spaces that occur because of failed writes
-  private void loadFileEntries() throws IOException {
+
+  /**
+   * Populates the map of keys managed by this segment and their corresponding offset within this
+   * Segment's corresponding SegmentFile.
+   *
+   * @throws IOException if an error occurs while populating the key offset map
+   */
+  private void populateKeyOffsetMapFromSegmentFile() throws IOException {
     long nextOffsetStart = 0;
     while (nextOffsetStart < currentFileWriteOffset.get()) {
       long entryStartOffset = nextOffsetStart;

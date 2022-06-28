@@ -49,10 +49,10 @@ public class SegmentFactoryImplTest {
           .thenReturn(fileChannel);
       doReturn(0L).when(fileChannel).size();
 
-      int segmentStartIndex = 10;
-      segmentFactory.setSegmentStartIndex(segmentStartIndex);
+      int segmentStartKey = 10;
+      segmentFactory.setSegmentStartKey(segmentStartKey);
       Segment segment = segmentFactory.createSegment();
-      assertEquals(segmentStartIndex, segment.getSegmentFileKey());
+      assertEquals(segmentStartKey, segment.getSegmentFileKey());
     }
   }
 

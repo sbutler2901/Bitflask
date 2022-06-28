@@ -46,7 +46,8 @@ class SegmentLoaderImpl implements SegmentLoader {
       return ImmutableList.of();
     }
 
-    ImmutableList<Path> sortedSegmentFilePaths = sortFilePathsByModifiedDate(segmentFilePaths);
+    ImmutableList<Path> sortedSegmentFilePaths = sortFilePathsByLatestModifiedDatesFirst(
+        segmentFilePaths);
     ImmutableList<FileChannel> segmentFileChannels = openSegmentFileChannels(
         sortedSegmentFilePaths);
     ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(segmentFileChannels,
@@ -57,6 +58,12 @@ class SegmentLoaderImpl implements SegmentLoader {
     return segments;
   }
 
+  /**
+   * Reads the Segment directory and gets the file paths of all segments that exist within it.
+   *
+   * @return the segment file paths read from the Segment directory
+   * @throws IOException if an error occurs reading the Segment directory
+   */
   private ImmutableList<Path> getSegmentFilePaths() throws IOException {
     Path segmentStoreDirPath = segmentFactory.getSegmentStoreDirPath();
     ImmutableList.Builder<Path> filePaths = new Builder<>();
@@ -71,7 +78,8 @@ class SegmentLoaderImpl implements SegmentLoader {
     return filePaths.build();
   }
 
-  private ImmutableList<Path> sortFilePathsByModifiedDate(ImmutableList<Path> segmentFilePaths)
+  private ImmutableList<Path> sortFilePathsByLatestModifiedDatesFirst(
+      ImmutableList<Path> segmentFilePaths)
       throws IOException {
     // More recent modified first
     ImmutableSortedMap.Builder<FileTime, Path> pathFileTimeMapBuilder =
@@ -148,6 +156,6 @@ class SegmentLoaderImpl implements SegmentLoader {
 
   private void updateSegmentFactorySegmentStartIndex(ImmutableList<Segment> segments) {
     int latestSegmentKey = segments.get(0).getSegmentFileKey();
-    segmentFactory.setSegmentStartIndex(++latestSegmentKey);
+    segmentFactory.setSegmentStartKey(++latestSegmentKey);
   }
 }

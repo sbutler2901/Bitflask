@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 
+// TODO: Create and interface for this
 class SegmentFile {
 
   private final FileChannel segmentFileChannel;
