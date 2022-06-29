@@ -10,12 +10,10 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionCompletionResults;
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Status;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -215,24 +213,25 @@ public class SegmentManagerImplTest {
     doReturn(false).when(newActiveSegment).containsKey(key);
     doReturn(true).when(compactedSegment).containsKey(key);
     doReturn(Optional.of(value)).when(compactedSegment).read(key);
-    CompactionCompletionResults compactionCompletionResults = mock(
-        CompactionCompletionResults.class);
-    doReturn(ImmutableList.of(compactedSegment)).when(compactionCompletionResults)
-        .compactedSegments();
+    CompactionResults compactionResults = mock(
+        CompactionResults.class);
+    doReturn(CompactionResults.Status.SUCCESS).when(compactionResults).getStatus();
+    doReturn(ImmutableList.of(compactedSegment)).when(compactionResults)
+        .getCompactedSegments();
     /// Enable Deletion mocking
     SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
     doReturn(segmentDeleter).when(segmentDeleterFactory).create(any());
 
-    ArgumentCaptor<Consumer<CompactionCompletionResults>> consumerArgumentCaptor = ArgumentCaptor.forClass(
+    ArgumentCaptor<Consumer<CompactionResults>> consumerArgumentCaptor = ArgumentCaptor.forClass(
         Consumer.class);
     /// Initiate compaction
     segmentManager.write(key, value);
     /// Active compaction results function
-    verify(segmentCompactor).registerCompactionCompletedConsumer(consumerArgumentCaptor.capture());
-    Consumer<CompactionCompletionResults> compactionResultsConsumer = consumerArgumentCaptor.getValue();
+    verify(segmentCompactor).registerCompactionResultsConsumer(consumerArgumentCaptor.capture());
+    Consumer<CompactionResults> compactionResultsConsumer = consumerArgumentCaptor.getValue();
 
     // Act
-    compactionResultsConsumer.accept(compactionCompletionResults);
+    compactionResultsConsumer.accept(compactionResults);
     /// Verify post update changes
     segmentManager.read(key);
     segmentManager.write(key, value);
@@ -246,7 +245,7 @@ public class SegmentManagerImplTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
   void write_compaction_failed() throws IOException {
     // Arrange
     /// Activate compaction initiation
@@ -260,19 +259,24 @@ public class SegmentManagerImplTest {
     doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
     /// Setup for after compaction update
     String key = "key", value = "value";
-    ArgumentCaptor<BiConsumer<Throwable, ImmutableList<Segment>>> consumerArgumentCaptor = ArgumentCaptor.forClass(
-        BiConsumer.class);
+    ArgumentCaptor<Consumer<CompactionResults>> consumerArgumentCaptor = ArgumentCaptor.forClass(
+        Consumer.class);
     /// Deletion of failed compaction segments
     SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
     doReturn(segmentDeleter).when(segmentDeleterFactory).create(any());
     /// Initiate compaction
     segmentManager.write(key, value);
     /// Active compaction results function
-    verify(segmentCompactor).registerCompactionFailedConsumer(consumerArgumentCaptor.capture());
-    BiConsumer<Throwable, ImmutableList<Segment>> compactionFailedConsumer = consumerArgumentCaptor.getValue();
+    verify(segmentCompactor).registerCompactionResultsConsumer(consumerArgumentCaptor.capture());
+    Consumer<CompactionResults> compactionResultsConsumer = consumerArgumentCaptor.getValue();
+
+    CompactionResults compactionResults = mock(CompactionResults.class);
+    doReturn(CompactionResults.Status.FAILED).when(compactionResults).getStatus();
+    doReturn(new Throwable("Compaction Failed")).when(compactionResults).getFailureReason();
+    doReturn(ImmutableList.of()).when(compactionResults).getFailedCompactedSegments();
 
     // Act
-    compactionFailedConsumer.accept(new Throwable("Compaction Failed"), ImmutableList.of());
+    compactionResultsConsumer.accept(compactionResults);
     segmentManager.write(key, value);
     // Assert
     verify(newActiveSegment, times(1)).write(key, value);
@@ -300,23 +304,24 @@ public class SegmentManagerImplTest {
     doReturn(false).when(newActiveSegment).containsKey(key);
     doReturn(true).when(compactedSegment).containsKey(key);
     doReturn(Optional.of(value)).when(compactedSegment).read(key);
-    CompactionCompletionResults compactionCompletionResults = mock(
-        CompactionCompletionResults.class);
-    doReturn(ImmutableList.of(compactedSegment)).when(compactionCompletionResults)
-        .compactedSegments();
+    CompactionResults compactionResults = mock(
+        CompactionResults.class);
+    doReturn(ImmutableList.of(compactedSegment)).when(compactionResults)
+        .getCompactedSegments();
     /// Enable Deletion mocking
     SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
     doReturn(segmentDeleter).when(segmentDeleterFactory).create(any());
 
-    ArgumentCaptor<Consumer<CompactionCompletionResults>> compactionConsumerArgumentCaptor = ArgumentCaptor.forClass(
+    ArgumentCaptor<Consumer<CompactionResults>> compactionConsumerArgumentCaptor = ArgumentCaptor.forClass(
         Consumer.class);
     /// Initiate compaction
     segmentManager.write(key, value);
     /// Active compaction results function
-    verify(segmentCompactor).registerCompactionCompletedConsumer(
+    verify(segmentCompactor).registerCompactionResultsConsumer(
         compactionConsumerArgumentCaptor.capture());
-    Consumer<CompactionCompletionResults> compactionResultsConsumer = compactionConsumerArgumentCaptor.getValue();
-    compactionResultsConsumer.accept(compactionCompletionResults);
+    Consumer<CompactionResults> compactionResultsConsumer = compactionConsumerArgumentCaptor.getValue();
+    doReturn(CompactionResults.Status.SUCCESS).when(compactionResults).getStatus();
+    compactionResultsConsumer.accept(compactionResults);
 
     /// Deletion results
     Segment deletion0 = mock(Segment.class);
@@ -333,14 +338,14 @@ public class SegmentManagerImplTest {
 
     // Act - Success
     DeletionResults successResults = mock(DeletionResults.class);
-    doReturn(Status.SUCCESS).when(successResults).getStatus();
+    doReturn(DeletionResults.Status.SUCCESS).when(successResults).getStatus();
     doReturn(ImmutableList.of(deletion0, deletion1)).when(successResults)
         .getSegmentsProvidedForDeletion();
     deletionResultsConsumer.accept(successResults);
 
     // Act - General Failure
     DeletionResults generalFailureResults = mock(DeletionResults.class);
-    doReturn(Status.FAILED_GENERAL).when(generalFailureResults).getStatus();
+    doReturn(DeletionResults.Status.FAILED_GENERAL).when(generalFailureResults).getStatus();
     doReturn(ImmutableList.of(deletion0, deletion1)).when(generalFailureResults)
         .getSegmentsProvidedForDeletion();
     Throwable throwable = mock(Throwable.class);
@@ -350,7 +355,7 @@ public class SegmentManagerImplTest {
 
     // Act - Segment Failure
     DeletionResults segmentFailureResults = mock(DeletionResults.class);
-    doReturn(Status.FAILED_SEGMENTS).when(segmentFailureResults).getStatus();
+    doReturn(DeletionResults.Status.FAILED_SEGMENTS).when(segmentFailureResults).getStatus();
     doReturn(ImmutableList.of(deletion0, deletion1)).when(segmentFailureResults)
         .getSegmentsProvidedForDeletion();
     doReturn(ImmutableMap.of(deletion0, new IOException("deletion0 failed"), deletion1,

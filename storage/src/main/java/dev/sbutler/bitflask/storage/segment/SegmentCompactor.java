@@ -1,10 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.ImmutableList;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
-// Todo: Simply consumers using a single result object like SegmentDeleter
 
 /**
  * Asynchronously compacts multiple segments by de-duplicating key:value pairs and create new
@@ -22,42 +19,64 @@ interface SegmentCompactor {
   void compactSegments();
 
   /**
-   * Registers a consumer of compaction results that is called once compaction is completed
-   * successfully.
+   * Registers a consumer of compaction results that is called onc compaction is completed
+   * successfully, or because of a failure.
    *
-   * @param compactionCompletedConsumer the consumer to be called with the compaction results.
+   * @param compactionResultsConsumer the consumer to be called with the compaction results
    */
-  void registerCompactionCompletedConsumer(
-      Consumer<CompactionCompletionResults> compactionCompletedConsumer);
-
-  /**
-   * Registers a consumer of the error that caused compaction to fail and any segments created
-   * during execution. The segments should not be considered complete and valid for usage.
-   *
-   * @param compactionFailedConsumer the consumer to be called with the compaction failure and
-   *                                 created segments
-   */
-  void registerCompactionFailedConsumer(
-      BiConsumer<Throwable, ImmutableList<Segment>> compactionFailedConsumer);
+  void registerCompactionResultsConsumer(Consumer<CompactionResults> compactionResultsConsumer);
 
   /**
    * Used to transfer the results of a successful compaction execution.
    */
-  interface CompactionCompletionResults {
+  interface CompactionResults {
 
     /**
-     * Provides the compacted segments resulting from running compaction.
-     *
-     * @return the compacted segments
+     * Used to indicate the status of executing the SegmentCompactor.
      */
-    ImmutableList<Segment> compactedSegments();
+    enum Status {
+      SUCCESS,
+      FAILED
+    }
+
+    /**
+     * The status of the compaction execution.
+     *
+     * @return compaction execution status
+     */
+    Status getStatus();
 
     /**
      * Provides the segments that were used by the compactor during the compaction process.
      *
      * @return the segments provided for compaction.
      */
-    ImmutableList<Segment> segmentsProvidedForCompaction();
+    ImmutableList<Segment> getSegmentsProvidedForCompaction();
+
+    /**
+     * Provides the compacted segments resulting from running compaction. Will be populated when the
+     * status is also set to SUCCESS.
+     *
+     * @return the compacted segments
+     */
+    ImmutableList<Segment> getCompactedSegments();
+
+    /**
+     * The reason for failure during compaction execution. Will be populated when the status is also
+     * set to FAILED.
+     *
+     * @return the reason for failure
+     */
+    Throwable getFailureReason();
+
+    /**
+     * Any segments created during execution. The segments should not be considered complete and
+     * valid for usage. Will be populated when the status is also set to FAILED.
+     *
+     * @return any segments creating during failed compaction execution
+     */
+    ImmutableList<Segment> getFailedCompactedSegments();
+
   }
 
 }

@@ -144,31 +144,37 @@ class SegmentManagerImpl implements SegmentManager {
     compactionActive.set(true);
     SegmentCompactor segmentCompactor = segmentCompactorFactory.create(
         managedSegmentsAtomicReference.get().frozenSegments);
-    segmentCompactor.registerCompactionCompletedConsumer(this::handleCompactionCompleted);
-    segmentCompactor.registerCompactionFailedConsumer(this::handleCompactionFailed);
+    segmentCompactor.registerCompactionResultsConsumer(this::handleCompactionResults);
     segmentCompactor.compactSegments();
   }
 
   /**
    * Called by a compactor when compaction has completed successfully.
    *
-   * @param compactionCompletionResults the results of compaction
+   * @param compactionResults the results of compaction
    */
-  private void handleCompactionCompleted(
-      SegmentCompactor.CompactionCompletionResults compactionCompletionResults) {
+  private void handleCompactionResults(
+      SegmentCompactor.CompactionResults compactionResults) {
+    switch (compactionResults.getStatus()) {
+      case SUCCESS -> handleCompactionSuccess(
+          compactionResults.getCompactedSegments(),
+          compactionResults.getSegmentsProvidedForCompaction()
+      );
+      case FAILED -> handleCompactionFailed(
+          compactionResults.getFailureReason(),
+          compactionResults.getFailedCompactedSegments()
+      );
+    }
+  }
+
+  private void handleCompactionSuccess(ImmutableList<Segment> compactedSegments,
+      ImmutableList<Segment> segmentsProvidedForCompaction) {
     logger.atInfo().log("Compaction completed");
-    updateAfterCompaction(compactionCompletionResults.compactedSegments());
-    queueSegmentsForDeletion(compactionCompletionResults.segmentsProvidedForCompaction());
+    updateAfterCompaction(compactedSegments);
+    queueSegmentsForDeletion(segmentsProvidedForCompaction);
     compactionActive.set(false);
   }
 
-  /**
-   * Called by a compactor when compaction fails.
-   *
-   * @param throwable                the reason compaction failed
-   * @param failedCompactionSegments possibly incomplete / invalid segments created during
-   *                                 compaction prior to failure
-   */
   private void handleCompactionFailed(Throwable throwable,
       ImmutableList<Segment> failedCompactionSegments) {
     logger.atSevere().withCause(throwable).log("Compaction failed");

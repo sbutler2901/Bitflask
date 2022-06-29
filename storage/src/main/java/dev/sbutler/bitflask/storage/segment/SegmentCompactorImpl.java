@@ -16,7 +16,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 class SegmentCompactorImpl implements SegmentCompactor {
@@ -24,8 +23,7 @@ class SegmentCompactorImpl implements SegmentCompactor {
   private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;
   private final ImmutableList<Segment> segmentsToBeCompacted;
-  private final List<Consumer<CompactionCompletionResults>> compactionCompletedConsumers = new CopyOnWriteArrayList<>();
-  private final List<BiConsumer<Throwable, ImmutableList<Segment>>> compactionFailedConsumers = new CopyOnWriteArrayList<>();
+  private final List<Consumer<CompactionResults>> compactionResultsConsumers = new CopyOnWriteArrayList<>();
   private volatile boolean compactionStarted = false;
 
   private ImmutableList<Segment> failedCompactedSegments = ImmutableList.of();
@@ -53,25 +51,13 @@ class SegmentCompactorImpl implements SegmentCompactor {
   }
 
   @Override
-  public void registerCompactionCompletedConsumer(
-      Consumer<CompactionCompletionResults> compactionCompletedConsumer) {
-    compactionCompletedConsumers.add(compactionCompletedConsumer);
+  public void registerCompactionResultsConsumer(
+      Consumer<CompactionResults> compactionResultsConsumer) {
+    compactionResultsConsumers.add(compactionResultsConsumer);
   }
 
-  private void runRegisteredCompactionCompletedConsumers(
-      CompactionCompletionResults compactionCompletionResults) {
-    compactionCompletedConsumers.forEach(consumer -> consumer.accept(compactionCompletionResults));
-  }
-
-  @Override
-  public void registerCompactionFailedConsumer(
-      BiConsumer<Throwable, ImmutableList<Segment>> compactionFailedConsumer) {
-    compactionFailedConsumers.add(compactionFailedConsumer);
-  }
-
-  private void runRegisteredCompactionFailedConsumers(Throwable throwable) {
-    compactionFailedConsumers.forEach(
-        consumer -> consumer.accept(throwable, failedCompactedSegments));
+  private void runRegisteredCompactionResultsConsumers(CompactionResults compactionResults) {
+    compactionResultsConsumers.forEach(consumer -> consumer.accept(compactionResults));
   }
 
   /**
@@ -128,11 +114,19 @@ class SegmentCompactorImpl implements SegmentCompactor {
   private void handleCompactionOutcome(ImmutableList<Segment> compactedSegments,
       Throwable throwable) {
     if (throwable != null) {
-      runRegisteredCompactionFailedConsumers(throwable.getCause());
+      runRegisteredCompactionResultsConsumers(
+          new CompactionResultsImpl(
+              segmentsToBeCompacted,
+              throwable.getCause(),
+              failedCompactedSegments)
+      );
     } else {
       markSegmentsCompacted();
-      runRegisteredCompactionCompletedConsumers(
-          new CompactionCompletionResultsImpl(compactedSegments, segmentsToBeCompacted));
+      runRegisteredCompactionResultsConsumers(
+          new CompactionResultsImpl(
+              segmentsToBeCompacted,
+              compactedSegments)
+      );
     }
   }
 
@@ -142,10 +136,53 @@ class SegmentCompactorImpl implements SegmentCompactor {
     }
   }
 
-  private record CompactionCompletionResultsImpl(ImmutableList<Segment> compactedSegments,
-                                                 ImmutableList<Segment> segmentsProvidedForCompaction) implements
-      CompactionCompletionResults {
+  private static class CompactionResultsImpl implements CompactionResults {
 
+    private final Status status;
+    private final ImmutableList<Segment> segmentsProvidedForCompaction;
+    private ImmutableList<Segment> compactedSegments = null;
+    private Throwable failureReason = null;
+    private ImmutableList<Segment> failedCompactedSegments = null;
+
+    CompactionResultsImpl(ImmutableList<Segment> segmentsProvidedForCompaction,
+        ImmutableList<Segment> compactedSegments) {
+      this.status = Status.SUCCESS;
+      this.segmentsProvidedForCompaction = segmentsProvidedForCompaction;
+      this.compactedSegments = compactedSegments;
+    }
+
+    CompactionResultsImpl(ImmutableList<Segment> segmentsProvidedForCompaction,
+        Throwable failureReason, ImmutableList<Segment> failedCompactedSegments) {
+      this.status = Status.FAILED;
+      this.segmentsProvidedForCompaction = segmentsProvidedForCompaction;
+      this.failureReason = failureReason;
+      this.failedCompactedSegments = failedCompactedSegments;
+    }
+
+    @Override
+    public Status getStatus() {
+      return status;
+    }
+
+    @Override
+    public ImmutableList<Segment> getSegmentsProvidedForCompaction() {
+      return segmentsProvidedForCompaction;
+    }
+
+    @Override
+    public ImmutableList<Segment> getCompactedSegments() {
+      return compactedSegments;
+    }
+
+    @Override
+    public Throwable getFailureReason() {
+      return failureReason;
+    }
+
+    @Override
+    public ImmutableList<Segment> getFailedCompactedSegments() {
+      return failedCompactedSegments;
+    }
   }
 
 }
