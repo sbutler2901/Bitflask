@@ -115,7 +115,8 @@ class SegmentLoaderImpl implements SegmentLoader {
       FileChannel segmentFileChannel = openSegmentFileChannels.get(i);
       Path segmentFilePath = segmentFilePaths.get(i);
       int segmentKey = segmentFactory.getSegmentKeyFromPath(segmentFilePath);
-      SegmentFile segmentFile = new SegmentFile(segmentFileChannel, segmentFilePath, segmentKey);
+      SegmentFile segmentFile = new SegmentFileImpl(segmentFileChannel, segmentFilePath,
+          segmentKey);
       segmentFiles.add(segmentFile);
     }
     return segmentFiles.build();

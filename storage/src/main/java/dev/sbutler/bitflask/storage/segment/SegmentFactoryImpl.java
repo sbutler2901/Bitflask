@@ -48,7 +48,7 @@ class SegmentFactoryImpl implements SegmentFactory {
     int segmentIndex = getNextSegmentKey();
     Path segmentPath = getNextSegmentFilePath(segmentIndex);
     FileChannel segmentFileChannel = getNextSegmentFileChannel(segmentPath);
-    return new SegmentFile(segmentFileChannel, segmentPath, segmentIndex);
+    return new SegmentFileImpl(segmentFileChannel, segmentPath, segmentIndex);
   }
 
   private int getNextSegmentKey() {

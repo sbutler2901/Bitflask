@@ -5,8 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 
-// TODO: Create and interface for this
-class SegmentFileImpl {
+class SegmentFileImpl implements SegmentFile {
 
   private final FileChannel segmentFileChannel;
   private final Path segmentFilePath;
@@ -19,45 +18,45 @@ class SegmentFileImpl {
     this.segmentFileKey = segmentFileKey;
   }
 
-  void write(byte[] data, long fileOffset) throws IOException {
+  public void write(byte[] data, long fileOffset) throws IOException {
     segmentFileChannel.write(ByteBuffer.wrap(data), fileOffset);
   }
 
-  byte[] read(int readLength, long fileOffset) throws IOException {
+  public byte[] read(int readLength, long fileOffset) throws IOException {
     ByteBuffer readBytesBuffer = ByteBuffer.allocate(readLength);
     segmentFileChannel.read(readBytesBuffer, fileOffset);
     return readBytesBuffer.array();
   }
 
-  String readAsString(int readLength, long fileOffset) throws IOException {
+  public String readAsString(int readLength, long fileOffset) throws IOException {
     return new String(read(readLength, fileOffset));
   }
 
-  byte readByte(long fileOffset) throws IOException {
+  public byte readByte(long fileOffset) throws IOException {
     byte[] readBytes = read(1, fileOffset);
     return readBytes[0];
   }
 
-  long size() throws IOException {
+  public long size() throws IOException {
     return segmentFileChannel.size();
   }
 
-  Path getSegmentFilePath() {
+  public Path getSegmentFilePath() {
     return segmentFilePath;
   }
 
-  int getSegmentFileKey() {
+  public int getSegmentFileKey() {
     return segmentFileKey;
   }
 
-  void close() {
+  public void close() {
     try {
       segmentFileChannel.close();
     } catch (IOException ignored) {
     }
   }
 
-  boolean isOpen() {
+  public boolean isOpen() {
     return segmentFileChannel.isOpen();
   }
 
