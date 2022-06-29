@@ -6,13 +6,13 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 
 // TODO: Create and interface for this
-class SegmentFile {
+class SegmentFileImpl {
 
   private final FileChannel segmentFileChannel;
   private final Path segmentFilePath;
   private final int segmentFileKey;
 
-  public SegmentFile(FileChannel segmentFileChannel, Path segmentFilePath,
+  public SegmentFileImpl(FileChannel segmentFileChannel, Path segmentFilePath,
       int segmentFileKey) {
     this.segmentFileChannel = segmentFileChannel;
     this.segmentFilePath = segmentFilePath;

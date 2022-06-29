@@ -19,9 +19,9 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class SegmentFileTest {
+public class SegmentFileImplTest {
 
-  SegmentFile segmentFile;
+  SegmentFileImpl segmentFile;
   FileChannel fileChannel;
   Path path = Path.of("test-path");
   int segmentFileKey = 0;
@@ -29,7 +29,7 @@ public class SegmentFileTest {
   @BeforeEach
   void beforeEach() {
     fileChannel = mock(FileChannel.class);
-    segmentFile = new SegmentFile(fileChannel, path, segmentFileKey);
+    segmentFile = new SegmentFileImpl(fileChannel, path, segmentFileKey);
   }
 
   @Test
