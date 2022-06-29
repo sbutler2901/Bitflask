@@ -129,23 +129,23 @@ class SegmentDeleterImpl implements SegmentDeleter {
     private final Status status;
     private final ImmutableList<Segment> segmentsProvidedForDeletion;
     private Throwable generalFailureReason = null;
-    private ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap;
+    private ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap = null;
 
-    DeletionResultsImpl(ImmutableList<Segment> segmentsToBeDeleted) {
+    DeletionResultsImpl(ImmutableList<Segment> segmentsProvidedForDeletion) {
       this.status = Status.SUCCESS;
-      this.segmentsProvidedForDeletion = segmentsToBeDeleted;
+      this.segmentsProvidedForDeletion = segmentsProvidedForDeletion;
     }
 
-    DeletionResultsImpl(ImmutableList<Segment> segmentsToBeDeleted, Throwable throwable) {
+    DeletionResultsImpl(ImmutableList<Segment> segmentsProvidedForDeletion, Throwable throwable) {
       this.status = Status.FAILED_GENERAL;
-      this.segmentsProvidedForDeletion = segmentsToBeDeleted;
+      this.segmentsProvidedForDeletion = segmentsProvidedForDeletion;
       this.generalFailureReason = throwable;
     }
 
-    DeletionResultsImpl(ImmutableList<Segment> segmentsToBeDeleted,
+    DeletionResultsImpl(ImmutableList<Segment> segmentsProvidedForDeletion,
         ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap) {
       this.status = Status.FAILED_SEGMENTS;
-      this.segmentsProvidedForDeletion = segmentsToBeDeleted;
+      this.segmentsProvidedForDeletion = segmentsProvidedForDeletion;
       this.segmentsFailureReasonsMap = segmentsFailureReasonsMap;
     }
 
