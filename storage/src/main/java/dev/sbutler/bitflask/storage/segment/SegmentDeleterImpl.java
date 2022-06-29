@@ -127,25 +127,25 @@ class SegmentDeleterImpl implements SegmentDeleter {
   private static class DeletionResultsImpl implements DeletionResults {
 
     private final Status status;
-    private final ImmutableList<Segment> getSegmentsProvidedForDeletion;
+    private final ImmutableList<Segment> segmentsProvidedForDeletion;
     private Throwable generalFailureReason = null;
     private ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap;
 
     DeletionResultsImpl(ImmutableList<Segment> segmentsToBeDeleted) {
       this.status = Status.SUCCESS;
-      this.getSegmentsProvidedForDeletion = segmentsToBeDeleted;
+      this.segmentsProvidedForDeletion = segmentsToBeDeleted;
     }
 
     DeletionResultsImpl(ImmutableList<Segment> segmentsToBeDeleted, Throwable throwable) {
       this.status = Status.FAILED_GENERAL;
-      this.getSegmentsProvidedForDeletion = segmentsToBeDeleted;
+      this.segmentsProvidedForDeletion = segmentsToBeDeleted;
       this.generalFailureReason = throwable;
     }
 
     DeletionResultsImpl(ImmutableList<Segment> segmentsToBeDeleted,
         ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap) {
       this.status = Status.FAILED_SEGMENTS;
-      this.getSegmentsProvidedForDeletion = segmentsToBeDeleted;
+      this.segmentsProvidedForDeletion = segmentsToBeDeleted;
       this.segmentsFailureReasonsMap = segmentsFailureReasonsMap;
     }
 
@@ -156,7 +156,7 @@ class SegmentDeleterImpl implements SegmentDeleter {
 
     @Override
     public ImmutableList<Segment> getSegmentsProvidedForDeletion() {
-      return getSegmentsProvidedForDeletion;
+      return segmentsProvidedForDeletion;
     }
 
     @Override
