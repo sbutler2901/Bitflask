@@ -25,10 +25,12 @@ class SegmentFactoryImpl implements SegmentFactory {
 //      StandardOpenOption.TRUNCATE_EXISTING
   );
 
+  private final SegmentFileFactory segmentFileFactory;
   private final AtomicInteger nextSegmentKey = new AtomicInteger(0);
 
   @Inject
-  SegmentFactoryImpl() {
+  SegmentFactoryImpl(SegmentFileFactory segmentFileFactory) {
+    this.segmentFileFactory = segmentFileFactory;
   }
 
   @Override
@@ -48,7 +50,7 @@ class SegmentFactoryImpl implements SegmentFactory {
     int segmentIndex = getNextSegmentKey();
     Path segmentPath = getNextSegmentFilePath(segmentIndex);
     FileChannel segmentFileChannel = getNextSegmentFileChannel(segmentPath);
-    return new SegmentFileImpl(segmentFileChannel, segmentPath, segmentIndex);
+    return segmentFileFactory.create(segmentFileChannel, segmentPath, segmentIndex);
   }
 
   private int getNextSegmentKey() {

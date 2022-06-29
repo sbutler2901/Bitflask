@@ -29,12 +29,14 @@ class SegmentLoaderImpl implements SegmentLoader {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ExecutorService executorService;
+  private final SegmentFileFactory segmentFileFactory;
   private final SegmentFactory segmentFactory;
 
   @Inject
   SegmentLoaderImpl(@StorageExecutorService ExecutorService executorService,
-      SegmentFactory segmentFactory) {
+      SegmentFileFactory segmentFileFactory, SegmentFactory segmentFactory) {
     this.executorService = executorService;
+    this.segmentFileFactory = segmentFileFactory;
     this.segmentFactory = segmentFactory;
   }
 
@@ -115,7 +117,7 @@ class SegmentLoaderImpl implements SegmentLoader {
       FileChannel segmentFileChannel = openSegmentFileChannels.get(i);
       Path segmentFilePath = segmentFilePaths.get(i);
       int segmentKey = segmentFactory.getSegmentKeyFromPath(segmentFilePath);
-      SegmentFile segmentFile = new SegmentFileImpl(segmentFileChannel, segmentFilePath,
+      SegmentFile segmentFile = segmentFileFactory.create(segmentFileChannel, segmentFilePath,
           segmentKey);
       segmentFiles.add(segmentFile);
     }

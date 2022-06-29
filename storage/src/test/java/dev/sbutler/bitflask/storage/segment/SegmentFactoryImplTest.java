@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -17,6 +18,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -25,6 +27,8 @@ public class SegmentFactoryImplTest {
 
   @InjectMocks
   SegmentFactoryImpl segmentFactory;
+  @Mock
+  SegmentFileFactory segmentFileFactory;
 
   @Test
   @SuppressWarnings("unchecked")
@@ -33,7 +37,7 @@ public class SegmentFactoryImplTest {
       FileChannel fileChannel = mock(FileChannel.class);
       fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
           .thenReturn(fileChannel);
-      doReturn(0L).when(fileChannel).size();
+      doReturn(mock(SegmentFile.class)).when(segmentFileFactory).create(any(), any(), anyInt());
 
       Segment segment = segmentFactory.createSegment();
       assertFalse(segment.exceedsStorageThreshold());
@@ -47,9 +51,10 @@ public class SegmentFactoryImplTest {
       FileChannel fileChannel = mock(FileChannel.class);
       fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
           .thenReturn(fileChannel);
-      doReturn(0L).when(fileChannel).size();
-
+      SegmentFile segmentFile = mock(SegmentFile.class);
+      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), anyInt());
       int segmentStartKey = 10;
+      doReturn(segmentStartKey).when(segmentFile).getSegmentFileKey();
       segmentFactory.setSegmentStartKey(segmentStartKey);
       Segment segment = segmentFactory.createSegment();
       assertEquals(segmentStartKey, segment.getSegmentFileKey());

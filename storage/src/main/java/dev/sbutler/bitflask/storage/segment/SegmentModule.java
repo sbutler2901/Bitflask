@@ -15,6 +15,9 @@ public class SegmentModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(SegmentDeleter.class, SegmentDeleterImpl.class)
         .build(SegmentDeleterFactory.class));
+    install(new FactoryModuleBuilder()
+        .implement(SegmentFile.class, SegmentFileImpl.class)
+        .build(SegmentFileFactory.class));
   }
 
   @Provides

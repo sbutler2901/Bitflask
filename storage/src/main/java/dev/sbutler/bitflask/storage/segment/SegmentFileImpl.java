@@ -1,9 +1,11 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import com.google.inject.assistedinject.Assisted;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import javax.inject.Inject;
 
 class SegmentFileImpl implements SegmentFile {
 
@@ -11,8 +13,9 @@ class SegmentFileImpl implements SegmentFile {
   private final Path segmentFilePath;
   private final int segmentFileKey;
 
-  public SegmentFileImpl(FileChannel segmentFileChannel, Path segmentFilePath,
-      int segmentFileKey) {
+  @Inject
+  public SegmentFileImpl(@Assisted FileChannel segmentFileChannel, @Assisted Path segmentFilePath,
+      @Assisted int segmentFileKey) {
     this.segmentFileChannel = segmentFileChannel;
     this.segmentFilePath = segmentFilePath;
     this.segmentFileKey = segmentFileKey;

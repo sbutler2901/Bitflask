@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
@@ -45,6 +46,8 @@ class SegmentLoaderImplTest {
   @Mock
   ExecutorService executorService;
   @Mock
+  SegmentFileFactory segmentFileFactory;
+  @Mock
   SegmentFactory segmentFactory;
 
   @Test
@@ -72,6 +75,9 @@ class SegmentLoaderImplTest {
       fileChannelMockedStatic.when(() -> FileChannel.open(any(), anySet()))
           .thenReturn(fileChannel);
       InOrder fileChannelOrder = inOrder(FileChannel.class);
+
+      SegmentFile segmentFile = mock(SegmentFile.class);
+      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), anyInt());
 
       Segment firstSegment = mock(Segment.class);
       Future<Segment> firstSegmentFuture = mock(Future.class);
@@ -168,8 +174,7 @@ class SegmentLoaderImplTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void loadExistingSegments_executorServiceInterruptedException()
-      throws InterruptedException, IOException {
+  void loadExistingSegments_executorServiceInterruptedException() throws InterruptedException {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(
         Files.class); MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(
         FileChannel.class)) {
@@ -186,6 +191,9 @@ class SegmentLoaderImplTest {
       filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
           .thenReturn(firstFileTime);
 
+      SegmentFile segmentFile = mock(SegmentFile.class);
+      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), anyInt());
+
       FileChannel fileChannel = mock(FileChannel.class);
       fileChannelMockedStatic.when(() -> FileChannel.open(any(), anySet()))
           .thenReturn(fileChannel);
@@ -194,7 +202,7 @@ class SegmentLoaderImplTest {
 
       // Act / Assert
       assertThrows(IOException.class, () -> segmentLoader.loadExistingSegments());
-      verify(fileChannel, times(1)).close();
+      verify(segmentFile, times(1)).close();
     }
   }
 
