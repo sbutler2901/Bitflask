@@ -38,7 +38,7 @@ public class SegmentManagerImplTest {
   SegmentDeleterFactory segmentDeleterFactory;
 
   @Test
-  void read_writableSegment_keyFound() throws IOException {
+  void read_writableSegment_keyFound() throws Exception {
     // Arrange
     Segment writableSegment = mock(Segment.class);
     Segment frozenSegment = mock(Segment.class);
@@ -56,7 +56,7 @@ public class SegmentManagerImplTest {
   }
 
   @Test
-  void read_frozenSegments_keyFound() throws IOException {
+  void read_frozenSegments_keyFound() throws Exception {
     // Arrange
     Segment writableSegment = mock(Segment.class);
     doReturn(writableSegment).when(managedSegments).writableSegment();
@@ -71,7 +71,7 @@ public class SegmentManagerImplTest {
   }
 
   @Test
-  void read_keyNotFound() throws IOException {
+  void read_keyNotFound() throws Exception {
     // Arrange
     Segment writableSegment = mock(Segment.class);
     Segment frozenSegment = mock(Segment.class);
@@ -85,7 +85,7 @@ public class SegmentManagerImplTest {
   }
 
   @Test
-  void write() throws IOException {
+  void write() throws Exception {
     // Arrange
     Segment writableSegment = mock(Segment.class);
     Segment frozenSegment = mock(Segment.class);
@@ -101,7 +101,7 @@ public class SegmentManagerImplTest {
   }
 
   @Test
-  void write_createNewWritableSegment() throws IOException {
+  void write_createNewWritableSegment() throws Exception {
     // Arrange
     Segment writableSegment = mock(Segment.class);
     Segment frozenSegment = mock(Segment.class);
@@ -116,15 +116,22 @@ public class SegmentManagerImplTest {
     verify(segmentFactory, times(1)).createSegment();
   }
 
-  @Test
-  void write_compaction_initiate() throws IOException {
-    // Arrange
+  Segment compactionInitiateMocks() throws Exception {
     Segment writableSegment = mock(Segment.class);
     Segment frozenSegment = mock(Segment.class);
     doReturn(writableSegment).when(managedSegments).writableSegment();
     doReturn(ImmutableList.of(frozenSegment, mock(Segment.class))).when(managedSegments)
         .frozenSegments();
     doReturn(true).when(writableSegment).exceedsStorageThreshold();
+    Segment newWritableSegment = mock(Segment.class);
+    doReturn(newWritableSegment).when(segmentFactory).createSegment();
+    return newWritableSegment;
+  }
+
+  @Test
+  void write_compaction_initiate() throws Exception {
+    // Arrange
+    compactionInitiateMocks();
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
     doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
     // Act
@@ -133,87 +140,83 @@ public class SegmentManagerImplTest {
     verify(segmentCompactor, times(1)).compactSegments();
   }
 
-  @Test
-  @SuppressWarnings("unchecked")
-  void write_compaction_updateAfter() throws IOException {
-    // Arrange
-    /// Activate compaction initiation
-    Segment writableSegment = mock(Segment.class);
-    Segment frozenSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of(frozenSegment, mock(Segment.class))).when(managedSegments)
-        .frozenSegments();
-    doReturn(true).when(writableSegment).exceedsStorageThreshold();
-    Segment newWritableSegment = mock(Segment.class);
-    doReturn(newWritableSegment).when(segmentFactory).createSegment();
-    /// Enable compaction mocking
+  SegmentCompactor compactorMock() {
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
     doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
-    // Setup for after compaction update
-    String key = "key", value = "value";
-    Segment compactedSegment = mock(Segment.class);
-    doReturn(false).when(newWritableSegment).containsKey(key);
-    doReturn(true).when(compactedSegment).containsKey(key);
-    doReturn(Optional.of(value)).when(compactedSegment).read(key);
+    return segmentCompactor;
+  }
+
+  CompactionResults compactionResultsMock(Segment compactedSegment) {
     CompactionResults compactionResults = mock(
         CompactionResults.class);
     doReturn(CompactionResults.Status.SUCCESS).when(compactionResults).getStatus();
     doReturn(ImmutableList.of(compactedSegment)).when(compactionResults)
         .getCompactedSegments();
-    /// Enable Deletion mocking
+    return compactionResults;
+  }
+
+  SegmentDeleter deleterMock() {
     SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
     doReturn(segmentDeleter).when(segmentDeleterFactory).create(any());
+    return segmentDeleter;
+  }
 
+  @SuppressWarnings("unchecked")
+  Consumer<CompactionResults> compactionActiveMock(SegmentCompactor segmentCompactor)
+      throws Exception {
     ArgumentCaptor<Consumer<CompactionResults>> consumerArgumentCaptor = ArgumentCaptor.forClass(
         Consumer.class);
     /// Initiate compaction
-    segmentManager.write(key, value);
+    segmentManager.write("key", "value");
     /// Active compaction results function
     verify(segmentCompactor).registerCompactionResultsConsumer(consumerArgumentCaptor.capture());
-    Consumer<CompactionResults> compactionResultsConsumer = consumerArgumentCaptor.getValue();
+    return consumerArgumentCaptor.getValue();
+  }
+
+  @Test
+  void write_compaction_updateAfter() throws Exception {
+    // Arrange
+    /// Activate compaction initiation
+    Segment newWritableSegment = compactionInitiateMocks();
+    doReturn(false).when(newWritableSegment).containsKey("key");
+    /// Enable compaction mocking
+    SegmentCompactor segmentCompactor = compactorMock();
+    // Setup for after compaction update
+    Segment compactedSegment = mock(Segment.class);
+    CompactionResults compactionResults = compactionResultsMock(compactedSegment);
+    doReturn(true).when(compactedSegment).containsKey("key");
+    doReturn(Optional.of("value")).when(compactedSegment).read("key");
+    /// Enable Deletion mocking
+    SegmentDeleter segmentDeleter = deleterMock();
+    // Active compaction
+    Consumer<CompactionResults> compactionResultsConsumer = compactionActiveMock(segmentCompactor);
 
     // Act
     compactionResultsConsumer.accept(compactionResults);
     /// Verify post update changes
-    segmentManager.read(key);
-    segmentManager.write(key, value);
+    segmentManager.read("key");
+    segmentManager.write("key", "value");
 
     // Assert
     verify(segmentCompactor, times(1)).compactSegments();
-    verify(compactedSegment, times(1)).containsKey(key);
-    verify(compactedSegment, times(1)).read(key);
-    verify(newWritableSegment, times(1)).write(key, value);
+    verify(compactedSegment, times(1)).containsKey("key");
+    verify(compactedSegment, times(1)).read("key");
+    verify(newWritableSegment, times(1)).write("key", "value");
     verify(segmentDeleter, times(1)).deleteSegments();
   }
 
   @Test
-  @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
-  void write_compaction_failed() throws IOException {
+  @SuppressWarnings("ThrowableNotThrown")
+  void write_compaction_failed() throws Exception {
     // Arrange
     /// Activate compaction initiation
-    Segment writableSegment = mock(Segment.class);
-    Segment frozenSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of(frozenSegment, mock(Segment.class))).when(managedSegments)
-        .frozenSegments();
-    doReturn(true).when(writableSegment).exceedsStorageThreshold();
-    Segment newWritableSegment = mock(Segment.class);
-    doReturn(newWritableSegment).when(segmentFactory).createSegment();
+    Segment newWritableSegment = compactionInitiateMocks();
     /// Enable compaction mocking
-    SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
-    doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
-    /// Setup for after compaction update
-    String key = "key", value = "value";
-    ArgumentCaptor<Consumer<CompactionResults>> consumerArgumentCaptor = ArgumentCaptor.forClass(
-        Consumer.class);
-    /// Deletion of failed compaction segments
-    SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
-    doReturn(segmentDeleter).when(segmentDeleterFactory).create(any());
-    /// Initiate compaction
-    segmentManager.write(key, value);
-    /// Active compaction results function
-    verify(segmentCompactor).registerCompactionResultsConsumer(consumerArgumentCaptor.capture());
-    Consumer<CompactionResults> compactionResultsConsumer = consumerArgumentCaptor.getValue();
+    SegmentCompactor segmentCompactor = compactorMock();
+    /// Enable Deletion mocking
+    SegmentDeleter segmentDeleter = deleterMock();
+    // Active compaction
+    Consumer<CompactionResults> compactionResultsConsumer = compactionActiveMock(segmentCompactor);
 
     CompactionResults compactionResults = mock(CompactionResults.class);
     doReturn(CompactionResults.Status.FAILED).when(compactionResults).getStatus();
@@ -222,9 +225,10 @@ public class SegmentManagerImplTest {
 
     // Act
     compactionResultsConsumer.accept(compactionResults);
-    segmentManager.write(key, value);
+    segmentManager.write("key", "value");
+
     // Assert
-    verify(newWritableSegment, times(1)).write(key, value);
+    verify(newWritableSegment, times(1)).write("key", "value");
     verify(segmentCompactor, times(2)).compactSegments();
     verify(segmentDeleterFactory, times(1)).create(any());
     verify(segmentDeleter, times(1)).deleteSegments();
@@ -232,40 +236,19 @@ public class SegmentManagerImplTest {
 
   @Test
   @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
-  void write_deletion() throws IOException {
+  void write_deletion() throws Exception {
     // Arrange
     /// Activate compaction initiation
-    Segment writableSegment = mock(Segment.class);
-    Segment frozenSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of(frozenSegment, mock(Segment.class))).when(managedSegments)
-        .frozenSegments();
-    doReturn(true).when(writableSegment).exceedsStorageThreshold();
-    Segment newWritableSegment = mock(Segment.class);
-    doReturn(newWritableSegment).when(segmentFactory).createSegment();
+    compactionInitiateMocks();
     /// Enable compaction mocking
-    SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
-    doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
-    // Setup for after compaction update
-    String key = "key", value = "value";
-    Segment compactedSegment = mock(Segment.class);
-    CompactionResults compactionResults = mock(
-        CompactionResults.class);
-    doReturn(ImmutableList.of(compactedSegment)).when(compactionResults)
-        .getCompactedSegments();
+    SegmentCompactor segmentCompactor = compactorMock();
     /// Enable Deletion mocking
-    SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
-    doReturn(segmentDeleter).when(segmentDeleterFactory).create(any());
-
-    ArgumentCaptor<Consumer<CompactionResults>> compactionConsumerArgumentCaptor = ArgumentCaptor.forClass(
-        Consumer.class);
-    /// Initiate compaction
-    segmentManager.write(key, value);
-    /// Active compaction results function
-    verify(segmentCompactor).registerCompactionResultsConsumer(
-        compactionConsumerArgumentCaptor.capture());
-    Consumer<CompactionResults> compactionResultsConsumer = compactionConsumerArgumentCaptor.getValue();
-    doReturn(CompactionResults.Status.SUCCESS).when(compactionResults).getStatus();
+    SegmentDeleter segmentDeleter = deleterMock();
+    // Setup for after compaction update
+    Segment compactedSegment = mock(Segment.class);
+    CompactionResults compactionResults = compactionResultsMock(compactedSegment);
+    // Active compaction
+    Consumer<CompactionResults> compactionResultsConsumer = compactionActiveMock(segmentCompactor);
     compactionResultsConsumer.accept(compactionResults);
 
     /// Deletion results
