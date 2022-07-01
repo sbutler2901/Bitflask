@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import com.google.common.collect.ImmutableList;
+import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import java.io.IOException;
 
 interface SegmentLoader {
@@ -12,6 +12,6 @@ interface SegmentLoader {
    * @return the loaded segments
    * @throws IOException if an error occurs while loading the segments
    */
-  ImmutableList<Segment> loadExistingSegments() throws IOException;
+  ManagedSegments loadExistingSegments() throws IOException;
 
 }

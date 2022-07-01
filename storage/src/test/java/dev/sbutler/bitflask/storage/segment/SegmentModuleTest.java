@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -64,62 +63,16 @@ public class SegmentModuleTest {
   }
 
   @Test
-  void provideManagedSegments_emptyLoad() throws Exception {
+  void provideManagedSegments() throws Exception {
     // Arrange
     SegmentModule segmentModule = new SegmentModule();
-    SegmentFactory segmentFactory = mock(SegmentFactory.class);
     SegmentLoader segmentLoader = mock(SegmentLoader.class);
-    doReturn(true).when(segmentFactory).createSegmentStoreDir();
-    Segment segment = mock(Segment.class);
-    doReturn(segment).when(segmentFactory).createSegment();
+    ManagedSegments managedSegmentsMock = mock(ManagedSegments.class);
+    doReturn(managedSegmentsMock).when(segmentLoader).loadExistingSegments();
     // Act
-    ManagedSegments managedSegments = segmentModule.provideManagedSegments(segmentFactory,
-        segmentLoader);
+    ManagedSegments managedSegments = segmentModule.provideManagedSegments(segmentLoader);
     // Assert
-    assertEquals(segment, managedSegments.getWritableSegment());
-    assertEquals(0, managedSegments.getFrozenSegments().size());
-  }
-
-  @Test
-  void provideManagedSegments_firstLoadedExceedsStorageThreshold() throws Exception {
-    // Arrange
-    SegmentModule segmentModule = new SegmentModule();
-    SegmentFactory segmentFactory = mock(SegmentFactory.class);
-    SegmentLoader segmentLoader = mock(SegmentLoader.class);
-    doReturn(false).when(segmentFactory).createSegmentStoreDir();
-    Segment loadedSegment = mock(Segment.class);
-    doReturn(true).when(loadedSegment).exceedsStorageThreshold();
-    doReturn(ImmutableList.of(loadedSegment)).when(segmentLoader).loadExistingSegments();
-    Segment createdSegment = mock(Segment.class);
-    doReturn(createdSegment).when(segmentFactory).createSegment();
-    // Act
-    ManagedSegments managedSegments = segmentModule.provideManagedSegments(segmentFactory,
-        segmentLoader);
-    // Assert
-    assertEquals(createdSegment, managedSegments.getWritableSegment());
-    assertEquals(1, managedSegments.getFrozenSegments().size());
-    assertEquals(loadedSegment, managedSegments.getFrozenSegments().get(0));
-  }
-
-  @Test
-  void provideManagedSegments_firstLoadedAsWritable() throws Exception {
-    // Arrange
-    SegmentModule segmentModule = new SegmentModule();
-    SegmentFactory segmentFactory = mock(SegmentFactory.class);
-    SegmentLoader segmentLoader = mock(SegmentLoader.class);
-    doReturn(false).when(segmentFactory).createSegmentStoreDir();
-    Segment loadedSegment0 = mock(Segment.class);
-    Segment loadedSegment1 = mock(Segment.class);
-    doReturn(false).when(loadedSegment0).exceedsStorageThreshold();
-    doReturn(ImmutableList.of(loadedSegment0, loadedSegment1)).when(segmentLoader)
-        .loadExistingSegments();
-    // Act
-    ManagedSegments managedSegments = segmentModule.provideManagedSegments(segmentFactory,
-        segmentLoader);
-    // Arrange
-    assertEquals(loadedSegment0, managedSegments.getWritableSegment());
-    assertEquals(1, managedSegments.getFrozenSegments().size());
-    assertEquals(loadedSegment1, managedSegments.getFrozenSegments().get(0));
+    assertEquals(managedSegmentsMock, managedSegments);
   }
 
   private static class MockModule extends AbstractModule {

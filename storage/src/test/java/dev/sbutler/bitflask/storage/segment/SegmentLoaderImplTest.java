@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,6 +16,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryIteratorException;
@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +51,7 @@ class SegmentLoaderImplTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void loadExistingSegments() throws IOException, ExecutionException, InterruptedException {
+  void loadExistingSegments() throws Exception {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(
         Files.class); MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(
         FileChannel.class)) {
@@ -89,14 +88,12 @@ class SegmentLoaderImplTest {
           .invokeAll(anyList());
 
       // Act
-      List<Segment> loadedSegments = segmentLoader.loadExistingSegments();
+      ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
 
       // Assert
-      assertEquals(2, loadedSegments.size());
-      // Verify segment order maintained
-      assertArrayEquals(
-          List.of(firstSegment, secondSegment).toArray(),
-          loadedSegments.toArray());
+      assertEquals(firstSegment, managedSegments.getWritableSegment());
+      assertEquals(1, managedSegments.getFrozenSegments().size());
+      assertEquals(secondSegment, managedSegments.getFrozenSegments().get(0));
       // Verify path sorted order maintained
       fileChannelOrder.verify(fileChannelMockedStatic,
           () -> FileChannel.open(eq(secondPath), anySet()));
@@ -106,19 +103,36 @@ class SegmentLoaderImplTest {
   }
 
   @Test
+  void loadExistingSegments_directoryCreated() throws Exception {
+    // Arrange
+    doReturn(true).when(segmentFactory).createSegmentStoreDir();
+    Segment writableSegment = mock(Segment.class);
+    doReturn(writableSegment).when(segmentFactory).createSegment();
+    // Act
+    ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
+    // Assert
+    assertEquals(writableSegment, managedSegments.getWritableSegment());
+    assertEquals(0, managedSegments.getFrozenSegments().size());
+  }
+
+  @Test
   @SuppressWarnings("unchecked")
-  void loadExistingSegments_noFilesFound() throws IOException {
+  void loadExistingSegments_noFilesFound() throws Exception {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       // Arrange
+      doReturn(false).when(segmentFactory).createSegmentStoreDir();
+      Segment writableSegment = mock(Segment.class);
+      doReturn(writableSegment).when(segmentFactory).createSegment();
       DirectoryStream<Path> directoryStream = mock(DirectoryStream.class);
       filesMockedStatic.when(() -> Files.newDirectoryStream(any())).thenReturn(directoryStream);
       Iterator<Path> pathIterator = mock(Iterator.class);
       doReturn(false).when(pathIterator).hasNext();
       doReturn(pathIterator).when(directoryStream).iterator();
       // Act
-      List<Segment> loadedSegments = segmentLoader.loadExistingSegments();
+      ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
       // Assert
-      assertEquals(0, loadedSegments.size());
+      assertEquals(writableSegment, managedSegments.getWritableSegment());
+      assertEquals(0, managedSegments.getFrozenSegments().size());
     }
   }
 
@@ -138,7 +152,7 @@ class SegmentLoaderImplTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void loadExistingSegments_fileChannelsIOException() throws IOException {
+  void loadExistingSegments_fileChannelsIOException() throws Exception {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(
         Files.class); MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(
         FileChannel.class)) {
@@ -174,7 +188,7 @@ class SegmentLoaderImplTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void loadExistingSegments_executorServiceInterruptedException() throws InterruptedException {
+  void loadExistingSegments_executorServiceInterruptedException() throws Exception {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(
         Files.class); MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(
         FileChannel.class)) {

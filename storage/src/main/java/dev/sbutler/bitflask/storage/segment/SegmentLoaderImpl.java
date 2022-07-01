@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
+import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl.ManagedSegmentsImpl;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryIteratorException;
@@ -41,11 +43,17 @@ class SegmentLoaderImpl implements SegmentLoader {
   }
 
   @Override
-  public ImmutableList<Segment> loadExistingSegments() throws IOException {
+  public ManagedSegments loadExistingSegments() throws IOException {
+    boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
+    if (segmentStoreDirCreated) {
+      logger.atInfo().log("Segment store directory created");
+      return createManagedSegments(ImmutableList.of());
+    }
+
     ImmutableList<Path> segmentFilePaths = getSegmentFilePaths();
     if (segmentFilePaths.isEmpty()) {
       logger.atInfo().log("No existing files found in segment store directory");
-      return ImmutableList.of();
+      return createManagedSegments(ImmutableList.of());
     }
 
     ImmutableList<Path> sortedSegmentFilePaths = sortFilePathsByLatestModifiedDatesFirst(
@@ -54,10 +62,23 @@ class SegmentLoaderImpl implements SegmentLoader {
         sortedSegmentFilePaths);
     ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(segmentFileChannels,
         sortedSegmentFilePaths);
-    ImmutableList<Segment> segments = loadSegments(segmentFiles);
-    updateSegmentFactorySegmentStartIndex(segments);
-    logger.atInfo().log("Loaded [%d] preexisting segments", segments.size());
-    return segments;
+    ImmutableList<Segment> loadedSegments = loadSegments(segmentFiles);
+    updateSegmentFactorySegmentStartIndex(loadedSegments);
+    logger.atInfo().log("Loaded [%d] preexisting segments", loadedSegments.size());
+    return createManagedSegments(loadedSegments);
+  }
+
+  private ManagedSegments createManagedSegments(ImmutableList<Segment> loadedSegments)
+      throws IOException {
+    Segment writableSegment;
+    if (loadedSegments.isEmpty()) {
+      writableSegment = segmentFactory.createSegment();
+    } else {
+      writableSegment = loadedSegments.get(0);
+      loadedSegments = loadedSegments.subList(1, loadedSegments.size());
+    }
+
+    return new ManagedSegmentsImpl(writableSegment, loadedSegments);
   }
 
   /**
