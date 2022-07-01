@@ -12,115 +12,41 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl.ManagedSegments;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Consumer;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class SegmentManagerImplTest {
 
+  @InjectMocks
   SegmentManagerImpl segmentManager;
+  @Mock
   SegmentFactory segmentFactory;
-  SegmentLoader segmentLoader;
+  @Mock
+  ManagedSegments managedSegments;
+  @Mock
   SegmentCompactorFactory segmentCompactorFactory;
+  @Mock
   SegmentDeleterFactory segmentDeleterFactory;
-  Segment activeSegment;
-  Segment frozenSegment;
-
-  @BeforeEach
-  void beforeEach_mocks() {
-    segmentFactory = mock(SegmentFactory.class);
-    segmentLoader = mock(SegmentLoader.class);
-    segmentCompactorFactory = mock(SegmentCompactorFactory.class);
-    segmentDeleterFactory = mock(SegmentDeleterFactory.class);
-    activeSegment = mock(Segment.class);
-    frozenSegment = mock(Segment.class);
-  }
 
   @Test
-  void initialize_dirStoreCreated() throws IOException {
+  void read_writableSegment_keyFound() throws IOException {
     // Arrange
-    doReturn(true).when(segmentFactory).createSegmentStoreDir();
-    doReturn(activeSegment).when(segmentFactory).createSegment();
-    // Act
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader, segmentCompactorFactory,
-        segmentDeleterFactory);
-    // Assert
-    verify(segmentFactory, times(1)).createSegment();
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  void initialize_dirStoreExisted_NoSegmentsLoaded() throws IOException {
-    // Arrange
-    ImmutableList<Segment> mockSegments = mock(ImmutableList.class);
-    doReturn(false).when(segmentFactory).createSegmentStoreDir();
-    doReturn(mockSegments).when(segmentLoader).loadExistingSegments();
-    doReturn(true).when(mockSegments).isEmpty();
-    doReturn(activeSegment).when(segmentFactory).createSegment();
-    // Act
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader, segmentCompactorFactory,
-        segmentDeleterFactory);
-    // Assert
-    verify(segmentFactory, times(1)).createSegment();
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  void initialize_dirStoreExisted_SegmentsLoaded_headExceedsThreshold() throws IOException {
-    // Arrange
-    ImmutableList<Segment> mockSegments = mock(ImmutableList.class);
-    Segment segment = mock(Segment.class);
-    doReturn(false).when(segmentFactory).createSegmentStoreDir();
-    doReturn(mockSegments).when(segmentLoader).loadExistingSegments();
-    doReturn(false).when(mockSegments).isEmpty();
-    doReturn(segment).when(mockSegments).get(0);
-    doReturn(true).when(segment).exceedsStorageThreshold();
-    // Act
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader, segmentCompactorFactory,
-        segmentDeleterFactory);
-    // Assert
-    verify(segmentFactory, times(1)).createSegment();
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  void initialize_dirStoreExisted_SegmentsLoaded_headBelowThreshold() throws IOException {
-    // Arrange
-    ImmutableList<Segment> mockSegments = mock(ImmutableList.class);
-    Segment segment = mock(Segment.class);
-    doReturn(false).when(segmentFactory).createSegmentStoreDir();
-    doReturn(mockSegments).when(segmentLoader).loadExistingSegments();
-    doReturn(false).when(mockSegments).isEmpty();
-    doReturn(segment).when(mockSegments).get(0);
-    doReturn(false).when(segment).exceedsStorageThreshold();
-    // Act
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader, segmentCompactorFactory,
-        segmentDeleterFactory);
-    // Assert
-    verify(segmentFactory, times(0)).createSegment();
-  }
-
-  void beforeEach_defaultFunctionality() throws IOException {
-    beforeEach_defaultFunctionality(ImmutableList.of(activeSegment, frozenSegment));
-  }
-
-  void beforeEach_defaultFunctionality(ImmutableList<Segment> mockLoadedSegments)
-      throws IOException {
-    doReturn(mockLoadedSegments).when(segmentLoader).loadExistingSegments();
-    segmentManager = new SegmentManagerImpl(segmentFactory, segmentLoader, segmentCompactorFactory,
-        segmentDeleterFactory);
-  }
-
-  @Test
-  void read_activeSegment_keyFound() throws IOException {
-    // Arrange
-    beforeEach_defaultFunctionality();
+    Segment writableSegment = mock(Segment.class);
+    Segment frozenSegment = mock(Segment.class);
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
     String key = "key", value = "value";
     Optional<String> valueOptional = Optional.of(value);
-    doReturn(false).when(activeSegment).containsKey(key);
+    doReturn(false).when(writableSegment).containsKey(key);
     doReturn(true).when(frozenSegment).containsKey(key);
     doReturn(valueOptional).when(frozenSegment).read(key);
     // Act
@@ -132,11 +58,12 @@ public class SegmentManagerImplTest {
   @Test
   void read_frozenSegments_keyFound() throws IOException {
     // Arrange
-    beforeEach_defaultFunctionality();
+    Segment writableSegment = mock(Segment.class);
+    doReturn(writableSegment).when(managedSegments).writableSegment();
     String key = "key", value = "value";
     Optional<String> valueOptional = Optional.of(value);
-    doReturn(true).when(activeSegment).containsKey(key);
-    doReturn(valueOptional).when(activeSegment).read(key);
+    doReturn(true).when(writableSegment).containsKey(key);
+    doReturn(valueOptional).when(writableSegment).read(key);
     // Act
     Optional<String> readValueOptional = segmentManager.read(key);
     // Assert
@@ -146,7 +73,10 @@ public class SegmentManagerImplTest {
   @Test
   void read_keyNotFound() throws IOException {
     // Arrange
-    beforeEach_defaultFunctionality();
+    Segment writableSegment = mock(Segment.class);
+    Segment frozenSegment = mock(Segment.class);
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
     String key = "key";
     // Act
     Optional<String> valueOptional = segmentManager.read(key);
@@ -157,35 +87,44 @@ public class SegmentManagerImplTest {
   @Test
   void write() throws IOException {
     // Arrange
-    beforeEach_defaultFunctionality();
+    Segment writableSegment = mock(Segment.class);
+    Segment frozenSegment = mock(Segment.class);
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
     String key = "key", value = "value";
-    doReturn(false).when(activeSegment).exceedsStorageThreshold();
+    doReturn(false).when(writableSegment).exceedsStorageThreshold();
     // Act
     segmentManager.write(key, value);
     // Assert
-    verify(activeSegment, times(1)).write(key, value);
+    verify(writableSegment, times(1)).write(key, value);
     verify(segmentFactory, times(0)).createSegment();
   }
 
   @Test
-  void write_createNewActiveSegment() throws IOException {
+  void write_createNewWritableSegment() throws IOException {
     // Arrange
-    beforeEach_defaultFunctionality();
+    Segment writableSegment = mock(Segment.class);
+    Segment frozenSegment = mock(Segment.class);
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
     String key = "key", value = "value";
-    doReturn(true).when(activeSegment).exceedsStorageThreshold();
+    doReturn(true).when(writableSegment).exceedsStorageThreshold();
     // Act
     segmentManager.write(key, value);
     // Assert
-    verify(activeSegment, times(1)).write(key, value);
+    verify(writableSegment, times(1)).write(key, value);
     verify(segmentFactory, times(1)).createSegment();
   }
 
   @Test
   void write_compaction_initiate() throws IOException {
     // Arrange
-    beforeEach_defaultFunctionality(
-        ImmutableList.of(activeSegment, frozenSegment, mock(Segment.class)));
-    doReturn(true).when(activeSegment).exceedsStorageThreshold();
+    Segment writableSegment = mock(Segment.class);
+    Segment frozenSegment = mock(Segment.class);
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of(frozenSegment, mock(Segment.class))).when(managedSegments)
+        .frozenSegments();
+    doReturn(true).when(writableSegment).exceedsStorageThreshold();
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
     doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
     // Act
@@ -199,18 +138,21 @@ public class SegmentManagerImplTest {
   void write_compaction_updateAfter() throws IOException {
     // Arrange
     /// Activate compaction initiation
-    beforeEach_defaultFunctionality(
-        ImmutableList.of(activeSegment, frozenSegment, mock(Segment.class)));
-    doReturn(true).when(activeSegment).exceedsStorageThreshold();
-    Segment newActiveSegment = mock(Segment.class);
-    doReturn(newActiveSegment).when(segmentFactory).createSegment();
+    Segment writableSegment = mock(Segment.class);
+    Segment frozenSegment = mock(Segment.class);
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of(frozenSegment, mock(Segment.class))).when(managedSegments)
+        .frozenSegments();
+    doReturn(true).when(writableSegment).exceedsStorageThreshold();
+    Segment newWritableSegment = mock(Segment.class);
+    doReturn(newWritableSegment).when(segmentFactory).createSegment();
     /// Enable compaction mocking
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
     doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
     // Setup for after compaction update
     String key = "key", value = "value";
     Segment compactedSegment = mock(Segment.class);
-    doReturn(false).when(newActiveSegment).containsKey(key);
+    doReturn(false).when(newWritableSegment).containsKey(key);
     doReturn(true).when(compactedSegment).containsKey(key);
     doReturn(Optional.of(value)).when(compactedSegment).read(key);
     CompactionResults compactionResults = mock(
@@ -240,7 +182,7 @@ public class SegmentManagerImplTest {
     verify(segmentCompactor, times(1)).compactSegments();
     verify(compactedSegment, times(1)).containsKey(key);
     verify(compactedSegment, times(1)).read(key);
-    verify(newActiveSegment, times(1)).write(key, value);
+    verify(newWritableSegment, times(1)).write(key, value);
     verify(segmentDeleter, times(1)).deleteSegments();
   }
 
@@ -249,11 +191,14 @@ public class SegmentManagerImplTest {
   void write_compaction_failed() throws IOException {
     // Arrange
     /// Activate compaction initiation
-    beforeEach_defaultFunctionality(
-        ImmutableList.of(activeSegment, frozenSegment, mock(Segment.class)));
-    doReturn(true).when(activeSegment).exceedsStorageThreshold();
-    Segment newActiveSegment = mock(Segment.class);
-    doReturn(newActiveSegment).when(segmentFactory).createSegment();
+    Segment writableSegment = mock(Segment.class);
+    Segment frozenSegment = mock(Segment.class);
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of(frozenSegment, mock(Segment.class))).when(managedSegments)
+        .frozenSegments();
+    doReturn(true).when(writableSegment).exceedsStorageThreshold();
+    Segment newWritableSegment = mock(Segment.class);
+    doReturn(newWritableSegment).when(segmentFactory).createSegment();
     /// Enable compaction mocking
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
     doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
@@ -279,7 +224,7 @@ public class SegmentManagerImplTest {
     compactionResultsConsumer.accept(compactionResults);
     segmentManager.write(key, value);
     // Assert
-    verify(newActiveSegment, times(1)).write(key, value);
+    verify(newWritableSegment, times(1)).write(key, value);
     verify(segmentCompactor, times(2)).compactSegments();
     verify(segmentDeleterFactory, times(1)).create(any());
     verify(segmentDeleter, times(1)).deleteSegments();
@@ -290,20 +235,20 @@ public class SegmentManagerImplTest {
   void write_deletion() throws IOException {
     // Arrange
     /// Activate compaction initiation
-    beforeEach_defaultFunctionality(
-        ImmutableList.of(activeSegment, frozenSegment, mock(Segment.class)));
-    doReturn(true).when(activeSegment).exceedsStorageThreshold();
-    Segment newActiveSegment = mock(Segment.class);
-    doReturn(newActiveSegment).when(segmentFactory).createSegment();
+    Segment writableSegment = mock(Segment.class);
+    Segment frozenSegment = mock(Segment.class);
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of(frozenSegment, mock(Segment.class))).when(managedSegments)
+        .frozenSegments();
+    doReturn(true).when(writableSegment).exceedsStorageThreshold();
+    Segment newWritableSegment = mock(Segment.class);
+    doReturn(newWritableSegment).when(segmentFactory).createSegment();
     /// Enable compaction mocking
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
     doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
     // Setup for after compaction update
     String key = "key", value = "value";
     Segment compactedSegment = mock(Segment.class);
-    doReturn(false).when(newActiveSegment).containsKey(key);
-    doReturn(true).when(compactedSegment).containsKey(key);
-    doReturn(Optional.of(value)).when(compactedSegment).read(key);
     CompactionResults compactionResults = mock(
         CompactionResults.class);
     doReturn(ImmutableList.of(compactedSegment)).when(compactionResults)
@@ -356,8 +301,6 @@ public class SegmentManagerImplTest {
     // Act - Segment Failure
     DeletionResults segmentFailureResults = mock(DeletionResults.class);
     doReturn(DeletionResults.Status.FAILED_SEGMENTS).when(segmentFailureResults).getStatus();
-    doReturn(ImmutableList.of(deletion0, deletion1)).when(segmentFailureResults)
-        .getSegmentsProvidedForDeletion();
     doReturn(ImmutableMap.of(deletion0, new IOException("deletion0 failed"), deletion1,
         new InterruptedException("deletion1 failed"))).when(segmentFailureResults)
         .getSegmentsFailureReasonsMap();
@@ -368,10 +311,13 @@ public class SegmentManagerImplTest {
   }
 
   @Test
-  void close() throws IOException {
-    beforeEach_defaultFunctionality();
+  void close() {
+    Segment writableSegment = mock(Segment.class);
+    Segment frozenSegment = mock(Segment.class);
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
     segmentManager.close();
-    verify(activeSegment, times(1)).close();
+    verify(writableSegment, times(1)).close();
     verify(frozenSegment, times(1)).close();
   }
 }

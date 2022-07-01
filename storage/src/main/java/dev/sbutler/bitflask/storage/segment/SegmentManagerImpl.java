@@ -29,37 +29,13 @@ class SegmentManagerImpl implements SegmentManager {
       DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
 
   @Inject
-  SegmentManagerImpl(SegmentFactory segmentFactory, SegmentLoader segmentLoader,
-      SegmentCompactorFactory segmentCompactorFactory, SegmentDeleterFactory segmentDeleterFactory)
-      throws IOException {
+  SegmentManagerImpl(SegmentFactory segmentFactory, ManagedSegments managedSegments,
+      SegmentCompactorFactory segmentCompactorFactory,
+      SegmentDeleterFactory segmentDeleterFactory) {
     this.segmentFactory = segmentFactory;
     this.segmentCompactorFactory = segmentCompactorFactory;
     this.segmentDeleterFactory = segmentDeleterFactory;
-    initialize(segmentLoader);
-  }
-
-  /**
-   * Attempts to load preexisting segments, if they exists
-   *
-   * @param segmentLoader handles loading preexisting segments
-   * @throws IOException if and issue occurs while loading preexisting segments
-   */
-  private void initialize(SegmentLoader segmentLoader) throws IOException {
-    boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
-    ImmutableList<Segment> loadedSegments = segmentStoreDirCreated ? ImmutableList.of()
-        : segmentLoader.loadExistingSegments();
-
-    Segment writableSegment;
-    if (loadedSegments.isEmpty()) {
-      writableSegment = segmentFactory.createSegment();
-    } else if (loadedSegments.get(0).exceedsStorageThreshold()) {
-      writableSegment = segmentFactory.createSegment();
-    } else {
-      writableSegment = loadedSegments.get(0);
-      loadedSegments = loadedSegments.subList(1, loadedSegments.size());
-    }
-
-    this.managedSegmentsAtomicReference.set(new ManagedSegments(writableSegment, loadedSegments));
+    this.managedSegmentsAtomicReference.set(managedSegments);
   }
 
   @Override
@@ -77,10 +53,10 @@ class SegmentManagerImpl implements SegmentManager {
 
   private Optional<Segment> findLatestSegmentWithKey(String key) {
     ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
-    if (managedSegments.writableSegment.containsKey(key)) {
-      return Optional.of(managedSegments.writableSegment);
+    if (managedSegments.writableSegment().containsKey(key)) {
+      return Optional.of(managedSegments.writableSegment());
     }
-    for (Segment segment : managedSegments.frozenSegments) {
+    for (Segment segment : managedSegments.frozenSegments()) {
       if (segment.containsKey(key)) {
         return Optional.of(segment);
       }
@@ -90,7 +66,7 @@ class SegmentManagerImpl implements SegmentManager {
 
   @Override
   public void write(String key, String value) throws IOException {
-    Segment writableSegment = managedSegmentsAtomicReference.get().writableSegment;
+    Segment writableSegment = managedSegmentsAtomicReference.get().writableSegment();
     logger.atInfo().log("Writing [%s] : [%s] to segment [%d]", key, value,
         writableSegment.getSegmentFileKey());
     writableSegment.write(key, value);
@@ -100,8 +76,8 @@ class SegmentManagerImpl implements SegmentManager {
   @Override
   public void close() {
     ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
-    managedSegments.writableSegment.close();
-    managedSegments.frozenSegments.forEach(Segment::close);
+    managedSegments.writableSegment().close();
+    managedSegments.frozenSegments().forEach(Segment::close);
   }
 
   /**
@@ -119,7 +95,7 @@ class SegmentManagerImpl implements SegmentManager {
   }
 
   private boolean shouldCreateAndUpdateWritableSegment() {
-    return managedSegmentsAtomicReference.get().writableSegment.exceedsStorageThreshold();
+    return managedSegmentsAtomicReference.get().writableSegment().exceedsStorageThreshold();
   }
 
   private synchronized void createNewWritableSegmentAndUpdateManagedSegments() throws IOException {
@@ -127,15 +103,15 @@ class SegmentManagerImpl implements SegmentManager {
     ManagedSegments currentManagedSegments = managedSegmentsAtomicReference.get();
     Segment newWritableSegment = segmentFactory.createSegment();
     ImmutableList<Segment> newFrozenSegments = new ImmutableList.Builder<Segment>()
-        .add(currentManagedSegments.writableSegment)
-        .addAll(currentManagedSegments.frozenSegments)
+        .add(currentManagedSegments.writableSegment())
+        .addAll(currentManagedSegments.frozenSegments())
         .build();
 
     managedSegmentsAtomicReference.set(new ManagedSegments(newWritableSegment, newFrozenSegments));
   }
 
   private boolean shouldInitiateCompaction() {
-    return !compactionActive.get() && managedSegmentsAtomicReference.get().frozenSegments.size()
+    return !compactionActive.get() && managedSegmentsAtomicReference.get().frozenSegments().size()
         >= nextCompactionThreshold.get();
   }
 
@@ -143,7 +119,7 @@ class SegmentManagerImpl implements SegmentManager {
     logger.atInfo().log("Initiating Compaction");
     compactionActive.set(true);
     SegmentCompactor segmentCompactor = segmentCompactorFactory.create(
-        managedSegmentsAtomicReference.get().frozenSegments);
+        managedSegmentsAtomicReference.get().frozenSegments());
     segmentCompactor.registerCompactionResultsConsumer(this::handleCompactionResults);
     segmentCompactor.compactSegments();
   }
@@ -187,7 +163,7 @@ class SegmentManagerImpl implements SegmentManager {
     ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
     Deque<Segment> newFrozenSegments = new ArrayDeque<>();
 
-    currentManagedSegment.frozenSegments.stream().filter((segment) -> !segment.hasBeenCompacted())
+    currentManagedSegment.frozenSegments().stream().filter((segment) -> !segment.hasBeenCompacted())
         .forEach(newFrozenSegments::offerFirst);
     newFrozenSegments.addAll(compactedSegments);
 
@@ -195,7 +171,7 @@ class SegmentManagerImpl implements SegmentManager {
         newFrozenSegments.size() + DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
 
     managedSegmentsAtomicReference.set(
-        new ManagedSegments(currentManagedSegment.writableSegment,
+        new ManagedSegments(currentManagedSegment.writableSegment(),
             ImmutableList.copyOf(newFrozenSegments)));
   }
 
