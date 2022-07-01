@@ -11,7 +11,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl.ManagedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 
@@ -76,8 +76,8 @@ public class SegmentModuleTest {
     ManagedSegments managedSegments = segmentModule.provideManagedSegments(segmentFactory,
         segmentLoader);
     // Assert
-    assertEquals(segment, managedSegments.writableSegment());
-    assertEquals(0, managedSegments.frozenSegments().size());
+    assertEquals(segment, managedSegments.getWritableSegment());
+    assertEquals(0, managedSegments.getFrozenSegments().size());
   }
 
   @Test
@@ -96,9 +96,9 @@ public class SegmentModuleTest {
     ManagedSegments managedSegments = segmentModule.provideManagedSegments(segmentFactory,
         segmentLoader);
     // Assert
-    assertEquals(createdSegment, managedSegments.writableSegment());
-    assertEquals(1, managedSegments.frozenSegments().size());
-    assertEquals(loadedSegment, managedSegments.frozenSegments().get(0));
+    assertEquals(createdSegment, managedSegments.getWritableSegment());
+    assertEquals(1, managedSegments.getFrozenSegments().size());
+    assertEquals(loadedSegment, managedSegments.getFrozenSegments().get(0));
   }
 
   @Test
@@ -117,9 +117,9 @@ public class SegmentModuleTest {
     ManagedSegments managedSegments = segmentModule.provideManagedSegments(segmentFactory,
         segmentLoader);
     // Arrange
-    assertEquals(loadedSegment0, managedSegments.writableSegment());
-    assertEquals(1, managedSegments.frozenSegments().size());
-    assertEquals(loadedSegment1, managedSegments.frozenSegments().get(0));
+    assertEquals(loadedSegment0, managedSegments.getWritableSegment());
+    assertEquals(1, managedSegments.getFrozenSegments().size());
+    assertEquals(loadedSegment1, managedSegments.getFrozenSegments().get(0));
   }
 
   private static class MockModule extends AbstractModule {

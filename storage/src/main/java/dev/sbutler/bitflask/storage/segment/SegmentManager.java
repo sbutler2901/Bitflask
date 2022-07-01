@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -34,4 +35,10 @@ public interface SegmentManager {
    */
   void close();
 
+  interface ManagedSegments {
+
+    Segment getWritableSegment();
+
+    ImmutableList<Segment> getFrozenSegments();
+  }
 }

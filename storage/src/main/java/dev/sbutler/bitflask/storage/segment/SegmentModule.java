@@ -4,7 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl.ManagedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl.ManagedSegmentsImpl;
 import java.io.IOException;
 import javax.inject.Singleton;
 
@@ -58,6 +59,6 @@ public class SegmentModule extends AbstractModule {
       loadedSegments = loadedSegments.subList(1, loadedSegments.size());
     }
 
-    return new ManagedSegments(writableSegment, loadedSegments);
+    return new ManagedSegmentsImpl(writableSegment, loadedSegments);
   }
 }
