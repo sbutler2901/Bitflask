@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -16,46 +15,19 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 final class SegmentImpl implements Segment {
 
-  public static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
+  static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
 
   private final SegmentFile segmentFile;
-  private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap = new ConcurrentHashMap<>();
-  private final AtomicLong currentFileWriteOffset = new AtomicLong();
+  private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap;
+  private final AtomicLong currentFileWriteOffset;
   private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
   private volatile boolean hasBeenCompacted = false;
 
-  public SegmentImpl(SegmentFile segmentFile) throws IOException {
+  public SegmentImpl(SegmentFile segmentFile, ConcurrentMap<String, Long> keyedEntryFileOffsetMap,
+      AtomicLong currentFileWriteOffset) {
     this.segmentFile = segmentFile;
-
-    currentFileWriteOffset.set(segmentFile.size());
-    if (currentFileWriteOffset.get() > 0) {
-      populateKeyOffsetMapFromSegmentFile();
-    }
-  }
-
-  // todo: handle empty spaces that occur because of failed writes
-
-  /**
-   * Populates the map of keys managed by this segment and their corresponding offset within this
-   * Segment's corresponding SegmentFile.
-   *
-   * @throws IOException if an error occurs while populating the key offset map
-   */
-  private void populateKeyOffsetMapFromSegmentFile() throws IOException {
-    long nextOffsetStart = 0;
-    while (nextOffsetStart < currentFileWriteOffset.get()) {
-      long entryStartOffset = nextOffsetStart;
-
-      // Get key and update offset map
-      int keyLength = segmentFile.readByte(nextOffsetStart++);
-      String key = segmentFile.readAsString(keyLength, nextOffsetStart);
-      nextOffsetStart += keyLength;
-      keyedEntryFileOffsetMap.put(key, entryStartOffset);
-
-      // Start next iteration offset after current entry's value
-      int valueLength = segmentFile.readByte(nextOffsetStart++);
-      nextOffsetStart += valueLength;
-    }
+    this.keyedEntryFileOffsetMap = keyedEntryFileOffsetMap;
+    this.currentFileWriteOffset = currentFileWriteOffset;
   }
 
   @Override

@@ -10,25 +10,25 @@ import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -39,31 +39,13 @@ public class SegmentImplTest {
   SegmentImpl segment;
   @Mock
   SegmentFile segmentFile;
-
-  @BeforeEach
-  void beforeEach() {
-  }
-
-  @Test
-  void loadFileEntries() throws IOException {
-    // Arrange
-    String key = "key", value = "value";
-    byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
-
-    SegmentFile mockSegmentFile = mock(SegmentFile.class);
-    doReturn((long) encoded.length).when(mockSegmentFile).size();
-    when(mockSegmentFile.readByte(anyLong())).thenReturn((byte) 3).thenReturn((byte) 5);
-    doReturn(key).when(mockSegmentFile).readAsString(anyInt(), anyLong());
-
-    // Act
-    Segment segment = new SegmentImpl(mockSegmentFile);
-
-    // Assert
-    assertTrue(segment.containsKey("key"));
-  }
+  @Mock
+  ConcurrentMap<String, Long> keyedEntryFileOffsetMap;
+  @Mock
+  AtomicLong currentFileWriteOffset = new AtomicLong();
 
   @Test
-  void write() throws IOException {
+  void write() throws Exception {
     // Arrange
     String key = "key", value = "value";
     byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
@@ -75,52 +57,48 @@ public class SegmentImplTest {
   }
 
   @Test
-  void write_merge() throws IOException {
-    try (MockedConstruction<AtomicLong> atomicLongMockedConstruction = mockConstruction(
-        AtomicLong.class)) {
-      // Arrange
-      SegmentFile mockSegmentFile = mock(SegmentFile.class);
-      doReturn(0L).when(mockSegmentFile).size();
-      doReturn(true).when(mockSegmentFile).isOpen();
+  @SuppressWarnings("unchecked")
+  void write_merge() throws Exception {
+    // Arrange
+    doReturn(true).when(segmentFile).isOpen();
+    ArgumentCaptor<BiFunction<Long, Long, Long>> invokeAllArgumentCaptor =
+        ArgumentCaptor.forClass(BiFunction.class);
 
-      Segment segment = new SegmentImpl(mockSegmentFile);
-      AtomicLong mockedAtomicLong = atomicLongMockedConstruction.constructed().get(0);
-      /// force merge comparison when writing to simulate another thread having written
-      when(mockedAtomicLong.getAndAdd(anyLong())).thenReturn(0L).thenReturn(2L).thenReturn(1L);
-      doReturn("value").when(mockSegmentFile).readAsString(anyInt(), anyLong());
-      String key = "key", value = "value";
+    // Act
+    segment.write("key", "value");
+    verify(keyedEntryFileOffsetMap).merge(anyString(), anyLong(),
+        invokeAllArgumentCaptor.capture());
+    BiFunction<Long, Long, Long> mergeBiFunction = invokeAllArgumentCaptor.getValue();
 
-      // Act
-      segment.write(key, value);
-      segment.write(key, value);
-      segment.write(key, value);
-      segment.read(key);
-      // Assert
-      verify(mockSegmentFile, times(1)).readByte(2L + 1 + 3);
-    }
+    // Assert
+    assertEquals(5L, mergeBiFunction.apply(0L, 5L));
+    assertEquals(5L, mergeBiFunction.apply(5L, 0L));
   }
 
   @Test
-  void write_Exception() throws IOException {
+  void write_Exception() throws Exception {
+    // Arrange
     String key = "key", value = "value";
     doReturn(true).when(segmentFile).isOpen();
     doThrow(IOException.class).when(segmentFile).write(any(), anyLong());
+    // Act / Assert
     assertThrows(IOException.class, () -> segment.write(key, value));
     verify(segmentFile, times(1)).write(any(), anyLong());
   }
 
   @Test
   void write_afterClose() {
-    segment.close();
+    doReturn(false).when(segmentFile).isOpen();
     assertThrows(RuntimeException.class, () -> segment.write("key", "value"));
   }
 
   @Test
-  void read() throws IOException {
+  void read() throws Exception {
     // Arrange
     String key = "key", value = "value";
     doReturn(true).when(segmentFile).isOpen();
-    segment.write(key, value);
+    doReturn(true).when(keyedEntryFileOffsetMap).containsKey(key);
+    doReturn(0L).when(keyedEntryFileOffsetMap).get(key);
     doReturn((byte) 5).when(segmentFile).readByte(anyLong());
     doReturn(value).when(segmentFile).readAsString(anyInt(), anyLong());
     // Act
@@ -132,11 +110,13 @@ public class SegmentImplTest {
   }
 
   @Test
-  void read_exception() throws IOException {
+  void read_exception() throws Exception {
     // Arrange
     String key = "key", value = "value", combined = key + value;
     doReturn(true).when(segmentFile).isOpen();
-    segment.write(key, value);
+    doReturn(true).when(keyedEntryFileOffsetMap).containsKey(key);
+    doReturn(0L).when(keyedEntryFileOffsetMap).get(key);
+    doReturn((byte) 5).when(segmentFile).readByte(anyLong());
     doThrow(IOException.class).when(segmentFile).readAsString(anyInt(), anyLong());
     // Act
     assertThrows(IOException.class, () -> segment.read(key));
@@ -145,7 +125,7 @@ public class SegmentImplTest {
   }
 
   @Test
-  void read_keyNotFound() throws IOException {
+  void read_keyNotFound() throws Exception {
     // Arrange
     String key = "key";
     doReturn(true).when(segmentFile).isOpen();
@@ -158,7 +138,7 @@ public class SegmentImplTest {
 
   @Test
   void read_afterClose() {
-    segment.close();
+    doReturn(false).when(segmentFile).isOpen();
     assertThrows(RuntimeException.class, () -> segment.read("key"));
   }
 
@@ -192,11 +172,12 @@ public class SegmentImplTest {
   }
 
   @Test
-  void containsKey() throws IOException {
+  void containsKey() throws Exception {
     // Arrange
     String key = "key", value = "value";
     assertFalse(segment.containsKey(key));
     doReturn(true).when(segmentFile).isOpen();
+    doReturn(true).when(keyedEntryFileOffsetMap).containsKey(key);
     // Act
     segment.write(key, value);
     // Assert
@@ -204,26 +185,19 @@ public class SegmentImplTest {
   }
 
   @Test
-  void exceedsStorageThreshold() throws IOException {
-    try (MockedConstruction<AtomicLong> atomicLongMockedConstruction = mockConstruction(
-        AtomicLong.class)) {
-      // Arrange
-      SegmentFile mockSegmentFile = mock(SegmentFile.class);
-      doReturn(0L).when(mockSegmentFile).size();
-      // Act
-      Segment segment = new SegmentImpl(mockSegmentFile);
-      AtomicLong mockedAtomicLong = atomicLongMockedConstruction.constructed().get(0);
-      doReturn(1 + SegmentImpl.NEW_SEGMENT_THRESHOLD).when(mockedAtomicLong).get();
-      // Assert
-      assertTrue(segment.exceedsStorageThreshold());
-    }
+  void exceedsStorageThreshold() {
+    // Arrange
+    doReturn(1 + SegmentImpl.NEW_SEGMENT_THRESHOLD).when(currentFileWriteOffset).get();
+    // Act / Assert
+    assertTrue(segment.exceedsStorageThreshold());
   }
 
   @Test
-  void getSegmentKeys() throws IOException {
+  void getSegmentKeys() throws Exception {
     // Arrange
     String key = "key", value = "value";
     doReturn(true).when(segmentFile).isOpen();
+    doReturn(ImmutableSet.of(key)).when(keyedEntryFileOffsetMap).keySet();
     // Act
     segment.write(key, value);
     // Assert
@@ -251,7 +225,7 @@ public class SegmentImplTest {
   }
 
   @Test
-  void delete() throws IOException {
+  void delete() throws Exception {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       // Act
       segment.close();
