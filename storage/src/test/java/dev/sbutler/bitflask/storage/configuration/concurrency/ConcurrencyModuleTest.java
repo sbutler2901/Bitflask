@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -31,7 +32,7 @@ public class ConcurrencyModuleTest {
   @Test
   void provideExecutorService() {
     try (MockedStatic<Executors> executorsMockedStatic = mockStatic(Executors.class)) {
-      ExecutorService mockExecutorService = mock(ExecutorService.class);
+      ListeningExecutorService mockExecutorService = mock(ListeningExecutorService.class);
       ThreadFactory threadFactory = mock(ThreadFactory.class);
       executorsMockedStatic.when(
               () -> Executors.newFixedThreadPool(anyInt(), any(ThreadFactory.class)))

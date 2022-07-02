@@ -4,11 +4,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.flogger.FluentLogger;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
@@ -17,11 +17,11 @@ final class StorageImpl implements Storage {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ExecutorService executorService;
+  private final ListeningExecutorService executorService;
   private final SegmentManager segmentManager;
 
   @Inject
-  public StorageImpl(@StorageExecutorService ExecutorService executorService,
+  public StorageImpl(@StorageExecutorService ListeningExecutorService executorService,
       SegmentManager segmentManager) {
     this.executorService = executorService;
     this.segmentManager = segmentManager;
@@ -64,15 +64,15 @@ final class StorageImpl implements Storage {
 
   @Override
   public void shutdown() throws InterruptedException {
-    boolean shutdownBeforeTermination;
+    boolean wasShutdownBeforeTermination;
     try {
       executorService.shutdown();
-      shutdownBeforeTermination = executorService.awaitTermination(10L, TimeUnit.SECONDS);
+      wasShutdownBeforeTermination = executorService.awaitTermination(10L, TimeUnit.SECONDS);
     } finally {
       segmentManager.close();
     }
 
-    if (!shutdownBeforeTermination) {
+    if (!wasShutdownBeforeTermination) {
       executorService.shutdownNow();
     }
   }

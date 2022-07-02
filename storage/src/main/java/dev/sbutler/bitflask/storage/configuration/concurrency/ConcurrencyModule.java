@@ -1,8 +1,9 @@
 package dev.sbutler.bitflask.storage.configuration.concurrency;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import javax.inject.Singleton;
@@ -11,7 +12,7 @@ public class ConcurrencyModule extends AbstractModule {
 
   private static final ConcurrencyModule instance = new ConcurrencyModule();
 
-  private ExecutorService executorService;
+  private ListeningExecutorService executorService;
 
   private ConcurrencyModule() {
   }
@@ -36,10 +37,11 @@ public class ConcurrencyModule extends AbstractModule {
   @Provides
   @StorageExecutorService
   @Singleton
-  ExecutorService provideExecutorService(@StorageNumThreads int numThreads,
+  ListeningExecutorService provideExecutorService(@StorageNumThreads int numThreads,
       @StorageThreadFactory ThreadFactory threadFactory) {
     if (executorService == null) {
-      executorService = Executors.newFixedThreadPool(numThreads, threadFactory);
+      executorService = MoreExecutors.listeningDecorator(
+          Executors.newFixedThreadPool(numThreads, threadFactory));
     }
     return executorService;
   }

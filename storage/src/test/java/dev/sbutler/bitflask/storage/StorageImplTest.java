@@ -1,26 +1,21 @@
 package dev.sbutler.bitflask.storage;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,8 +23,9 @@ class StorageImplTest {
 
   @InjectMocks
   StorageImpl storage;
-  @Mock
-  ExecutorService executorService;
+  @Spy
+  @SuppressWarnings("UnstableApiUsage")
+  ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
   @Mock
   SegmentManager segmentManager;
 
@@ -38,16 +34,10 @@ class StorageImplTest {
   void write() throws IOException {
     // Arrange
     String key = "key", value = "value";
-    Future<?> mockFuture = mock(Future.class);
-    doAnswer((InvocationOnMock invocation) -> {
-      Callable<?> writeTask = (Callable<?>) invocation.getArguments()[0];
-      writeTask.call();
-      return mockFuture;
-    }).when(executorService).submit(any(Callable.class));
     // Act
-    Future<?> future = storage.write(key, value);
+    storage.write(key, value);
     // Assert
-    assertEquals(mockFuture, future);
+    verify(executorService, times(1)).submit(any(Callable.class));
     verify(segmentManager, times(1)).write(key, value);
   }
 
@@ -72,16 +62,10 @@ class StorageImplTest {
   void read() throws IOException {
     // Arrange
     String key = "key";
-    Future<Optional<String>> mockFuture = mock(Future.class);
-    doAnswer((InvocationOnMock invocation) -> {
-      Callable<?> writeTask = (Callable<?>) invocation.getArguments()[0];
-      writeTask.call();
-      return mockFuture;
-    }).when(executorService).submit(any(Callable.class));
     // Act
-    Future<Optional<String>> returnedFuture = storage.read(key);
+    storage.read(key);
     // Assert
-    assertEquals(mockFuture, returnedFuture);
+    verify(executorService, times(1)).submit(any(Callable.class));
     verify(segmentManager, times(1)).read(key);
   }
 
@@ -94,21 +78,9 @@ class StorageImplTest {
 
   @Test
   void shutdown() throws InterruptedException {
-    doReturn(true).when(executorService).awaitTermination(anyLong(), any());
     storage.shutdown();
     verify(executorService, times(1)).shutdown();
     verify(executorService, times(1)).awaitTermination(anyLong(), any());
-    verify(executorService, times(0)).shutdownNow();
-    verify(segmentManager, times(1)).close();
-  }
-
-  @Test
-  void shutdown_timeLimitExceeded() throws InterruptedException {
-    doReturn(false).when(executorService).awaitTermination(anyLong(), any());
-    storage.shutdown();
-    verify(executorService, times(1)).shutdown();
-    verify(executorService, times(1)).awaitTermination(anyLong(), any());
-    verify(executorService, times(1)).shutdownNow();
     verify(segmentManager, times(1)).close();
   }
 }

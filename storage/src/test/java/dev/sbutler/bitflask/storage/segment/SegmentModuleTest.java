@@ -5,13 +5,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
-import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 
 public class SegmentModuleTest {
@@ -80,7 +80,7 @@ public class SegmentModuleTest {
     @Override
     @SuppressWarnings("unchecked")
     protected void configure() {
-      bind(ExecutorService.class).annotatedWith(StorageExecutorService.class)
+      bind(ListeningExecutorService.class).annotatedWith(StorageExecutorService.class)
           .toProvider(mock(Provider.class));
     }
 

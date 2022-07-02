@@ -4,11 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 
 public class StorageModuleTest {
@@ -20,7 +20,7 @@ public class StorageModuleTest {
     Injector injector = Guice.createInjector(StorageModule.getInstance());
     try {
       injector.getBinding(
-          Key.get(ExecutorService.class).withAnnotation(StorageExecutorService.class));
+          Key.get(ListeningExecutorService.class).withAnnotation(StorageExecutorService.class));
       injector.getBinding(Storage.class);
     } catch (Exception e) {
       fail(e.getMessage());

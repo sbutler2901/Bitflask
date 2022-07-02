@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.flogger.FluentLogger;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl.ManagedSegmentsImpl;
@@ -22,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
 
@@ -30,12 +30,12 @@ final class SegmentLoaderImpl implements SegmentLoader {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ExecutorService executorService;
+  private final ListeningExecutorService executorService;
   private final SegmentFileFactory segmentFileFactory;
   private final SegmentFactory segmentFactory;
 
   @Inject
-  SegmentLoaderImpl(@StorageExecutorService ExecutorService executorService,
+  SegmentLoaderImpl(@StorageExecutorService ListeningExecutorService executorService,
       SegmentFileFactory segmentFileFactory, SegmentFactory segmentFactory) {
     this.executorService = executorService;
     this.segmentFileFactory = segmentFileFactory;

@@ -4,6 +4,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import java.util.List;
@@ -12,20 +13,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import javax.inject.Inject;
 
 final class SegmentDeleterImpl implements SegmentDeleter {
 
-  private final ExecutorService executorService;
+  private final ListeningExecutorService executorService;
   private final ImmutableList<Segment> segmentsToBeDeleted;
   private final List<Consumer<DeletionResults>> deletionResultsConsumers = new CopyOnWriteArrayList<>();
   private volatile boolean deletionStarted = false;
 
   @Inject
-  SegmentDeleterImpl(@StorageExecutorService ExecutorService executorService,
+  SegmentDeleterImpl(@StorageExecutorService ListeningExecutorService executorService,
       @Assisted ImmutableList<Segment> segmentsToBeDeleted) {
     this.executorService = executorService;
     this.segmentsToBeDeleted = segmentsToBeDeleted;

@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
@@ -15,12 +16,11 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
 final class SegmentCompactorImpl implements SegmentCompactor {
 
-  private final ExecutorService executorService;
+  private final ListeningExecutorService executorService;
   private final SegmentFactory segmentFactory;
   private final ImmutableList<Segment> segmentsToBeCompacted;
   private final List<Consumer<CompactionResults>> compactionResultsConsumers = new CopyOnWriteArrayList<>();
@@ -29,7 +29,7 @@ final class SegmentCompactorImpl implements SegmentCompactor {
   private ImmutableList<Segment> failedCompactedSegments = ImmutableList.of();
 
   @Inject
-  SegmentCompactorImpl(@StorageExecutorService ExecutorService executorService,
+  SegmentCompactorImpl(@StorageExecutorService ListeningExecutorService executorService,
       SegmentFactory segmentFactory,
       @Assisted ImmutableList<Segment> segmentsToBeCompacted) {
     this.executorService = executorService;

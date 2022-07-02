@@ -5,9 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -17,46 +15,40 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Status;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class SegmentCompactorImplTest {
 
+  @InjectMocks
   SegmentCompactorImpl segmentCompactorImpl;
-  @Mock
-  ExecutorService executorService;
+  @Spy
+  @SuppressWarnings("UnstableApiUsage")
+  ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
   @Mock
   SegmentFactory segmentFactory;
-  @Mock
-  Segment headSegment;
-  @Mock
-  Segment tailSegment;
-
-  @BeforeEach
-  void beforeEach() {
-    segmentCompactorImpl = new SegmentCompactorImpl(executorService, segmentFactory,
-        ImmutableList.of(headSegment, tailSegment));
-    doAnswer((InvocationOnMock invocation) -> {
-      ((Runnable) invocation.getArguments()[0]).run();
-      return null;
-    }).when(executorService).execute(any(Runnable.class));
-  }
+  @Spy
+  ImmutableList<Segment> segmentsToBeCompacted = ImmutableList.of(mock(Segment.class),
+      mock(Segment.class));
 
   @Test
   void duplicateKeyValueRemoval() throws Exception {
     // Arrange
+    Segment headSegment = segmentsToBeCompacted.get(0);
+    Segment tailSegment = segmentsToBeCompacted.get(1);
     doReturn(ImmutableSet.of("0-key", "key")).when(headSegment).getSegmentKeys();
     doReturn(ImmutableSet.of("1-key", "key")).when(tailSegment).getSegmentKeys();
     doReturn(Optional.of("0-value")).when(headSegment).read("0-key");
@@ -90,6 +82,8 @@ public class SegmentCompactorImplTest {
   @Test
   void compactionSegmentStorageExceeded() throws Exception {
     // Arrange
+    Segment headSegment = segmentsToBeCompacted.get(0);
+    Segment tailSegment = segmentsToBeCompacted.get(1);
     doReturn(ImmutableSet.of("0-key")).when(headSegment).getSegmentKeys();
     doReturn(ImmutableSet.of("1-key")).when(tailSegment).getSegmentKeys();
     doReturn(Optional.of("0-value")).when(headSegment).read("0-key");
@@ -117,6 +111,8 @@ public class SegmentCompactorImplTest {
   @Test
   void compactionFailure_throwsRuntimeException() throws IOException {
     // Arrange
+    Segment headSegment = segmentsToBeCompacted.get(0);
+    Segment tailSegment = segmentsToBeCompacted.get(1);
     doReturn(ImmutableSet.of("0-key")).when(headSegment).getSegmentKeys();
     doReturn(ImmutableSet.of("1-key")).when(tailSegment).getSegmentKeys();
     doReturn(Optional.empty()).when(headSegment).read(anyString());
@@ -141,6 +137,8 @@ public class SegmentCompactorImplTest {
   @Test
   void compactionFailure_throwsIOException() throws IOException {
     // Arrange
+    Segment headSegment = segmentsToBeCompacted.get(0);
+    Segment tailSegment = segmentsToBeCompacted.get(1);
     doReturn(ImmutableSet.of("0-key")).when(headSegment).getSegmentKeys();
     doReturn(ImmutableSet.of("1-key")).when(tailSegment).getSegmentKeys();
     doThrow(IOException.class).when(headSegment).read(anyString());

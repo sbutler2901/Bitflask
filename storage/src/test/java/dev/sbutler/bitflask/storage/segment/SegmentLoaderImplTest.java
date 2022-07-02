@@ -16,6 +16,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -26,7 +28,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,7 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,8 +44,9 @@ class SegmentLoaderImplTest {
 
   @InjectMocks
   SegmentLoaderImpl segmentLoader;
-  @Mock
-  ExecutorService executorService;
+  @Spy
+  @SuppressWarnings("UnstableApiUsage")
+  ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
   @Mock
   SegmentFileFactory segmentFileFactory;
   @Mock
