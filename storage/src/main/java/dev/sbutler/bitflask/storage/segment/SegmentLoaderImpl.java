@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
 
-class SegmentLoaderImpl implements SegmentLoader {
+final class SegmentLoaderImpl implements SegmentLoader {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 

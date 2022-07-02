@@ -17,7 +17,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import javax.inject.Inject;
 
-class SegmentDeleterImpl implements SegmentDeleter {
+final class SegmentDeleterImpl implements SegmentDeleter {
 
   private final ExecutorService executorService;
   private final ImmutableList<Segment> segmentsToBeDeleted;

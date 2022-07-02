@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Inject;
 
-class SegmentManagerImpl implements SegmentManager {
+final class SegmentManagerImpl implements SegmentManager {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 

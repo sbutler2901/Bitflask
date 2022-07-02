@@ -13,7 +13,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
-class StorageImpl implements Storage {
+final class StorageImpl implements Storage {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 

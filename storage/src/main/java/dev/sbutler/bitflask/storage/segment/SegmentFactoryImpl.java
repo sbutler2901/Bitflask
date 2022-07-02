@@ -11,7 +11,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 
-class SegmentFactoryImpl implements SegmentFactory {
+final class SegmentFactoryImpl implements SegmentFactory {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 

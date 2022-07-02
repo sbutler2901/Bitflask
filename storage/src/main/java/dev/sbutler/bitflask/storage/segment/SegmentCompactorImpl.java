@@ -18,7 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
-class SegmentCompactorImpl implements SegmentCompactor {
+final class SegmentCompactorImpl implements SegmentCompactor {
 
   private final ExecutorService executorService;
   private final SegmentFactory segmentFactory;
