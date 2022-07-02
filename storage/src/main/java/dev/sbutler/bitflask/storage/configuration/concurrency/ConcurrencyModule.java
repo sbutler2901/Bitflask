@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.configuration.concurrency;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import java.util.concurrent.Executors;
@@ -9,6 +10,8 @@ import java.util.concurrent.ThreadFactory;
 import javax.inject.Singleton;
 
 public class ConcurrencyModule extends AbstractModule {
+
+  private static final String STORAGE_SERVICE_THREAD_NAME = "storage-pool-%d";
 
   private static final ConcurrencyModule instance = new ConcurrencyModule();
 
@@ -25,7 +28,7 @@ public class ConcurrencyModule extends AbstractModule {
   @StorageThreadFactory
   @Singleton
   ThreadFactory provideStorageThreadFactory() {
-    return new StorageThreadFactoryImpl();
+    return new ThreadFactoryBuilder().setNameFormat(STORAGE_SERVICE_THREAD_NAME).build();
   }
 
   @Provides

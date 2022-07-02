@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.storage.configuration.concurrency;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -17,12 +16,6 @@ import org.mockito.MockedStatic;
 public class ConcurrencyModuleTest {
 
   private final ConcurrencyModule concurrencyModule = ConcurrencyModule.getInstance();
-
-  @Test
-  void provideStorageThreadFactory() {
-    ThreadFactory threadFactory = concurrencyModule.provideStorageThreadFactory();
-    assertInstanceOf(StorageThreadFactoryImpl.class, threadFactory);
-  }
 
   @Test
   void provideStorageNumThreads() {
