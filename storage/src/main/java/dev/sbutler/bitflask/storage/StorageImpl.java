@@ -64,14 +64,16 @@ final class StorageImpl implements Storage {
 
   @Override
   public void shutdown() throws InterruptedException {
+    boolean shutdownBeforeTermination;
     try {
       executorService.shutdown();
-      boolean shutdownBeforeTermination = executorService.awaitTermination(10L, TimeUnit.SECONDS);
-      if (!shutdownBeforeTermination) {
-        executorService.shutdownNow();
-      }
+      shutdownBeforeTermination = executorService.awaitTermination(10L, TimeUnit.SECONDS);
     } finally {
       segmentManager.close();
+    }
+
+    if (!shutdownBeforeTermination) {
+      executorService.shutdownNow();
     }
   }
 
