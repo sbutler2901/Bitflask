@@ -3,13 +3,13 @@ package dev.sbutler.bitflask.storage;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
-import java.io.IOException;
 import java.util.concurrent.Callable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +31,7 @@ class StorageImplTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void write() throws IOException {
+  void write() throws Exception {
     // Arrange
     String key = "key", value = "value";
     // Act
@@ -59,7 +59,7 @@ class StorageImplTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void read() throws IOException {
+  void read() throws Exception {
     // Arrange
     String key = "key";
     // Act
@@ -77,10 +77,20 @@ class StorageImplTest {
   }
 
   @Test
-  void shutdown() throws InterruptedException {
+  void shutdown() throws Exception {
     storage.shutdown();
     verify(executorService, times(1)).shutdown();
     verify(executorService, times(1)).awaitTermination(anyLong(), any());
     verify(segmentManager, times(1)).close();
+  }
+
+  @Test
+  void shutdown_timeout() throws Exception {
+    doReturn(false).when(executorService).awaitTermination(anyLong(), any());
+    storage.shutdown();
+    verify(executorService, times(1)).shutdown();
+    verify(executorService, times(1)).awaitTermination(anyLong(), any());
+    verify(segmentManager, times(1)).close();
+    verify(executorService, times(1)).shutdownNow();
   }
 }

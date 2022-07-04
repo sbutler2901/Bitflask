@@ -8,7 +8,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -48,7 +47,7 @@ final class SegmentDeleterImpl implements SegmentDeleter {
    */
   private ImmutableMap<Segment, ListenableFuture<Void>> closeAndDeleteSegments()
       throws InterruptedException {
-    List<Callable<Void>> deletionCallables = new ArrayList<>(segmentsToBeDeleted.size());
+    ImmutableList.Builder<Callable<Void>> deletionCallables = ImmutableList.builder();
     for (Segment segment : segmentsToBeDeleted) {
       deletionCallables.add(() -> {
         segment.close();
@@ -57,9 +56,9 @@ final class SegmentDeleterImpl implements SegmentDeleter {
       });
     }
 
-    @SuppressWarnings("unchecked") // guaranteed by invokeAll contract
-    List<ListenableFuture<Void>> deletionFutures = (List) executorService.invokeAll(
-        deletionCallables);
+    @SuppressWarnings({"unchecked", "rawtypes"}) // guaranteed by invokeAll contract
+    List<ListenableFuture<Void>> deletionFutures =
+        (List) executorService.invokeAll(deletionCallables.build());
 
     ImmutableMap.Builder<Segment, ListenableFuture<Void>> segmentDeletionFutureMap = ImmutableMap.builder();
     for (int i = 0; i < segmentsToBeDeleted.size(); i++) {
