@@ -10,9 +10,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import javax.inject.Inject;
 
 final class SegmentDeleterImpl implements SegmentDeleter {
@@ -48,18 +48,19 @@ final class SegmentDeleterImpl implements SegmentDeleter {
    *
    * @return a map of segments to their corresponding deletion futures
    */
-  private ImmutableMap<Segment, Future<Void>> closeAndDeleteSegments() throws InterruptedException {
-    ImmutableList<Future<Void>> deletionFutures;
-    deletionFutures = ImmutableList.copyOf(executorService.invokeAll(
+  private ImmutableMap<Segment, ListenableFuture<Void>> closeAndDeleteSegments()
+      throws InterruptedException {
+    @SuppressWarnings("unchecked") // guaranteed by invokeAll contract
+    List<ListenableFuture<Void>> deletionFutures = (List) executorService.invokeAll(
         segmentsToBeDeleted.stream()
             .map(segment -> (Callable<Void>) () -> {
               segment.close();
               segment.delete();
               return null;
             }).collect(toImmutableList())
-    ));
+    );
 
-    ImmutableMap.Builder<Segment, Future<Void>> segmentDeletionFutureMap = ImmutableMap.builder();
+    ImmutableMap.Builder<Segment, ListenableFuture<Void>> segmentDeletionFutureMap = ImmutableMap.builder();
     for (int i = 0; i < segmentsToBeDeleted.size(); i++) {
       segmentDeletionFutureMap.put(segmentsToBeDeleted.get(i), deletionFutures.get(i));
     }
@@ -74,7 +75,7 @@ final class SegmentDeleterImpl implements SegmentDeleter {
    * @return a map of segments which failed to be deleted and their reason for failure
    */
   private ImmutableMap<Segment, Throwable> mapPotentialSegmentFailures(
-      ImmutableMap<Segment, Future<Void>> segmentDeletionFutures) {
+      ImmutableMap<Segment, ListenableFuture<Void>> segmentDeletionFutures) {
     ImmutableMap.Builder<Segment, Throwable> segmentFailuresMap = ImmutableMap.builder();
     segmentDeletionFutures.forEach((segment, deletionFuture) -> {
       try {
