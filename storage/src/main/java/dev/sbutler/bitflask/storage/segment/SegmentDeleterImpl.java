@@ -35,12 +35,11 @@ final class SegmentDeleterImpl implements SegmentDeleter {
       return deletionFuture;
     }
 
-    deletionFuture =
+    return deletionFuture =
         FluentFuture.from(Futures.submit(this::closeAndDeleteSegments, executorService))
             .transform(this::mapPotentialSegmentFailures, executorService)
             .transform(this::handlePotentialSegmentFailuresOutcome, executorService)
             .catching(Throwable.class, this::catchDeletionFailure, executorService);
-    return deletionFuture;
   }
 
   /**
