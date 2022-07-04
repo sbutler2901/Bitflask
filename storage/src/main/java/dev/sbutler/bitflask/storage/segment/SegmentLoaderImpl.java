@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -17,10 +18,8 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -107,7 +106,6 @@ final class SegmentLoaderImpl implements SegmentLoader {
     // More recent modified first
     ImmutableSortedMap.Builder<FileTime, Path> pathFileTimeMapBuilder =
         new ImmutableSortedMap.Builder<>(Comparator.reverseOrder());
-
     for (Path path : segmentFilePaths) {
       FileTime pathFileTime = Files.getLastModifiedTime(path, LinkOption.NOFOLLOW_LINKS);
       pathFileTimeMapBuilder.put(pathFileTime, path);
@@ -117,18 +115,43 @@ final class SegmentLoaderImpl implements SegmentLoader {
 
   private ImmutableList<FileChannel> openSegmentFileChannels(ImmutableList<Path> filePaths)
       throws IOException {
-    ImmutableList.Builder<FileChannel> openFilesBuilder = new ImmutableList.Builder<>();
-    try {
-      for (Path path : filePaths) {
-        FileChannel fileChannel = FileChannel.open(path, Set.of(StandardOpenOption.READ,
-            StandardOpenOption.WRITE));
-        openFilesBuilder.add(fileChannel);
-      }
-    } catch (IOException e) {
-      closeFileChannels(openFilesBuilder.build());
-      throw e;
+    ImmutableList.Builder<Callable<FileChannel>> openFileChannelsCallables = ImmutableList.builder();
+    for (Path path : filePaths) {
+      openFileChannelsCallables.add(
+          () -> FileChannel.open(path,
+              ImmutableSet.of(StandardOpenOption.READ, StandardOpenOption.WRITE)));
     }
-    return openFilesBuilder.build();
+
+    List<Future<FileChannel>> fileChannelFutures;
+    try {
+      fileChannelFutures = executorService.invokeAll(openFileChannelsCallables.build());
+    } catch (InterruptedException e) {
+      throw new IOException("Opening of FileChannels interrupted", e);
+    }
+
+    ImmutableList.Builder<FileChannel> openFileChannels = ImmutableList.builder();
+    IOException fileChannelThrownException = null;
+    for (int i = 0; i < fileChannelFutures.size(); i++) {
+      try {
+        openFileChannels.add(fileChannelFutures.get(i).get());
+      } catch (InterruptedException e) {
+        fileChannelThrownException = new IOException(
+            "At least one FileChannel failed to be opened");
+        logger.atSevere().withCause(e)
+            .log("Opening FileChannel for %s failed", filePaths.get(i));
+      } catch (ExecutionException e) {
+        fileChannelThrownException = new IOException(
+            "At least one FileChannel failed to be opened");
+        logger.atSevere().withCause(e.getCause())
+            .log("Opening FileChannel for %s failed", filePaths.get(i));
+      }
+    }
+    if (fileChannelThrownException != null) {
+      closeFileChannels(openFileChannels.build());
+      throw fileChannelThrownException;
+    }
+
+    return openFileChannels.build();
   }
 
   private ImmutableList<SegmentFile> loadSegmentFiles(
@@ -147,21 +170,42 @@ final class SegmentLoaderImpl implements SegmentLoader {
 
   private ImmutableList<Segment> loadSegments(ImmutableList<SegmentFile> segmentFiles)
       throws IOException {
-    List<Callable<Segment>> segmentCallables = new ArrayList<>();
+    ImmutableList.Builder<Callable<Segment>> segmentCallables = ImmutableList.builder();
     for (SegmentFile segmentFile : segmentFiles) {
       segmentCallables.add(() -> segmentFactory.createSegmentFromFile(segmentFile));
     }
+
+    List<Future<Segment>> segmentFutures;
     try {
-      List<Future<Segment>> segmentFutures = executorService.invokeAll(segmentCallables);
-      ImmutableList.Builder<Segment> segments = new ImmutableList.Builder<>();
-      for (Future<Segment> segmentFuture : segmentFutures) {
-        segments.add(segmentFuture.get());
-      }
-      return segments.build();
-    } catch (InterruptedException | ExecutionException e) {
+      segmentFutures = executorService.invokeAll(segmentCallables.build());
+    } catch (InterruptedException e) {
       closeSegmentFiles(segmentFiles);
-      throw new IOException("Failed to load previous segments", e);
+      throw new IOException("Creation of Segments interrupted", e);
     }
+
+    ImmutableList.Builder<Segment> createdSegments = ImmutableList.builder();
+    IOException segmentThrownException = null;
+    for (int i = 0; i < segmentFutures.size(); i++) {
+      try {
+        createdSegments.add(segmentFutures.get(i).get());
+      } catch (InterruptedException e) {
+        segmentThrownException = new IOException(
+            "At least one Segment failed to be opened");
+        logger.atSevere().withCause(e)
+            .log("Opening Segment for %s failed", segmentFiles.get(i).getSegmentFilePath());
+      } catch (ExecutionException e) {
+        segmentThrownException = new IOException(
+            "At least one Segment failed to be opened");
+        logger.atSevere().withCause(e.getCause())
+            .log("Opening Segment for %s failed", segmentFiles.get(i).getSegmentFilePath());
+      }
+    }
+    if (segmentThrownException != null) {
+      closeSegmentFiles(segmentFiles);
+      throw segmentThrownException;
+    }
+
+    return createdSegments.build();
   }
 
   private void closeFileChannels(ImmutableList<FileChannel> fileChannels) {
