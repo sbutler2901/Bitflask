@@ -4,25 +4,22 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.FluentFuture;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.function.Consumer;
 import javax.inject.Inject;
 
 final class SegmentDeleterImpl implements SegmentDeleter {
 
   private final ListeningExecutorService executorService;
   private final ImmutableList<Segment> segmentsToBeDeleted;
-  private final List<Consumer<DeletionResults>> deletionResultsConsumers = new CopyOnWriteArrayList<>();
-  private volatile boolean deletionStarted = false;
+  private ListenableFuture<DeletionResults> deletionFuture = null;
 
   @Inject
   SegmentDeleterImpl(@StorageExecutorService ListeningExecutorService executorService,
@@ -31,28 +28,19 @@ final class SegmentDeleterImpl implements SegmentDeleter {
     this.segmentsToBeDeleted = segmentsToBeDeleted;
   }
 
+  @SuppressWarnings("UnstableApiUsage")
   @Override
-  public void deleteSegments() {
-    if (deletionStarted) {
-      return;
+  public synchronized ListenableFuture<DeletionResults> deleteSegments() {
+    if (deletionFuture != null) {
+      return deletionFuture;
     }
 
-    deletionStarted = true;
-    CompletableFuture.
-        supplyAsync(this::closeAndDeleteSegments, executorService)
-        .whenCompleteAsync(this::handleCloseAndDeleteSegmentsOutcome, executorService)
-        .thenApplyAsync(this::mapPotentialSegmentFailures, executorService)
-        .thenAcceptAsync(this::handlePotentialSegmentFailuresOutcome, executorService);
-
-  }
-
-  @Override
-  public void registerDeletionResultsConsumer(Consumer<DeletionResults> deletionResultsConsumer) {
-    deletionResultsConsumers.add(deletionResultsConsumer);
-  }
-
-  private void runRegisteredDeletionResultsConsumers(DeletionResults deletionResults) {
-    deletionResultsConsumers.forEach(consumer -> consumer.accept(deletionResults));
+    deletionFuture =
+        FluentFuture.from(Futures.submit(this::closeAndDeleteSegments, executorService))
+            .transform(this::mapPotentialSegmentFailures, executorService)
+            .transform(this::handlePotentialSegmentFailuresOutcome, executorService)
+            .catching(Throwable.class, this::catchDeletionFailure, executorService);
+    return deletionFuture;
   }
 
   /**
@@ -60,35 +48,22 @@ final class SegmentDeleterImpl implements SegmentDeleter {
    *
    * @return a map of segments to their corresponding deletion futures
    */
-  private ImmutableMap<Segment, Future<Void>> closeAndDeleteSegments() {
+  private ImmutableMap<Segment, Future<Void>> closeAndDeleteSegments() throws InterruptedException {
     ImmutableList<Future<Void>> deletionFutures;
-    try {
-      deletionFutures = ImmutableList.copyOf(executorService.invokeAll(
-          segmentsToBeDeleted.stream()
-              .map(segment -> (Callable<Void>) () -> {
-                segment.close();
-                segment.delete();
-                return null;
-              }).collect(toImmutableList())
-      ));
-    } catch (InterruptedException e) {
-      throw new CompletionException(e);
-    }
+    deletionFutures = ImmutableList.copyOf(executorService.invokeAll(
+        segmentsToBeDeleted.stream()
+            .map(segment -> (Callable<Void>) () -> {
+              segment.close();
+              segment.delete();
+              return null;
+            }).collect(toImmutableList())
+    ));
 
     ImmutableMap.Builder<Segment, Future<Void>> segmentDeletionFutureMap = ImmutableMap.builder();
     for (int i = 0; i < segmentsToBeDeleted.size(); i++) {
       segmentDeletionFutureMap.put(segmentsToBeDeleted.get(i), deletionFutures.get(i));
     }
     return segmentDeletionFutureMap.build();
-  }
-
-  private void handleCloseAndDeleteSegmentsOutcome(
-      ImmutableMap<Segment, Future<Void>> segmentFutureResults,
-      Throwable throwable) {
-    if (throwable != null) {
-      runRegisteredDeletionResultsConsumers(
-          new DeletionResultsImpl(segmentsToBeDeleted, throwable.getCause()));
-    }
   }
 
   /**
@@ -104,24 +79,24 @@ final class SegmentDeleterImpl implements SegmentDeleter {
     segmentDeletionFutures.forEach((segment, deletionFuture) -> {
       try {
         deletionFuture.get();
-      } catch (InterruptedException e) {
+      } catch (ExecutionException | InterruptedException e) {
         segmentFailuresMap.put(segment, e);
-      } catch (ExecutionException e) {
-        segmentFailuresMap.put(segment, e.getCause());
       }
     });
     return segmentFailuresMap.build();
   }
 
-  private void handlePotentialSegmentFailuresOutcome(
+  private DeletionResults handlePotentialSegmentFailuresOutcome(
       ImmutableMap<Segment, Throwable> potentialSegmentFailures) {
-    DeletionResultsImpl deletionResults;
     if (potentialSegmentFailures.isEmpty()) {
-      deletionResults = new DeletionResultsImpl(segmentsToBeDeleted);
+      return new DeletionResultsImpl(segmentsToBeDeleted);
     } else {
-      deletionResults = new DeletionResultsImpl(segmentsToBeDeleted, potentialSegmentFailures);
+      return new DeletionResultsImpl(segmentsToBeDeleted, potentialSegmentFailures);
     }
-    runRegisteredDeletionResultsConsumers(deletionResults);
+  }
+
+  private DeletionResults catchDeletionFailure(Throwable throwable) {
+    return new DeletionResultsImpl(segmentsToBeDeleted, throwable);
   }
 
   private static class DeletionResultsImpl implements DeletionResults {

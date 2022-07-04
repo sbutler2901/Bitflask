@@ -1,7 +1,13 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -10,6 +16,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
 final class SegmentManagerImpl implements SegmentManager {
@@ -18,6 +25,7 @@ final class SegmentManagerImpl implements SegmentManager {
 
   private static final int DEFAULT_COMPACTION_THRESHOLD_INCREMENT = 3;
 
+  private final ListeningExecutorService executorService;
   private final SegmentFactory segmentFactory;
   private final SegmentCompactorFactory segmentCompactorFactory;
   private final SegmentDeleterFactory segmentDeleterFactory;
@@ -29,9 +37,13 @@ final class SegmentManagerImpl implements SegmentManager {
       DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
 
   @Inject
-  SegmentManagerImpl(SegmentFactory segmentFactory, ManagedSegments managedSegments,
+  SegmentManagerImpl(
+      @StorageExecutorService ListeningExecutorService executorService,
+      SegmentFactory segmentFactory,
+      ManagedSegments managedSegments,
       SegmentCompactorFactory segmentCompactorFactory,
       SegmentDeleterFactory segmentDeleterFactory) {
+    this.executorService = executorService;
     this.segmentFactory = segmentFactory;
     this.segmentCompactorFactory = segmentCompactorFactory;
     this.segmentDeleterFactory = segmentDeleterFactory;
@@ -181,54 +193,49 @@ final class SegmentManagerImpl implements SegmentManager {
   private void queueSegmentsForDeletion(ImmutableList<Segment> segmentsForDeletion) {
     logger.atInfo().log("Queueing segments for deletion after compaction");
     SegmentDeleter segmentDeleter = segmentDeleterFactory.create(segmentsForDeletion);
-    segmentDeleter.registerDeletionResultsConsumer(this::handleDeletionResults);
-    segmentDeleter.deleteSegments();
+    ListenableFuture<DeletionResults> deletionResults = segmentDeleter.deleteSegments();
+    Futures.addCallback(deletionResults, new DeletionResultsFutureCallback(),
+        executorService);
   }
 
-  private void handleDeletionResults(DeletionResults deletionResults) {
-    switch (deletionResults.getStatus()) {
-      case SUCCESS -> logger.atInfo().log(buildLogForDeletionSuccess(deletionResults));
-      case FAILED_GENERAL -> logger.atSevere().withCause(deletionResults.getGeneralFailureReason())
-          .log(buildLogForDeletionGeneralFailure(deletionResults));
-      case FAILED_SEGMENTS -> logger.atSevere().log(buildLogForSegmentsFailure(deletionResults));
-    }
-  }
+  private record DeletionResultsFutureCallback() implements FutureCallback<DeletionResults> {
 
-  private String buildLogForDeletionSuccess(DeletionResults deletionResults) {
-    return "Compacted segments successfully deleted "
-        + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsProvidedForDeletion());
-  }
-
-  private String buildLogForDeletionGeneralFailure(DeletionResults deletionResults) {
-    return "Failure to delete compacted segments due to general failure"
-        + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsProvidedForDeletion());
-  }
-
-  private String buildLogForSegmentsToBeDeleted(ImmutableList<Segment> segmentsToBeDeleted) {
-    StringBuilder log = new StringBuilder();
-    log.append("[");
-    for (int i = 0; i < segmentsToBeDeleted.size(); i++) {
-      log.append(segmentsToBeDeleted.get(i).getSegmentFileKey());
-      if (i + 1 < segmentsToBeDeleted.size()) {
-        log.append(",");
+    @Override
+    public void onSuccess(DeletionResults results) {
+      switch (results.getStatus()) {
+        case SUCCESS -> logger.atInfo().log(buildLogForDeletionSuccess(results));
+        case FAILED_GENERAL -> logger.atSevere().withCause(results.getGeneralFailureReason())
+            .log(buildLogForDeletionGeneralFailure(results));
+        case FAILED_SEGMENTS -> logger.atSevere().log(buildLogForSegmentsFailure(results));
       }
     }
-    log.append("]");
-    return log.toString();
-  }
 
-  private String buildLogForSegmentsFailure(DeletionResults deletionResults) {
-    StringBuilder log = new StringBuilder();
-    log.append("Failure to delete compacted segments due to specific failures [");
-    deletionResults.getSegmentsFailureReasonsMap().forEach((segment, throwable) -> {
-      log.append("(");
-      log.append(segment.getSegmentFileKey());
-      log.append(", ");
-      log.append(throwable.getMessage());
-      log.append(")");
-    });
-    log.append("]");
-    return log.toString();
+    @Override
+    public void onFailure(@Nonnull Throwable t) {
+      logger.atSevere().withCause(t).log("Segment deletion threw an unexpected exception");
+    }
+
+    private String buildLogForDeletionSuccess(DeletionResults deletionResults) {
+      return "Compacted segments successfully deleted "
+          + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsProvidedForDeletion());
+    }
+
+    private String buildLogForDeletionGeneralFailure(DeletionResults deletionResults) {
+      return "Failure to delete compacted segments due to general failure"
+          + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsProvidedForDeletion());
+    }
+
+    private String buildLogForSegmentsToBeDeleted(ImmutableList<Segment> segmentsToBeDeleted) {
+      return "[" + Joiner.on(", ").join(segmentsToBeDeleted) + "]";
+    }
+
+    private String buildLogForSegmentsFailure(DeletionResults deletionResults) {
+      Joiner.MapJoiner joiner = Joiner.on("; ").withKeyValueSeparator(", ");
+      return "Failure to delete compacted segments due to specific failures [" +
+          joiner.join(deletionResults.getSegmentsFailureReasonsMap()) +
+          "]";
+    }
+
   }
 
   record ManagedSegmentsImpl(Segment writableSegment,

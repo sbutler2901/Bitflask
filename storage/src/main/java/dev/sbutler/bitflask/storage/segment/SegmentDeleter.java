@@ -2,28 +2,27 @@ package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.function.Consumer;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Asynchronously deletes multiple segments Handles the process of deleting multiple Segments from
  * the file system.
- * <p>
- * A callback can be registered to consume the result of deletion.
  */
 interface SegmentDeleter {
 
   /**
    * Starts the deletion process for all Segments provided.
-   */
-  void deleteSegments();
-
-  /**
-   * Registers a consumer of deletion results that is called once deletion is completed
-   * successfully, or because of a failure.
    *
-   * @param deletionResultsConsumer the consumer to be called with the deletion results.
+   * <p>The deletion process can only be started once. After the initial call, subsequent calls
+   * will return the same ListenableFuture as the initial.
+   *
+   * <p>Any exceptions thrown during execution will be captured and provided in the returned
+   * DeletionResults.
+   *
+   * @return a Future that will be fulfilled with the results of deletion, whether success or
+   * failure
    */
-  void registerDeletionResultsConsumer(Consumer<DeletionResults> deletionResultsConsumer);
+  ListenableFuture<DeletionResults> deleteSegments();
 
   /**
    * Relays the results of deleting the Segments.

@@ -145,6 +145,7 @@ final class SegmentImpl implements Segment {
     if (isOpen()) {
       throw new RuntimeException("Segment should be closed before deleting");
     }
+    // todo: tombstone segment's file in case of failure
     try {
       readWriteLock.writeLock().lock();
       Files.delete(segmentFile.getSegmentFilePath());
@@ -163,4 +164,8 @@ final class SegmentImpl implements Segment {
     return hasBeenCompacted;
   }
 
+  @Override
+  public String toString() {
+    return "segment-" + getSegmentFileKey();
+  }
 }

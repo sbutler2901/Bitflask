@@ -254,4 +254,9 @@ public class SegmentImplTest {
     assertTrue(segment.hasBeenCompacted());
   }
 
+  @Test
+  void toStringTest() {
+    assertEquals("segment-0", segment.toString());
+  }
+
 }
