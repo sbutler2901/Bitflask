@@ -22,7 +22,7 @@
 ### Binary serialization
 
 - length header
-  - key / value
+    - key / value
 
 ## TODO:
 
@@ -30,19 +30,20 @@
 
 - Cache read values (write-through cache?)
 - Cache the latest segment with key for reading
-  - When key not already in cache
-  - Compaction will invalidate cache
+    - When key not already in cache
+    - Compaction will invalidate cache
 
 ### Networking
 
 - [gRPC](https://grpc.io)
-  - [Protocol Buffers](https://developers.google.com/protocol-buffers)
+    - [Protocol Buffers](https://developers.google.com/protocol-buffers)
 
 ### Compaction / Deletion
 
 - Using [event bus](https://github.com/google/guava/wiki/EventBusExplained) for publishing
 - Tombstones for deleted key:value pairs
-  - Prevent copying during compaction
+    - Prevent copying during compaction
+- Tombstones for deleted segments (in case of failure)
 
 ### Multithreading
 
@@ -58,12 +59,20 @@
 - Provide clean way to shut server down even during sigkill
     - including finishing writes, closing all sockets / threads
 
+### Logging
+
+- Persist logs to disk
+
+### Testing
+
+- Integration tests
+
 ### Config file
 
 - overwrite pre-existing segment files
 - segment threshold
 - performance testing
-- logging
+- logging level
 
 ### Various inputs
 
