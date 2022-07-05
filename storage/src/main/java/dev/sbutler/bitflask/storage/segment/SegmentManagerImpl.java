@@ -200,7 +200,7 @@ final class SegmentManagerImpl implements SegmentManager {
         return;
       }
       logger.atInfo()
-          .log("Queueing %d segments for deletion after compaction", segmentsForDeletion.size());
+          .log("Queueing [%d] segments for deletion after compaction", segmentsForDeletion.size());
       SegmentDeleter segmentDeleter = segmentDeleterFactory.create(segmentsForDeletion);
       ListenableFuture<DeletionResults> deletionResults = segmentDeleter.deleteSegments();
       Futures.addCallback(deletionResults, new DeletionResultsFutureCallback(),

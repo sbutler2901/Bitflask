@@ -138,12 +138,12 @@ final class SegmentLoaderImpl implements SegmentLoader {
         fileChannelThrownException = new IOException(
             "At least one FileChannel failed to be opened");
         logger.atSevere().withCause(e)
-            .log("Opening FileChannel for %s failed", filePaths.get(i));
+            .log("Opening FileChannel for [%s] failed", filePaths.get(i));
       } catch (ExecutionException e) {
         fileChannelThrownException = new IOException(
             "At least one FileChannel failed to be opened");
         logger.atSevere().withCause(e.getCause())
-            .log("Opening FileChannel for %s failed", filePaths.get(i));
+            .log("Opening FileChannel for [%s] failed", filePaths.get(i));
       }
     }
     if (fileChannelThrownException != null) {
@@ -192,12 +192,12 @@ final class SegmentLoaderImpl implements SegmentLoader {
         segmentThrownException = new IOException(
             "At least one Segment failed to be opened");
         logger.atSevere().withCause(e)
-            .log("Opening Segment for %s failed", segmentFiles.get(i).getSegmentFilePath());
+            .log("Opening Segment for [%s] failed", segmentFiles.get(i).getSegmentFilePath());
       } catch (ExecutionException e) {
         segmentThrownException = new IOException(
             "At least one Segment failed to be opened");
         logger.atSevere().withCause(e.getCause())
-            .log("Opening Segment for %s failed", segmentFiles.get(i).getSegmentFilePath());
+            .log("Opening Segment for [%s] failed", segmentFiles.get(i).getSegmentFilePath());
       }
     }
     if (segmentThrownException != null) {

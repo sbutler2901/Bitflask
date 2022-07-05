@@ -115,7 +115,7 @@ final class SegmentFactoryImpl implements SegmentFactory {
       logger.atInfo().log("Created segment store directory at [%s]", segmentStoreDirPath);
       return true;
     }
-    logger.atInfo().log("Segment store directory already existed at [{}]", segmentStoreDirPath);
+    logger.atInfo().log("Segment store directory already existed at [%s]", segmentStoreDirPath);
     return false;
   }
 

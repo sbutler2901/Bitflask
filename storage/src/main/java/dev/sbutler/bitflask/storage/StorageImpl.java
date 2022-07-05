@@ -4,12 +4,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.flogger.FluentLogger;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
@@ -27,7 +27,7 @@ final class StorageImpl implements Storage {
     this.segmentManager = segmentManager;
   }
 
-  public Future<Void> write(String key, String value) {
+  public ListenableFuture<Void> write(String key, String value) {
     validateWriteArgs(key, value);
     Callable<Void> writeTask = () -> {
       segmentManager.write(key, value);
@@ -48,7 +48,7 @@ final class StorageImpl implements Storage {
         value.length());
   }
 
-  public Future<Optional<String>> read(String key) {
+  public ListenableFuture<Optional<String>> read(String key) {
     validateReadArgs(key);
     Callable<Optional<String>> readTask = () -> segmentManager.read(key);
     logger.atInfo().log("Submitting read for [%s]", key);

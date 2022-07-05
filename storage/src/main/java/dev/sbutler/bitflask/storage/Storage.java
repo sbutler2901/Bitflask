@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import java.util.Optional;
-import java.util.concurrent.Future;
 
 /**
  * Manages persisting and retrieving data.
@@ -15,7 +15,7 @@ public interface Storage {
    * @param value the data to be written. Expected to be a non-blank string.
    * @throws IllegalArgumentException when the provided key or value is invalid
    */
-  Future<Void> write(String key, String value);
+  ListenableFuture<Void> write(String key, String value);
 
   /**
    * Reads the provided key's value from storage
@@ -23,7 +23,7 @@ public interface Storage {
    * @param key the key used for retrieving stored data. Expected to be a non-blank string.
    * @return the read value, if found
    */
-  Future<Optional<String>> read(String key);
+  ListenableFuture<Optional<String>> read(String key);
 
   /**
    * Initiates the shutdown procedure cleaning up utilized resources and stopping tasks. Will wait
