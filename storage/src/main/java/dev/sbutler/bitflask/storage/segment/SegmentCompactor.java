@@ -1,30 +1,28 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.ImmutableList;
-import java.util.function.Consumer;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Asynchronously compacts multiple segments by de-duplicating key:value pairs and create new
  * segments to store the deduplicate pairs. Assumes Segments are in order from most recently written
  * to the earliest written.
- * <p>
- * Callbacks can be registered to consume the results of the compaction in the case of success or
- * failure.
  */
 interface SegmentCompactor {
 
   /**
-   * Initiates the compaction process.
-   */
-  void compactSegments();
-
-  /**
-   * Registers a consumer of compaction results that is called onc compaction is completed
-   * successfully, or because of a failure.
+   * Starts the compaction process for all Segments provided.
    *
-   * @param compactionResultsConsumer the consumer to be called with the compaction results
+   * <p>The compaction process can only be started once. After the initial call, subsequent calls
+   * will return the same ListenableFuture as the initial.
+   *
+   * <p>Any exceptions thrown during execution will be captured and provided in the returned
+   * CompactionResults.
+   *
+   * @return a Future that will be fulfilled with the results of compaction, whether successful or
+   * failed
    */
-  void registerCompactionResultsConsumer(Consumer<CompactionResults> compactionResultsConsumer);
+  ListenableFuture<CompactionResults> compactSegments();
 
   /**
    * Used to transfer the results of a successful compaction execution.

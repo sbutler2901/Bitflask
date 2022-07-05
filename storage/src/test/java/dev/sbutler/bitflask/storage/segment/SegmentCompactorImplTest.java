@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
@@ -22,7 +23,6 @@ import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.S
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -59,22 +59,19 @@ public class SegmentCompactorImplTest {
     doReturn(createdSegment).when(segmentFactory).createSegment();
     doReturn(false).when(createdSegment).exceedsStorageThreshold();
 
-    AtomicReference<CompactionResults> compactionResults = new AtomicReference<>();
-    segmentCompactorImpl.registerCompactionResultsConsumer(compactionResults::set);
-
     // Act
-    segmentCompactorImpl.compactSegments();
+    CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
 
     // Assert
-    assertEquals(Status.SUCCESS, compactionResults.get().getStatus());
-    List<Segment> compactedSegments = compactionResults.get().getCompactedSegments();
+    assertEquals(Status.SUCCESS, compactionResults.getStatus());
+    List<Segment> compactedSegments = compactionResults.getCompactedSegments();
     assertEquals(1, compactedSegments.size());
     assertEquals(createdSegment, compactedSegments.get(0));
     verify(createdSegment, times(1)).write("0-key", "0-value");
     verify(createdSegment, times(1)).write("1-key", "1-value");
     verify(createdSegment, times(1)).write("key", "0-value");
     assertArrayEquals(List.of(headSegment, tailSegment).toArray(),
-        compactionResults.get().getSegmentsProvidedForCompaction().toArray());
+        compactionResults.getSegmentsProvidedForCompaction().toArray());
     verify(headSegment, times(1)).markCompacted();
     verify(tailSegment, times(1)).markCompacted();
   }
@@ -93,23 +90,26 @@ public class SegmentCompactorImplTest {
     doReturn(createdSegment).when(segmentFactory).createSegment();
     when(createdSegment.exceedsStorageThreshold()).thenReturn(true).thenReturn(false);
 
-    AtomicReference<CompactionResults> compactionResults = new AtomicReference<>();
-    segmentCompactorImpl.registerCompactionResultsConsumer(compactionResults::set);
-
     // Act
-    segmentCompactorImpl.compactSegments();
+    CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
 
     // Assert
-    assertEquals(Status.SUCCESS, compactionResults.get().getStatus());
-    List<Segment> compactedSegments = compactionResults.get().getCompactedSegments();
+    assertEquals(Status.SUCCESS, compactionResults.getStatus());
+    List<Segment> compactedSegments = compactionResults.getCompactedSegments();
     assertEquals(2, compactedSegments.size());
     verify(segmentFactory, times(2)).createSegment();
     assertArrayEquals(List.of(headSegment, tailSegment).toArray(),
-        compactionResults.get().getSegmentsProvidedForCompaction().toArray());
+        compactionResults.getSegmentsProvidedForCompaction().toArray());
   }
 
   @Test
-  void compactionFailure_throwsRuntimeException() throws IOException {
+  void compaction_repeatedCalls() {
+    ListenableFuture<CompactionResults> firstCall = segmentCompactorImpl.compactSegments();
+    assertEquals(firstCall, segmentCompactorImpl.compactSegments());
+  }
+
+  @Test
+  void compactionFailure_throwsRuntimeException() throws Exception {
     // Arrange
     Segment headSegment = segmentsToBeCompacted.get(0);
     Segment tailSegment = segmentsToBeCompacted.get(1);
@@ -117,25 +117,22 @@ public class SegmentCompactorImplTest {
     doReturn(ImmutableSet.of("1-key")).when(tailSegment).getSegmentKeys();
     doReturn(Optional.empty()).when(headSegment).read(anyString());
 
-    AtomicReference<CompactionResults> compactionResults = new AtomicReference<>();
-    segmentCompactorImpl.registerCompactionResultsConsumer(compactionResults::set);
-
     // Act
-    segmentCompactorImpl.compactSegments();
+    CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
 
     // Assert
-    assertEquals(Status.FAILED, compactionResults.get().getStatus());
-    assertInstanceOf(RuntimeException.class, compactionResults.get().getFailureReason());
+    assertEquals(Status.FAILED, compactionResults.getStatus());
+    assertInstanceOf(RuntimeException.class, compactionResults.getFailureReason());
     assertFalse(headSegment.hasBeenCompacted());
     assertFalse(tailSegment.hasBeenCompacted());
-    assertNull(compactionResults.get().getCompactedSegments());
-    assertEquals(0, compactionResults.get().getFailedCompactedSegments().size());
+    assertNull(compactionResults.getCompactedSegments());
+    assertEquals(0, compactionResults.getFailedCompactedSegments().size());
     assertArrayEquals(List.of(headSegment, tailSegment).toArray(),
-        compactionResults.get().getSegmentsProvidedForCompaction().toArray());
+        compactionResults.getSegmentsProvidedForCompaction().toArray());
   }
 
   @Test
-  void compactionFailure_throwsIOException() throws IOException {
+  void compactionFailure_throwsIOException() throws Exception {
     // Arrange
     Segment headSegment = segmentsToBeCompacted.get(0);
     Segment tailSegment = segmentsToBeCompacted.get(1);
@@ -146,22 +143,19 @@ public class SegmentCompactorImplTest {
     Segment segment = mock(Segment.class);
     doReturn(segment).when(segmentFactory).createSegment();
 
-    AtomicReference<CompactionResults> compactionResults = new AtomicReference<>();
-    segmentCompactorImpl.registerCompactionResultsConsumer(compactionResults::set);
-
     // Act
-    segmentCompactorImpl.compactSegments();
+    CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
 
     // Assert
-    assertEquals(Status.FAILED, compactionResults.get().getStatus());
-    assertInstanceOf(IOException.class, compactionResults.get().getFailureReason());
+    assertEquals(Status.FAILED, compactionResults.getStatus());
+    assertInstanceOf(IOException.class, compactionResults.getFailureReason());
     assertFalse(headSegment.hasBeenCompacted());
     assertFalse(tailSegment.hasBeenCompacted());
-    assertNull(compactionResults.get().getCompactedSegments());
-    assertEquals(1, compactionResults.get().getFailedCompactedSegments().size());
-    assertEquals(segment, compactionResults.get().getFailedCompactedSegments().get(0));
+    assertNull(compactionResults.getCompactedSegments());
+    assertEquals(1, compactionResults.getFailedCompactedSegments().size());
+    assertEquals(segment, compactionResults.getFailedCompactedSegments().get(0));
     assertArrayEquals(List.of(headSegment, tailSegment).toArray(),
-        compactionResults.get().getSegmentsProvidedForCompaction().toArray());
+        compactionResults.getSegmentsProvidedForCompaction().toArray());
   }
 
 }
