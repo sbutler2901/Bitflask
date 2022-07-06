@@ -30,6 +30,7 @@ final class SegmentManagerImpl implements SegmentManager {
   private final SegmentFactory segmentFactory;
   private final SegmentCompactorFactory segmentCompactorFactory;
   private final SegmentDeleterFactory segmentDeleterFactory;
+  private final SegmentLoader segmentLoader;
 
   private final AtomicReference<ManagedSegments> managedSegmentsAtomicReference = new AtomicReference<>();
 
@@ -41,14 +42,22 @@ final class SegmentManagerImpl implements SegmentManager {
   SegmentManagerImpl(
       @StorageExecutorService ListeningExecutorService executorService,
       SegmentFactory segmentFactory,
-      ManagedSegments managedSegments,
       SegmentCompactorFactory segmentCompactorFactory,
-      SegmentDeleterFactory segmentDeleterFactory) {
+      SegmentDeleterFactory segmentDeleterFactory,
+      SegmentLoader segmentLoader) {
     this.executorService = executorService;
     this.segmentFactory = segmentFactory;
     this.segmentCompactorFactory = segmentCompactorFactory;
     this.segmentDeleterFactory = segmentDeleterFactory;
-    this.managedSegmentsAtomicReference.set(managedSegments);
+    this.segmentLoader = segmentLoader;
+  }
+
+  @Override
+  public synchronized void initialize() throws IOException {
+    if (managedSegmentsAtomicReference.get() != null) {
+      return;
+    }
+    managedSegmentsAtomicReference.set(segmentLoader.loadExistingSegments());
   }
 
   @Override

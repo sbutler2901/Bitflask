@@ -19,6 +19,7 @@ import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import java.io.IOException;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,11 +38,19 @@ public class SegmentManagerImplTest {
   @Mock
   SegmentFactory segmentFactory;
   @Mock
-  ManagedSegments managedSegments;
-  @Mock
   SegmentCompactorFactory segmentCompactorFactory;
   @Mock
   SegmentDeleterFactory segmentDeleterFactory;
+  @Mock
+  SegmentLoader segmentLoader;
+  @Mock
+  ManagedSegments managedSegments;
+
+  @BeforeEach
+  void beforeEach() throws Exception {
+    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+    segmentManager.initialize();
+  }
 
   @Test
   void read_writableSegment_keyFound() throws Exception {
