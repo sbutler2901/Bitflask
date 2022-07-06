@@ -1,12 +1,13 @@
 package dev.sbutler.bitflask.storage;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.Service;
 import java.util.Optional;
 
 /**
  * Manages persisting and retrieving data.
  */
-public interface StorageService {
+public interface StorageService extends Service {
 
   /**
    * Writes the provided data to the current segment file

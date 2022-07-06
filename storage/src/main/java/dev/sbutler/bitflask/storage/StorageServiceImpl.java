@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.flogger.FluentLogger;
+import com.google.common.util.concurrent.AbstractService;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
@@ -13,7 +14,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
-final class StorageServiceImpl implements StorageService {
+final class StorageServiceImpl extends AbstractService implements StorageService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -27,6 +28,7 @@ final class StorageServiceImpl implements StorageService {
     this.segmentManager = segmentManager;
   }
 
+  @Override
   public ListenableFuture<Void> write(String key, String value) {
     validateWriteArgs(key, value);
     Callable<Void> writeTask = () -> {
@@ -48,6 +50,7 @@ final class StorageServiceImpl implements StorageService {
         value.length());
   }
 
+  @Override
   public ListenableFuture<Optional<String>> read(String key) {
     validateReadArgs(key);
     Callable<Optional<String>> readTask = () -> segmentManager.read(key);
@@ -77,4 +80,13 @@ final class StorageServiceImpl implements StorageService {
     }
   }
 
+  @Override
+  protected void doStart() {
+    // todo: implement
+  }
+
+  @Override
+  protected void doStop() {
+    // todo: implement
+  }
 }
