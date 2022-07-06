@@ -26,6 +26,11 @@
 
 ## TODO:
 
+### Service
+
+- Convert Storage implementation into a guava service
+- Convert Server NetworkService into a guava service
+
 ### Caching
 
 - Cache read values (write-through cache?)
