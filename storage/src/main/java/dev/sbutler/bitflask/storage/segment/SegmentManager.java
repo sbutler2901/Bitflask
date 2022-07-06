@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.Optional;
 
 /**
- * Manages the various Segments used by Storage ensuring segment sizes are controlled and filesystem
+ * Manages the various Segments used by StorageService ensuring segment sizes are controlled and filesystem
  * space is conserved.
  */
 public interface SegmentManager {

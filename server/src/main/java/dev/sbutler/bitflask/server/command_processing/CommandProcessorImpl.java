@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.server.command_processing;
 
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.Storage;
+import dev.sbutler.bitflask.storage.StorageService;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -18,11 +18,11 @@ class CommandProcessorImpl implements CommandProcessor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final Storage storage;
+  private final StorageService storageService;
 
   @Inject
-  CommandProcessorImpl(Storage storage) {
-    this.storage = storage;
+  CommandProcessorImpl(StorageService storageService) {
+    this.storageService = storageService;
   }
 
   public String processServerCommand(ServerCommand serverCommand) {
@@ -36,11 +36,11 @@ class CommandProcessorImpl implements CommandProcessor {
 
   private String processGetCommand(ServerCommand getCommand) {
     String key = getCommand.args().get(0);
-    Future<Optional<String>> readFuture = storage.read(key);
+    Future<Optional<String>> readFuture = storageService.read(key);
     try {
       return readFuture.get().orElse(String.format(READ_NOT_FOUND, key));
     } catch (InterruptedException e) {
-      logger.atSevere().withCause(e).log("Interrupted while waiting for response from Storage");
+      logger.atSevere().withCause(e).log("Interrupted while waiting for response from StorageService");
       return String.format(READ_ERROR, key);
     } catch (ExecutionException e) {
       logger.atSevere().withCause(e.getCause()).log("Read failed because of an error");
@@ -51,11 +51,11 @@ class CommandProcessorImpl implements CommandProcessor {
   private String processSetCommand(ServerCommand setCommand) {
     String key = setCommand.args().get(0);
     String value = setCommand.args().get(1);
-    Future<Void> writeFuture = storage.write(key, value);
+    Future<Void> writeFuture = storageService.write(key, value);
     try {
       writeFuture.get();
     } catch (InterruptedException e) {
-      logger.atSevere().withCause(e).log("Interrupted while waiting for response from Storage");
+      logger.atSevere().withCause(e).log("Interrupted while waiting for response from StorageService");
       return String.format(WRITE_ERROR, key, value);
     } catch (ExecutionException e) {
       logger.atSevere().withCause(e.getCause()).log("Write failed because of an error");

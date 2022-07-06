@@ -21,7 +21,7 @@ public class StorageModuleTest {
     try {
       injector.getBinding(
           Key.get(ListeningExecutorService.class).withAnnotation(StorageExecutorService.class));
-      injector.getBinding(Storage.class);
+      injector.getBinding(StorageService.class);
     } catch (Exception e) {
       fail(e.getMessage());
     }
@@ -30,7 +30,7 @@ public class StorageModuleTest {
   @Test
   void provideStorage() {
     StorageImpl mockStorage = mock(StorageImpl.class);
-    Storage storage = storageModule.provideStorage(mockStorage);
-    assertEquals(mockStorage, storage);
+    StorageService storageService = storageModule.provideStorageService(mockStorage);
+    assertEquals(mockStorage, storageService);
   }
 }

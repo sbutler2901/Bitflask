@@ -6,7 +6,7 @@ import java.util.Optional;
 /**
  * Manages persisting and retrieving data.
  */
-public interface Storage {
+public interface StorageService {
 
   /**
    * Writes the provided data to the current segment file
