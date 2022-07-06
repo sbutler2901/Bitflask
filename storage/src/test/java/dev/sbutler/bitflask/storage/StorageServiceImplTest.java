@@ -2,8 +2,6 @@ package dev.sbutler.bitflask.storage;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -74,23 +72,5 @@ class StorageServiceImplTest {
     assertThrows(NullPointerException.class, () -> storage.read(null));
     assertThrows(IllegalArgumentException.class, () -> storage.read(""));
     assertThrows(IllegalArgumentException.class, () -> storage.read(new String(new byte[257])));
-  }
-
-  @Test
-  void shutdown() throws Exception {
-    storage.shutdown();
-    verify(executorService, times(1)).shutdown();
-    verify(executorService, times(1)).awaitTermination(anyLong(), any());
-    verify(segmentManager, times(1)).close();
-  }
-
-  @Test
-  void shutdown_timeout() throws Exception {
-    doReturn(false).when(executorService).awaitTermination(anyLong(), any());
-    storage.shutdown();
-    verify(executorService, times(1)).shutdown();
-    verify(executorService, times(1)).awaitTermination(anyLong(), any());
-    verify(segmentManager, times(1)).close();
-    verify(executorService, times(1)).shutdownNow();
   }
 }

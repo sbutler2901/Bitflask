@@ -25,13 +25,4 @@ public interface StorageService extends Service {
    * @return the read value, if found
    */
   ListenableFuture<Optional<String>> read(String key);
-
-  /**
-   * Initiates the shutdown procedure cleaning up utilized resources and stopping tasks. Will wait
-   * for executing tasks to complete for an unspecified amount of time. If they aren't complete
-   * within the timeframe they will be canceled.
-   *
-   * @throws InterruptedException if shutdown is interrupted while waiting
-   */
-  void shutdown() throws InterruptedException;
 }
