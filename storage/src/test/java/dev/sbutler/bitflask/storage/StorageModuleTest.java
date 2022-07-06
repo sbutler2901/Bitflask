@@ -29,7 +29,7 @@ public class StorageModuleTest {
 
   @Test
   void provideStorage() {
-    StorageImpl mockStorage = mock(StorageImpl.class);
+    StorageServiceImpl mockStorage = mock(StorageServiceImpl.class);
     StorageService storageService = storageModule.provideStorageService(mockStorage);
     assertEquals(mockStorage, storageService);
   }

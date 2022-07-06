@@ -26,7 +26,7 @@ public class StorageModule extends AbstractModule {
 
   @Provides
   @Singleton
-  StorageService provideStorageService(StorageImpl storageService) {
+  StorageService provideStorageService(StorageServiceImpl storageService) {
     return storageService;
   }
 

@@ -13,7 +13,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
-final class StorageImpl implements StorageService {
+final class StorageServiceImpl implements StorageService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -21,7 +21,7 @@ final class StorageImpl implements StorageService {
   private final SegmentManager segmentManager;
 
   @Inject
-  public StorageImpl(@StorageExecutorService ListeningExecutorService executorService,
+  public StorageServiceImpl(@StorageExecutorService ListeningExecutorService executorService,
       SegmentManager segmentManager) {
     this.executorService = executorService;
     this.segmentManager = segmentManager;
