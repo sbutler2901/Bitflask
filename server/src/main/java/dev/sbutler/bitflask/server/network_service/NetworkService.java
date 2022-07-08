@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.server.network_service;
 
 import com.google.common.flogger.FluentLogger;
+import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.client_handling.ClientRequestHandler;
@@ -8,7 +9,6 @@ import dev.sbutler.bitflask.server.client_handling.ClientRequestModule;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.storage.StorageModule;
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
@@ -16,12 +16,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 
-public class NetworkService implements Runnable, Closeable {
-
-  private static final String INITIALIZED_MSG = "Prepared to accept incoming connections";
-  private static final String SERVER_SOCKET_CLOSED = "Closed the server socket";
-  private static final String SERVER_SOCKET_FAILURE = "Failed to accept incoming client connections";
-  private static final String INCOMING_CONNECTION = "Received incoming client connection from [%s]";
+public final class NetworkService extends AbstractExecutionThreadService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -37,27 +32,33 @@ public class NetworkService implements Runnable, Closeable {
   }
 
   @Override
-  public void run() {
-    initialize();
-    start();
-  }
-
-  private void initialize() {
+  protected void startUp() {
     rootInjector = Guice.createInjector(
         ServerModule.getInstance(),
         StorageModule.getInstance(),
         new CommandProcessingModule()
     );
-    logger.atInfo().log(INITIALIZED_MSG);
+    logger.atInfo().log("Prepared to accept incoming connections");
   }
 
-  private void start() {
+  @Override
+  protected void run() {
     try {
       while (serverSocketChannel.isOpen()) {
         acceptAndExecuteNextClientConnection();
       }
     } catch (IOException e) {
-      logger.atSevere().withCause(e).log(SERVER_SOCKET_FAILURE);
+      logger.atSevere().withCause(e).log("Failed to accept incoming client connections");
+    }
+  }
+
+  @SuppressWarnings("UnstableApiUsage")
+  @Override
+  protected void triggerShutdown() {
+    try {
+      serverSocketChannel.close();
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log("Error closing NetworkService's ServerSocketChannel");
     }
   }
 
@@ -72,7 +73,7 @@ public class NetworkService implements Runnable, Closeable {
 
       executorService.execute(clientRequestHandler);
     } catch (ClosedChannelException e) {
-      logger.atInfo().log(SERVER_SOCKET_CLOSED);
+      logger.atInfo().log("ServerSocketChannel closed");
     }
   }
 
@@ -85,6 +86,7 @@ public class NetworkService implements Runnable, Closeable {
   }
 
   private void printClientConnectionInfo(SocketChannel socketChannel) throws IOException {
-    logger.atInfo().log(INCOMING_CONNECTION, socketChannel.getRemoteAddress());
+    logger.atInfo()
+        .log("Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
   }
 }
