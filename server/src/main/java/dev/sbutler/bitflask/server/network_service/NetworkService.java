@@ -16,7 +16,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 
-public class NetworkServiceImpl implements Runnable, Closeable {
+public class NetworkService implements Runnable, Closeable {
 
   private static final String INITIALIZED_MSG = "Prepared to accept incoming connections";
   private static final String SERVER_SOCKET_CLOSED = "Closed the server socket";
@@ -30,7 +30,7 @@ public class NetworkServiceImpl implements Runnable, Closeable {
   private Injector rootInjector;
 
   @Inject
-  NetworkServiceImpl(ExecutorService executorService,
+  NetworkService(ExecutorService executorService,
       ServerSocketChannel serverSocketChannel) {
     this.executorService = executorService;
     this.serverSocketChannel = serverSocketChannel;

@@ -26,10 +26,10 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class NetworkServiceImplTest {
+public class NetworkServiceTest {
 
   @InjectMocks
-  NetworkServiceImpl networkService;
+  NetworkService networkService;
 
   @Mock
   ExecutorService executorService;

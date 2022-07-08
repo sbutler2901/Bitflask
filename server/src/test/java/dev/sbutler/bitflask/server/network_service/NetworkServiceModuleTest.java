@@ -15,8 +15,8 @@ public class NetworkServiceModuleTest {
 
   @Test
   void provideNetworkService() {
-    NetworkServiceImpl mockNetworkService = mock(NetworkServiceImpl.class);
-    NetworkServiceImpl networkService = networkServiceModule.provideNetworkService(
+    NetworkService mockNetworkService = mock(NetworkService.class);
+    NetworkService networkService = networkServiceModule.provideNetworkService(
         mockNetworkService);
     assertEquals(mockNetworkService, networkService);
   }
