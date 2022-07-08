@@ -12,7 +12,7 @@ public class NetworkServiceModule extends AbstractModule {
 
   @Provides
   @Singleton
-  NetworkService provideNetworkService(NetworkServiceImpl networkService) {
+  NetworkServiceImpl provideNetworkService(NetworkServiceImpl networkService) {
     return networkService;
   }
 

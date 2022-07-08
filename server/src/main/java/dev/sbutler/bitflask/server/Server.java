@@ -4,7 +4,7 @@ import com.google.common.flogger.FluentLogger;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
-import dev.sbutler.bitflask.server.network_service.NetworkService;
+import dev.sbutler.bitflask.server.network_service.NetworkServiceImpl;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -19,10 +19,10 @@ public class Server {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ExecutorService executorService;
-  private final NetworkService networkService;
+  private final NetworkServiceImpl networkService;
 
   @Inject
-  private Server(ExecutorService executorService, NetworkService networkService) {
+  private Server(ExecutorService executorService, NetworkServiceImpl networkService) {
     this.executorService = executorService;
     this.networkService = networkService;
   }

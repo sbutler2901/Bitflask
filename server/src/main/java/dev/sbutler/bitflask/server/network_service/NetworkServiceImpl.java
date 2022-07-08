@@ -8,6 +8,7 @@ import dev.sbutler.bitflask.server.client_handling.ClientRequestModule;
 import dev.sbutler.bitflask.server.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.storage.StorageModule;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
@@ -15,7 +16,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 
-class NetworkServiceImpl implements NetworkService {
+public class NetworkServiceImpl implements Runnable, Closeable {
 
   private static final String INITIALIZED_MSG = "Prepared to accept incoming connections";
   private static final String SERVER_SOCKET_CLOSED = "Closed the server socket";

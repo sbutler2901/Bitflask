@@ -28,6 +28,6 @@
 
 - NetworkService creates ClientHandlingServices
 - ClientHandlingServices dispatch to CommandProcessingService
-    - ServerCommandProcessingDispatcher can be used to submit commands for processing
+    - ServerCommandDispatcher can be used to submit commands for processing
 - CommandProcessingService dispatches to StorageService
-    - StorageCommandProcessingDispatcher can be used to submit commands for processing
+    - StorageCommandDispatcher can be used to submit commands for processing
