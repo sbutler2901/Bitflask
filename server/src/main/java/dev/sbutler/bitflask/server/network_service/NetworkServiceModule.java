@@ -12,12 +12,6 @@ public class NetworkServiceModule extends AbstractModule {
 
   @Provides
   @Singleton
-  NetworkService provideNetworkService(NetworkService networkService) {
-    return networkService;
-  }
-
-  @Provides
-  @Singleton
   ServerSocketChannel provideServerSocketChannel(@ServerPort int port) throws IOException {
     ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
     InetSocketAddress inetSocketAddress = new InetSocketAddress(port);

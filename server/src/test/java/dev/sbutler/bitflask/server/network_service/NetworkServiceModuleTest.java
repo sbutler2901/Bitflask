@@ -14,14 +14,6 @@ public class NetworkServiceModuleTest {
   private final NetworkServiceModule networkServiceModule = new NetworkServiceModule();
 
   @Test
-  void provideNetworkService() {
-    NetworkService mockNetworkService = mock(NetworkService.class);
-    NetworkService networkService = networkServiceModule.provideNetworkService(
-        mockNetworkService);
-    assertEquals(mockNetworkService, networkService);
-  }
-
-  @Test
   void provideServerSocketChannel() throws IOException {
     try (MockedStatic<ServerSocketChannel> serverSocketChannelMockedStatic = mockStatic(
         ServerSocketChannel.class)) {
