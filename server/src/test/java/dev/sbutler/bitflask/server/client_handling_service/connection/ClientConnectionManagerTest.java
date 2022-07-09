@@ -18,10 +18,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ClientConnectionManagerImplTest {
+public class ClientConnectionManagerTest {
 
   @InjectMocks
-  ClientConnectionManagerImpl clientConnectionManager;
+  ClientConnectionManager clientConnectionManager;
 
   @Mock
   SocketChannel socketChannel;

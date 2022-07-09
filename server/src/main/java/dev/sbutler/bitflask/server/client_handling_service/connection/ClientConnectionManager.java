@@ -7,12 +7,12 @@ import java.io.OutputStream;
 import java.nio.channels.SocketChannel;
 import javax.inject.Inject;
 
-public class ClientConnectionManagerImpl implements Closeable {
+public class ClientConnectionManager implements Closeable {
 
   private final SocketChannel socketChannel;
 
   @Inject
-  ClientConnectionManagerImpl(SocketChannel socketChannel) {
+  ClientConnectionManager(SocketChannel socketChannel) {
     this.socketChannel = socketChannel;
   }
 

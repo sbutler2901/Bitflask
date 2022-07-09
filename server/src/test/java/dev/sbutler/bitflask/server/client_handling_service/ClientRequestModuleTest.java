@@ -8,8 +8,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
-import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionManagerImpl;
-import dev.sbutler.bitflask.server.client_handling_service.processing.ClientMessageProcessorImpl;
+import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionManager;
+import dev.sbutler.bitflask.server.client_handling_service.processing.ClientMessageProcessor;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.Test;
@@ -31,8 +31,8 @@ public class ClientRequestModuleTest {
   void configure() {
     Injector injector = Guice.createInjector(new MockModule(), clientRequestModule);
     try {
-      injector.getBinding(ClientConnectionManagerImpl.class);
-      injector.getBinding(ClientMessageProcessorImpl.class);
+      injector.getBinding(ClientConnectionManager.class);
+      injector.getBinding(ClientMessageProcessor.class);
     } catch (Exception e) {
       fail(e.getMessage());
     }

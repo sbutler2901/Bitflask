@@ -9,12 +9,12 @@ import java.io.OutputStream;
 public class ClientConnectionModule extends AbstractModule {
 
   @Provides
-  InputStream provideInputStream(ClientConnectionManagerImpl connectionManager) throws IOException {
+  InputStream provideInputStream(ClientConnectionManager connectionManager) throws IOException {
     return connectionManager.getInputStream();
   }
 
   @Provides
-  OutputStream provideOutputStream(ClientConnectionManagerImpl connectionManager)
+  OutputStream provideOutputStream(ClientConnectionManager connectionManager)
       throws IOException {
     return connectionManager.getOutputStream();
   }

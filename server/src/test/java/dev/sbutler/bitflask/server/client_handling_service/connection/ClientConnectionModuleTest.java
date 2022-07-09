@@ -16,7 +16,7 @@ public class ClientConnectionModuleTest {
 
   @Test
   void provideInputStream() throws IOException {
-    ClientConnectionManagerImpl clientConnectionManager = mock(ClientConnectionManagerImpl.class);
+    ClientConnectionManager clientConnectionManager = mock(ClientConnectionManager.class);
     InputStream mockInputStream = mock(InputStream.class);
     doReturn(mockInputStream).when(clientConnectionManager).getInputStream();
     InputStream inputStream = clientConnectionModule.provideInputStream(clientConnectionManager);
@@ -25,7 +25,7 @@ public class ClientConnectionModuleTest {
 
   @Test
   void provideOutputStream() throws IOException {
-    ClientConnectionManagerImpl clientConnectionManager = mock(ClientConnectionManagerImpl.class);
+    ClientConnectionManager clientConnectionManager = mock(ClientConnectionManager.class);
     OutputStream mockOutputStream = mock(OutputStream.class);
     doReturn(mockOutputStream).when(clientConnectionManager).getOutputStream();
     OutputStream outputStream = clientConnectionModule.provideOutputStream(clientConnectionManager);

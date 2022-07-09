@@ -11,7 +11,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import javax.inject.Inject;
 
-public class ClientMessageProcessorImpl {
+public class ClientMessageProcessor {
 
   private static final String CLIENT_DISCONNECTED = "Client disconnected.";
   private static final String CLIENT_READ_FAILURE = "Server shutdown while reading client next message";
@@ -24,7 +24,7 @@ public class ClientMessageProcessorImpl {
   private final RespWriter respWriter;
 
   @Inject
-  ClientMessageProcessorImpl(CommandProcessingService commandProcessor, RespReader respReader,
+  ClientMessageProcessor(CommandProcessingService commandProcessor, RespReader respReader,
       RespWriter respWriter) {
     this.commandProcessor = commandProcessor;
     this.respReader = respReader;

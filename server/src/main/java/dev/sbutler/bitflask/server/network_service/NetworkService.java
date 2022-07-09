@@ -4,7 +4,7 @@ import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.server.client_handling_service.ClientRequestHandlerImpl;
+import dev.sbutler.bitflask.server.client_handling_service.ClientRequestHandler;
 import dev.sbutler.bitflask.server.client_handling_service.ClientRequestModule;
 import dev.sbutler.bitflask.server.command_processing_service.ServerCommandDispatcher;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
@@ -67,8 +67,8 @@ public final class NetworkService extends AbstractExecutionThreadService {
     try {
       SocketChannel socketChannel = serverSocketChannel.accept();
       Injector injector = createChildInjector(socketChannel);
-      ClientRequestHandlerImpl clientRequestHandler = injector.getInstance(
-          ClientRequestHandlerImpl.class);
+      ClientRequestHandler clientRequestHandler = injector.getInstance(
+          ClientRequestHandler.class);
 
       printClientConnectionInfo(socketChannel);
 
