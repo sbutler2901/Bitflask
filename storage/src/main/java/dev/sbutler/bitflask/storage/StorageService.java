@@ -1,8 +1,5 @@
 package dev.sbutler.bitflask.storage;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractService;
 import com.google.common.util.concurrent.FutureCallback;
@@ -45,24 +42,12 @@ public final class StorageService extends AbstractService {
    * @throws IllegalArgumentException when the provided key or value is invalid
    */
   public ListenableFuture<Void> write(String key, String value) {
-    validateWriteArgs(key, value);
     Callable<Void> writeTask = () -> {
       segmentManager.write(key, value);
       return null;
     };
     logger.atInfo().log("Submitting write for [%s] : [%s]", key, value);
     return executorService.submit(writeTask);
-  }
-
-  private void validateWriteArgs(String key, String value) {
-    checkNotNull(key);
-    checkArgument(!key.isBlank(), "Expected non-blank key, but was [%s]", key);
-    checkArgument(key.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
-        key.length());
-    checkNotNull(value);
-    checkArgument(!value.isBlank(), "Expected non-blank key, but was [%s]", value);
-    checkArgument(value.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
-        value.length());
   }
 
   /**
@@ -72,17 +57,9 @@ public final class StorageService extends AbstractService {
    * @return the read value, if found
    */
   public ListenableFuture<Optional<String>> read(String key) {
-    validateReadArgs(key);
     Callable<Optional<String>> readTask = () -> segmentManager.read(key);
     logger.atInfo().log("Submitting read for [%s]", key);
     return executorService.submit(readTask);
-  }
-
-  private void validateReadArgs(String key) {
-    checkNotNull(key);
-    checkArgument(!key.isBlank(), "Expected non-blank key, but was [%s]", key);
-    checkArgument(key.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
-        key.length());
   }
 
   @Override
