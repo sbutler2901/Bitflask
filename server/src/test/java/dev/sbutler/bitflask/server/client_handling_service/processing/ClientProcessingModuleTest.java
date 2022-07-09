@@ -11,7 +11,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provider;
 import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.network.writer.RespWriter;
-import dev.sbutler.bitflask.server.command_processing_service.CommandProcessor;
+import dev.sbutler.bitflask.server.command_processing_service.CommandProcessorImpl;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ public class ClientProcessingModuleTest {
     @SuppressWarnings("unchecked")
     protected void configure() {
       super.configure();
-      bind(CommandProcessor.class).toProvider(mock(Provider.class));
+      bind(CommandProcessorImpl.class).toProvider(mock(Provider.class));
       bind(InputStream.class).toProvider(mock(Provider.class));
       bind(OutputStream.class).toProvider(mock(Provider.class));
     }

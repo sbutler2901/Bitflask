@@ -13,7 +13,7 @@ import dev.sbutler.bitflask.resp.network.writer.RespWriter;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
-import dev.sbutler.bitflask.server.command_processing_service.CommandProcessor;
+import dev.sbutler.bitflask.server.command_processing_service.CommandProcessorImpl;
 import dev.sbutler.bitflask.server.command_processing_service.ServerCommand;
 import java.io.EOFException;
 import java.io.IOException;
@@ -31,7 +31,7 @@ public class ClientMessageProcessorImplTest {
   ClientMessageProcessorImpl clientMessageProcessor;
 
   @Mock
-  CommandProcessor commandProcessor;
+  CommandProcessorImpl commandProcessor;
   @Mock
   RespReader respReader;
   @Mock

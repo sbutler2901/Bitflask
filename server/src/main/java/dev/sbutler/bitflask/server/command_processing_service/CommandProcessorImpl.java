@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
 
-class CommandProcessorImpl implements CommandProcessor {
+public class CommandProcessorImpl {
 
   private static final String PONG = "pong";
   private static final String READ_NOT_FOUND = "Value for key [%s] not found";
