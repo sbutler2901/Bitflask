@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
 
-public class CommandProcessorImpl {
+public class CommandProcessingService {
 
   private static final String PONG = "pong";
   private static final String READ_NOT_FOUND = "Value for key [%s] not found";
@@ -21,7 +21,7 @@ public class CommandProcessorImpl {
   private final StorageService storageService;
 
   @Inject
-  CommandProcessorImpl(StorageService storageService) {
+  CommandProcessingService(StorageService storageService) {
     this.storageService = storageService;
   }
 

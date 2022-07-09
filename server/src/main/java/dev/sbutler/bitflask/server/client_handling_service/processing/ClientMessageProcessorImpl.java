@@ -5,7 +5,7 @@ import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.network.writer.RespWriter;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
-import dev.sbutler.bitflask.server.command_processing_service.CommandProcessorImpl;
+import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import dev.sbutler.bitflask.server.command_processing_service.ServerCommand;
 import java.io.EOFException;
 import java.io.IOException;
@@ -19,12 +19,12 @@ class ClientMessageProcessorImpl implements ClientMessageProcessor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final CommandProcessorImpl commandProcessor;
+  private final CommandProcessingService commandProcessor;
   private final RespReader respReader;
   private final RespWriter respWriter;
 
   @Inject
-  ClientMessageProcessorImpl(CommandProcessorImpl commandProcessor, RespReader respReader,
+  ClientMessageProcessorImpl(CommandProcessingService commandProcessor, RespReader respReader,
       RespWriter respWriter) {
     this.commandProcessor = commandProcessor;
     this.respReader = respReader;
