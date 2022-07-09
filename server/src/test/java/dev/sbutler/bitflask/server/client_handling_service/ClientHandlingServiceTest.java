@@ -18,10 +18,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ClientRequestHandlerTest {
+public class ClientHandlingServiceTest {
 
   @InjectMocks
-  ClientRequestHandler clientRequestHandler;
+  ClientHandlingService clientHandlingService;
 
   @Mock
   ClientConnectionManager clientConnectionManager;
@@ -31,7 +31,7 @@ public class ClientRequestHandlerTest {
   @Test
   void run() throws IOException {
     doReturn(false).when(clientMessageProcessor).processNextMessage();
-    assertTimeoutPreemptively(Duration.ofMillis(100), () -> clientRequestHandler.run());
+    assertTimeoutPreemptively(Duration.ofMillis(100), () -> clientHandlingService.run());
     verify(clientConnectionManager, times(1)).close();
   }
 
@@ -39,13 +39,13 @@ public class ClientRequestHandlerTest {
   void run_close_IOException() throws IOException {
     doReturn(false).when(clientMessageProcessor).processNextMessage();
     doThrow(IOException.class).when(clientConnectionManager).close();
-    assertTimeoutPreemptively(Duration.ofMillis(100), () -> clientRequestHandler.run());
+    assertTimeoutPreemptively(Duration.ofMillis(100), () -> clientHandlingService.run());
     verify(clientConnectionManager, times(1)).close();
   }
 
   @Test
   void close() throws IOException {
-    clientRequestHandler.close();
+    clientHandlingService.close();
     verify(clientConnectionManager, times(1)).close();
   }
 
@@ -53,7 +53,7 @@ public class ClientRequestHandlerTest {
   void close_IOException() throws IOException {
     doThrow(new IOException("Test: failure to close socket")).when(clientConnectionManager).close();
 
-    assertThrows(IOException.class, () -> clientRequestHandler.close());
+    assertThrows(IOException.class, () -> clientHandlingService.close());
 
     verify(clientConnectionManager, times(1)).close();
   }

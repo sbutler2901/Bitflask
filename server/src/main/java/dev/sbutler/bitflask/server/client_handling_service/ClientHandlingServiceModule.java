@@ -6,11 +6,11 @@ import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConn
 import dev.sbutler.bitflask.server.client_handling_service.processing.ClientProcessingModule;
 import java.nio.channels.SocketChannel;
 
-public class ClientRequestModule extends AbstractModule {
+public class ClientHandlingServiceModule extends AbstractModule {
 
   private final SocketChannel socketChannel;
 
-  public ClientRequestModule(SocketChannel socketChannel) {
+  public ClientHandlingServiceModule(SocketChannel socketChannel) {
     this.socketChannel = socketChannel;
   }
 

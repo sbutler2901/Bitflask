@@ -19,17 +19,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ClientRequestModuleTest {
+public class ClientHandlingServiceModuleTest {
 
   @InjectMocks
-  private ClientRequestModule clientRequestModule;
+  private ClientHandlingServiceModule clientHandlingServiceModule;
 
   @Mock
   private SocketChannel socketChannel;
 
   @Test
   void configure() {
-    Injector injector = Guice.createInjector(new MockModule(), clientRequestModule);
+    Injector injector = Guice.createInjector(new MockModule(), clientHandlingServiceModule);
     try {
       injector.getBinding(ClientConnectionManager.class);
       injector.getBinding(ClientMessageProcessor.class);
@@ -40,7 +40,7 @@ public class ClientRequestModuleTest {
 
   @Test
   void provideSocketChannel() {
-    SocketChannel socketChannel = clientRequestModule.provideSocketChannel();
+    SocketChannel socketChannel = clientHandlingServiceModule.provideSocketChannel();
     assertEquals(this.socketChannel, socketChannel);
   }
 

@@ -5,8 +5,8 @@ import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.network.writer.RespWriter;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
-import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import dev.sbutler.bitflask.server.command_processing_service.ServerCommand;
+import dev.sbutler.bitflask.server.command_processing_service.ServerCommandDispatcher;
 import java.io.EOFException;
 import java.io.IOException;
 import javax.inject.Inject;
@@ -19,14 +19,14 @@ public class ClientMessageProcessor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final CommandProcessingService commandProcessor;
+  private final ServerCommandDispatcher serverCommandDispatcher;
   private final RespReader respReader;
   private final RespWriter respWriter;
 
   @Inject
-  ClientMessageProcessor(CommandProcessingService commandProcessor, RespReader respReader,
+  ClientMessageProcessor(ServerCommandDispatcher serverCommandDispatcher, RespReader respReader,
       RespWriter respWriter) {
-    this.commandProcessor = commandProcessor;
+    this.serverCommandDispatcher = serverCommandDispatcher;
     this.respReader = respReader;
     this.respWriter = respWriter;
   }
@@ -57,7 +57,9 @@ public class ClientMessageProcessor {
     try {
       // todo: differentiate between invalid format and invalid command and terminate connection accordingly
       ServerCommand command = ServerCommand.valueOf(clientMessage);
-      response = commandProcessor.processServerCommand(command);
+      // todo: utilize futures for response
+      serverCommandDispatcher.put(command);
+      response = "todo";
     } catch (IllegalArgumentException e) {
       response = "Invalid command: " + e.getMessage();
     }

@@ -9,7 +9,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class ClientRequestHandler implements Runnable, Closeable {
+public class ClientHandlingService implements Runnable, Closeable {
 
   private static final String TERMINATING_CONNECTION = "Terminating client session.";
   private static final String TERMINATING_CONNECTION_FAILURE = "Failed to correctly terminate the client session";
@@ -22,7 +22,7 @@ public class ClientRequestHandler implements Runnable, Closeable {
   private volatile boolean shouldContinueRunning = true;
 
   @Inject
-  ClientRequestHandler(ClientConnectionManager clientConnectionManager,
+  ClientHandlingService(ClientConnectionManager clientConnectionManager,
       ClientMessageProcessor clientMessageProcessor) {
     this.clientConnectionManager = clientConnectionManager;
     this.clientMessageProcessor = clientMessageProcessor;

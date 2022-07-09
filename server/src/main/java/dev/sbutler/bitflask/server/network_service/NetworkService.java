@@ -4,8 +4,8 @@ import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.server.client_handling_service.ClientRequestHandler;
-import dev.sbutler.bitflask.server.client_handling_service.ClientRequestModule;
+import dev.sbutler.bitflask.server.client_handling_service.ClientHandlingService;
+import dev.sbutler.bitflask.server.client_handling_service.ClientHandlingServiceModule;
 import dev.sbutler.bitflask.server.command_processing_service.ServerCommandDispatcher;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
@@ -67,19 +67,19 @@ public final class NetworkService extends AbstractExecutionThreadService {
     try {
       SocketChannel socketChannel = serverSocketChannel.accept();
       Injector injector = createChildInjector(socketChannel);
-      ClientRequestHandler clientRequestHandler = injector.getInstance(
-          ClientRequestHandler.class);
+      ClientHandlingService clientHandlingService = injector.getInstance(
+          ClientHandlingService.class);
 
       printClientConnectionInfo(socketChannel);
 
-      executorService.execute(clientRequestHandler);
+      executorService.execute(clientHandlingService);
     } catch (ClosedChannelException e) {
       logger.atInfo().log("ServerSocketChannel closed");
     }
   }
 
   private Injector createChildInjector(SocketChannel clientSocketChannel) {
-    return rootInjector.createChildInjector(new ClientRequestModule(clientSocketChannel));
+    return rootInjector.createChildInjector(new ClientHandlingServiceModule(clientSocketChannel));
   }
 
   public void close() throws IOException {

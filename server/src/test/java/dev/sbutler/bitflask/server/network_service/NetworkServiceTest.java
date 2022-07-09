@@ -6,7 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.server.client_handling_service.ClientRequestHandler;
+import dev.sbutler.bitflask.server.client_handling_service.ClientHandlingService;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +37,7 @@ public class NetworkServiceTest {
     doThrow(new ClosedChannelException()).when(serverSocketChannel).accept();
     when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
     networkService.run();
-    verify(executorService, times(0)).execute(any(ClientRequestHandler.class));
+    verify(executorService, times(0)).execute(any(ClientHandlingService.class));
   }
 
   @Test
