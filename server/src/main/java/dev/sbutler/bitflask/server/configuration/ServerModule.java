@@ -37,4 +37,9 @@ public class ServerModule extends AbstractModule {
     return 4;
   }
 
+  @Provides
+  @ServerCommandDispatcherCapacity
+  int provideServerCommandDispatcherCapacity() {
+    return 500;
+  }
 }

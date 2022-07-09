@@ -6,7 +6,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.client_handling_service.ClientRequestHandler;
 import dev.sbutler.bitflask.server.client_handling_service.ClientRequestModule;
-import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingModule;
+import dev.sbutler.bitflask.server.command_processing_service.ServerCommandDispatcher;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
 import java.io.IOException;
@@ -22,21 +22,22 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   private final ExecutorService executorService;
   private final ServerSocketChannel serverSocketChannel;
+  private final ServerCommandDispatcher serverCommandDispatcher;
   private Injector rootInjector;
 
   @Inject
   NetworkService(ExecutorService executorService,
-      ServerSocketChannel serverSocketChannel) {
+      ServerSocketChannel serverSocketChannel, ServerCommandDispatcher serverCommandDispatcher) {
     this.executorService = executorService;
     this.serverSocketChannel = serverSocketChannel;
+    this.serverCommandDispatcher = serverCommandDispatcher;
   }
 
   @Override
   protected void startUp() {
     rootInjector = Guice.createInjector(
         ServerModule.getInstance(),
-        StorageServiceModule.getInstance(),
-        new CommandProcessingModule()
+        StorageServiceModule.getInstance()
     );
     logger.atInfo().log("Prepared to accept incoming connections");
   }

@@ -15,10 +15,13 @@ public class CommandProcessingService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private final ServerCommandDispatcher serverCommandDispatcher;
   private final StorageCommandDispatcher storageCommandDispatcher;
 
   @Inject
-  CommandProcessingService(StorageCommandDispatcher storageCommandDispatcher) {
+  CommandProcessingService(ServerCommandDispatcher serverCommandDispatcher,
+      StorageCommandDispatcher storageCommandDispatcher) {
+    this.serverCommandDispatcher = serverCommandDispatcher;
     this.storageCommandDispatcher = storageCommandDispatcher;
   }
 
