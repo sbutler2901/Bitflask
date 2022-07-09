@@ -10,6 +10,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
+import dev.sbutler.bitflask.storage.StorageService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nonnull;
@@ -27,7 +28,8 @@ public class Server {
   public static void main(String[] args) {
     Injector injector = Guice.createInjector(ServerModule.getInstance());
     ImmutableSet<Service> services = ImmutableSet.of(
-        injector.getInstance(NetworkService.class)
+        injector.getInstance(NetworkService.class),
+        injector.getInstance(StorageService.class)
     );
     ServiceManager serviceManager = new ServiceManager(services);
     addServiceManagerListener(serviceManager);

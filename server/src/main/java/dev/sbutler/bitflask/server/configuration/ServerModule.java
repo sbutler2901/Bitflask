@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.sbutler.bitflask.server.configuration.concurrency.ConcurrencyModule;
 import dev.sbutler.bitflask.server.network_service.NetworkServiceModule;
+import dev.sbutler.bitflask.storage.StorageServiceModule;
 
 public class ServerModule extends AbstractModule {
 
@@ -20,6 +21,7 @@ public class ServerModule extends AbstractModule {
   protected void configure() {
     super.configure();
     install(ConcurrencyModule.getInstance());
+    install(StorageServiceModule.getInstance());
     install(new NetworkServiceModule());
   }
 

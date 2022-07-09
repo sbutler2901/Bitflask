@@ -7,7 +7,7 @@ import com.google.common.collect.ImmutableList;
 
 public record StorageCommand(Type type, ImmutableList<String> arguments) {
 
-  enum Type {
+  public enum Type {
     READ,
     WRITE
   }

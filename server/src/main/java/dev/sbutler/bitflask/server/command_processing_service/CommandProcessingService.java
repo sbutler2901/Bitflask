@@ -1,28 +1,25 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.StorageService;
+import com.google.common.util.concurrent.ListenableFuture;
+import dev.sbutler.bitflask.storage.StorageCommand;
+import dev.sbutler.bitflask.storage.StorageCommand.Type;
+import dev.sbutler.bitflask.storage.StorageCommandDispatcher;
+import dev.sbutler.bitflask.storage.StorageResponse;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import javax.inject.Inject;
 
 public class CommandProcessingService {
 
-  private static final String PONG = "pong";
-  private static final String READ_NOT_FOUND = "Value for key [%s] not found";
-  private static final String READ_ERROR = "Error reading [%s]";
-  private static final String WRITE_SUCCESS = "OK";
-  private static final String WRITE_ERROR = "Error writing [%s] : [%s]";
-
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final StorageService storageService;
+  private final StorageCommandDispatcher storageCommandDispatcher;
 
   @Inject
-  CommandProcessingService(StorageService storageService) {
-    this.storageService = storageService;
+  CommandProcessingService(StorageCommandDispatcher storageCommandDispatcher) {
+    this.storageCommandDispatcher = storageCommandDispatcher;
   }
 
   public String processServerCommand(ServerCommand serverCommand) {
@@ -30,39 +27,44 @@ public class CommandProcessingService {
     return switch (serverCommand.command()) {
       case GET -> processGetCommand(serverCommand);
       case SET -> processSetCommand(serverCommand);
-      case PING -> PONG;
+      case PING -> "pong";
     };
   }
 
   private String processGetCommand(ServerCommand getCommand) {
+    // TODO: connect futures together rather than blocking this service
     String key = getCommand.args().get(0);
-    Future<Optional<String>> readFuture = storageService.read(key);
+    ListenableFuture<StorageResponse> readResponse = storageCommandDispatcher.put(
+        new StorageCommand(Type.READ, ImmutableList.of(key)));
     try {
-      return readFuture.get().orElse(String.format(READ_NOT_FOUND, key));
+      return readResponse.get().response()
+          .orElse(String.format("Value for key [%s] not found", key));
     } catch (InterruptedException e) {
       logger.atSevere().withCause(e)
           .log("Interrupted while waiting for response from StorageService");
-      return String.format(READ_ERROR, key);
+      return String.format("Error reading [%s]", key);
     } catch (ExecutionException e) {
       logger.atSevere().withCause(e.getCause()).log("Read failed because of an error");
-      return String.format(READ_ERROR, key);
+      return String.format("Error reading [%s]", key);
     }
   }
 
   private String processSetCommand(ServerCommand setCommand) {
+    // TODO: connect futures together rather than blocking this service
     String key = setCommand.args().get(0);
     String value = setCommand.args().get(1);
-    Future<Void> writeFuture = storageService.write(key, value);
+    ListenableFuture<StorageResponse> writeResponse = storageCommandDispatcher.put(
+        new StorageCommand(Type.WRITE, ImmutableList.of(key, value)));
     try {
-      writeFuture.get();
+      writeResponse.get();
     } catch (InterruptedException e) {
       logger.atSevere().withCause(e)
           .log("Interrupted while waiting for response from StorageService");
-      return String.format(WRITE_ERROR, key, value);
+      return String.format("Error writing [%s] : [%s]", key, value);
     } catch (ExecutionException e) {
       logger.atSevere().withCause(e.getCause()).log("Write failed because of an error");
-      return String.format(WRITE_ERROR, key, value);
+      return String.format("Error writing [%s] : [%s]", key, value);
     }
-    return WRITE_SUCCESS;
+    return "OK";
   }
 }
