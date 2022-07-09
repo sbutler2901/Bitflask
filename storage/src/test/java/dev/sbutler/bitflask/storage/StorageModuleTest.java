@@ -1,8 +1,6 @@
 package dev.sbutler.bitflask.storage;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Guice;
@@ -21,16 +19,9 @@ public class StorageModuleTest {
     try {
       injector.getBinding(
           Key.get(ListeningExecutorService.class).withAnnotation(StorageExecutorService.class));
-      injector.getBinding(StorageService.class);
+      injector.getBinding(StorageServiceImpl.class);
     } catch (Exception e) {
       fail(e.getMessage());
     }
-  }
-
-  @Test
-  void provideStorage() {
-    StorageServiceImpl mockStorage = mock(StorageServiceImpl.class);
-    StorageService storageService = storageModule.provideStorageService(mockStorage);
-    assertEquals(mockStorage, storageService);
   }
 }

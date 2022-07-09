@@ -17,8 +17,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
-final class StorageServiceImpl extends AbstractService implements StorageService {
+/**
+ * Manages persisting and retrieving data.
+ */
+@Singleton
+public final class StorageServiceImpl extends AbstractService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -32,7 +37,13 @@ final class StorageServiceImpl extends AbstractService implements StorageService
     this.segmentManager = segmentManager;
   }
 
-  @Override
+  /**
+   * Writes the provided data to the current segment file
+   *
+   * @param key   the key for retrieving data once written. Expected to be a non-blank string.
+   * @param value the data to be written. Expected to be a non-blank string.
+   * @throws IllegalArgumentException when the provided key or value is invalid
+   */
   public ListenableFuture<Void> write(String key, String value) {
     validateWriteArgs(key, value);
     Callable<Void> writeTask = () -> {
@@ -54,7 +65,12 @@ final class StorageServiceImpl extends AbstractService implements StorageService
         value.length());
   }
 
-  @Override
+  /**
+   * Reads the provided key's value from storage
+   *
+   * @param key the key used for retrieving stored data. Expected to be a non-blank string.
+   * @return the read value, if found
+   */
   public ListenableFuture<Optional<String>> read(String key) {
     validateReadArgs(key);
     Callable<Optional<String>> readTask = () -> segmentManager.read(key);
