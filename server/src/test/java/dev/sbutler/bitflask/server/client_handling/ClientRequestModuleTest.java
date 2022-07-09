@@ -11,7 +11,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provider;
 import dev.sbutler.bitflask.server.client_handling.connection.ClientConnectionManager;
 import dev.sbutler.bitflask.server.client_handling.processing.ClientMessageProcessor;
-import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
+import dev.sbutler.bitflask.server.command_processing_service.CommandProcessor;
 import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

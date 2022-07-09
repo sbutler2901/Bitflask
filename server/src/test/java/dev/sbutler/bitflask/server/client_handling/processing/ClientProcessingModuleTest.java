@@ -11,7 +11,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provider;
 import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.network.writer.RespWriter;
-import dev.sbutler.bitflask.server.command_processing.CommandProcessor;
+import dev.sbutler.bitflask.server.command_processing_service.CommandProcessor;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.junit.jupiter.api.Test;

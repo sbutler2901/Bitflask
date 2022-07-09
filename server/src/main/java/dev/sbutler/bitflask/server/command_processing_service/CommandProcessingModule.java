@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.command_processing;
+package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;

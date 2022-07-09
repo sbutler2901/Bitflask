@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.command_processing;
+package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.StorageService;
@@ -40,7 +40,8 @@ class CommandProcessorImpl implements CommandProcessor {
     try {
       return readFuture.get().orElse(String.format(READ_NOT_FOUND, key));
     } catch (InterruptedException e) {
-      logger.atSevere().withCause(e).log("Interrupted while waiting for response from StorageService");
+      logger.atSevere().withCause(e)
+          .log("Interrupted while waiting for response from StorageService");
       return String.format(READ_ERROR, key);
     } catch (ExecutionException e) {
       logger.atSevere().withCause(e.getCause()).log("Read failed because of an error");
@@ -55,7 +56,8 @@ class CommandProcessorImpl implements CommandProcessor {
     try {
       writeFuture.get();
     } catch (InterruptedException e) {
-      logger.atSevere().withCause(e).log("Interrupted while waiting for response from StorageService");
+      logger.atSevere().withCause(e)
+          .log("Interrupted while waiting for response from StorageService");
       return String.format(WRITE_ERROR, key, value);
     } catch (ExecutionException e) {
       logger.atSevere().withCause(e.getCause()).log("Write failed because of an error");

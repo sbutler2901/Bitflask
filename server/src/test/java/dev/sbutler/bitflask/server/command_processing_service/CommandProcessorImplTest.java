@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.command_processing;
+package dev.sbutler.bitflask.server.command_processing_service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -6,12 +6,12 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import dev.sbutler.bitflask.storage.StorageService;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,7 +33,7 @@ public class CommandProcessorImplTest {
     // Value found
     String key0 = "test0", value0 = "value";
     ServerCommand command0 = new ServerCommand(Command.GET, List.of(key0));
-    Future<Optional<String>> readFuture0 = mock(Future.class);
+    ListenableFuture<Optional<String>> readFuture0 = mock(ListenableFuture.class);
 
     doReturn(Optional.of(value0)).when(readFuture0).get();
     doReturn(readFuture0).when(storageService).read(key0);
@@ -43,7 +43,7 @@ public class CommandProcessorImplTest {
     // Value not found
     String key1 = "test1";
     ServerCommand command1 = new ServerCommand(Command.GET, List.of(key1));
-    Future<Optional<String>> readFuture1 = mock(Future.class);
+    ListenableFuture<Optional<String>> readFuture1 = mock(ListenableFuture.class);
 
     doReturn(Optional.empty()).when(readFuture1).get();
     doReturn(readFuture1).when(storageService).read(key1);
@@ -57,7 +57,7 @@ public class CommandProcessorImplTest {
       throws ExecutionException, InterruptedException {
     String key = "test";
     ServerCommand command = new ServerCommand(Command.GET, List.of(key));
-    Future<Optional<String>> readFuture = mock(Future.class);
+    ListenableFuture<Optional<String>> readFuture = mock(ListenableFuture.class);
 
     doThrow(InterruptedException.class).when(readFuture).get();
     doReturn(readFuture).when(storageService).read(key);
@@ -72,7 +72,7 @@ public class CommandProcessorImplTest {
       throws ExecutionException, InterruptedException {
     String key = "test";
     ServerCommand command = new ServerCommand(Command.GET, List.of(key));
-    Future<Optional<String>> readFuture = mock(Future.class);
+    ListenableFuture<Optional<String>> readFuture = mock(ListenableFuture.class);
 
     ExecutionException executionException = new ExecutionException(new IOException("Test error"));
     doThrow(executionException).when(readFuture).get();
@@ -87,7 +87,7 @@ public class CommandProcessorImplTest {
   void processServerCommand_set() {
     String key = "key", value = "value";
     ServerCommand command = new ServerCommand(Command.SET, List.of(key, value));
-    Future<Void> writeFuture = mock(Future.class);
+    ListenableFuture<Void> writeFuture = mock(ListenableFuture.class);
 
     doReturn(writeFuture).when(storageService).write(key, value);
 
@@ -100,7 +100,7 @@ public class CommandProcessorImplTest {
       throws ExecutionException, InterruptedException {
     String key = "key", value = "value";
     ServerCommand command = new ServerCommand(Command.SET, List.of(key, value));
-    Future<Void> writeFuture = mock(Future.class);
+    ListenableFuture<Void> writeFuture = mock(ListenableFuture.class);
 
     doThrow(InterruptedException.class).when(writeFuture).get();
     doReturn(writeFuture).when(storageService).write(key, value);
@@ -115,7 +115,7 @@ public class CommandProcessorImplTest {
       throws ExecutionException, InterruptedException {
     String key = "key", value = "value";
     ServerCommand command = new ServerCommand(Command.SET, List.of(key, value));
-    Future<Void> writeFuture = mock(Future.class);
+    ListenableFuture<Void> writeFuture = mock(ListenableFuture.class);
 
     ExecutionException executionException = new ExecutionException(new IOException("Test error"));
     doThrow(executionException).when(writeFuture).get();

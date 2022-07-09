@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.command_processing;
+package dev.sbutler.bitflask.server.command_processing_service;
 
 public interface CommandProcessor {
 

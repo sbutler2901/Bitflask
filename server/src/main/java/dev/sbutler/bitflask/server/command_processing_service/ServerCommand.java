@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.command_processing;
+package dev.sbutler.bitflask.server.command_processing_service;
 
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
