@@ -1,8 +1,9 @@
-package dev.sbutler.bitflask.storage;
+package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import dev.sbutler.bitflask.storage.configuration.StorageDispatcherCapacity;
+import dev.sbutler.bitflask.server.configuration.ServerCommandDispatcherCapacity;
+import dev.sbutler.bitflask.storage.DispatcherClosedException;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -10,13 +11,13 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class StorageCommandDispatcher {
+public class ServerCommandDispatcher {
 
-  private final BlockingDeque<StorageSubmission> submissions;
+  private final BlockingDeque<ServerCommandSubmission> submissions;
   private volatile boolean isOpen = true;
 
   @Inject
-  StorageCommandDispatcher(@StorageDispatcherCapacity int capacity) {
+  ServerCommandDispatcher(@ServerCommandDispatcherCapacity int capacity) {
     submissions = new LinkedBlockingDeque<>(capacity);
   }
 
@@ -26,18 +27,18 @@ public class StorageCommandDispatcher {
    * <p>The future will fail with a {@link DispatcherClosedException} if the dispatcher is no
    * longer accepting new submissions.
    *
-   * @return a future resolving with the StorageResponse, or an InterruptedException if interrupted
+   * @return a future resolving with the ServerResponse, or an InterruptedException if interrupted
    * prior to submission
    */
-  public ListenableFuture<StorageResponse> put(StorageCommand storageCommand) {
-    SettableFuture<StorageResponse> response = SettableFuture.create();
+  public ListenableFuture<ServerResponse> put(ServerCommand serverCommand) {
+    SettableFuture<ServerResponse> response = SettableFuture.create();
     if (!isOpen) {
       response.setException(new DispatcherClosedException());
       return response;
     }
 
     try {
-      submissions.putLast(new StorageSubmission(storageCommand, response));
+      submissions.putLast(new ServerCommandSubmission(serverCommand, response));
     } catch (InterruptedException e) {
       response.setException(e);
     }
@@ -51,23 +52,22 @@ public class StorageCommandDispatcher {
    * immediately submitted, or a {@link DispatcherClosedException} if the dispatcher is no longer
    * accepting new submissions.
    *
-   * @return a future resolving with the StorageResponse, or an IllegalStateException if space was
+   * @return a future resolving with the ServerResponse, or an IllegalStateException if space was
    * not available
    */
-  public ListenableFuture<StorageResponse> offer(StorageCommand storageCommand) {
-    SettableFuture<StorageResponse> response = SettableFuture.create();
+  public ListenableFuture<ServerResponse> offer(ServerCommand serverCommand) {
+    SettableFuture<ServerResponse> response = SettableFuture.create();
     if (!isOpen) {
       response.setException(new DispatcherClosedException());
       return response;
     }
-
-    if (!submissions.offerLast(new StorageSubmission(storageCommand, response))) {
+    if (!submissions.offerLast(new ServerCommandSubmission(serverCommand, response))) {
       response.setException(new IllegalStateException("Dispatcher queue is full"));
     }
     return response;
   }
 
-  StorageSubmission poll(long timeout, TimeUnit unit) throws InterruptedException {
+  ServerCommandSubmission poll(long timeout, TimeUnit unit) throws InterruptedException {
     return submissions.pollFirst(timeout, unit);
   }
 
