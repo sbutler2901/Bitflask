@@ -8,7 +8,7 @@ import dev.sbutler.bitflask.server.client_handling_service.ClientRequestHandler;
 import dev.sbutler.bitflask.server.client_handling_service.ClientRequestModule;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingModule;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
-import dev.sbutler.bitflask.storage.StorageModule;
+import dev.sbutler.bitflask.storage.StorageServiceModule;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
@@ -35,7 +35,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
   protected void startUp() {
     rootInjector = Guice.createInjector(
         ServerModule.getInstance(),
-        StorageModule.getInstance(),
+        StorageServiceModule.getInstance(),
         new CommandProcessingModule()
     );
     logger.atInfo().log("Prepared to accept incoming connections");

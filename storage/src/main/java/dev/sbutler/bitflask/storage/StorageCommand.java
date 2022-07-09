@@ -5,7 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 
-public record StorageCommand(Type cmdType, ImmutableList<String> arguments) {
+public record StorageCommand(Type type, ImmutableList<String> arguments) {
 
   enum Type {
     READ,
@@ -13,9 +13,9 @@ public record StorageCommand(Type cmdType, ImmutableList<String> arguments) {
   }
 
   public StorageCommand {
-    checkNotNull(cmdType);
+    checkNotNull(type);
     checkNotNull(arguments);
-    switch (cmdType) {
+    switch (type) {
       case READ -> validateReadArgs(arguments);
       case WRITE -> validateWriteArgs(arguments);
     }

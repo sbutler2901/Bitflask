@@ -4,14 +4,14 @@ import com.google.inject.AbstractModule;
 import dev.sbutler.bitflask.storage.configuration.ConfigurationModule;
 import dev.sbutler.bitflask.storage.segment.SegmentModule;
 
-public class StorageModule extends AbstractModule {
+public class StorageServiceModule extends AbstractModule {
 
-  private static final StorageModule instance = new StorageModule();
+  private static final StorageServiceModule instance = new StorageServiceModule();
 
-  private StorageModule() {
+  private StorageServiceModule() {
   }
 
-  public static StorageModule getInstance() {
+  public static StorageServiceModule getInstance() {
     return instance;
   }
 
