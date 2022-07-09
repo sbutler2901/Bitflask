@@ -17,10 +17,10 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class StorageServiceImplTest {
+class StorageServiceTest {
 
   @InjectMocks
-  StorageServiceImpl storage;
+  StorageService storage;
   @Spy
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();

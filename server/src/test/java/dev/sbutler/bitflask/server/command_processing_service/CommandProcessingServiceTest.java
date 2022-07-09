@@ -7,7 +7,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import dev.sbutler.bitflask.storage.StorageServiceImpl;
+import dev.sbutler.bitflask.storage.StorageService;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +25,7 @@ public class CommandProcessingServiceTest {
   CommandProcessingService commandProcessor;
 
   @Mock
-  StorageServiceImpl storageService;
+  StorageService storageService;
 
   @Test
   @SuppressWarnings("unchecked")

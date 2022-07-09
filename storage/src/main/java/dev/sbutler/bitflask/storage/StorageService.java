@@ -23,7 +23,7 @@ import javax.inject.Singleton;
  * Manages persisting and retrieving data.
  */
 @Singleton
-public final class StorageServiceImpl extends AbstractService {
+public final class StorageService extends AbstractService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -31,7 +31,7 @@ public final class StorageServiceImpl extends AbstractService {
   private final SegmentManager segmentManager;
 
   @Inject
-  public StorageServiceImpl(@StorageExecutorService ListeningExecutorService executorService,
+  public StorageService(@StorageExecutorService ListeningExecutorService executorService,
       SegmentManager segmentManager) {
     this.executorService = executorService;
     this.segmentManager = segmentManager;

@@ -19,7 +19,7 @@ public class StorageModuleTest {
     try {
       injector.getBinding(
           Key.get(ListeningExecutorService.class).withAnnotation(StorageExecutorService.class));
-      injector.getBinding(StorageServiceImpl.class);
+      injector.getBinding(StorageService.class);
     } catch (Exception e) {
       fail(e.getMessage());
     }

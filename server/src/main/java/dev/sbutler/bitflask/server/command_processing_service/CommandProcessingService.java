@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.StorageServiceImpl;
+import dev.sbutler.bitflask.storage.StorageService;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -18,10 +18,10 @@ public class CommandProcessingService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final StorageServiceImpl storageService;
+  private final StorageService storageService;
 
   @Inject
-  CommandProcessingService(StorageServiceImpl storageService) {
+  CommandProcessingService(StorageService storageService) {
     this.storageService = storageService;
   }
 
