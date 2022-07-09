@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_handling.processing;
+package dev.sbutler.bitflask.server.client_handling_service.processing;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;

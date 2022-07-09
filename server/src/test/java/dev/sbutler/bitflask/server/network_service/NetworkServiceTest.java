@@ -6,7 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.server.client_handling.ClientRequestHandler;
+import dev.sbutler.bitflask.server.client_handling_service.ClientRequestHandler;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.ExecutorService;

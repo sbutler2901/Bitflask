@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_handling;
+package dev.sbutler.bitflask.server.client_handling_service;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -7,8 +7,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import dev.sbutler.bitflask.server.client_handling.connection.ClientConnectionManager;
-import dev.sbutler.bitflask.server.client_handling.processing.ClientMessageProcessor;
+import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionManager;
+import dev.sbutler.bitflask.server.client_handling_service.processing.ClientMessageProcessor;
 import java.io.IOException;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;

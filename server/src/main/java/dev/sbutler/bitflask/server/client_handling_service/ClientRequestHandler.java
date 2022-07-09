@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_handling;
+package dev.sbutler.bitflask.server.client_handling_service;
 
 import java.io.Closeable;
 

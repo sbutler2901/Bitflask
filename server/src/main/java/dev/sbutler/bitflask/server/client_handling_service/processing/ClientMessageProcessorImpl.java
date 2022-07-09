@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_handling.processing;
+package dev.sbutler.bitflask.server.client_handling_service.processing;
 
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.resp.network.reader.RespReader;

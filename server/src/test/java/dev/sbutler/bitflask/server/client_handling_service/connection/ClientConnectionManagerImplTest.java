@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_handling.connection;
+package dev.sbutler.bitflask.server.client_handling_service.connection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doReturn;
