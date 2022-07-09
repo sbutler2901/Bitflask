@@ -5,7 +5,6 @@ import com.google.inject.Provides;
 import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionModule;
 import dev.sbutler.bitflask.server.client_handling_service.processing.ClientProcessingModule;
 import java.nio.channels.SocketChannel;
-import javax.inject.Singleton;
 
 public class ClientRequestModule extends AbstractModule {
 
@@ -20,12 +19,6 @@ public class ClientRequestModule extends AbstractModule {
     super.configure();
     install(new ClientConnectionModule());
     install(new ClientProcessingModule());
-  }
-
-  @Provides
-  @Singleton
-  ClientRequestHandler provideClientRequestHandler(ClientRequestHandlerImpl clientRequestHandler) {
-    return clientRequestHandler;
   }
 
   @Provides

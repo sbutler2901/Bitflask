@@ -7,6 +7,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import dev.sbutler.bitflask.storage.StorageResponse;
 import dev.sbutler.bitflask.storage.StorageService;
 import java.io.IOException;
 import java.util.List;
@@ -57,7 +58,7 @@ public class CommandProcessingServiceTest {
       throws ExecutionException, InterruptedException {
     String key = "test";
     ServerCommand command = new ServerCommand(Command.GET, List.of(key));
-    ListenableFuture<Optional<String>> readFuture = mock(ListenableFuture.class);
+    ListenableFuture<StorageResponse> readFuture = mock(ListenableFuture.class);
 
     doThrow(InterruptedException.class).when(readFuture).get();
     doReturn(readFuture).when(storageService).read(key);
@@ -72,7 +73,7 @@ public class CommandProcessingServiceTest {
       throws ExecutionException, InterruptedException {
     String key = "test";
     ServerCommand command = new ServerCommand(Command.GET, List.of(key));
-    ListenableFuture<Optional<String>> readFuture = mock(ListenableFuture.class);
+    ListenableFuture<StorageResponse> readFuture = mock(ListenableFuture.class);
 
     ExecutionException executionException = new ExecutionException(new IOException("Test error"));
     doThrow(executionException).when(readFuture).get();
@@ -87,7 +88,7 @@ public class CommandProcessingServiceTest {
   void processServerCommand_set() {
     String key = "key", value = "value";
     ServerCommand command = new ServerCommand(Command.SET, List.of(key, value));
-    ListenableFuture<Void> writeFuture = mock(ListenableFuture.class);
+    ListenableFuture<StorageResponse> writeFuture = mock(ListenableFuture.class);
 
     doReturn(writeFuture).when(storageService).write(key, value);
 
@@ -100,7 +101,7 @@ public class CommandProcessingServiceTest {
       throws ExecutionException, InterruptedException {
     String key = "key", value = "value";
     ServerCommand command = new ServerCommand(Command.SET, List.of(key, value));
-    ListenableFuture<Void> writeFuture = mock(ListenableFuture.class);
+    ListenableFuture<StorageResponse> writeFuture = mock(ListenableFuture.class);
 
     doThrow(InterruptedException.class).when(writeFuture).get();
     doReturn(writeFuture).when(storageService).write(key, value);
@@ -115,7 +116,7 @@ public class CommandProcessingServiceTest {
       throws ExecutionException, InterruptedException {
     String key = "key", value = "value";
     ServerCommand command = new ServerCommand(Command.SET, List.of(key, value));
-    ListenableFuture<Void> writeFuture = mock(ListenableFuture.class);
+    ListenableFuture<StorageResponse> writeFuture = mock(ListenableFuture.class);
 
     ExecutionException executionException = new ExecutionException(new IOException("Test error"));
     doThrow(executionException).when(writeFuture).get();

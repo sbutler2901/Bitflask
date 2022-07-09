@@ -9,18 +9,13 @@ import java.io.OutputStream;
 public class ClientConnectionModule extends AbstractModule {
 
   @Provides
-  ClientConnectionManager provideClientConnectionManager(
-      ClientConnectionManagerImpl clientConnectionManager) {
-    return clientConnectionManager;
-  }
-
-  @Provides
-  InputStream provideInputStream(ClientConnectionManager connectionManager) throws IOException {
+  InputStream provideInputStream(ClientConnectionManagerImpl connectionManager) throws IOException {
     return connectionManager.getInputStream();
   }
 
   @Provides
-  OutputStream provideOutputStream(ClientConnectionManager connectionManager) throws IOException {
+  OutputStream provideOutputStream(ClientConnectionManagerImpl connectionManager)
+      throws IOException {
     return connectionManager.getOutputStream();
   }
 }

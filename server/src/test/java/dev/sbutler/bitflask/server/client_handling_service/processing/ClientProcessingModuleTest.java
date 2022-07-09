@@ -1,7 +1,5 @@
 package dev.sbutler.bitflask.server.client_handling_service.processing;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
@@ -29,15 +27,6 @@ public class ClientProcessingModuleTest {
     } catch (Exception e) {
       fail(e.getMessage());
     }
-  }
-
-  @Test
-  void provideClientRequestHandler() {
-    ClientMessageProcessorImpl clientMessageProcessorImpl = mock(ClientMessageProcessorImpl.class);
-    ClientMessageProcessor clientMessageProcessor = clientProcessingModule.provideClientRequestHandler(
-        clientMessageProcessorImpl);
-    assertEquals(clientMessageProcessorImpl, clientMessageProcessor);
-    assertInstanceOf(ClientMessageProcessorImpl.class, clientMessageProcessor);
   }
 
   private static class MockModule extends AbstractModule {

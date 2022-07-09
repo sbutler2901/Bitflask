@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.server.client_handling_service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
@@ -9,8 +8,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
-import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionManager;
-import dev.sbutler.bitflask.server.client_handling_service.processing.ClientMessageProcessor;
+import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionManagerImpl;
+import dev.sbutler.bitflask.server.client_handling_service.processing.ClientMessageProcessorImpl;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.Test;
@@ -32,20 +31,11 @@ public class ClientRequestModuleTest {
   void configure() {
     Injector injector = Guice.createInjector(new MockModule(), clientRequestModule);
     try {
-      injector.getBinding(ClientConnectionManager.class);
-      injector.getBinding(ClientMessageProcessor.class);
+      injector.getBinding(ClientConnectionManagerImpl.class);
+      injector.getBinding(ClientMessageProcessorImpl.class);
     } catch (Exception e) {
       fail(e.getMessage());
     }
-  }
-
-  @Test
-  void provideClientRequestHandler() {
-    ClientRequestHandlerImpl clientRequestHandlerImpl = mock(ClientRequestHandlerImpl.class);
-    ClientRequestHandler clientRequestHandler = clientRequestModule.provideClientRequestHandler(
-        clientRequestHandlerImpl);
-    assertEquals(clientRequestHandlerImpl, clientRequestHandler);
-    assertInstanceOf(ClientRequestHandler.class, clientRequestHandler);
   }
 
   @Test

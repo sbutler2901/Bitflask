@@ -7,8 +7,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionManager;
-import dev.sbutler.bitflask.server.client_handling_service.processing.ClientMessageProcessor;
+import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionManagerImpl;
+import dev.sbutler.bitflask.server.client_handling_service.processing.ClientMessageProcessorImpl;
 import java.io.IOException;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -24,9 +24,9 @@ public class ClientRequestHandlerImplTest {
   ClientRequestHandlerImpl clientRequestHandler;
 
   @Mock
-  ClientConnectionManager clientConnectionManager;
+  ClientConnectionManagerImpl clientConnectionManager;
   @Mock
-  ClientMessageProcessor clientMessageProcessor;
+  ClientMessageProcessorImpl clientMessageProcessor;
 
   @Test
   void run() throws IOException {

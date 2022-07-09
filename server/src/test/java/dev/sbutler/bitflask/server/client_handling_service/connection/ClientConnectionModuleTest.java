@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.server.client_handling_service.connection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -14,19 +13,10 @@ public class ClientConnectionModuleTest {
 
   private final ClientConnectionModule clientConnectionModule = new ClientConnectionModule();
 
-  @Test
-  void provideClientConnectionManager() {
-    ClientConnectionManagerImpl clientConnectionManagerImpl = mock(
-        ClientConnectionManagerImpl.class);
-    ClientConnectionManager clientConnectionManager = clientConnectionModule.provideClientConnectionManager(
-        clientConnectionManagerImpl);
-    assertEquals(clientConnectionManagerImpl, clientConnectionManager);
-    assertInstanceOf(ClientConnectionManagerImpl.class, clientConnectionManager);
-  }
 
   @Test
   void provideInputStream() throws IOException {
-    ClientConnectionManager clientConnectionManager = mock(ClientConnectionManager.class);
+    ClientConnectionManagerImpl clientConnectionManager = mock(ClientConnectionManagerImpl.class);
     InputStream mockInputStream = mock(InputStream.class);
     doReturn(mockInputStream).when(clientConnectionManager).getInputStream();
     InputStream inputStream = clientConnectionModule.provideInputStream(clientConnectionManager);
@@ -35,7 +25,7 @@ public class ClientConnectionModuleTest {
 
   @Test
   void provideOutputStream() throws IOException {
-    ClientConnectionManager clientConnectionManager = mock(ClientConnectionManager.class);
+    ClientConnectionManagerImpl clientConnectionManager = mock(ClientConnectionManagerImpl.class);
     OutputStream mockOutputStream = mock(OutputStream.class);
     doReturn(mockOutputStream).when(clientConnectionManager).getOutputStream();
     OutputStream outputStream = clientConnectionModule.provideOutputStream(clientConnectionManager);

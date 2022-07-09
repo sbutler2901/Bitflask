@@ -1,26 +1,29 @@
 package dev.sbutler.bitflask.server.client_handling_service;
 
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionManager;
-import dev.sbutler.bitflask.server.client_handling_service.processing.ClientMessageProcessor;
+import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionManagerImpl;
+import dev.sbutler.bitflask.server.client_handling_service.processing.ClientMessageProcessorImpl;
+import java.io.Closeable;
 import java.io.IOException;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
-class ClientRequestHandlerImpl implements ClientRequestHandler {
+@Singleton
+public class ClientRequestHandlerImpl implements Runnable, Closeable {
 
   private static final String TERMINATING_CONNECTION = "Terminating client session.";
   private static final String TERMINATING_CONNECTION_FAILURE = "Failed to correctly terminate the client session";
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ClientConnectionManager clientConnectionManager;
-  private final ClientMessageProcessor clientMessageProcessor;
+  private final ClientConnectionManagerImpl clientConnectionManager;
+  private final ClientMessageProcessorImpl clientMessageProcessor;
 
   private volatile boolean shouldContinueRunning = true;
 
   @Inject
-  ClientRequestHandlerImpl(ClientConnectionManager clientConnectionManager,
-      ClientMessageProcessor clientMessageProcessor) {
+  ClientRequestHandlerImpl(ClientConnectionManagerImpl clientConnectionManager,
+      ClientMessageProcessorImpl clientMessageProcessor) {
     this.clientConnectionManager = clientConnectionManager;
     this.clientMessageProcessor = clientMessageProcessor;
   }
