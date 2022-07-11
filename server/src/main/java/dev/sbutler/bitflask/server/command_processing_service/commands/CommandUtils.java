@@ -10,14 +10,14 @@ class CommandUtils {
   private CommandUtils() {
   }
 
-  static Command getCommandFromMessage(List<RespType<?>> commandMessageArgs) {
+  static CommandType getCommandFromMessage(List<RespType<?>> commandMessageArgs) {
     if (!(commandMessageArgs.get(0) instanceof RespBulkString commandBulkString)) {
       throw new IllegalArgumentException("Message args must be RespBulkStrings");
     }
 
     String normalizedCommandString = commandBulkString.getValue().trim().toUpperCase();
     try {
-      return Command.valueOf(normalizedCommandString);
+      return CommandType.valueOf(normalizedCommandString);
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException("Unknown command: " + normalizedCommandString);
     }

@@ -16,19 +16,19 @@ public class ServerCommand {
       throw new IllegalArgumentException("Message must be a RespArray");
     }
 
-    Command command = CommandUtils.getCommandFromMessage(clientMessageRespArray.getValue());
+    CommandType commandType = CommandUtils.getCommandFromMessage(clientMessageRespArray.getValue());
     List<String> args = CommandUtils.getArgsFromMessage(clientMessageRespArray.getValue());
 
-    if (!Command.isValidCommandArgs(command, args)) {
+    if (!CommandType.isValidCommandArgs(commandType, args)) {
       throw new IllegalArgumentException(
-          "Invalid arguments for the command: " + command + ", " + args);
+          "Invalid arguments for the commandType: " + commandType + ", " + args);
     }
 
-    return getChildCommand(command, args);
+    return getChildCommand(commandType, args);
   }
 
-  private static ServerCommand getChildCommand(Command command, List<String> args) {
-    return switch (command) {
+  private static ServerCommand getChildCommand(CommandType commandType, List<String> args) {
+    return switch (commandType) {
       case PING -> new PingCommand();
       case GET -> new GetCommand(args.get(0));
       case SET -> new SetCommand(args.get(0), args.get(1));
