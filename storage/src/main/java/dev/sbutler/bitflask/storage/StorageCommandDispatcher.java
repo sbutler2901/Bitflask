@@ -67,10 +67,16 @@ public class StorageCommandDispatcher {
     return response;
   }
 
+  /**
+   * Retrieves the next submission waiting for the provided time if empty
+   */
   StorageSubmission poll(long timeout, TimeUnit unit) throws InterruptedException {
     return submissions.pollFirst(timeout, unit);
   }
 
+  /**
+   * Closes the dispatcher and completes all outstanding submissions exceptionally
+   */
   void closeAndDrain() {
     isOpen = false;
     while (!submissions.isEmpty()) {
