@@ -7,6 +7,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
+import dev.sbutler.bitflask.common.dispatcher.DispatcherSubmission;
 import dev.sbutler.bitflask.storage.StorageResponse.Status;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
@@ -44,7 +45,8 @@ public final class StorageService extends AbstractService implements Runnable {
     // TODO: bound executor task acceptance
     while (isRunning) {
       try {
-        StorageSubmission submission = commandDispatcher.poll(100, TimeUnit.MILLISECONDS);
+        DispatcherSubmission<StorageCommand, StorageResponse> submission =
+            commandDispatcher.poll(100, TimeUnit.MILLISECONDS);
         if (submission != null) {
           processSubmission(submission);
         }
@@ -54,9 +56,9 @@ public final class StorageService extends AbstractService implements Runnable {
     }
   }
 
-  private void processSubmission(StorageSubmission submission) {
+  private void processSubmission(DispatcherSubmission<StorageCommand, StorageResponse> submission) {
     StorageCommand command = submission.command();
-    SettableFuture<StorageResponse> response = submission.response();
+    SettableFuture<StorageResponse> response = submission.responseFuture();
     switch (command.type()) {
       case READ -> response.setFuture(read(command.arguments().get(0)));
       case WRITE ->
