@@ -58,9 +58,9 @@ public final class StorageService extends AbstractService implements Runnable {
     StorageCommand command = submission.command();
     SettableFuture<StorageResponse> response = submission.response();
     switch (command.type()) {
-      case READ -> submission.response().setFuture(read(command.arguments().get(0)));
-      case WRITE -> submission.response()
-          .setFuture(write(command.arguments().get(0), command.arguments().get(1)));
+      case READ -> response.setFuture(read(command.arguments().get(0)));
+      case WRITE ->
+          response.setFuture(write(command.arguments().get(0), command.arguments().get(1)));
     }
   }
 
@@ -134,8 +134,10 @@ public final class StorageService extends AbstractService implements Runnable {
 
   @Override
   protected void doStop() {
+    System.out.println("StorageService shutdown triggered");
     isRunning = false;
     commandDispatcher.closeAndDrain();
+
     InterruptedException interruptedException = null;
     boolean shutdownBeforeTimeoutOrInterruption = false;
 
@@ -175,6 +177,7 @@ public final class StorageService extends AbstractService implements Runnable {
       }
     }
 
+    System.out.println("StorageService stopped");
     notifyStopped();
   }
 }

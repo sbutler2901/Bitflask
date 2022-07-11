@@ -74,9 +74,9 @@ public class StorageCommandDispatcher {
   void closeAndDrain() {
     isOpen = false;
     while (!submissions.isEmpty()) {
-      var future = submissions.pollFirst();
-      if (future != null) {
-        future.response().setException(new DispatcherClosedException());
+      StorageSubmission submission = submissions.pollFirst();
+      if (submission != null) {
+        submission.response().setException(new DispatcherClosedException());
       }
     }
   }
