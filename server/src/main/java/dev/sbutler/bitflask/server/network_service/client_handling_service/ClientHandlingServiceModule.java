@@ -1,10 +1,10 @@
-package dev.sbutler.bitflask.server.client_handling_service;
+package dev.sbutler.bitflask.server.network_service.client_handling_service;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionModule;
-import dev.sbutler.bitflask.server.client_handling_service.processing.ClientProcessingModule;
 import dev.sbutler.bitflask.server.command_processing_service.ServerCommandDispatcher;
+import dev.sbutler.bitflask.server.network_service.client_handling_service.connection.ClientConnectionModule;
+import dev.sbutler.bitflask.server.network_service.client_handling_service.processing.ClientProcessingModule;
 import java.nio.channels.SocketChannel;
 
 public class ClientHandlingServiceModule extends AbstractModule {

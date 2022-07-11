@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_handling_service.processing;
+package dev.sbutler.bitflask.server.network_service.client_handling_service.processing;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListenableFuture;

@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_handling_service;
+package dev.sbutler.bitflask.server.network_service.client_handling_service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -8,9 +8,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
-import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionManager;
-import dev.sbutler.bitflask.server.client_handling_service.processing.ClientMessageProcessor;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
+import dev.sbutler.bitflask.server.network_service.client_handling_service.connection.ClientConnectionManager;
+import dev.sbutler.bitflask.server.network_service.client_handling_service.processing.ClientMessageProcessor;
 import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

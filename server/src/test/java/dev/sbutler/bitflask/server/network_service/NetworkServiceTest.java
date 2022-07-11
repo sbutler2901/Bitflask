@@ -6,7 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.server.client_handling_service.ClientHandlingService;
+import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.ExecutorService;
@@ -42,7 +42,7 @@ public class NetworkServiceTest {
 
   @Test
   void close() throws Exception {
-    networkService.close();
+//    networkService.close();
     verify(serverSocketChannel, times(1)).close();
   }
 

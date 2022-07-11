@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_handling_service.processing;
+package dev.sbutler.bitflask.server.network_service.client_handling_service.processing;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -14,7 +14,6 @@ import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
-import dev.sbutler.bitflask.server.command_processing_service.ServerCommand;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.List;
@@ -46,11 +45,11 @@ public class ClientMessageProcessorTest {
     RespType<?> expectedResponse = new RespBulkString(responseValue);
 
     doReturn(clientMessage).when(respReader).readNextRespType();
-    doReturn(responseValue).when(commandProcessor).processServerCommand(any(ServerCommand.class));
+//    doReturn(responseValue).when(commandProcessor).processServerCommand(any(ServerCommand.class));
 
     assertTrue(clientMessageProcessor.processNextMessage());
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessor, times(1)).processServerCommand(any(ServerCommand.class));
+//    verify(commandProcessor, times(1)).processServerCommand(any(ServerCommand.class));
     verify(respWriter, times(1)).writeRespType(expectedResponse);
   }
 
@@ -60,7 +59,7 @@ public class ClientMessageProcessorTest {
 
     assertFalse(clientMessageProcessor.processNextMessage());
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessor, times(0)).processServerCommand(any(ServerCommand.class));
+//    verify(commandProcessor, times(0)).processServerCommand(any(ServerCommand.class));
     verify(respWriter, times(0)).writeRespType(any(RespType.class));
   }
 
@@ -70,7 +69,7 @@ public class ClientMessageProcessorTest {
 
     assertFalse(clientMessageProcessor.processNextMessage());
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessor, times(0)).processServerCommand(any(ServerCommand.class));
+//    verify(commandProcessor, times(0)).processServerCommand(any(ServerCommand.class));
     verify(respWriter, times(0)).writeRespType(any(RespType.class));
   }
 
@@ -82,7 +81,7 @@ public class ClientMessageProcessorTest {
 
     assertTrue(clientMessageProcessor.processNextMessage());
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessor, times(0)).processServerCommand(any(ServerCommand.class));
+//    verify(commandProcessor, times(0)).processServerCommand(any(ServerCommand.class));
     verify(respWriter, times(1)).writeRespType(any(RespType.class));
   }
 
@@ -95,12 +94,12 @@ public class ClientMessageProcessorTest {
     RespType<?> expectedResponse = new RespBulkString(responseValue);
 
     doReturn(clientMessage).when(respReader).readNextRespType();
-    doReturn(responseValue).when(commandProcessor).processServerCommand(any(ServerCommand.class));
+//    doReturn(responseValue).when(commandProcessor).processServerCommand(any(ServerCommand.class));
     doThrow(IOException.class).when(respWriter).writeRespType(any(RespType.class));
 
     assertFalse(clientMessageProcessor.processNextMessage());
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessor, times(1)).processServerCommand(any(ServerCommand.class));
+//    verify(commandProcessor, times(1)).processServerCommand(any(ServerCommand.class));
     verify(respWriter, times(1)).writeRespType(expectedResponse);
   }
 

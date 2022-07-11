@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.client_handling_service.processing;
+package dev.sbutler.bitflask.server.network_service.client_handling_service.processing;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
