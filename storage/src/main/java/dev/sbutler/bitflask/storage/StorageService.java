@@ -29,7 +29,7 @@ public final class StorageService extends AbstractService implements Runnable {
   private final ListeningExecutorService executorService;
   private final SegmentManager segmentManager;
   private final StorageCommandDispatcher commandDispatcher;
-  private volatile boolean isRunning;
+  private volatile boolean isRunning = true;
 
   @Inject
   public StorageService(@StorageExecutorService ListeningExecutorService executorService,

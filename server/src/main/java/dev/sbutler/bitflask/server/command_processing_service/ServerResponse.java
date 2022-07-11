@@ -5,7 +5,7 @@ import java.util.Optional;
 public record ServerResponse(Status status, Optional<String> response,
                              Optional<String> errorMessage) {
 
-  enum Status {
+  public enum Status {
     OK,
     FAILED
   }

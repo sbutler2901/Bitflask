@@ -4,14 +4,18 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.sbutler.bitflask.server.client_handling_service.connection.ClientConnectionModule;
 import dev.sbutler.bitflask.server.client_handling_service.processing.ClientProcessingModule;
+import dev.sbutler.bitflask.server.command_processing_service.ServerCommandDispatcher;
 import java.nio.channels.SocketChannel;
 
 public class ClientHandlingServiceModule extends AbstractModule {
 
   private final SocketChannel socketChannel;
+  private final ServerCommandDispatcher serverCommandDispatcher;
 
-  public ClientHandlingServiceModule(SocketChannel socketChannel) {
+  public ClientHandlingServiceModule(SocketChannel socketChannel,
+      ServerCommandDispatcher serverCommandDispatcher) {
     this.socketChannel = socketChannel;
+    this.serverCommandDispatcher = serverCommandDispatcher;
   }
 
   @Override
@@ -26,4 +30,8 @@ public class ClientHandlingServiceModule extends AbstractModule {
     return socketChannel;
   }
 
+  @Provides
+  ServerCommandDispatcher provideServerCommandDispatcher() {
+    return serverCommandDispatcher;
+  }
 }

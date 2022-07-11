@@ -6,13 +6,8 @@ import dev.sbutler.bitflask.server.client_handling_service.processing.ClientMess
 import java.io.Closeable;
 import java.io.IOException;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
-@Singleton
 public class ClientHandlingService implements Runnable, Closeable {
-
-  private static final String TERMINATING_CONNECTION = "Terminating client session.";
-  private static final String TERMINATING_CONNECTION_FAILURE = "Failed to correctly terminate the client session";
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -31,7 +26,9 @@ public class ClientHandlingService implements Runnable, Closeable {
   @Override
   public void run() {
     processClientMessages();
-    closeClientConnection();
+    if (shouldContinueRunning) {
+      close();
+    }
   }
 
   private void processClientMessages() {
@@ -40,19 +37,15 @@ public class ClientHandlingService implements Runnable, Closeable {
     }
   }
 
-  private void closeClientConnection() {
-    logger.atInfo().log(TERMINATING_CONNECTION);
-    try {
-      close();
-    } catch (IOException e) {
-      logger.atSevere().withCause(e).log(TERMINATING_CONNECTION_FAILURE);
-    }
-  }
-
   @Override
-  public void close() throws IOException {
+  public void close() {
+    logger.atInfo().log("Terminating client session.");
     shouldContinueRunning = false;
-    clientConnectionManager.close();
+    try {
+      clientConnectionManager.close();
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log("Failed to correctly terminate the client session");
+    }
   }
 
 }

@@ -2,20 +2,24 @@ package dev.sbutler.bitflask.server.network_service;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
+import com.google.common.util.concurrent.Futures;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.client_handling_service.ClientHandlingService;
 import dev.sbutler.bitflask.server.client_handling_service.ClientHandlingServiceModule;
 import dev.sbutler.bitflask.server.command_processing_service.ServerCommandDispatcher;
-import dev.sbutler.bitflask.server.configuration.ServerModule;
-import dev.sbutler.bitflask.storage.StorageServiceModule;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public final class NetworkService extends AbstractExecutionThreadService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -23,7 +27,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
   private final ExecutorService executorService;
   private final ServerSocketChannel serverSocketChannel;
   private final ServerCommandDispatcher serverCommandDispatcher;
-  private Injector rootInjector;
+  private final List<ClientHandlingService> runningClientHandlingServices = new ArrayList<>();
 
   @Inject
   NetworkService(ExecutorService executorService,
@@ -35,10 +39,6 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   @Override
   protected void startUp() {
-    rootInjector = Guice.createInjector(
-        ServerModule.getInstance(),
-        StorageServiceModule.getInstance()
-    );
     logger.atInfo().log("Prepared to accept incoming connections");
   }
 
@@ -56,34 +56,36 @@ public final class NetworkService extends AbstractExecutionThreadService {
   @SuppressWarnings("UnstableApiUsage")
   @Override
   protected void triggerShutdown() {
+    System.out.println("NetworkService shutdown triggered");
     try {
       serverSocketChannel.close();
     } catch (IOException e) {
-      logger.atSevere().withCause(e).log("Error closing NetworkService's ServerSocketChannel");
+      System.err.println("Error closing NetworkService's ServerSocketChannel" + e);
     }
+    Iterator<ClientHandlingService> iterator = runningClientHandlingServices.iterator();
+    while (iterator.hasNext()) {
+      ClientHandlingService next = iterator.next();
+      next.close();
+      iterator.remove();
+    }
+    System.out.println("NetworkService completed shutdown");
   }
 
   private void acceptAndExecuteNextClientConnection() throws IOException {
     try {
       SocketChannel socketChannel = serverSocketChannel.accept();
-      Injector injector = createChildInjector(socketChannel);
+      Injector injector = Guice.createInjector(
+          new ClientHandlingServiceModule(socketChannel, serverCommandDispatcher));
       ClientHandlingService clientHandlingService = injector.getInstance(
           ClientHandlingService.class);
 
       printClientConnectionInfo(socketChannel);
 
-      executorService.execute(clientHandlingService);
+      Futures.submit(clientHandlingService, executorService);
+      runningClientHandlingServices.add(clientHandlingService);
     } catch (ClosedChannelException e) {
       logger.atInfo().log("ServerSocketChannel closed");
     }
-  }
-
-  private Injector createChildInjector(SocketChannel clientSocketChannel) {
-    return rootInjector.createChildInjector(new ClientHandlingServiceModule(clientSocketChannel));
-  }
-
-  public void close() throws IOException {
-    serverSocketChannel.close();
   }
 
   private void printClientConnectionInfo(SocketChannel socketChannel) throws IOException {
