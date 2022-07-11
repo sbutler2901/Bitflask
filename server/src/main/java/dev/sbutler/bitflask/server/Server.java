@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.server;
 
+import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -12,6 +14,7 @@ import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingS
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -61,6 +64,7 @@ public class Server {
         MoreExecutors.directExecutor());
   }
 
+  @SuppressWarnings("UnstableApiUsage")
   private static void registerShutdownHook(ServiceManager serviceManager,
       ExecutorService executorService) {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -73,28 +77,9 @@ public class Server {
         // stopping timed out
         System.err.println("ServiceManager timed out while stopping" + timeout);
       }
-      Server.shutdownExecutorService(executorService);
+      shutdownAndAwaitTermination(executorService, Duration.ofSeconds(5));
       System.out.println("Shutdown hook completed");
     }));
-  }
-
-  private static void shutdownExecutorService(ExecutorService executorService) {
-    System.out.println("Shutting ExecutorService down");
-    executorService.shutdown();
-    try {
-      if (!executorService.awaitTermination(500L, TimeUnit.MILLISECONDS)) {
-        executorService.shutdownNow();
-        if (!executorService.awaitTermination(500L, TimeUnit.MILLISECONDS)) {
-          System.err.println("ExecutorService did not terminate");
-        }
-      }
-    } catch (InterruptedException ex) {
-      // (Re-)Cancel if current thread also interrupted
-      executorService.shutdownNow();
-      // Preserve interrupt status
-      Thread.currentThread().interrupt();
-    }
-    System.out.println("ExecutorService shutdown");
   }
 
   private static void printConfigInfo() {
