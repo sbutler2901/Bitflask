@@ -74,7 +74,7 @@ public abstract class Dispatcher<C, R> {
   /**
    * Retrieves the next submission waiting for the provided time if empty
    */
-  DispatcherSubmission<C, R> poll(long timeout, TimeUnit unit) throws InterruptedException {
+  public DispatcherSubmission<C, R> poll(long timeout, TimeUnit unit) throws InterruptedException {
     return submissions.pollFirst(timeout, unit);
   }
 
@@ -82,7 +82,7 @@ public abstract class Dispatcher<C, R> {
    * Closes the dispatcher and completes all outstanding submissions exceptionally with
    * {@link DispatcherClosedException}
    */
-  void closeAndDrain() {
+  public void closeAndDrain() {
     isOpen = false;
     while (!submissions.isEmpty()) {
       DispatcherSubmission<C, R> submission = submissions.pollFirst();

@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import dev.sbutler.bitflask.common.dispatcher.DispatcherSubmission;
 import dev.sbutler.bitflask.server.command_processing_service.ServerResponse.Status;
 import dev.sbutler.bitflask.storage.StorageCommand;
 import dev.sbutler.bitflask.storage.StorageCommand.Type;
@@ -40,8 +41,8 @@ public class CommandProcessingService extends AbstractExecutionThreadService {
   protected void run() {
     while (isRunning) {
       try {
-        ServerCommandSubmission submission = serverCommandDispatcher.poll(100,
-            TimeUnit.MILLISECONDS);
+        DispatcherSubmission<ServerCommand, ServerResponse> submission =
+            serverCommandDispatcher.poll(100, TimeUnit.MILLISECONDS);
         if (submission != null) {
           processSubmission(submission);
         }
@@ -61,13 +62,13 @@ public class CommandProcessingService extends AbstractExecutionThreadService {
     System.out.println("CommandProcessingService shutdown");
   }
 
-  private void processSubmission(ServerCommandSubmission submission) {
+  private void processSubmission(DispatcherSubmission<ServerCommand, ServerResponse> submission) {
     ServerCommand command = submission.command();
-    SettableFuture<ServerResponse> response = submission.response();
+    SettableFuture<ServerResponse> responseFuture = submission.responseFuture();
     switch (command.command()) {
-      case GET -> response.setFuture(processGetCommand(command));
-      case SET -> response.setFuture(processSetCommand(command));
-      case PING -> response.set(processPong());
+      case GET -> responseFuture.setFuture(processGetCommand(command));
+      case SET -> responseFuture.setFuture(processSetCommand(command));
+      case PING -> responseFuture.set(processPong());
     }
   }
 
