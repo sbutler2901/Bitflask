@@ -5,6 +5,7 @@ plugins {
 dependencies {
     implementation project(':storage')
     implementation project(':resp')
+    implementation project(':common')
 }
 
 application {

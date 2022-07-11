@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import dev.sbutler.bitflask.common.dispatcher.DispatcherClosedException;
 import dev.sbutler.bitflask.storage.configuration.StorageDispatcherCapacity;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;

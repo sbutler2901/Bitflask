@@ -2,8 +2,8 @@ package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import dev.sbutler.bitflask.common.dispatcher.DispatcherClosedException;
 import dev.sbutler.bitflask.server.configuration.ServerCommandDispatcherCapacity;
-import dev.sbutler.bitflask.storage.DispatcherClosedException;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
