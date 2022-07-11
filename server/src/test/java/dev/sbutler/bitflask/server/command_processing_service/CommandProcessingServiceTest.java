@@ -5,10 +5,12 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import dev.sbutler.bitflask.server.command_processing_service.commands.GetCommand;
+import dev.sbutler.bitflask.server.command_processing_service.commands.PingCommand;
+import dev.sbutler.bitflask.server.command_processing_service.commands.SetCommand;
 import dev.sbutler.bitflask.storage.StorageResponse;
 import dev.sbutler.bitflask.storage.StorageService;
 import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
@@ -31,7 +33,8 @@ public class CommandProcessingServiceTest {
   void processServerCommand_get() throws ExecutionException, InterruptedException {
     // Value found
     String key0 = "test0", value0 = "value";
-    ServerCommand command0 = new ServerCommand(Command.GET, List.of(key0));
+    GetCommand command0 = mock(GetCommand.class);
+    doReturn(key0).when(command0).getKey();
     ListenableFuture<Optional<String>> readFuture0 = mock(ListenableFuture.class);
 
     doReturn(Optional.of(value0)).when(readFuture0).get();
@@ -41,7 +44,8 @@ public class CommandProcessingServiceTest {
 
     // Value not found
     String key1 = "test1";
-    ServerCommand command1 = new ServerCommand(Command.GET, List.of(key1));
+    GetCommand command1 = mock(GetCommand.class);
+    doReturn(key1).when(command1).getKey();
     ListenableFuture<Optional<String>> readFuture1 = mock(ListenableFuture.class);
 
     doReturn(Optional.empty()).when(readFuture1).get();
@@ -55,7 +59,8 @@ public class CommandProcessingServiceTest {
   void processServiceCommand_get_InterruptedException()
       throws ExecutionException, InterruptedException {
     String key = "test";
-    ServerCommand command = new ServerCommand(Command.GET, List.of(key));
+    GetCommand command = mock(GetCommand.class);
+    doReturn(key).when(command).getKey();
     ListenableFuture<StorageResponse> readFuture = mock(ListenableFuture.class);
 
     doThrow(InterruptedException.class).when(readFuture).get();
@@ -70,7 +75,8 @@ public class CommandProcessingServiceTest {
   void processServiceCommand_get_ExecutionException()
       throws ExecutionException, InterruptedException {
     String key = "test";
-    ServerCommand command = new ServerCommand(Command.GET, List.of(key));
+    GetCommand command = mock(GetCommand.class);
+    doReturn(key).when(command).getKey();
     ListenableFuture<StorageResponse> readFuture = mock(ListenableFuture.class);
 
     ExecutionException executionException = new ExecutionException(new IOException("Test error"));
@@ -85,7 +91,9 @@ public class CommandProcessingServiceTest {
   @SuppressWarnings("unchecked")
   void processServerCommand_set() {
     String key = "key", value = "value";
-    ServerCommand command = new ServerCommand(Command.SET, List.of(key, value));
+    SetCommand command = mock(SetCommand.class);
+    doReturn(key).when(command).getKey();
+    doReturn(value).when(command).getValue();
     ListenableFuture<StorageResponse> writeFuture = mock(ListenableFuture.class);
 
     doReturn(writeFuture).when(storageService).write(key, value);
@@ -98,7 +106,9 @@ public class CommandProcessingServiceTest {
   void processServerCommand_set_InterruptedException()
       throws ExecutionException, InterruptedException {
     String key = "key", value = "value";
-    ServerCommand command = new ServerCommand(Command.SET, List.of(key, value));
+    SetCommand command = mock(SetCommand.class);
+    doReturn(key).when(command).getKey();
+    doReturn(value).when(command).getValue();
     ListenableFuture<StorageResponse> writeFuture = mock(ListenableFuture.class);
 
     doThrow(InterruptedException.class).when(writeFuture).get();
@@ -113,7 +123,9 @@ public class CommandProcessingServiceTest {
   void processServerCommand_set_ExecutionException()
       throws ExecutionException, InterruptedException {
     String key = "key", value = "value";
-    ServerCommand command = new ServerCommand(Command.SET, List.of(key, value));
+    SetCommand command = mock(SetCommand.class);
+    doReturn(key).when(command).getKey();
+    doReturn(value).when(command).getValue();
     ListenableFuture<StorageResponse> writeFuture = mock(ListenableFuture.class);
 
     ExecutionException executionException = new ExecutionException(new IOException("Test error"));
@@ -126,7 +138,7 @@ public class CommandProcessingServiceTest {
 
   @Test
   void processServerCommand_ping() {
-    ServerCommand command = new ServerCommand(Command.PING, null);
+    PingCommand command = mock(PingCommand.class);
 //    assertEquals("pong", commandProcessor.processServerCommand(command));
   }
 }

@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
 import dev.sbutler.bitflask.common.dispatcher.Dispatcher;
+import dev.sbutler.bitflask.server.command_processing_service.commands.ServerCommand;
 import dev.sbutler.bitflask.server.configuration.ServerCommandDispatcherCapacity;
 import javax.inject.Inject;
 import javax.inject.Singleton;

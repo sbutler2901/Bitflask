@@ -1,6 +1,7 @@
-package dev.sbutler.bitflask.server.command_processing_service;
+package dev.sbutler.bitflask.server.command_processing_service.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import dev.sbutler.bitflask.resp.types.RespArray;
@@ -14,22 +15,10 @@ import org.junit.jupiter.api.Test;
 public class ServerCommandTest {
 
   @Test
-  void constructor_valid() {
-    ServerCommand command = new ServerCommand(Command.PING, null);
-    assertEquals(Command.PING, command.command());
-  }
-
-  @Test
-  void constructor_invalid() {
-    assertThrows(IllegalArgumentException.class,
-        () -> new ServerCommand(Command.PING, List.of("test")));
-  }
-
-  @Test
   void valueOf_command() {
     RespType<?> commandMessage = new RespArray(List.of(new RespBulkString("ping")));
     ServerCommand command = ServerCommand.valueOf(commandMessage);
-    assertEquals(Command.PING, command.command());
+    assertInstanceOf(PingCommand.class, command);
   }
 
   @Test
@@ -42,8 +31,8 @@ public class ServerCommandTest {
         )
     );
     ServerCommand command = ServerCommand.valueOf(commandMessage);
-    assertEquals(Command.GET, command.command());
-    assertEquals(List.of(key), command.args());
+    assertInstanceOf(GetCommand.class, command);
+    assertEquals(key, ((GetCommand) command).getKey());
   }
 
   @Test

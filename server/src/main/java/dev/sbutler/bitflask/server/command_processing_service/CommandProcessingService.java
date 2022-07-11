@@ -8,6 +8,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import dev.sbutler.bitflask.common.dispatcher.DispatcherSubmission;
 import dev.sbutler.bitflask.server.command_processing_service.ServerResponse.Status;
+import dev.sbutler.bitflask.server.command_processing_service.commands.GetCommand;
+import dev.sbutler.bitflask.server.command_processing_service.commands.PingCommand;
+import dev.sbutler.bitflask.server.command_processing_service.commands.ServerCommand;
+import dev.sbutler.bitflask.server.command_processing_service.commands.SetCommand;
 import dev.sbutler.bitflask.storage.StorageCommand;
 import dev.sbutler.bitflask.storage.StorageCommand.Type;
 import dev.sbutler.bitflask.storage.StorageCommandDispatcher;
@@ -65,16 +69,18 @@ public class CommandProcessingService extends AbstractExecutionThreadService {
   private void processSubmission(DispatcherSubmission<ServerCommand, ServerResponse> submission) {
     ServerCommand command = submission.command();
     SettableFuture<ServerResponse> responseFuture = submission.responseFuture();
-    switch (command.command()) {
-      case GET -> responseFuture.setFuture(processGetCommand(command));
-      case SET -> responseFuture.setFuture(processSetCommand(command));
-      case PING -> responseFuture.set(processPong());
+    switch (command) {
+      case GetCommand c -> responseFuture.setFuture(processGetCommand(c));
+      case SetCommand c -> responseFuture.setFuture(processSetCommand(c));
+      case PingCommand ignored -> responseFuture.set(processPong());
+      default ->
+          throw new IllegalArgumentException("A suitable child command of ServerCommand not found");
     }
   }
 
   @SuppressWarnings("UnstableApiUsage")
-  private ListenableFuture<ServerResponse> processGetCommand(ServerCommand getCommand) {
-    String key = getCommand.args().get(0);
+  private ListenableFuture<ServerResponse> processGetCommand(GetCommand getCommand) {
+    String key = getCommand.getKey();
     StorageCommand storageCommand = new StorageCommand(Type.READ, ImmutableList.of(key));
     ListenableFuture<StorageResponse> storageResponseFuture = storageCommandDispatcher.put(
         storageCommand);
@@ -94,9 +100,9 @@ public class CommandProcessingService extends AbstractExecutionThreadService {
   }
 
   @SuppressWarnings("UnstableApiUsage")
-  private ListenableFuture<ServerResponse> processSetCommand(ServerCommand setCommand) {
-    String key = setCommand.args().get(0);
-    String value = setCommand.args().get(1);
+  private ListenableFuture<ServerResponse> processSetCommand(SetCommand setCommand) {
+    String key = setCommand.getKey();
+    String value = setCommand.getValue();
     StorageCommand storageCommand = new StorageCommand(Type.WRITE, ImmutableList.of(key, value));
     ListenableFuture<StorageResponse> storageResponseFuture = storageCommandDispatcher.put(
         storageCommand);
