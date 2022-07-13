@@ -4,10 +4,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
-import dev.sbutler.bitflask.storage.StorageCommand;
-import dev.sbutler.bitflask.storage.StorageCommand.Type;
-import dev.sbutler.bitflask.storage.StorageCommandDispatcher;
-import dev.sbutler.bitflask.storage.StorageResponse;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommand;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommand.Type;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
+import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import java.util.concurrent.ExecutorService;
 
 class GetCommand implements ServerCommand {

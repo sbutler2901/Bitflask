@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.sbutler.bitflask.storage.configuration.ConfigurationModule;
 import dev.sbutler.bitflask.storage.configuration.StorageDispatcherCapacity;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.segment.SegmentModule;
 import javax.inject.Singleton;
 

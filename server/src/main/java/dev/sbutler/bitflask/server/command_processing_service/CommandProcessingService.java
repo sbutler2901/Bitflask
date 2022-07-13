@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.server.command_processing_service;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import dev.sbutler.bitflask.storage.StorageCommandDispatcher;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
