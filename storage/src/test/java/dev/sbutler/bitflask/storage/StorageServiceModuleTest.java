@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -7,6 +8,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import org.junit.jupiter.api.Test;
 
 public class StorageServiceModuleTest {
@@ -23,5 +25,12 @@ public class StorageServiceModuleTest {
     } catch (Exception e) {
       fail(e.getMessage());
     }
+  }
+
+  @Test
+  void provideStorageCommandDispatcher() {
+    StorageCommandDispatcher storageCommandDispatcher = storageServiceModule.provideStorageCommandDispatcher(
+        1);
+    assertEquals(storageCommandDispatcher, storageServiceModule.provideStorageCommandDispatcher(2));
   }
 }
