@@ -1,7 +1,13 @@
 package dev.sbutler.bitflask.server.command_processing_service.commands;
 
-public class PingCommand extends ServerCommand {
+import static com.google.common.util.concurrent.Futures.immediateFuture;
 
-  PingCommand() {
+import com.google.common.util.concurrent.ListenableFuture;
+
+public class PingCommand implements ServerCommand {
+
+  @Override
+  public ListenableFuture<String> execute() {
+    return immediateFuture("pong");
   }
 }

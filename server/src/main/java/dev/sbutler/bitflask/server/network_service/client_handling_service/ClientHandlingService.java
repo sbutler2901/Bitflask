@@ -25,8 +25,14 @@ public class ClientHandlingService implements Runnable, Closeable {
 
   @Override
   public void run() {
-    processClientMessages();
-    if (shouldContinueRunning) {
+    try {
+      processClientMessages();
+      if (shouldContinueRunning) {
+        close();
+      }
+    } catch (Exception e) {
+      logger.atSevere().withCause(e)
+          .log("Processing client messages failed. Terminating connection!");
       close();
     }
   }

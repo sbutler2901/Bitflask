@@ -1,14 +1,17 @@
 package dev.sbutler.bitflask.server.network_service.client_handling_service.processing;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListenableFuture;
 import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.network.writer.RespWriter;
+import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
-import dev.sbutler.bitflask.server.command_processing_service.ServerCommandDispatcher;
-import dev.sbutler.bitflask.server.command_processing_service.ServerResponse;
-import dev.sbutler.bitflask.server.command_processing_service.commands.ServerCommand;
+import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -18,14 +21,14 @@ public class ClientMessageProcessor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ServerCommandDispatcher serverCommandDispatcher;
+  CommandProcessingService commandProcessingService;
   private final RespReader respReader;
   private final RespWriter respWriter;
 
   @Inject
-  ClientMessageProcessor(ServerCommandDispatcher serverCommandDispatcher, RespReader respReader,
+  ClientMessageProcessor(CommandProcessingService commandProcessingService, RespReader respReader,
       RespWriter respWriter) {
-    this.serverCommandDispatcher = serverCommandDispatcher;
+    this.commandProcessingService = commandProcessingService;
     this.respReader = respReader;
     this.respWriter = respWriter;
   }
@@ -33,7 +36,9 @@ public class ClientMessageProcessor {
   public boolean processNextMessage() {
     try {
       RespType<?> clientMessage = readClientMessage();
-      RespType<?> response = getServerResponseToClient(clientMessage);
+      ListenableFuture<String> responseFuture = commandProcessingService.processMessage(
+          parseClientMessage(clientMessage));
+      RespType<?> response = getServerResponseToClient(responseFuture);
       writeResponseMessage(response);
       return true;
     } catch (EOFException e) {
@@ -49,24 +54,10 @@ public class ClientMessageProcessor {
     return respReader.readNextRespType();
   }
 
-  private RespType<?> getServerResponseToClient(RespType<?> clientMessage) throws IOException {
-    logger.atInfo().log("%s received from client", clientMessage);
-
-    ServerCommand command;
+  private RespType<?> getServerResponseToClient(ListenableFuture<String> responseFuture)
+      throws IOException {
     try {
-      // todo: differentiate between invalid format and invalid command and terminate connection accordingly
-      command = ServerCommand.valueOf(clientMessage);
-    } catch (IllegalArgumentException e) {
-      return new RespBulkString("Invalid command: " + e.getMessage());
-    }
-
-    ListenableFuture<ServerResponse> responseFuture = serverCommandDispatcher.put(command);
-    try {
-      ServerResponse serverResponse = responseFuture.get();
-      return switch (serverResponse.status()) {
-        case OK -> new RespBulkString(serverResponse.response().get());
-        case FAILED -> new RespBulkString(serverResponse.errorMessage().get());
-      };
+      return new RespBulkString(responseFuture.get());
     } catch (InterruptedException e) {
       logger.atWarning().withCause(e).log("Interrupted while reading response");
       Thread.currentThread().interrupt();
@@ -79,6 +70,21 @@ public class ClientMessageProcessor {
 
   private void writeResponseMessage(RespType<?> response) throws IOException {
     respWriter.writeRespType(response);
+  }
+
+  private static ImmutableList<String> parseClientMessage(RespType<?> clientMessage) {
+    checkNotNull(clientMessage);
+    if (!(clientMessage instanceof RespArray clientMessageRespArray)) {
+      throw new IllegalArgumentException("Message must be a RespArray");
+    }
+
+    return clientMessageRespArray.getValue().stream().map(arg -> {
+      if (!(arg instanceof RespBulkString argBulkString)) {
+        throw new IllegalArgumentException(
+            "Message RespArray must consist of RespBulkString entries");
+      }
+      return argBulkString.getValue();
+    }).collect(toImmutableList());
   }
 
 }

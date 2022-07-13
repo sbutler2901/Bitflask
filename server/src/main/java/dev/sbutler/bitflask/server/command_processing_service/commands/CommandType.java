@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.server.command_processing_service.commands;
 
 import java.util.List;
 
-enum CommandType {
+public enum CommandType {
   PING,
   GET,
   SET;

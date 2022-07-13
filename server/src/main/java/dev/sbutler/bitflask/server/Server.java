@@ -10,7 +10,6 @@ import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
@@ -34,8 +33,7 @@ public class Server {
     Injector injector = Guice.createInjector(ServerModule.getInstance());
     ImmutableSet<Service> services = ImmutableSet.of(
         injector.getInstance(StorageService.class),
-        injector.getInstance(NetworkService.class),
-        injector.getInstance(CommandProcessingService.class)
+        injector.getInstance(NetworkService.class)
     );
     ServiceManager serviceManager = new ServiceManager(services);
     addServiceManagerListener(serviceManager);
@@ -48,8 +46,7 @@ public class Server {
     serviceManager.addListener(
         new Listener() {
           public void stopped() {
-            System.out.println("All services have stopped. Exiting");
-            System.exit(0);
+            System.out.println("All services have stopped.");
           }
 
           public void healthy() {
@@ -57,8 +54,7 @@ public class Server {
           }
 
           public void failure(@Nonnull Service service) {
-            System.err.printf("[%s] failed. Exiting...%n", service.getClass());
-            System.exit(1);
+            System.err.printf("[%s] failed.", service.getClass());
           }
         },
         MoreExecutors.directExecutor());

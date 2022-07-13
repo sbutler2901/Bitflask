@@ -5,9 +5,9 @@ import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.server.command_processing_service.ServerCommandDispatcher;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceModule;
+import dev.sbutler.bitflask.storage.StorageCommandDispatcher;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
@@ -24,17 +24,17 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ExecutorService executorService;
   private final ServerSocketChannel serverSocketChannel;
-  private final ServerCommandDispatcher serverCommandDispatcher;
+  private final ExecutorService executorService;
+  private final StorageCommandDispatcher storageCommandDispatcher;
   private final List<ClientHandlingService> runningClientHandlingServices = new ArrayList<>();
 
   @Inject
-  NetworkService(ExecutorService executorService,
-      ServerSocketChannel serverSocketChannel, ServerCommandDispatcher serverCommandDispatcher) {
-    this.executorService = executorService;
+  NetworkService(ServerSocketChannel serverSocketChannel, ExecutorService executorService,
+      StorageCommandDispatcher storageCommandDispatcher) {
     this.serverSocketChannel = serverSocketChannel;
-    this.serverCommandDispatcher = serverCommandDispatcher;
+    this.executorService = executorService;
+    this.storageCommandDispatcher = storageCommandDispatcher;
   }
 
   @Override
@@ -75,7 +75,8 @@ public final class NetworkService extends AbstractExecutionThreadService {
     try {
       SocketChannel socketChannel = serverSocketChannel.accept();
       Injector injector = Guice.createInjector(
-          new ClientHandlingServiceModule(socketChannel, serverCommandDispatcher));
+          new ClientHandlingServiceModule(executorService, socketChannel,
+              storageCommandDispatcher));
       ClientHandlingService clientHandlingService = injector.getInstance(
           ClientHandlingService.class);
 
