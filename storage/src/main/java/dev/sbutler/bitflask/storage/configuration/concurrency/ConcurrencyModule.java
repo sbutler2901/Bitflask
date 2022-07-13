@@ -15,7 +15,7 @@ public class ConcurrencyModule extends AbstractModule {
 
   private static final ConcurrencyModule instance = new ConcurrencyModule();
 
-  private ListeningExecutorService executorService;
+  private ListeningExecutorService executorService = null;
 
   private ConcurrencyModule() {
   }
@@ -25,16 +25,16 @@ public class ConcurrencyModule extends AbstractModule {
   }
 
   @Provides
+  @StorageNumThreads
+  int provideStorageNumThreads() {
+    return 4;
+  }
+
+  @Provides
   @StorageThreadFactory
   @Singleton
   ThreadFactory provideStorageThreadFactory() {
     return new ThreadFactoryBuilder().setNameFormat(STORAGE_SERVICE_THREAD_NAME).build();
-  }
-
-  @Provides
-  @StorageNumThreads
-  int provideStorageNumThreads() {
-    return 4;
   }
 
   @Provides

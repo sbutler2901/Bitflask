@@ -30,16 +30,4 @@ public class ServerModule extends AbstractModule {
   int provideServerPort() {
     return 9090;
   }
-
-  @Provides
-  @ServerNumThreads
-  int provideServerNumThreads() {
-    return 4;
-  }
-
-  @Provides
-  @ServerCommandDispatcherCapacity
-  int provideServerCommandDispatcherCapacity() {
-    return 500;
-  }
 }

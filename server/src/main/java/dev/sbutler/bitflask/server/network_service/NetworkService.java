@@ -7,7 +7,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceModule;
-import dev.sbutler.bitflask.storage.StorageCommandDispatcher;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
@@ -26,15 +25,12 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   private final ServerSocketChannel serverSocketChannel;
   private final ExecutorService executorService;
-  private final StorageCommandDispatcher storageCommandDispatcher;
   private final List<ClientHandlingService> runningClientHandlingServices = new ArrayList<>();
 
   @Inject
-  NetworkService(ServerSocketChannel serverSocketChannel, ExecutorService executorService,
-      StorageCommandDispatcher storageCommandDispatcher) {
+  NetworkService(ServerSocketChannel serverSocketChannel, ExecutorService executorService) {
     this.serverSocketChannel = serverSocketChannel;
     this.executorService = executorService;
-    this.storageCommandDispatcher = storageCommandDispatcher;
   }
 
   @Override
@@ -50,6 +46,24 @@ public final class NetworkService extends AbstractExecutionThreadService {
       }
     } catch (IOException e) {
       logger.atSevere().withCause(e).log("Failed to accept incoming client connections");
+    }
+  }
+
+  private void acceptAndExecuteNextClientConnection() throws IOException {
+    try {
+      SocketChannel socketChannel = serverSocketChannel.accept();
+      Injector injector = Guice.createInjector(
+          new ClientHandlingServiceModule(socketChannel));
+      ClientHandlingService clientHandlingService = injector.getInstance(
+          ClientHandlingService.class);
+
+      logger.atInfo()
+          .log("Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
+
+      Futures.submit(clientHandlingService, executorService);
+      runningClientHandlingServices.add(clientHandlingService);
+    } catch (ClosedChannelException e) {
+      logger.atInfo().log("ServerSocketChannel closed");
     }
   }
 
@@ -69,28 +83,5 @@ public final class NetworkService extends AbstractExecutionThreadService {
       iterator.remove();
     }
     System.out.println("NetworkService completed shutdown");
-  }
-
-  private void acceptAndExecuteNextClientConnection() throws IOException {
-    try {
-      SocketChannel socketChannel = serverSocketChannel.accept();
-      Injector injector = Guice.createInjector(
-          new ClientHandlingServiceModule(executorService, socketChannel,
-              storageCommandDispatcher));
-      ClientHandlingService clientHandlingService = injector.getInstance(
-          ClientHandlingService.class);
-
-      printClientConnectionInfo(socketChannel);
-
-      Futures.submit(clientHandlingService, executorService);
-      runningClientHandlingServices.add(clientHandlingService);
-    } catch (ClosedChannelException e) {
-      logger.atInfo().log("ServerSocketChannel closed");
-    }
-  }
-
-  private void printClientConnectionInfo(SocketChannel socketChannel) throws IOException {
-    logger.atInfo()
-        .log("Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
   }
 }

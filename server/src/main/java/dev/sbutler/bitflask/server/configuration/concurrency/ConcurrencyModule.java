@@ -2,7 +2,6 @@ package dev.sbutler.bitflask.server.configuration.concurrency;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import dev.sbutler.bitflask.server.configuration.ServerNumThreads;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -22,6 +21,12 @@ public class ConcurrencyModule extends AbstractModule {
   }
 
   @Provides
+  @ServerNumThreads
+  int provideServerNumThreads() {
+    return 4;
+  }
+
+  @Provides
   @Singleton
   ThreadFactory provideThreadFactory() {
     return new ServerThreadFactory();
@@ -36,5 +41,4 @@ public class ConcurrencyModule extends AbstractModule {
     }
     return executorService;
   }
-
 }
