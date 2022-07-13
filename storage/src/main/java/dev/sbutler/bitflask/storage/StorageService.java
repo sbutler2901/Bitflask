@@ -1,8 +1,9 @@
 package dev.sbutler.bitflask.storage;
 
+import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
+
 import com.google.common.flogger.FluentLogger;
-import com.google.common.util.concurrent.AbstractService;
-import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -14,11 +15,10 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Status;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -26,14 +26,13 @@ import javax.inject.Singleton;
  * Manages persisting and retrieving data.
  */
 @Singleton
-public final class StorageService extends AbstractService implements Runnable {
+public final class StorageService extends AbstractExecutionThreadService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
   private final SegmentManager segmentManager;
   private final StorageCommandDispatcher commandDispatcher;
-  private volatile boolean isRunning = true;
 
   @Inject
   public StorageService(@StorageExecutorService ListeningExecutorService executorService,
@@ -44,22 +43,24 @@ public final class StorageService extends AbstractService implements Runnable {
   }
 
   @Override
-  public void run() {
-    // TODO: bound executor task acceptance
-    while (isRunning) {
-      try {
-        DispatcherSubmission<StorageCommand, StorageResponse> submission =
-            commandDispatcher.poll(100, TimeUnit.MILLISECONDS);
-        if (submission != null) {
-          processSubmission(submission);
-        }
-      } catch (InterruptedException e) {
-        logger.atWarning().withCause(e).log("Interrupted while polling dispatcher");
+  protected void startUp() throws Exception {
+    segmentManager.initialize();
+    logger.atInfo().log("StorageService started");
+  }
+
+  @Override
+  public void run() throws Exception {
+    while (isRunning()) {
+      DispatcherSubmission<StorageCommand, StorageResponse> submission =
+          commandDispatcher.poll(100, TimeUnit.MILLISECONDS);
+      if (submission != null) {
+        processSubmission(submission);
       }
     }
   }
 
   private void processSubmission(DispatcherSubmission<StorageCommand, StorageResponse> submission) {
+    // TODO: bound executor task acceptance
     StorageCommand command = submission.command();
     SettableFuture<StorageResponse> response = submission.responseFuture();
     switch (command.type()) {
@@ -115,74 +116,13 @@ public final class StorageService extends AbstractService implements Runnable {
     return Futures.submit(readTask, executorService);
   }
 
+  @SuppressWarnings("UnstableApiUsage")
   @Override
-  protected void doStart() {
-    ListenableFuture<Void> segmentManagerFuture =
-        Futures.submit(() -> {
-          segmentManager.initialize();
-          return null;
-        }, executorService);
-    Runnable storageService = this;
-    Futures.addCallback(segmentManagerFuture, new FutureCallback<>() {
-      @Override
-      public void onSuccess(Void result) {
-        Futures.submit(storageService, executorService);
-        notifyStarted();
-      }
-
-      @Override
-      public void onFailure(@Nonnull Throwable t) {
-        notifyFailed(t);
-      }
-    }, executorService);
-  }
-
-  @Override
-  protected void doStop() {
+  protected void triggerShutdown() {
     System.out.println("StorageService shutdown triggered");
-    isRunning = false;
     commandDispatcher.closeAndDrain();
-
-    InterruptedException interruptedException = null;
-    boolean shutdownBeforeTimeoutOrInterruption = false;
-
-    // Disable new submissions to service
-    executorService.shutdown();
-    try {
-      // Wait for existing tasks to complete
-      shutdownBeforeTimeoutOrInterruption =
-          executorService.awaitTermination(500L, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException e) {
-      interruptedException = e;
-    } finally {
-      // Close all Segments
-      segmentManager.close();
-    }
-
-    if (interruptedException != null) {
-      // Preserve interrupt status
-      Thread.currentThread().interrupt();
-      notifyFailed(interruptedException);
-      return;
-    }
-
-    if (!shutdownBeforeTimeoutOrInterruption) {
-      // Cancel currently executing tasks
-      executorService.shutdownNow();
-      try {
-        // Wait for tasks to respond to being canceled
-        if (!executorService.awaitTermination(500L, TimeUnit.MILLISECONDS)) {
-          notifyFailed(new TimeoutException("StorageService's ExecutorService did not shutdown"));
-        }
-      } catch (InterruptedException e) {
-        // Preserve interrupt status
-        Thread.currentThread().interrupt();
-        notifyFailed(e);
-        return;
-      }
-    }
-
-    System.out.println("StorageService stopped");
-    notifyStopped();
+    segmentManager.close();
+    shutdownAndAwaitTermination(executorService, Duration.ofSeconds(5));
+    System.out.println("StorageService completed shutdown");
   }
 }

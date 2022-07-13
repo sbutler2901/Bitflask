@@ -4,7 +4,6 @@ import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTe
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Service;
 import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
@@ -36,13 +35,15 @@ class Server {
         injector.getInstance(NetworkService.class)
     );
     ServiceManager serviceManager = new ServiceManager(services);
-    addServiceManagerListener(serviceManager);
-    registerShutdownHook(serviceManager, injector.getInstance(ExecutorService.class));
+    ExecutorService executorService = injector.getInstance(ExecutorService.class);
+    addServiceManagerListener(serviceManager, executorService);
+    registerShutdownHook(serviceManager, executorService);
     printConfigInfo();
     serviceManager.startAsync();
   }
 
-  private static void addServiceManagerListener(ServiceManager serviceManager) {
+  private static void addServiceManagerListener(ServiceManager serviceManager,
+      ExecutorService executorService) {
     serviceManager.addListener(
         new Listener() {
           public void stopped() {
@@ -56,8 +57,7 @@ class Server {
           public void failure(@Nonnull Service service) {
             System.err.printf("[%s] failed.", service.getClass());
           }
-        },
-        MoreExecutors.directExecutor());
+        }, executorService);
   }
 
   @SuppressWarnings("UnstableApiUsage")

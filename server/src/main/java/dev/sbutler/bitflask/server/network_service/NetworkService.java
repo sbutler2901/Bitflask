@@ -39,13 +39,9 @@ public final class NetworkService extends AbstractExecutionThreadService {
   }
 
   @Override
-  protected void run() {
-    try {
-      while (serverSocketChannel.isOpen()) {
-        acceptAndExecuteNextClientConnection();
-      }
-    } catch (IOException e) {
-      logger.atSevere().withCause(e).log("Failed to accept incoming client connections");
+  protected void run() throws IOException {
+    while (isRunning() && serverSocketChannel.isOpen()) {
+      acceptAndExecuteNextClientConnection();
     }
   }
 
@@ -76,12 +72,16 @@ public final class NetworkService extends AbstractExecutionThreadService {
     } catch (IOException e) {
       System.err.println("Error closing NetworkService's ServerSocketChannel" + e);
     }
+    shutdownClientHandlingServices();
+    System.out.println("NetworkService completed shutdown");
+  }
+
+  private void shutdownClientHandlingServices() {
     Iterator<ClientHandlingService> iterator = runningClientHandlingServices.iterator();
     while (iterator.hasNext()) {
       ClientHandlingService next = iterator.next();
       next.close();
       iterator.remove();
     }
-    System.out.println("NetworkService completed shutdown");
   }
 }
