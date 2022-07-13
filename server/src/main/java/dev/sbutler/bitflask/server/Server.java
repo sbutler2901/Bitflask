@@ -22,7 +22,7 @@ import javax.annotation.Nonnull;
 /**
  * Provides support for getting and setting key value pairs with persistence
  */
-public class Server {
+class Server {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 

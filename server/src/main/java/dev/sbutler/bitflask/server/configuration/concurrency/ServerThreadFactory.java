@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.server.configuration.concurrency;
 import java.util.concurrent.ThreadFactory;
 import javax.annotation.Nonnull;
 
-public class ServerThreadFactory implements ThreadFactory {
+class ServerThreadFactory implements ThreadFactory {
 
   private static final String NETWORK_SERVICE_THREAD_NAME = "server-pool-";
 

@@ -13,9 +13,4 @@ public class ServerModuleTest {
     assertEquals(9090, serverModule.provideServerPort());
   }
 
-  @Test
-  void provideServerNumThreads() {
-    assertEquals(4, serverModule.provideServerNumThreads());
-  }
-
 }

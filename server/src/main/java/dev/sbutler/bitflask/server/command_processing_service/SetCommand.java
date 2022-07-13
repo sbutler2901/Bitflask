@@ -10,7 +10,7 @@ import dev.sbutler.bitflask.storage.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.StorageResponse;
 import java.util.concurrent.ExecutorService;
 
-public class SetCommand implements ServerCommand {
+class SetCommand implements ServerCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
