@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.command_processing_service.commands;
+package dev.sbutler.bitflask.server.command_processing_service;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,7 +27,8 @@ public class CommandTypeTest {
     assertFalse(CommandType.isValidCommandArgs(CommandType.SET, null));
     assertFalse(CommandType.isValidCommandArgs(CommandType.SET, List.of()));
     assertFalse(CommandType.isValidCommandArgs(CommandType.SET, List.of("test0")));
-    assertFalse(CommandType.isValidCommandArgs(CommandType.SET, List.of("test0", "test1", "test2")));
+    assertFalse(
+        CommandType.isValidCommandArgs(CommandType.SET, List.of("test0", "test1", "test2")));
   }
 
   @Test

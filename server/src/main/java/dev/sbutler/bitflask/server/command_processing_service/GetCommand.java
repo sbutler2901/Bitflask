@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.command_processing_service.commands;
+package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;

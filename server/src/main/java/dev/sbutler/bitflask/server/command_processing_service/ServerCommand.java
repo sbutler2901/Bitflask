@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.command_processing_service.commands;
+package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
