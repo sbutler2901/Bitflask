@@ -15,6 +15,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Status;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -33,6 +34,7 @@ public final class StorageService extends AbstractExecutionThreadService {
   private final ListeningExecutorService executorService;
   private final SegmentManager segmentManager;
   private final StorageCommandDispatcher commandDispatcher;
+  private volatile boolean isRunning = true;
 
   @Inject
   public StorageService(@StorageExecutorService ListeningExecutorService executorService,
@@ -50,9 +52,9 @@ public final class StorageService extends AbstractExecutionThreadService {
 
   @Override
   public void run() throws Exception {
-    while (isRunning()) {
+    while (isRunning) {
       DispatcherSubmission<StorageCommand, StorageResponse> submission =
-          commandDispatcher.poll(100, TimeUnit.MILLISECONDS);
+          commandDispatcher.poll(1, TimeUnit.SECONDS);
       if (submission != null) {
         processSubmission(submission);
       }
@@ -71,6 +73,28 @@ public final class StorageService extends AbstractExecutionThreadService {
   }
 
   /**
+   * Reads the provided key's value from storage
+   *
+   * @param key the key used for retrieving stored data. Expected to be a non-blank string.
+   * @return the read value, if found
+   */
+  public ListenableFuture<StorageResponse> read(String key) {
+    Callable<StorageResponse> readTask = () -> {
+      try {
+        Optional<String> value = segmentManager.read(key);
+        logger.atInfo().log("Successful read of [%s]:[%s]", key, value);
+        return new StorageResponse(Status.OK, value, Optional.empty());
+      } catch (IOException e) {
+        logger.atWarning().withCause(e).log("Failed to read [%s]", key);
+        return new StorageResponse(Status.FAILED, Optional.empty(),
+            Optional.of(String.format("Failure to read [%s]", key)));
+      }
+    };
+    logger.atInfo().log("Submitting read for [%s]", key);
+    return Futures.submit(readTask, executorService);
+  }
+
+  /**
    * Writes the provided data to the current segment file
    *
    * @param key   the key for retrieving data once written. Expected to be a non-blank string.
@@ -83,7 +107,7 @@ public final class StorageService extends AbstractExecutionThreadService {
         segmentManager.write(key, value);
         logger.atInfo().log("Successful write of [%s]:[%s]", key, value);
         return new StorageResponse(Status.OK, Optional.of("Ok"), Optional.empty());
-      } catch (Exception e) {
+      } catch (IOException e) {
         logger.atWarning().withCause(e).log("Failed to write [%s]:[%s]", key, value);
         return new StorageResponse(Status.FAILED, Optional.empty(),
             Optional.of(String.format("Failure to write [%s]:[%s]", key, value)));
@@ -94,32 +118,11 @@ public final class StorageService extends AbstractExecutionThreadService {
     return Futures.submit(writeTask, executorService);
   }
 
-  /**
-   * Reads the provided key's value from storage
-   *
-   * @param key the key used for retrieving stored data. Expected to be a non-blank string.
-   * @return the read value, if found
-   */
-  public ListenableFuture<StorageResponse> read(String key) {
-    Callable<StorageResponse> readTask = () -> {
-      try {
-        Optional<String> value = segmentManager.read(key);
-        logger.atInfo().log("Successful read of [%s]:[%s]", key, value);
-        return new StorageResponse(Status.OK, value, Optional.empty());
-      } catch (Exception e) {
-        logger.atWarning().withCause(e).log("Failed to read [%s]", key);
-        return new StorageResponse(Status.FAILED, Optional.empty(),
-            Optional.of(String.format("Failure to read [%s]", key)));
-      }
-    };
-    logger.atInfo().log("Submitting read for [%s]", key);
-    return Futures.submit(readTask, executorService);
-  }
-
   @SuppressWarnings("UnstableApiUsage")
   @Override
   protected void triggerShutdown() {
     System.out.println("StorageService shutdown triggered");
+    isRunning = false;
     commandDispatcher.closeAndDrain();
     segmentManager.close();
     shutdownAndAwaitTermination(executorService, Duration.ofSeconds(5));
