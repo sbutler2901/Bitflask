@@ -57,13 +57,14 @@ class StorageServiceTest {
     doReturn(Optional.of(value)).when(segmentManager).read(anyString());
     // Act
     storage.startAsync().awaitRunning();
-    Thread.sleep(1);
+    Thread.sleep(100);
     storage.triggerShutdown();
     storage.awaitTerminated(Duration.ofSeconds(1));
     // Assert
     assertTrue(responseFuture.isDone());
     StorageResponse response = responseFuture.get();
     assertEquals(Status.OK, response.status());
+    assertTrue(response.response().isPresent());
     assertEquals(value, response.response().get());
   }
 
@@ -80,7 +81,7 @@ class StorageServiceTest {
     doThrow(IOException.class).when(segmentManager).read(anyString());
     // Act
     storage.startAsync().awaitRunning();
-    Thread.sleep(1);
+    Thread.sleep(100);
     storage.triggerShutdown();
     storage.awaitTerminated(Duration.ofSeconds(1));
     // Assert
@@ -102,7 +103,7 @@ class StorageServiceTest {
     doReturn(submission).when(storageCommandDispatcher).poll(anyLong(), any(TimeUnit.class));
     // Act
     storage.startAsync().awaitRunning();
-    Thread.sleep(1);
+    Thread.sleep(100);
     storage.triggerShutdown();
     storage.awaitTerminated(Duration.ofSeconds(1));
     // Assert
@@ -124,7 +125,7 @@ class StorageServiceTest {
     doThrow(IOException.class).when(segmentManager).write(anyString(), anyString());
     // Act
     storage.startAsync().awaitRunning();
-    Thread.sleep(1);
+    Thread.sleep(100);
     storage.triggerShutdown();
     storage.awaitTerminated(Duration.ofSeconds(1));
     // Assert
