@@ -10,6 +10,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.testing.TestingExecutors;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
@@ -18,13 +20,13 @@ import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,8 +34,9 @@ public class NetworkServiceTest {
 
   @InjectMocks
   NetworkService networkService;
-  @Mock
-  ExecutorService executorService;
+  @Spy
+  @SuppressWarnings("UnstableApiUsage")
+  ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
   @Mock
   ServerSocketChannel serverSocketChannel;
 
@@ -56,7 +59,6 @@ public class NetworkServiceTest {
       networkService.run();
       networkService.triggerShutdown();
       // Assert
-      verify(executorService, times(1)).execute(any(Runnable.class));
       verify(serverSocketChannel, times(1)).close();
       verify(clientHandlingService, times(1)).close();
     }

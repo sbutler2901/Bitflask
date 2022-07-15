@@ -11,9 +11,7 @@ import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -25,7 +23,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   private final ServerSocketChannel serverSocketChannel;
   private final ExecutorService executorService;
-  private final List<ClientHandlingService> runningClientHandlingServices = new ArrayList<>();
+  private final HashSet<ClientHandlingService> runningClientHandlingServices = new HashSet<>();
   private volatile boolean isRunning = true;
 
   @Inject
@@ -57,12 +55,17 @@ public final class NetworkService extends AbstractExecutionThreadService {
       logger.atInfo()
           .log("Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
 
-      Futures.submit(clientHandlingService, executorService);
-      // todo: cleanup closed services
-      runningClientHandlingServices.add(clientHandlingService);
+      submitClientHandlingService(clientHandlingService);
     } catch (ClosedChannelException e) {
       logger.atInfo().log("ServerSocketChannel closed");
     }
+  }
+
+  private void submitClientHandlingService(ClientHandlingService clientHandlingService) {
+    Futures.submit(clientHandlingService, executorService)
+        .addListener(() -> runningClientHandlingServices.remove(clientHandlingService),
+            executorService);
+    runningClientHandlingServices.add(clientHandlingService);
   }
 
   @SuppressWarnings("UnstableApiUsage")
@@ -75,16 +78,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
     } catch (IOException e) {
       System.err.println("Error closing NetworkService's ServerSocketChannel" + e);
     }
-    shutdownClientHandlingServices();
+    runningClientHandlingServices.forEach(ClientHandlingService::close);
     System.out.println("NetworkService completed shutdown");
-  }
-
-  private void shutdownClientHandlingServices() {
-    Iterator<ClientHandlingService> iterator = runningClientHandlingServices.iterator();
-    while (iterator.hasNext()) {
-      ClientHandlingService next = iterator.next();
-      next.close();
-      iterator.remove();
-    }
   }
 }
