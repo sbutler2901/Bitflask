@@ -51,7 +51,7 @@ public final class StorageService extends AbstractExecutionThreadService {
   }
 
   @Override
-  public void run() throws Exception {
+  protected void run() throws Exception {
     while (isRunning) {
       DispatcherSubmission<StorageCommand, StorageResponse> submission =
           commandDispatcher.poll(1, TimeUnit.SECONDS);
@@ -78,7 +78,7 @@ public final class StorageService extends AbstractExecutionThreadService {
    * @param key the key used for retrieving stored data. Expected to be a non-blank string.
    * @return the read value, if found
    */
-  public ListenableFuture<StorageResponse> read(String key) {
+  private ListenableFuture<StorageResponse> read(String key) {
     Callable<StorageResponse> readTask = () -> {
       try {
         Optional<String> value = segmentManager.read(key);
@@ -101,7 +101,7 @@ public final class StorageService extends AbstractExecutionThreadService {
    * @param value the data to be written. Expected to be a non-blank string.
    * @throws IllegalArgumentException when the provided key or value is invalid
    */
-  public ListenableFuture<StorageResponse> write(String key, String value) {
+  private ListenableFuture<StorageResponse> write(String key, String value) {
     Callable<StorageResponse> writeTask = () -> {
       try {
         segmentManager.write(key, value);
