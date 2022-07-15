@@ -58,6 +58,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
           .log("Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
 
       Futures.submit(clientHandlingService, executorService);
+      // todo: cleanup closed services
       runningClientHandlingServices.add(clientHandlingService);
     } catch (ClosedChannelException e) {
       logger.atInfo().log("ServerSocketChannel closed");

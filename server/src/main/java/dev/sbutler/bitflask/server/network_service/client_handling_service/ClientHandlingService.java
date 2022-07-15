@@ -27,12 +27,10 @@ public class ClientHandlingService implements Runnable, Closeable {
   public void run() {
     try {
       processClientMessages();
-      if (shouldContinueRunning) {
-        close();
-      }
     } catch (Exception e) {
       logger.atSevere().withCause(e)
           .log("Processing client messages failed. Terminating connection!");
+    } finally {
       close();
     }
   }
