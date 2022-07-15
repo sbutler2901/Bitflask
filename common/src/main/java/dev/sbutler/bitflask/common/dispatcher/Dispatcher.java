@@ -7,9 +7,9 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Acts as a dispatcher of commands to a consumer who will provide a response
+ * Acts as a dispatcher of objects to a consumer who will asynchronously provide a response
  *
- * @param <C> a command to be executed by a dispatcher's consumer
+ * @param <C> an object to be consumed by a consumer of the dispatcher
  * @param <R> a response to be provided by a dispatcher's consumer
  */
 public abstract class Dispatcher<C, R> {
@@ -65,6 +65,7 @@ public abstract class Dispatcher<C, R> {
       responseFuture.setException(new DispatcherClosedException());
       return responseFuture;
     }
+
     if (!submissions.offerLast(new DispatcherSubmission<>(command, responseFuture))) {
       responseFuture.setException(new IllegalStateException("Dispatcher queue is full"));
     }
