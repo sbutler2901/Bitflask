@@ -26,6 +26,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
   private final ServerSocketChannel serverSocketChannel;
   private final ExecutorService executorService;
   private final List<ClientHandlingService> runningClientHandlingServices = new ArrayList<>();
+  private volatile boolean isRunning = true;
 
   @Inject
   NetworkService(ServerSocketChannel serverSocketChannel, ExecutorService executorService) {
@@ -40,7 +41,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   @Override
   protected void run() throws IOException {
-    while (isRunning() && serverSocketChannel.isOpen()) {
+    while (isRunning && serverSocketChannel.isOpen()) {
       acceptAndExecuteNextClientConnection();
     }
   }
@@ -67,6 +68,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
   @Override
   protected void triggerShutdown() {
     System.out.println("NetworkService shutdown triggered");
+    isRunning = false;
     try {
       serverSocketChannel.close();
     } catch (IOException e) {
