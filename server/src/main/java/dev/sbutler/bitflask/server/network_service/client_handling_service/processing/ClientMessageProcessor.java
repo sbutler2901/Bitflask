@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.server.network_service.client_handling_service.processing;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
@@ -14,6 +13,7 @@ import dev.sbutler.bitflask.resp.types.RespType;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import java.io.EOFException;
 import java.io.IOException;
+import java.net.ProtocolException;
 import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
 
@@ -34,57 +34,76 @@ public class ClientMessageProcessor {
   }
 
   public boolean processNextMessage() {
+    RespType<?> rawClientMessage = readClientMessage();
+    if (rawClientMessage == null) {
+      return false;
+    }
+    ImmutableList<String> clientMessage = parseClientMessage(rawClientMessage);
+    if (clientMessage == null) {
+      return false;
+    }
+    ListenableFuture<String> responseFuture = commandProcessingService.processMessage(
+        clientMessage);
+    RespType<?> response = getServerResponseToClient(responseFuture);
     try {
-      RespType<?> clientMessage = readClientMessage();
-      ListenableFuture<String> responseFuture = commandProcessingService.processMessage(
-          parseClientMessage(clientMessage));
-      RespType<?> response = getServerResponseToClient(responseFuture);
+      if (response == null) {
+        response = new RespBulkString("Internal Error. Terminating");
+        writeResponseMessage(response);
+        return false;
+      }
       writeResponseMessage(response);
-      return true;
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log("Failed to write response to client");
+      return false;
+    }
+    return true;
+  }
+
+  private RespType<?> readClientMessage() {
+    RespType<?> readValue = null;
+    try {
+      readValue = respReader.readNextRespType();
     } catch (EOFException e) {
       logger.atWarning().log("Client disconnected.");
+    } catch (ProtocolException e) {
+      logger.atWarning().withCause(e).log("Client message format malformed");
     } catch (IOException e) {
-      // todo: test more
-      logger.atSevere().withCause(e).log("Server shutdown while reading client next message");
+      logger.atSevere().withCause(e).log("Failure reading client's message");
     }
-    return false;
+    return readValue;
   }
 
-  private RespType<?> readClientMessage() throws IOException {
-    return respReader.readNextRespType();
-  }
-
-  private RespType<?> getServerResponseToClient(ListenableFuture<String> responseFuture)
-      throws IOException {
+  private RespType<?> getServerResponseToClient(ListenableFuture<String> responseFuture) {
+    RespType<?> response = null;
     try {
-      return new RespBulkString(responseFuture.get());
+      response = new RespBulkString(responseFuture.get());
     } catch (InterruptedException e) {
-      logger.atWarning().withCause(e).log("Interrupted while reading response");
+      logger.atSevere().withCause(e).log("Interrupted while reading response");
       Thread.currentThread().interrupt();
-      return new RespBulkString("InternalServer error");
     } catch (ExecutionException e) {
-      logger.atWarning().withCause(e).log("Failed to execute command");
-      return new RespBulkString("InternalServer error");
+      logger.atSevere().withCause(e).log("Failed to execute command");
     }
+    return response;
   }
 
   private void writeResponseMessage(RespType<?> response) throws IOException {
     respWriter.writeRespType(response);
   }
 
-  private static ImmutableList<String> parseClientMessage(RespType<?> clientMessage) {
-    checkNotNull(clientMessage);
-    if (!(clientMessage instanceof RespArray clientMessageRespArray)) {
-      throw new IllegalArgumentException("Message must be a RespArray");
+  private static ImmutableList<String> parseClientMessage(RespType<?> rawClientMessage) {
+    checkNotNull(rawClientMessage);
+    ImmutableList.Builder<String> clientMessage = ImmutableList.builder();
+    if (!(rawClientMessage instanceof RespArray clientMessageRespArray)) {
+      logger.atWarning().log("The client's raw message must be a RespArray");
+      return null;
     }
-
-    return clientMessageRespArray.getValue().stream().map(arg -> {
+    for (RespType<?> arg : clientMessageRespArray.getValue()) {
       if (!(arg instanceof RespBulkString argBulkString)) {
-        throw new IllegalArgumentException(
-            "Message RespArray must consist of RespBulkString entries");
+        logger.atWarning().log("The arguments of the client's raw message must be RespBulkStrings");
+        return null;
       }
-      return argBulkString.getValue();
-    }).collect(toImmutableList());
+      clientMessage.add(argBulkString.getValue());
+    }
+    return clientMessage.build();
   }
-
 }
