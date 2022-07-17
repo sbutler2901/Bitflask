@@ -18,6 +18,11 @@ public class ConcurrencyModuleTest {
   private final ConcurrencyModule concurrencyModule = ConcurrencyModule.getInstance();
 
   @Test
+  void provideServerNumThreads() {
+    assertEquals(4, concurrencyModule.provideServerNumThreads());
+  }
+
+  @Test
   void provideThreadFactory() {
     ThreadFactory threadFactory = concurrencyModule.provideThreadFactory();
     assertInstanceOf(ServerThreadFactory.class, threadFactory);
