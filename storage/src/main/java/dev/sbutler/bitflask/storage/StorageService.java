@@ -83,6 +83,9 @@ public final class StorageService extends AbstractExecutionThreadService {
       try {
         Optional<String> value = segmentManager.read(key);
         logger.atInfo().log("Successful read of [%s]:[%s]", key, value);
+        if (value.isEmpty()) {
+          value = Optional.of(String.format("[%s] not found", key));
+        }
         return new StorageResponse(Status.OK, value, Optional.empty());
       } catch (IOException e) {
         logger.atWarning().withCause(e).log("Failed to read [%s]", key);

@@ -69,6 +69,30 @@ class StorageServiceTest {
   }
 
   @Test
+  void read_keyNotFound() throws Exception {
+    // Arrange
+    String key = "key";
+    SettableFuture<StorageResponse> responseFuture = SettableFuture.create();
+    DispatcherSubmission<StorageCommand, StorageResponse> submission =
+        new DispatcherSubmission<>(
+            new StorageCommand(Type.READ, ImmutableList.of(key)),
+            responseFuture);
+    doReturn(submission).when(storageCommandDispatcher).poll(anyLong(), any(TimeUnit.class));
+    doReturn(Optional.empty()).when(segmentManager).read(anyString());
+    // Act
+    storage.startAsync().awaitRunning();
+    Thread.sleep(100);
+    storage.triggerShutdown();
+    storage.awaitTerminated(Duration.ofSeconds(1));
+    // Assert
+    assertTrue(responseFuture.isDone());
+    StorageResponse response = responseFuture.get();
+    assertEquals(Status.OK, response.status());
+    assertTrue(response.response().isPresent());
+    assertTrue(response.response().get().toLowerCase().contains("not found"));
+  }
+
+  @Test
   void read_IOException() throws Exception {
     // Arrange
     String key = "key";
