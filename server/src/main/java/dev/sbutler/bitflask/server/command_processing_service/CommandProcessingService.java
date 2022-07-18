@@ -1,5 +1,8 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -21,6 +24,8 @@ public class CommandProcessingService {
   }
 
   public ListenableFuture<String> processMessage(ImmutableList<String> message) {
+    checkNotNull(message);
+    checkArgument(message.size() >= 1, "Message must contain at least one argument");
     CommandType commandType = CommandType.valueOf(message.get(0).trim().toUpperCase());
     ImmutableList<String> args = message.subList(1, message.size());
 
@@ -45,13 +50,10 @@ public class CommandProcessingService {
   }
 
   private static boolean isValidCommandArgs(CommandType commandType, List<String> args) {
-    if (commandType == null) {
-      return false;
-    }
     return switch (commandType) {
-      case GET -> args != null && args.size() == 1;
-      case SET -> args != null && args.size() == 2;
-      case PING -> args == null || args.size() == 0;
+      case PING -> args.size() == 0;
+      case GET -> args.size() == 1;
+      case SET -> args.size() == 2;
     };
   }
 }
