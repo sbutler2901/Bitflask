@@ -52,13 +52,14 @@ public class ClientMessageProcessorTest {
     String responseValue = "pong";
     RespType<?> expectedResponse = new RespBulkString(responseValue);
     doReturn(rawClientMessage).when(respReader).readNextRespType();
-    doReturn(immediateFuture(responseValue)).when(commandProcessingService).processMessage(any());
+    doReturn(immediateFuture(responseValue)).when(commandProcessingService)
+        .processCommandMessage(any());
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertTrue(processingSuccessful);
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessingService, times(1)).processMessage(any());
+    verify(commandProcessingService, times(1)).processCommandMessage(any());
     verify(respWriter, times(1)).writeRespType(expectedResponse);
   }
 
@@ -71,7 +72,7 @@ public class ClientMessageProcessorTest {
     // Arrange
     assertFalse(processingSuccessful);
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessingService, times(0)).processMessage(any());
+    verify(commandProcessingService, times(0)).processCommandMessage(any());
     verify(respWriter, times(0)).writeRespType(any(RespType.class));
   }
 
@@ -84,7 +85,7 @@ public class ClientMessageProcessorTest {
     // Arrange
     assertFalse(processingSuccessful);
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessingService, times(0)).processMessage(any());
+    verify(commandProcessingService, times(0)).processCommandMessage(any());
     verify(respWriter, times(0)).writeRespType(any(RespType.class));
   }
 
@@ -97,7 +98,7 @@ public class ClientMessageProcessorTest {
     // Arrange
     assertFalse(processingSuccessful);
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessingService, times(0)).processMessage(any());
+    verify(commandProcessingService, times(0)).processCommandMessage(any());
     verify(respWriter, times(0)).writeRespType(any(RespType.class));
   }
 
@@ -111,13 +112,13 @@ public class ClientMessageProcessorTest {
     doReturn(rawClientMessage).when(respReader).readNextRespType();
     ListenableFuture<String> responseFuture = mock(ListenableFuture.class);
     doThrow(InterruptedException.class).when(responseFuture).get();
-    doReturn(responseFuture).when(commandProcessingService).processMessage(any());
+    doReturn(responseFuture).when(commandProcessingService).processCommandMessage(any());
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertFalse(processingSuccessful);
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessingService, times(1)).processMessage(any());
+    verify(commandProcessingService, times(1)).processCommandMessage(any());
     verify(respWriter, times(1)).writeRespType(any(RespType.class));
   }
 
@@ -129,13 +130,13 @@ public class ClientMessageProcessorTest {
     ));
     doReturn(rawClientMessage).when(respReader).readNextRespType();
     doReturn(immediateFailedFuture(new RuntimeException("test")))
-        .when(commandProcessingService).processMessage(any());
+        .when(commandProcessingService).processCommandMessage(any());
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertFalse(processingSuccessful);
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessingService, times(1)).processMessage(any());
+    verify(commandProcessingService, times(1)).processCommandMessage(any());
     verify(respWriter, times(1)).writeRespType(any(RespType.class));
   }
 
@@ -147,14 +148,15 @@ public class ClientMessageProcessorTest {
     ));
     String responseValue = "pong";
     doReturn(rawClientMessage).when(respReader).readNextRespType();
-    doReturn(immediateFuture(responseValue)).when(commandProcessingService).processMessage(any());
+    doReturn(immediateFuture(responseValue)).when(commandProcessingService)
+        .processCommandMessage(any());
     doThrow(IOException.class).when(respWriter).writeRespType(any());
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertFalse(processingSuccessful);
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessingService, times(1)).processMessage(any());
+    verify(commandProcessingService, times(1)).processCommandMessage(any());
     verify(respWriter, times(1)).writeRespType(any());
   }
 
@@ -168,7 +170,7 @@ public class ClientMessageProcessorTest {
     // Arrange
     assertFalse(processingSuccessful);
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessingService, times(0)).processMessage(any());
+    verify(commandProcessingService, times(0)).processCommandMessage(any());
     verify(respWriter, times(0)).writeRespType(any(RespType.class));
   }
 
@@ -182,7 +184,7 @@ public class ClientMessageProcessorTest {
     // Arrange
     assertFalse(processingSuccessful);
     verify(respReader, times(1)).readNextRespType();
-    verify(commandProcessingService, times(0)).processMessage(any());
+    verify(commandProcessingService, times(0)).processCommandMessage(any());
     verify(respWriter, times(0)).writeRespType(any(RespType.class));
   }
 

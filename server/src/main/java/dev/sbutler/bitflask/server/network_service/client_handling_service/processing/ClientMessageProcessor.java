@@ -17,6 +17,10 @@ import java.net.ProtocolException;
 import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
 
+/**
+ * Handles receiving a client's incoming messages, parsing them, submitting them for processing, and
+ * responding.
+ */
 public class ClientMessageProcessor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -33,6 +37,14 @@ public class ClientMessageProcessor {
     this.respWriter = respWriter;
   }
 
+  /**
+   * Reads, processes, and responds to the client's message
+   *
+   * <p>Errors or issues that occur during processing which are unrecoverable will be handled.
+   * These cases will result in false being returned by this function.
+   *
+   * @return true if processing can continue, false otherwise
+   */
   public boolean processNextMessage() {
     RespType<?> rawClientMessage = readClientMessage();
     if (rawClientMessage == null) {
@@ -42,7 +54,7 @@ public class ClientMessageProcessor {
     if (clientMessage == null) {
       return false;
     }
-    ListenableFuture<String> responseFuture = commandProcessingService.processMessage(
+    ListenableFuture<String> responseFuture = commandProcessingService.processCommandMessage(
         clientMessage);
     RespType<?> response = getServerResponseToClient(responseFuture);
     try {

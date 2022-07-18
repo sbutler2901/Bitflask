@@ -37,7 +37,7 @@ public class CommandProcessingServiceTest {
       // Arrange
       ImmutableList<String> message = ImmutableList.of("ping");
       // Act
-      commandProcessingService.processMessage(message);
+      commandProcessingService.processCommandMessage(message);
       // Assert
       assertEquals(1, pingMockedConstruction.constructed().size());
       PingCommand pingCommand = pingMockedConstruction.constructed().get(0);
@@ -50,7 +50,8 @@ public class CommandProcessingServiceTest {
     // Arrange
     ImmutableList<String> message = ImmutableList.of("ping", "invalid");
     // Act
-    ListenableFuture<String> responseFuture = commandProcessingService.processMessage(message);
+    ListenableFuture<String> responseFuture = commandProcessingService.processCommandMessage(
+        message);
     // Assert
     assertTrue(responseFuture.isDone());
     try {
@@ -70,7 +71,7 @@ public class CommandProcessingServiceTest {
       // Arrange
       ImmutableList<String> message = ImmutableList.of("get", "key");
       // Act
-      commandProcessingService.processMessage(message);
+      commandProcessingService.processCommandMessage(message);
       // Assert
       assertEquals(1, getMockedConstruction.constructed().size());
       GetCommand getCommand = getMockedConstruction.constructed().get(0);
@@ -83,7 +84,8 @@ public class CommandProcessingServiceTest {
     // Arrange
     ImmutableList<String> message = ImmutableList.of("get", "key", "invalid");
     // Act
-    ListenableFuture<String> responseFuture = commandProcessingService.processMessage(message);
+    ListenableFuture<String> responseFuture = commandProcessingService.processCommandMessage(
+        message);
     // Assert
     assertTrue(responseFuture.isDone());
     try {
@@ -103,7 +105,7 @@ public class CommandProcessingServiceTest {
       // Arrange
       ImmutableList<String> message = ImmutableList.of("set", "key", "value");
       // Act
-      commandProcessingService.processMessage(message);
+      commandProcessingService.processCommandMessage(message);
       // Assert
       assertEquals(1, getMockedConstruction.constructed().size());
       SetCommand setCommand = getMockedConstruction.constructed().get(0);
@@ -116,7 +118,8 @@ public class CommandProcessingServiceTest {
     // Arrange
     ImmutableList<String> message = ImmutableList.of("set", "key");
     // Act
-    ListenableFuture<String> responseFuture = commandProcessingService.processMessage(message);
+    ListenableFuture<String> responseFuture = commandProcessingService.processCommandMessage(
+        message);
     // Assert
     assertTrue(responseFuture.isDone());
     try {

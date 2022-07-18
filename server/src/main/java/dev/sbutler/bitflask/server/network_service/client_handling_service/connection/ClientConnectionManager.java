@@ -7,6 +7,9 @@ import java.io.OutputStream;
 import java.nio.channels.SocketChannel;
 import javax.inject.Inject;
 
+/**
+ * Enables management of a specific client's connection resources.
+ */
 public class ClientConnectionManager implements Closeable {
 
   private final SocketChannel socketChannel;

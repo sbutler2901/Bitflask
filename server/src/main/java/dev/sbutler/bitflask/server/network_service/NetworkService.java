@@ -16,6 +16,9 @@ import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Handles accepting incoming client requests and submitting them for processing.
+ */
 @Singleton
 public final class NetworkService extends AbstractExecutionThreadService {
 

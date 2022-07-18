@@ -7,6 +7,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import javax.inject.Inject;
 
+/**
+ * Handles the processing of a specific client including messages and network resources.
+ */
 public class ClientHandlingService implements Runnable, Closeable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();

@@ -11,6 +11,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 
+/**
+ * Handles interpreting command messages, processing server specific commands or dispatching storage
+ * related commands to the StorageService for processing.
+ */
 public class CommandProcessingService {
 
   private final ExecutorService executorService;
@@ -23,11 +27,15 @@ public class CommandProcessingService {
     this.storageCommandDispatcher = storageCommandDispatcher;
   }
 
-  public ListenableFuture<String> processMessage(ImmutableList<String> message) {
-    checkNotNull(message);
-    checkArgument(message.size() >= 1, "Message must contain at least one argument");
-    CommandType commandType = CommandType.valueOf(message.get(0).trim().toUpperCase());
-    ImmutableList<String> args = message.subList(1, message.size());
+  /**
+   * Initiates processing of the provided message providing a ListenableFuture for retrieving the
+   * results.
+   */
+  public ListenableFuture<String> processCommandMessage(ImmutableList<String> commandMessage) {
+    checkNotNull(commandMessage);
+    checkArgument(commandMessage.size() >= 1, "Message must contain at least one argument");
+    CommandType commandType = CommandType.valueOf(commandMessage.get(0).trim().toUpperCase());
+    ImmutableList<String> args = commandMessage.subList(1, commandMessage.size());
 
     if (!isValidCommandArgs(commandType, args)) {
       SettableFuture<String> failureFuture = SettableFuture.create();

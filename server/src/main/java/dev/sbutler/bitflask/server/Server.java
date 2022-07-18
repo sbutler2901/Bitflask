@@ -19,7 +19,8 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nonnull;
 
 /**
- * Provides support for getting and setting key value pairs with persistence
+ * Bootstraps the server initializing all necessary services, starting them, and handling shutdown
+ * cleanup.
  */
 class Server {
 
