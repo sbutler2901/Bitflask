@@ -26,11 +26,6 @@
 
 ## TODO:
 
-### Service
-
-- Convert Storage implementation into a guava service
-- Convert Server NetworkService into a guava service
-
 ### Caching
 
 - Cache read values (write-through cache?)
@@ -50,19 +45,10 @@
     - Prevent copying during compaction
 - Tombstones for deleted segments (in case of failure)
 
-### Multithreading
-
-- Lock only portions of file while writing rather than entire file being locked
-
 ### Crash handling and recovery / Load Previous State
 
 - Store hashmap snapshots to speed startup
 - Detect partially written records
-
-### Clean shutdown
-
-- Provide clean way to shut server down even during sigkill
-    - including finishing writes, closing all sockets / threads
 
 ### Logging
 

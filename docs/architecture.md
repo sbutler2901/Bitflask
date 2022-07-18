@@ -13,7 +13,7 @@
 - One per client
 - Manages lifecycle of client connection
 - Receives and responds to client requests
-- Dispatches server commands to CommandProcessingService
+- Dispatches client messages to CommandProcessingService
 
 ### CommandProcessingService
 
@@ -27,7 +27,6 @@
 ## Dependencies / Communication
 
 - NetworkService creates ClientHandlingServices
-- ClientHandlingServices dispatch to CommandProcessingService
-    - ServerCommandDispatcher can be used to submit commands for processing
+- ClientHandlingServices submits to CommandProcessingService
 - CommandProcessingService dispatches to StorageService
     - StorageCommandDispatcher can be used to submit commands for processing
