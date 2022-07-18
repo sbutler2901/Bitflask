@@ -19,42 +19,43 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Spy;
 
-public class GetCommandTest {
+public class SetCommandTest {
 
-  GetCommand getCommand;
+  SetCommand setCommand;
   @Spy
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
   StorageCommandDispatcher storageCommandDispatcher;
   String key = "key";
+  String value = "value";
 
   @BeforeEach
   void beforeEach() {
     storageCommandDispatcher = mock(StorageCommandDispatcher.class);
-    getCommand = new GetCommand(executorService, storageCommandDispatcher, key);
+    setCommand = new SetCommand(executorService, storageCommandDispatcher, key, value);
   }
 
   @Test
   void execute() throws Exception {
     // Arrange
-    StorageResponse storageResponse = new StorageResponse(Status.OK, Optional.of("value"),
+    StorageResponse storageResponse = new StorageResponse(Status.OK, Optional.of("OK"),
         Optional.empty());
     doReturn(immediateFuture(storageResponse)).when(storageCommandDispatcher).put(any());
     // Act
-    ListenableFuture<String> executeFuture = getCommand.execute();
+    ListenableFuture<String> executeFuture = setCommand.execute();
     // Assert
     assertTrue(executeFuture.isDone());
-    assertEquals("value", executeFuture.get());
+    assertEquals("OK", executeFuture.get());
   }
 
   @Test
-  void execute_readFailed() throws Exception {
+  void execute_writeFailed() throws Exception {
     // Arrange
     StorageResponse storageResponse = new StorageResponse(Status.FAILED, Optional.empty(),
         Optional.of("error"));
     doReturn(immediateFuture(storageResponse)).when(storageCommandDispatcher).put(any());
     // Act
-    ListenableFuture<String> executeFuture = getCommand.execute();
+    ListenableFuture<String> executeFuture = setCommand.execute();
     // Assert
     assertTrue(executeFuture.isDone());
     assertTrue(executeFuture.get().toLowerCase().contains("failed"));
@@ -66,7 +67,7 @@ public class GetCommandTest {
     doReturn(immediateFailedFuture(new RuntimeException("test")))
         .when(storageCommandDispatcher).put(any());
     // Act
-    ListenableFuture<String> executeFuture = getCommand.execute();
+    ListenableFuture<String> executeFuture = setCommand.execute();
     // Assert
     assertTrue(executeFuture.isDone());
     assertTrue(executeFuture.get().toLowerCase().contains("unexpected"));
