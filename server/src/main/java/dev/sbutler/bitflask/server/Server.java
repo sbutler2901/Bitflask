@@ -96,7 +96,6 @@ class Server {
         .parse(argv);
     ServerModule.setServerConfiguration(serverConfiguration);
     StorageServiceModule.setStorageConfiguration(storageConfiguration);
-    System.out.println("test");
   }
 
   private static void printConfigInfo() {
