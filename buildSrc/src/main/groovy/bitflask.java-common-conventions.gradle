@@ -15,8 +15,8 @@ repositories {
 }
 
 compileJava {
-    sourceCompatibility = '17'
-    targetCompatibility = '17'
+    sourceCompatibility = '18'
+    targetCompatibility = '18'
 }
 
 dependencies {

@@ -80,6 +80,7 @@ class Server {
   }
 
   private static void printConfigInfo() {
+    logger.atInfo().log("Using java version [%s]", System.getProperty("java.version"));
     logger.atInfo()
         .log("Runtime processors available [%d]", Runtime.getRuntime().availableProcessors());
   }
