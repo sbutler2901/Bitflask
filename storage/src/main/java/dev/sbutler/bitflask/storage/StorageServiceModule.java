@@ -2,8 +2,9 @@ package dev.sbutler.bitflask.storage;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import dev.sbutler.bitflask.storage.configuration.ConfigurationModule;
+import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.StorageDispatcherCapacity;
+import dev.sbutler.bitflask.storage.configuration.concurrency.ConcurrencyModule;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.segment.SegmentModule;
 import javax.inject.Singleton;
@@ -12,6 +13,7 @@ public class StorageServiceModule extends AbstractModule {
 
   private static final StorageServiceModule instance = new StorageServiceModule();
 
+  private static StorageConfiguration storageConfiguration = new StorageConfiguration();
   private StorageCommandDispatcher storageCommandDispatcher = null;
 
   private StorageServiceModule() {
@@ -21,11 +23,21 @@ public class StorageServiceModule extends AbstractModule {
     return instance;
   }
 
+  public static void setStorageConfiguration(StorageConfiguration storageConfiguration) {
+    StorageServiceModule.storageConfiguration = storageConfiguration;
+  }
+
   @Override
   protected void configure() {
     super.configure();
-    install(ConfigurationModule.getInstance());
+    install(ConcurrencyModule.getInstance());
     install(new SegmentModule());
+  }
+
+  @Provides
+  @StorageDispatcherCapacity
+  int provideStorageDispatcherCapacity() {
+    return storageConfiguration.getStorageDispatcherCapacity();
   }
 
   @Provides
