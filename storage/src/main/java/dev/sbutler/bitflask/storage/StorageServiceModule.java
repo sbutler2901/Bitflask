@@ -12,8 +12,8 @@ import javax.inject.Singleton;
 public class StorageServiceModule extends AbstractModule {
 
   private static final StorageServiceModule instance = new StorageServiceModule();
-
   private static StorageConfiguration storageConfiguration = new StorageConfiguration();
+
   private StorageCommandDispatcher storageCommandDispatcher = null;
 
   private StorageServiceModule() {

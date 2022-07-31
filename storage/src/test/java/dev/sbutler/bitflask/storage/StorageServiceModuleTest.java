@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -12,7 +11,6 @@ import com.google.inject.Key;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
-import java.util.ResourceBundle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,13 +26,9 @@ public class StorageServiceModuleTest {
   @Test
   void configure() {
     Injector injector = Guice.createInjector(StorageServiceModule.getInstance());
-    try {
-      injector.getBinding(
-          Key.get(ListeningExecutorService.class).withAnnotation(StorageExecutorService.class));
-      injector.getBinding(StorageService.class);
-    } catch (Exception e) {
-      fail(e.getMessage());
-    }
+    injector.getBinding(
+        Key.get(ListeningExecutorService.class).withAnnotation(StorageExecutorService.class));
+    injector.getBinding(StorageService.class);
   }
 
   @Test
@@ -45,10 +39,8 @@ public class StorageServiceModuleTest {
   @Test
   void provideStorageDispatcherCapacity_withConfiguration() {
     // Arrange
-    ResourceBundle resourceBundle = mock(ResourceBundle.class);
-    doReturn(true).when(resourceBundle).containsKey("storageDispatcherCapacity");
-    doReturn("100").when(resourceBundle).getString("storageDispatcherCapacity");
-    StorageConfiguration storageConfiguration = new StorageConfiguration(resourceBundle);
+    StorageConfiguration storageConfiguration = mock(StorageConfiguration.class);
+    doReturn(100).when(storageConfiguration).getStorageDispatcherCapacity();
     // Act
     StorageServiceModule.setStorageConfiguration(storageConfiguration);
     // Assert

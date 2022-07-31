@@ -9,14 +9,20 @@ import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
 import java.util.concurrent.ExecutorService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ServerModuleTest {
 
+  private final ServerModule serverModule = ServerModule.getInstance();
+
+  @BeforeEach
+  void beforeEach() {
+    ServerModule.setServerConfiguration(new ServerConfiguration());
+  }
+
   @Test
   void configure() {
-    ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
-    ServerModule serverModule = new ServerModule(serverConfiguration);
     Injector injector = Guice.createInjector(serverModule);
     injector.getBinding(StorageService.class);
     injector.getBinding(NetworkService.class);
@@ -25,10 +31,18 @@ public class ServerModuleTest {
 
   @Test
   void provideServerPort() {
-    ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
-    doReturn(9090).when(serverConfiguration).getPort();
-    ServerModule serverModule = new ServerModule(serverConfiguration);
     assertEquals(9090, serverModule.provideServerPort());
+  }
+
+  @Test
+  void provideServerPort_withConfiguration() {
+    // Arrange
+    ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
+    doReturn(9091).when(serverConfiguration).getPort();
+    // Act
+    ServerModule.setServerConfiguration(serverConfiguration);
+    // Assert
+    assertEquals(9091, serverModule.provideServerPort());
   }
 
 }

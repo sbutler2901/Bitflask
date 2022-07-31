@@ -14,6 +14,8 @@ import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
+import dev.sbutler.bitflask.storage.StorageServiceModule;
+import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import java.time.Duration;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
@@ -33,8 +35,8 @@ class Server {
   }
 
   public static void main(String[] argv) {
-    ServerConfiguration serverConfiguration = getServerConfiguration(argv);
-    Injector injector = Guice.createInjector(new ServerModule(serverConfiguration));
+    initializeConfigurations(argv);
+    Injector injector = Guice.createInjector(ServerModule.getInstance());
     ImmutableSet<Service> services = ImmutableSet.of(
         injector.getInstance(StorageService.class),
         injector.getInstance(NetworkService.class)
@@ -83,14 +85,17 @@ class Server {
     }));
   }
 
-  private static ServerConfiguration getServerConfiguration(String[] argv) {
+  private static void initializeConfigurations(String[] argv) {
     ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
     ServerConfiguration serverConfiguration = new ServerConfiguration(resourceBundle);
+    StorageConfiguration storageConfiguration = new StorageConfiguration(resourceBundle);
     JCommander.newBuilder()
         .addObject(serverConfiguration)
+        .addObject(storageConfiguration)
         .build()
         .parse(argv);
-    return serverConfiguration;
+    ServerModule.setServerConfiguration(serverConfiguration);
+    StorageServiceModule.setStorageConfiguration(storageConfiguration);
   }
 
   private static void printConfigInfo() {
