@@ -33,11 +33,6 @@ public class StorageServiceModuleTest {
 
   @Test
   void provideStorageDispatcherCapacity() {
-    assertEquals(500, storageServiceModule.provideStorageDispatcherCapacity());
-  }
-
-  @Test
-  void provideStorageDispatcherCapacity_withConfiguration() {
     // Arrange
     StorageConfiguration storageConfiguration = mock(StorageConfiguration.class);
     doReturn(100).when(storageConfiguration).getStorageDispatcherCapacity();

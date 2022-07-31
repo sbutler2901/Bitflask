@@ -1,56 +1,44 @@
 package dev.sbutler.bitflask.storage.configuration;
 
 import com.beust.jcommander.Parameter;
-import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.common.configuration.validators.AbsolutePathValidator;
 import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValidator;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ResourceBundle;
 
 /**
  * Provides access to the storage engine's runtime configurations.
  *
+ * <p>It is required that this class is initialized using {@link com.beust.jcommander.JCommander}
+ * accompanied by the default provided {@link StorageConfigurationDefaultProvider}.
+ *
  * <p>The configuration parameters can be set via command line flags or a property file. The
- * priority for defining the parameters:
+ * priority order for defining the parameters is:
  * <ol>
  *   <li>command line flags</li>
  *   <li>property file</li>
  *   <li>hardcoded value</li>
  * </ol>
+ *
+ * <p>Note: an illegal parameter value will cause an
+ * {@link dev.sbutler.bitflask.common.configuration.exceptions.IllegalConfigurationException} to be
+ * thrown WITHOUT falling back to a lower priority parameter definition. For example, a negative
+ * number provided for the storage dispatcher capacity via command line will throw an exception
+ * rather than referring to the property file, or hardcoded value.
  */
 public class StorageConfiguration {
 
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+  static final String STORAGE_DISPATCHER_CAPACITY_FLAG = "--storageDispatcherCapacity";
+  static final String STORAGE_STORE_DIRECTORY_PATH_FLAG = "--storageStoreDirectoryPath";
 
-  @Parameter(names = "--storageDispatcherCapacity",
+  @Parameter(names = STORAGE_DISPATCHER_CAPACITY_FLAG,
       validateWith = PositiveIntegerValidator.class,
       description = "The maximum number of storage submissions that can be queued")
-  private int storageDispatcherCapacity = 500;
+  private int storageDispatcherCapacity;
 
-  @Parameter(names = "--storageStoreDirectory",
+  @Parameter(names = STORAGE_STORE_DIRECTORY_PATH_FLAG,
       validateWith = AbsolutePathValidator.class,
       description = "The directory path in which storage segments will be read & written. This must be an absolute path.")
-  private Path segmentDirPath = Paths.get(System.getProperty("user.home") + "/.bitflask/store/");
-
-  public StorageConfiguration() {
-  }
-
-  public StorageConfiguration(ResourceBundle resourceBundle) {
-    if (resourceBundle.containsKey("storage.dispatcherCapacity")) {
-      storageDispatcherCapacity = Integer.parseInt(
-          resourceBundle.getString("storage.dispatcherCapacity"));
-    }
-    if (resourceBundle.containsKey("storage.storeDirectory")) {
-      Path pathFromProperties = Paths.get(resourceBundle.getString("storage.storeDirectory"));
-      if (pathFromProperties.isAbsolute()) {
-        segmentDirPath = pathFromProperties;
-      } else {
-        logger.atWarning().log(
-            "The storage.storeDirectory path provided in configuration properties was not absolute. Ignoring.");
-      }
-    }
-  }
+  private Path segmentDirPath;
 
   public int getStorageDispatcherCapacity() {
     return storageDispatcherCapacity;
