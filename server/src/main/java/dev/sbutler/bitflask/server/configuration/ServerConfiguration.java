@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.server.configuration;
 
 import com.beust.jcommander.Parameter;
+import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValidator;
 import java.util.ResourceBundle;
 
 /**
@@ -17,6 +18,7 @@ import java.util.ResourceBundle;
 public class ServerConfiguration {
 
   @Parameter(names = {"-p", "--port"},
+      validateWith = PositiveIntegerValidator.class,
       description = "Port that the server listens on for incoming connections")
   private int port = 9090;
 
