@@ -2,11 +2,11 @@ package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
+import dev.sbutler.bitflask.storage.configuration.StorageStoreDirectoryPath;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -19,8 +19,6 @@ final class SegmentFactoryImpl implements SegmentFactory {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   static final String DEFAULT_SEGMENT_FILENAME = "%d_segment.txt";
-  static final String DEFAULT_SEGMENT_DIR_PATH =
-      System.getProperty("user.home") + "/.bitflask/store/";
   static final ImmutableSet<StandardOpenOption> fileChannelOptions = ImmutableSet.of(
       StandardOpenOption.CREATE,
       StandardOpenOption.READ,
@@ -29,11 +27,14 @@ final class SegmentFactoryImpl implements SegmentFactory {
   );
 
   private final SegmentFileFactory segmentFileFactory;
+  private final Path storeDirectoryPath;
   private final AtomicInteger nextSegmentKey = new AtomicInteger(0);
 
   @Inject
-  SegmentFactoryImpl(SegmentFileFactory segmentFileFactory) {
+  SegmentFactoryImpl(SegmentFileFactory segmentFileFactory,
+      @StorageStoreDirectoryPath Path storeDirectoryPath) {
     this.segmentFileFactory = segmentFileFactory;
+    this.storeDirectoryPath = storeDirectoryPath;
   }
 
   @Override
@@ -94,7 +95,7 @@ final class SegmentFactoryImpl implements SegmentFactory {
 
   private Path getNextSegmentFilePath(int segmentKey) {
     String segmentFilename = String.format(DEFAULT_SEGMENT_FILENAME, segmentKey);
-    return Paths.get(DEFAULT_SEGMENT_DIR_PATH, segmentFilename);
+    return storeDirectoryPath.resolve(segmentFilename);
   }
 
   private FileChannel getNextSegmentFileChannel(Path nextSegmentFilePath) throws IOException {
@@ -108,20 +109,14 @@ final class SegmentFactoryImpl implements SegmentFactory {
 
   @Override
   public boolean createSegmentStoreDir() throws IOException {
-    Path segmentStoreDirPath = getSegmentStoreDirPath();
-    boolean segmentStoreDirExists = Files.isDirectory(segmentStoreDirPath);
+    boolean segmentStoreDirExists = Files.isDirectory(storeDirectoryPath);
     if (!segmentStoreDirExists) {
-      Files.createDirectories(getSegmentStoreDirPath());
-      logger.atInfo().log("Created segment store directory at [%s]", segmentStoreDirPath);
+      Files.createDirectories(storeDirectoryPath);
+      logger.atInfo().log("Created segment store directory at [%s]", storeDirectoryPath);
       return true;
     }
-    logger.atInfo().log("Segment store directory already existed at [%s]", segmentStoreDirPath);
+    logger.atInfo().log("Segment store directory already existed at [%s]", storeDirectoryPath);
     return false;
-  }
-
-  @Override
-  public Path getSegmentStoreDirPath() {
-    return Paths.get(DEFAULT_SEGMENT_DIR_PATH);
   }
 
   @Override

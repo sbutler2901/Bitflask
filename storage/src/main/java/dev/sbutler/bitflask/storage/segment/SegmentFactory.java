@@ -39,13 +39,6 @@ interface SegmentFactory {
   boolean createSegmentStoreDir() throws IOException;
 
   /**
-   * Provides the Path to the directory used for storing Segments' files
-   *
-   * @return the Path to the directory used to store Segments
-   */
-  Path getSegmentStoreDirPath();
-
-  /**
    * Retrieves the key for a segment from its file path.
    *
    * @param path the path to retrieve the segment key from

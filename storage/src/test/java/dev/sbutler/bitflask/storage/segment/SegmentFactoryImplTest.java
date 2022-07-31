@@ -17,20 +17,23 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class SegmentFactoryImplTest {
 
-  @InjectMocks
   SegmentFactoryImpl segmentFactory;
-  @Mock
   SegmentFileFactory segmentFileFactory;
+
+  @BeforeEach
+  void beforeEach() {
+    segmentFileFactory = mock(SegmentFileFactory.class);
+    segmentFactory = new SegmentFactoryImpl(segmentFileFactory, Path.of("/tmp/.bitflask"));
+  }
 
   @Test
   @SuppressWarnings("unchecked")

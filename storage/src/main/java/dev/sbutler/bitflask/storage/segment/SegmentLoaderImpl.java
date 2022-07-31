@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import dev.sbutler.bitflask.storage.configuration.StorageStoreDirectoryPath;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl.ManagedSegmentsImpl;
@@ -32,13 +33,16 @@ final class SegmentLoaderImpl implements SegmentLoader {
   private final ListeningExecutorService executorService;
   private final SegmentFileFactory segmentFileFactory;
   private final SegmentFactory segmentFactory;
+  private final Path storeDirectoryPath;
 
   @Inject
   SegmentLoaderImpl(@StorageExecutorService ListeningExecutorService executorService,
-      SegmentFileFactory segmentFileFactory, SegmentFactory segmentFactory) {
+      SegmentFileFactory segmentFileFactory, SegmentFactory segmentFactory,
+      @StorageStoreDirectoryPath Path storeDirectoryPath) {
     this.executorService = executorService;
     this.segmentFileFactory = segmentFileFactory;
     this.segmentFactory = segmentFactory;
+    this.storeDirectoryPath = storeDirectoryPath;
   }
 
   @Override
@@ -87,9 +91,8 @@ final class SegmentLoaderImpl implements SegmentLoader {
    * @throws IOException if an error occurs reading the Segment directory
    */
   private ImmutableList<Path> getSegmentFilePaths() throws IOException {
-    Path segmentStoreDirPath = segmentFactory.getSegmentStoreDirPath();
     ImmutableList.Builder<Path> filePaths = new Builder<>();
-    try (DirectoryStream<Path> stream = Files.newDirectoryStream(segmentStoreDirPath)) {
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(storeDirectoryPath)) {
       for (Path entry : stream) {
         filePaths.add(entry);
       }
