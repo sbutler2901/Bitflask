@@ -11,6 +11,7 @@ import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
+import dev.sbutler.bitflask.server.configuration.ServerConfigurationDefaultProvider;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
@@ -89,9 +90,10 @@ class Server {
   private static void initializeConfigurations(String[] argv) {
     ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
 
-    ServerConfiguration serverConfiguration = new ServerConfiguration(resourceBundle);
+    ServerConfiguration serverConfiguration = new ServerConfiguration();
     JCommander.newBuilder()
         .addObject(serverConfiguration)
+        .defaultProvider(new ServerConfigurationDefaultProvider(resourceBundle))
         .build()
         .parse(argv);
     ServerModule.setServerConfiguration(serverConfiguration);

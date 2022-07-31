@@ -31,11 +31,6 @@ public class ServerModuleTest {
 
   @Test
   void provideServerPort() {
-    assertEquals(9090, serverModule.provideServerPort());
-  }
-
-  @Test
-  void provideServerPort_withConfiguration() {
     // Arrange
     ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
     doReturn(9091).when(serverConfiguration).getPort();

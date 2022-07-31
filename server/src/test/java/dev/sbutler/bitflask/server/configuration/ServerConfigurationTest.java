@@ -1,43 +1,76 @@
 package dev.sbutler.bitflask.server.configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import com.beust.jcommander.JCommander;
-import java.util.ResourceBundle;
+import dev.sbutler.bitflask.common.configuration.exceptions.IllegalConfigurationException;
 import org.junit.jupiter.api.Test;
 
 public class ServerConfigurationTest {
 
   @Test
-  void defaultConfiguration() {
-    // Act
+  void propertyFile() {
+    // Arrange
+    ServerConfigurationDefaultProvider defaultProvider = new ServerConfigurationDefaultProvider();
     ServerConfiguration serverConfiguration = new ServerConfiguration();
+    String[] argv = new String[]{};
+    // Act
+    JCommander.newBuilder()
+        .addObject(serverConfiguration)
+        .defaultProvider(defaultProvider)
+        .build()
+        .parse(argv);
     // Assert
-    assertEquals(9090, serverConfiguration.getPort());
+    assertEquals(
+        Integer.parseInt(defaultProvider.getDefaultValueFor(
+            ServerConfiguration.SERVER_PORT_FLAG_SHORT)),
+        serverConfiguration.getPort());
+    assertEquals(
+        Integer.parseInt(defaultProvider.getDefaultValueFor(
+            ServerConfiguration.SERVER_PORT_FLAG_LONG)),
+        serverConfiguration.getPort());
   }
 
   @Test
-  void propertyFile() {
+  void propertyFile_illegalConfiguration_serverPort() {
     // Arrange
-    ResourceBundle resourceBundle = mock(ResourceBundle.class);
-    doReturn(true).when(resourceBundle).containsKey("server.port");
-    doReturn("9091").when(resourceBundle).getString("server.port");
+    ServerConfigurationDefaultProvider defaultProvider = mock(
+        ServerConfigurationDefaultProvider.class);
+    doReturn("-1").when(defaultProvider)
+        .getDefaultValueFor(ServerConfiguration.SERVER_PORT_FLAG_SHORT);
+
+    ServerConfiguration serverConfiguration = new ServerConfiguration();
+    String[] argv = new String[]{};
     // Act
-    ServerConfiguration serverConfiguration = new ServerConfiguration(resourceBundle);
+    IllegalConfigurationException exception =
+        assertThrows(IllegalConfigurationException.class,
+            () -> JCommander.newBuilder()
+                .addObject(serverConfiguration)
+                .defaultProvider(defaultProvider)
+                .build()
+                .parse(argv));
     // Assert
-    assertEquals(9091, serverConfiguration.getPort());
+    assertTrue(
+        exception.getMessage().contains(ServerConfiguration.SERVER_PORT_FLAG_SHORT)
+    );
   }
 
   @Test
   void commandLineFlags() {
     // Arrange
+    ServerConfigurationDefaultProvider defaultProvider = new ServerConfigurationDefaultProvider();
     ServerConfiguration serverConfiguration = new ServerConfiguration();
-    String[] argv = new String[]{"-p", "9091"};
+    String[] argv = new String[]{
+        ServerConfiguration.SERVER_PORT_FLAG_SHORT,
+        "9091"};
     // Act
     JCommander.newBuilder()
         .addObject(serverConfiguration)
+        .defaultProvider(defaultProvider)
         .build()
         .parse(argv);
     // Assert
@@ -45,19 +78,24 @@ public class ServerConfigurationTest {
   }
 
   @Test
-  void commandLineFlags_withPropertyFile() {
+  void commandLineFlags_illegalConfiguration_serverPort() {
     // Arrange
-    ResourceBundle resourceBundle = mock(ResourceBundle.class);
-    doReturn(true).when(resourceBundle).containsKey("server.port");
-    doReturn("9091").when(resourceBundle).getString("server.port");
-    ServerConfiguration serverConfiguration = new ServerConfiguration(resourceBundle);
-    String[] argv = new String[]{"-p", "9092"};
+    ServerConfigurationDefaultProvider defaultProvider = new ServerConfigurationDefaultProvider();
+    ServerConfiguration serverConfiguration = new ServerConfiguration();
+    String[] argv = new String[]{
+        ServerConfiguration.SERVER_PORT_FLAG_SHORT,
+        "-1"};
     // Act
-    JCommander.newBuilder()
-        .addObject(serverConfiguration)
-        .build()
-        .parse(argv);
+    IllegalConfigurationException exception =
+        assertThrows(IllegalConfigurationException.class,
+            () -> JCommander.newBuilder()
+                .addObject(serverConfiguration)
+                .defaultProvider(defaultProvider)
+                .build()
+                .parse(argv));
     // Assert
-    assertEquals(9092, serverConfiguration.getPort());
+    assertTrue(
+        exception.getMessage().contains(ServerConfiguration.SERVER_PORT_FLAG_SHORT)
+    );
   }
 }
