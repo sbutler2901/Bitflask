@@ -24,8 +24,8 @@ public class ServerConfiguration {
   }
 
   public ServerConfiguration(ResourceBundle resourceBundle) {
-    if (resourceBundle.containsKey("port")) {
-      port = Integer.parseInt(resourceBundle.getString("port"));
+    if (resourceBundle.containsKey("server.port")) {
+      port = Integer.parseInt(resourceBundle.getString("server.port"));
     }
   }
 

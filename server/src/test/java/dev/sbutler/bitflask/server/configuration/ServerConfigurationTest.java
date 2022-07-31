@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.server.configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -23,8 +22,8 @@ public class ServerConfigurationTest {
   void propertyFile() {
     // Arrange
     ResourceBundle resourceBundle = mock(ResourceBundle.class);
-    doReturn(true).when(resourceBundle).containsKey("port");
-    doReturn("9091").when(resourceBundle).getString("port");
+    doReturn(true).when(resourceBundle).containsKey("server.port");
+    doReturn("9091").when(resourceBundle).getString("server.port");
     // Act
     ServerConfiguration serverConfiguration = new ServerConfiguration(resourceBundle);
     // Assert
@@ -49,8 +48,8 @@ public class ServerConfigurationTest {
   void commandLineFlags_withPropertyFile() {
     // Arrange
     ResourceBundle resourceBundle = mock(ResourceBundle.class);
-    doReturn(true).when(resourceBundle).containsKey(anyString());
-    doReturn("9091").when(resourceBundle).getString("port");
+    doReturn(true).when(resourceBundle).containsKey("server.port");
+    doReturn("9091").when(resourceBundle).getString("server.port");
     ServerConfiguration serverConfiguration = new ServerConfiguration(resourceBundle);
     String[] argv = new String[]{"-p", "9092"};
     // Act

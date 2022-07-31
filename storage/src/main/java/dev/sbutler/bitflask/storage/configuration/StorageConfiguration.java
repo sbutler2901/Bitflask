@@ -25,9 +25,9 @@ public class StorageConfiguration {
   }
 
   public StorageConfiguration(ResourceBundle resourceBundle) {
-    if (resourceBundle.containsKey("storageDispatcherCapacity")) {
+    if (resourceBundle.containsKey("storage.dispatcherCapacity")) {
       storageDispatcherCapacity = Integer.parseInt(
-          resourceBundle.getString("storageDispatcherCapacity"));
+          resourceBundle.getString("storage.dispatcherCapacity"));
     }
   }
 

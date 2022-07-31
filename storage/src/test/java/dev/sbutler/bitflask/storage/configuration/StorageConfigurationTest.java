@@ -23,8 +23,8 @@ public class StorageConfigurationTest {
   void propertyFile() {
     // Arrange
     ResourceBundle resourceBundle = mock(ResourceBundle.class);
-    doReturn(true).when(resourceBundle).containsKey("storageDispatcherCapacity");
-    doReturn("100").when(resourceBundle).getString("storageDispatcherCapacity");
+    doReturn(true).when(resourceBundle).containsKey("storage.dispatcherCapacity");
+    doReturn("100").when(resourceBundle).getString("storage.dispatcherCapacity");
     // Act
     StorageConfiguration storageConfiguration = new StorageConfiguration(resourceBundle);
     // Assert
@@ -49,8 +49,8 @@ public class StorageConfigurationTest {
   void commandLineFlags_withPropertyFile() {
     // Arrange
     ResourceBundle resourceBundle = mock(ResourceBundle.class);
-    doReturn(true).when(resourceBundle).containsKey("storageDispatcherCapacity");
-    doReturn("200").when(resourceBundle).getString("storageDispatcherCapacity");
+    doReturn(true).when(resourceBundle).containsKey("storage.dispatcherCapacity");
+    doReturn("200").when(resourceBundle).getString("storage.dispatcherCapacity");
     StorageConfiguration storageConfiguration = new StorageConfiguration(resourceBundle);
     String[] argv = new String[]{"--storageDispatcherCapacity", "100"};
     // Act
