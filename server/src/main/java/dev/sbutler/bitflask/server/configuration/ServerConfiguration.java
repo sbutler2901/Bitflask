@@ -20,6 +20,9 @@ public class ServerConfiguration {
       description = "Port that the server listens on for incoming connections")
   private int port = 9090;
 
+  public ServerConfiguration() {
+  }
+
   public ServerConfiguration(ResourceBundle resourceBundle) {
     if (resourceBundle.containsKey("port")) {
       port = Integer.parseInt(resourceBundle.getString("port"));

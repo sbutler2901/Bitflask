@@ -13,11 +13,8 @@ public class ServerConfigurationTest {
 
   @Test
   void defaultConfiguration() {
-    // Arrange
-    ResourceBundle resourceBundle = mock(ResourceBundle.class);
-    doReturn(false).when(resourceBundle).containsKey(anyString());
     // Act
-    ServerConfiguration serverConfiguration = new ServerConfiguration(resourceBundle);
+    ServerConfiguration serverConfiguration = new ServerConfiguration();
     // Assert
     assertEquals(9090, serverConfiguration.getPort());
   }
@@ -26,7 +23,7 @@ public class ServerConfigurationTest {
   void propertyFile() {
     // Arrange
     ResourceBundle resourceBundle = mock(ResourceBundle.class);
-    doReturn(true).when(resourceBundle).containsKey(anyString());
+    doReturn(true).when(resourceBundle).containsKey("port");
     doReturn("9091").when(resourceBundle).getString("port");
     // Act
     ServerConfiguration serverConfiguration = new ServerConfiguration(resourceBundle);
@@ -37,9 +34,7 @@ public class ServerConfigurationTest {
   @Test
   void commandLineFlags() {
     // Arrange
-    ResourceBundle resourceBundle = mock(ResourceBundle.class);
-    doReturn(false).when(resourceBundle).containsKey(anyString());
-    ServerConfiguration serverConfiguration = new ServerConfiguration(resourceBundle);
+    ServerConfiguration serverConfiguration = new ServerConfiguration();
     String[] argv = new String[]{"-p", "9091"};
     // Act
     JCommander.newBuilder()
