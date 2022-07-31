@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.server;
 
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 
+import com.beust.jcommander.JCommander;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.Service;
@@ -9,10 +10,12 @@ import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
 import java.time.Duration;
+import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -29,8 +32,9 @@ class Server {
   private Server() {
   }
 
-  public static void main(String[] args) {
-    Injector injector = Guice.createInjector(ServerModule.getInstance());
+  public static void main(String[] argv) {
+    ServerConfiguration serverConfiguration = getServerConfiguration(argv);
+    Injector injector = Guice.createInjector(new ServerModule(serverConfiguration));
     ImmutableSet<Service> services = ImmutableSet.of(
         injector.getInstance(StorageService.class),
         injector.getInstance(NetworkService.class)
@@ -77,6 +81,16 @@ class Server {
       shutdownAndAwaitTermination(executorService, Duration.ofSeconds(5));
       System.out.println("Shutdown hook completed");
     }));
+  }
+
+  private static ServerConfiguration getServerConfiguration(String[] argv) {
+    ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
+    ServerConfiguration serverConfiguration = new ServerConfiguration(resourceBundle);
+    JCommander.newBuilder()
+        .addObject(serverConfiguration)
+        .build()
+        .parse(argv);
+    return serverConfiguration;
   }
 
   private static void printConfigInfo() {

@@ -8,13 +8,10 @@ import dev.sbutler.bitflask.storage.StorageServiceModule;
 
 public class ServerModule extends AbstractModule {
 
-  private static final ServerModule instance = new ServerModule();
+  private final ServerConfiguration serverConfiguration;
 
-  private ServerModule() {
-  }
-
-  public static ServerModule getInstance() {
-    return instance;
+  public ServerModule(ServerConfiguration serverConfiguration) {
+    this.serverConfiguration = serverConfiguration;
   }
 
   @Override
@@ -28,6 +25,6 @@ public class ServerModule extends AbstractModule {
   @Provides
   @ServerPort
   int provideServerPort() {
-    return 9090;
+    return serverConfiguration.getPort();
   }
 }
