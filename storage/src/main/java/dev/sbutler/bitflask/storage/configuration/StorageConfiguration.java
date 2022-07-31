@@ -38,14 +38,14 @@ public class StorageConfiguration {
   @Parameter(names = STORAGE_STORE_DIRECTORY_PATH_FLAG,
       validateWith = AbsolutePathValidator.class,
       description = "The directory path in which storage segments will be read & written. This must be an absolute path.")
-  private Path segmentDirPath;
+  private Path storageStoreDirectoryPath;
 
   public int getStorageDispatcherCapacity() {
     return storageDispatcherCapacity;
   }
 
-  public Path getSegmentDirPath() {
-    return segmentDirPath;
+  public Path getStorageStoreDirectoryPath() {
+    return storageStoreDirectoryPath;
   }
 
 }

@@ -35,7 +35,7 @@ public class StorageConfigurationTest {
     assertEquals(
         Path.of(defaultProvider.getDefaultValueFor(
             StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG)),
-        storageConfiguration.getSegmentDirPath());
+        storageConfiguration.getStorageStoreDirectoryPath());
   }
 
   @Test
@@ -107,7 +107,7 @@ public class StorageConfigurationTest {
         .parse(argv);
     // Assert
     assertEquals(100, storageConfiguration.getStorageDispatcherCapacity());
-    assertEquals(expectedSegmentDirPath, storageConfiguration.getSegmentDirPath());
+    assertEquals(expectedSegmentDirPath, storageConfiguration.getStorageStoreDirectoryPath());
   }
 
   @Test

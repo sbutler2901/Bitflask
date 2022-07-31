@@ -11,6 +11,7 @@ import com.google.inject.Key;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
+import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +30,18 @@ public class StorageServiceModuleTest {
     injector.getBinding(
         Key.get(ListeningExecutorService.class).withAnnotation(StorageExecutorService.class));
     injector.getBinding(StorageService.class);
+  }
+
+  @Test
+  void provideStorageStoreDirectoryPath() {
+    // Arrange
+    StorageConfiguration storageConfiguration = mock(StorageConfiguration.class);
+    Path expectedPath = Path.of("/tmp/.bitflask");
+    doReturn(expectedPath).when(storageConfiguration).getStorageStoreDirectoryPath();
+    // Act
+    StorageServiceModule.setStorageConfiguration(storageConfiguration);
+    // Assert
+    assertEquals(expectedPath, storageServiceModule.provideStorageStoreDirectoryPath());
   }
 
   @Test

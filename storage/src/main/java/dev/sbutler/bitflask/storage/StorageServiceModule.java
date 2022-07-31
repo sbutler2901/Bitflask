@@ -4,9 +4,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.StorageDispatcherCapacity;
+import dev.sbutler.bitflask.storage.configuration.StorageStoreDirectoryPath;
 import dev.sbutler.bitflask.storage.configuration.concurrency.ConcurrencyModule;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.segment.SegmentModule;
+import java.nio.file.Path;
 import javax.inject.Singleton;
 
 public class StorageServiceModule extends AbstractModule {
@@ -32,6 +34,12 @@ public class StorageServiceModule extends AbstractModule {
     super.configure();
     install(ConcurrencyModule.getInstance());
     install(new SegmentModule());
+  }
+
+  @Provides
+  @StorageStoreDirectoryPath
+  Path provideStorageStoreDirectoryPath() {
+    return storageConfiguration.getStorageStoreDirectoryPath();
   }
 
   @Provides
