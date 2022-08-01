@@ -21,6 +21,9 @@ public class StorageConfigurationDefaultProvider implements IDefaultProvider {
   static final Path DEFAULT_STORAGE_STORE_DIRECTORY_PATH = Paths.get(
       System.getProperty("user.home") + "/.bitflask/store/");
 
+  static final String STORAGE_SEGMENT_SIZE_LIMIT_PROPERTY_KEY = "storage.segmentSizeLimit";
+  static final long DEFAULT_STORAGE_SEGMENT_SIZE_LIMIT = 1048576L; // 1 MiB
+
   private final ResourceBundle resourceBundle;
 
   public StorageConfigurationDefaultProvider() {
@@ -36,6 +39,7 @@ public class StorageConfigurationDefaultProvider implements IDefaultProvider {
     return switch (optionName) {
       case StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG -> getStorageDispatcherCapacity();
       case StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG -> getStorageStoreDirectoryPath();
+      case StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG -> getStorageSegmentSizeLimit();
       default -> null;
     };
   }
@@ -55,6 +59,15 @@ public class StorageConfigurationDefaultProvider implements IDefaultProvider {
       return DEFAULT_STORAGE_STORE_DIRECTORY_PATH.toString();
     } else {
       return resourceBundle.getString(STORAGE_STORE_DIRECTORY_PATH_PROPERTY_KEY);
+    }
+  }
+
+  private String getStorageSegmentSizeLimit() {
+    if (resourceBundle == null
+        || !resourceBundle.containsKey(STORAGE_SEGMENT_SIZE_LIMIT_PROPERTY_KEY)) {
+      return String.valueOf(DEFAULT_STORAGE_SEGMENT_SIZE_LIMIT);
+    } else {
+      return resourceBundle.getString(STORAGE_SEGMENT_SIZE_LIMIT_PROPERTY_KEY);
     }
   }
 }

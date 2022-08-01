@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.storage.configuration;
 import com.beust.jcommander.Parameter;
 import dev.sbutler.bitflask.common.configuration.validators.AbsolutePathValidator;
 import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValidator;
+import dev.sbutler.bitflask.common.configuration.validators.PositiveLongValidator;
 import java.nio.file.Path;
 
 /**
@@ -29,6 +30,7 @@ public class StorageConfiguration {
 
   static final String STORAGE_DISPATCHER_CAPACITY_FLAG = "--storageDispatcherCapacity";
   static final String STORAGE_STORE_DIRECTORY_PATH_FLAG = "--storageStoreDirectoryPath";
+  static final String STORAGE_SEGMENT_SIZE_LIMIT_FLAG = "--storageSegmentSizeLimit";
 
   @Parameter(names = STORAGE_DISPATCHER_CAPACITY_FLAG,
       validateWith = PositiveIntegerValidator.class,
@@ -40,6 +42,11 @@ public class StorageConfiguration {
       description = "The directory path in which storage segments will be read & written. This must be an absolute path.")
   private Path storageStoreDirectoryPath;
 
+  @Parameter(names = STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
+      validateWith = PositiveLongValidator.class,
+      description = "The size limit of a segment before a new one will be created")
+  private long storageSegmentSizeLimit;
+
   public int getStorageDispatcherCapacity() {
     return storageDispatcherCapacity;
   }
@@ -48,4 +55,7 @@ public class StorageConfiguration {
     return storageStoreDirectoryPath;
   }
 
+  public long getStorageSegmentSizeLimit() {
+    return storageSegmentSizeLimit;
+  }
 }

@@ -36,6 +36,9 @@ public class StorageConfigurationTest {
         Path.of(defaultProvider.getDefaultValueFor(
             StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG)),
         storageConfiguration.getStorageStoreDirectoryPath());
+    assertEquals(Long.parseLong(defaultProvider.getDefaultValueFor(
+            StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG)),
+        storageConfiguration.getStorageSegmentSizeLimit());
   }
 
   @Test
@@ -47,6 +50,8 @@ public class StorageConfigurationTest {
         .getDefaultValueFor(StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG);
     doReturn("/tmp/.bitflask").when(defaultProvider)
         .getDefaultValueFor(StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG);
+    doReturn("100").when(defaultProvider)
+        .getDefaultValueFor(StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
 
     StorageConfiguration storageConfiguration = new StorageConfiguration();
     String[] argv = new String[]{};
@@ -72,6 +77,8 @@ public class StorageConfigurationTest {
         .getDefaultValueFor(StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG);
     doReturn("~/.bitflask").when(defaultProvider)
         .getDefaultValueFor(StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG);
+    doReturn("100").when(defaultProvider)
+        .getDefaultValueFor(StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
 
     StorageConfiguration storageConfiguration = new StorageConfiguration();
     String[] argv = new String[]{};
@@ -89,6 +96,34 @@ public class StorageConfigurationTest {
   }
 
   @Test
+  void propertyFile_illegalConfiguration_segmentSizeLimit() {
+    // Arrange
+    StorageConfigurationDefaultProvider defaultProvider = mock(
+        StorageConfigurationDefaultProvider.class);
+    doReturn("1").when(defaultProvider)
+        .getDefaultValueFor(StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG);
+    doReturn("/tmp/.bitflask").when(defaultProvider)
+        .getDefaultValueFor(StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG);
+    doReturn("-1").when(defaultProvider)
+        .getDefaultValueFor(StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
+
+    StorageConfiguration storageConfiguration = new StorageConfiguration();
+    String[] argv = new String[]{};
+    // Act
+    IllegalConfigurationException exception =
+        assertThrows(IllegalConfigurationException.class, () ->
+            JCommander.newBuilder()
+                .addObject(storageConfiguration)
+                .defaultProvider(defaultProvider)
+                .build()
+                .parse(argv));
+    // Assert
+    assertTrue(
+        exception.getMessage().contains(StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG));
+  }
+
+
+  @Test
   void commandLineFlags() {
     // Arrange
     StorageConfigurationDefaultProvider defaultProvider = new StorageConfigurationDefaultProvider();
@@ -98,7 +133,10 @@ public class StorageConfigurationTest {
         StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG,
         "100",
         StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG,
-        expectedSegmentDirPath.toString()};
+        expectedSegmentDirPath.toString(),
+        StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
+        "200",
+    };
     // Act
     JCommander.newBuilder()
         .addObject(storageConfiguration)
@@ -108,6 +146,7 @@ public class StorageConfigurationTest {
     // Assert
     assertEquals(100, storageConfiguration.getStorageDispatcherCapacity());
     assertEquals(expectedSegmentDirPath, storageConfiguration.getStorageStoreDirectoryPath());
+    assertEquals(200, storageConfiguration.getStorageSegmentSizeLimit());
   }
 
   @Test
@@ -119,7 +158,10 @@ public class StorageConfigurationTest {
         StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG,
         "-1",
         StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG,
-        "/random/absolute/path"};
+        "/random/absolute/path",
+        StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
+        "200",
+    };
     // Act
     IllegalConfigurationException exception =
         assertThrows(IllegalConfigurationException.class,
@@ -142,7 +184,10 @@ public class StorageConfigurationTest {
         StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG,
         "100",
         StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG,
-        "~/random/relative/path"};
+        "~/random/relative/path",
+        StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
+        "200",
+    };
     // Act
     IllegalConfigurationException exception =
         assertThrows(IllegalConfigurationException.class,
@@ -154,5 +199,31 @@ public class StorageConfigurationTest {
     // Assert
     assertTrue(
         exception.getMessage().contains(StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG));
+  }
+
+  @Test
+  void commandLineFlags_illegalConfiguration_segmentSizeLimitFlag() {
+    // Arrange
+    StorageConfigurationDefaultProvider defaultProvider = new StorageConfigurationDefaultProvider();
+    StorageConfiguration storageConfiguration = new StorageConfiguration();
+    String[] argv = new String[]{
+        StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG,
+        "100",
+        StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG,
+        "/random/absolute/path",
+        StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
+        "-1",
+    };
+    // Act
+    IllegalConfigurationException exception =
+        assertThrows(IllegalConfigurationException.class,
+            () -> JCommander.newBuilder()
+                .addObject(storageConfiguration)
+                .defaultProvider(defaultProvider)
+                .build()
+                .parse(argv));
+    // Assert
+    assertTrue(
+        exception.getMessage().contains(StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG));
   }
 }

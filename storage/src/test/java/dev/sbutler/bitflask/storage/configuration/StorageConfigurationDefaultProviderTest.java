@@ -31,6 +31,10 @@ public class StorageConfigurationDefaultProviderTest {
         String.valueOf(StorageConfigurationDefaultProvider.DEFAULT_STORAGE_STORE_DIRECTORY_PATH),
         defaultProvider.getDefaultValueFor(
             StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG));
+    assertEquals(
+        String.valueOf(StorageConfigurationDefaultProvider.DEFAULT_STORAGE_SEGMENT_SIZE_LIMIT),
+        defaultProvider.getDefaultValueFor(
+            StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG));
   }
 
   @Test
@@ -50,6 +54,12 @@ public class StorageConfigurationDefaultProviderTest {
     doReturn(expectedPath).when(resourceBundle)
         .getString(StorageConfigurationDefaultProvider.STORAGE_STORE_DIRECTORY_PATH_PROPERTY_KEY);
 
+    doReturn(true).when(resourceBundle)
+        .containsKey(StorageConfigurationDefaultProvider.STORAGE_SEGMENT_SIZE_LIMIT_PROPERTY_KEY);
+    String expectedLimit = "100";
+    doReturn(expectedLimit).when(resourceBundle)
+        .getString(StorageConfigurationDefaultProvider.STORAGE_SEGMENT_SIZE_LIMIT_PROPERTY_KEY);
+
     StorageConfigurationDefaultProvider defaultProvider = new StorageConfigurationDefaultProvider(
         resourceBundle);
     // Act / assert
@@ -61,6 +71,10 @@ public class StorageConfigurationDefaultProviderTest {
         expectedPath,
         defaultProvider.getDefaultValueFor(
             StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG));
+    assertEquals(
+        expectedLimit,
+        defaultProvider.getDefaultValueFor(
+            StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG));
   }
 
   @Test
@@ -73,6 +87,8 @@ public class StorageConfigurationDefaultProviderTest {
 
     doReturn(false).when(resourceBundle)
         .containsKey(StorageConfigurationDefaultProvider.STORAGE_STORE_DIRECTORY_PATH_PROPERTY_KEY);
+    doReturn(false).when(resourceBundle)
+        .containsKey(StorageConfigurationDefaultProvider.STORAGE_SEGMENT_SIZE_LIMIT_PROPERTY_KEY);
 
     StorageConfigurationDefaultProvider defaultProvider = new StorageConfigurationDefaultProvider(
         resourceBundle);
@@ -85,5 +101,9 @@ public class StorageConfigurationDefaultProviderTest {
         String.valueOf(StorageConfigurationDefaultProvider.DEFAULT_STORAGE_STORE_DIRECTORY_PATH),
         defaultProvider.getDefaultValueFor(
             StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG));
+    assertEquals(
+        String.valueOf(StorageConfigurationDefaultProvider.DEFAULT_STORAGE_SEGMENT_SIZE_LIMIT),
+        defaultProvider.getDefaultValueFor(
+            StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG));
   }
 }
