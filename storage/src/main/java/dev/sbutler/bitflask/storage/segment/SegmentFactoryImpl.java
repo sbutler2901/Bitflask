@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
+import dev.sbutler.bitflask.storage.configuration.StorageSegmentSizeLimit;
 import dev.sbutler.bitflask.storage.configuration.StorageStoreDirectoryPath;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -28,13 +29,16 @@ final class SegmentFactoryImpl implements SegmentFactory {
 
   private final SegmentFileFactory segmentFileFactory;
   private final Path storeDirectoryPath;
+  private final long segmentSizeLimit;
   private final AtomicInteger nextSegmentKey = new AtomicInteger(0);
 
   @Inject
   SegmentFactoryImpl(SegmentFileFactory segmentFileFactory,
-      @StorageStoreDirectoryPath Path storeDirectoryPath) {
+      @StorageStoreDirectoryPath Path storeDirectoryPath,
+      @StorageSegmentSizeLimit long segmentSizeLimit) {
     this.segmentFileFactory = segmentFileFactory;
     this.storeDirectoryPath = storeDirectoryPath;
+    this.segmentSizeLimit = segmentSizeLimit;
   }
 
   @Override
@@ -50,7 +54,7 @@ final class SegmentFactoryImpl implements SegmentFactory {
         currentFileWriteOffset);
 
     Segment newSegment = new SegmentImpl(segmentFile, keyedEntryFileOffsetMap,
-        currentFileWriteOffset);
+        currentFileWriteOffset, segmentSizeLimit);
     logger.atInfo().log("Created new segment with fileKey [%s]", newSegment.getSegmentFileKey());
     return newSegment;
   }

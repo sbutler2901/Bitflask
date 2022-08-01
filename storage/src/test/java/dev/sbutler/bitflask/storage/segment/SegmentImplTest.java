@@ -24,10 +24,10 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -35,14 +35,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class SegmentImplTest {
 
-  @InjectMocks
   SegmentImpl segment;
   @Mock
   SegmentFile segmentFile;
   @Mock
   ConcurrentMap<String, Long> keyedEntryFileOffsetMap;
-  @Mock
   AtomicLong currentFileWriteOffset = new AtomicLong();
+  Long segmentSizeLimit = 100L;
+
+  @BeforeEach
+  void beforeEach() {
+    segment = new SegmentImpl(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset,
+        segmentSizeLimit);
+  }
 
   @Test
   void write() throws Exception {
@@ -112,7 +117,7 @@ public class SegmentImplTest {
   @Test
   void read_exception() throws Exception {
     // Arrange
-    String key = "key", value = "value", combined = key + value;
+    String key = "key";
     doReturn(true).when(segmentFile).isOpen();
     doReturn(true).when(keyedEntryFileOffsetMap).containsKey(key);
     doReturn(0L).when(keyedEntryFileOffsetMap).get(key);
@@ -185,9 +190,11 @@ public class SegmentImplTest {
   }
 
   @Test
-  void exceedsStorageThreshold() {
+  void exceedsStorageThreshold() throws Exception {
     // Arrange
-    doReturn(1 + SegmentImpl.NEW_SEGMENT_THRESHOLD).when(currentFileWriteOffset).get();
+    segment = new SegmentImpl(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset, 1);
+    doReturn(true).when(segmentFile).isOpen();
+    segment.write("key", "value");
     // Act / Assert
     assertTrue(segment.exceedsStorageThreshold());
   }

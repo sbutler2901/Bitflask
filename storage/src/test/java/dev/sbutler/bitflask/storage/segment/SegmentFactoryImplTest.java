@@ -32,7 +32,7 @@ public class SegmentFactoryImplTest {
   @BeforeEach
   void beforeEach() {
     segmentFileFactory = mock(SegmentFileFactory.class);
-    segmentFactory = new SegmentFactoryImpl(segmentFileFactory, Path.of("/tmp/.bitflask"));
+    segmentFactory = new SegmentFactoryImpl(segmentFileFactory, Path.of("/tmp/.bitflask"), 100L);
   }
 
   @Test

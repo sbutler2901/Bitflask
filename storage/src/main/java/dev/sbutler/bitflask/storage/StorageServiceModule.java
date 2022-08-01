@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.StorageDispatcherCapacity;
+import dev.sbutler.bitflask.storage.configuration.StorageSegmentSizeLimit;
 import dev.sbutler.bitflask.storage.configuration.StorageStoreDirectoryPath;
 import dev.sbutler.bitflask.storage.configuration.concurrency.ConcurrencyModule;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
@@ -46,6 +47,12 @@ public class StorageServiceModule extends AbstractModule {
   @StorageDispatcherCapacity
   int provideStorageDispatcherCapacity() {
     return storageConfiguration.getStorageDispatcherCapacity();
+  }
+
+  @Provides
+  @StorageSegmentSizeLimit
+  long provideStorageSegmentSizeLimit() {
+    return storageConfiguration.getStorageSegmentSizeLimit();
   }
 
   @Provides

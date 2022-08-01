@@ -56,6 +56,17 @@ public class StorageServiceModuleTest {
   }
 
   @Test
+  void provideStorageSegmentSizeLimit() {
+    // Arrange
+    StorageConfiguration storageConfiguration = mock(StorageConfiguration.class);
+    doReturn(100L).when(storageConfiguration).getStorageSegmentSizeLimit();
+    // Act
+    StorageServiceModule.setStorageConfiguration(storageConfiguration);
+    // Assert
+    assertEquals(100, storageServiceModule.provideStorageSegmentSizeLimit());
+  }
+
+  @Test
   void provideStorageCommandDispatcher() {
     StorageCommandDispatcher storageCommandDispatcher = storageServiceModule.provideStorageCommandDispatcher(
         1);

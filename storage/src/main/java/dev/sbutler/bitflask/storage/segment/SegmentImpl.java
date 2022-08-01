@@ -15,19 +15,19 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 final class SegmentImpl implements Segment {
 
-  static final Long NEW_SEGMENT_THRESHOLD = 1048576L; // 1 MiB
-
   private final SegmentFile segmentFile;
   private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap;
   private final AtomicLong currentFileWriteOffset;
+  private final long segmentSizeLimit;
   private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
   private volatile boolean hasBeenCompacted = false;
 
   public SegmentImpl(SegmentFile segmentFile, ConcurrentMap<String, Long> keyedEntryFileOffsetMap,
-      AtomicLong currentFileWriteOffset) {
+      AtomicLong currentFileWriteOffset, long segmentSizeLimit) {
     this.segmentFile = segmentFile;
     this.keyedEntryFileOffsetMap = keyedEntryFileOffsetMap;
     this.currentFileWriteOffset = currentFileWriteOffset;
+    this.segmentSizeLimit = segmentSizeLimit;
   }
 
   @Override
@@ -112,7 +112,7 @@ final class SegmentImpl implements Segment {
 
   @Override
   public boolean exceedsStorageThreshold() {
-    return currentFileWriteOffset.get() > NEW_SEGMENT_THRESHOLD;
+    return currentFileWriteOffset.get() > segmentSizeLimit;
   }
 
   @Override
