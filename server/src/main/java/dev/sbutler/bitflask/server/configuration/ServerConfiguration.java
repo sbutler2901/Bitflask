@@ -7,7 +7,8 @@ import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValid
  * Provides access to the server's runtime configurations.
  *
  * <p>It is required that this class is initialized using {@link com.beust.jcommander.JCommander}
- * accompanied by the default provided {@link ServerConfigurationDefaultProvider}.
+ * accompanied by a default provider
+ * {@link dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider}.
  *
  * <p>The configuration parameters can be set via command line flags or a property file. The
  * priority order for defining the parameters is:
@@ -25,10 +26,9 @@ import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValid
  */
 public class ServerConfiguration {
 
-  static final String SERVER_PORT_FLAG_SHORT = "-p";
-  static final String SERVER_PORT_FLAG_LONG = "--port";
-
-  @Parameter(names = {SERVER_PORT_FLAG_SHORT, SERVER_PORT_FLAG_LONG},
+  @Parameter(names = {
+      ServerConfigurationConstants.SERVER_PORT_FLAG_SHORT,
+      ServerConfigurationConstants.SERVER_PORT_FLAG_LONG},
       validateWith = PositiveIntegerValidator.class,
       description = "Port that the server listens on for incoming connections")
   private int port;

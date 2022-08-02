@@ -10,7 +10,8 @@ import java.nio.file.Path;
  * Provides access to the storage engine's runtime configurations.
  *
  * <p>It is required that this class is initialized using {@link com.beust.jcommander.JCommander}
- * accompanied by the default provided {@link StorageConfigurationDefaultProvider}.
+ * accompanied by the default provider
+ * {@link dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider}.
  *
  * <p>The configuration parameters can be set via command line flags or a property file. The
  * priority order for defining the parameters is:
@@ -28,21 +29,17 @@ import java.nio.file.Path;
  */
 public class StorageConfiguration {
 
-  static final String STORAGE_DISPATCHER_CAPACITY_FLAG = "--storageDispatcherCapacity";
-  static final String STORAGE_STORE_DIRECTORY_PATH_FLAG = "--storageStoreDirectoryPath";
-  static final String STORAGE_SEGMENT_SIZE_LIMIT_FLAG = "--storageSegmentSizeLimit";
-
-  @Parameter(names = STORAGE_DISPATCHER_CAPACITY_FLAG,
+  @Parameter(names = StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG,
       validateWith = PositiveIntegerValidator.class,
       description = "The maximum number of storage submissions that can be queued")
   private int storageDispatcherCapacity;
 
-  @Parameter(names = STORAGE_STORE_DIRECTORY_PATH_FLAG,
+  @Parameter(names = StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG,
       validateWith = AbsolutePathValidator.class,
       description = "The directory path in which storage segments will be read & written. This must be an absolute path.")
   private Path storageStoreDirectoryPath;
 
-  @Parameter(names = STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
+  @Parameter(names = StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
       validateWith = PositiveLongValidator.class,
       description = "The size limit of a segment before a new one will be created")
   private long storageSegmentSizeLimit;

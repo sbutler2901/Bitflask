@@ -7,6 +7,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import com.beust.jcommander.JCommander;
+import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
 import dev.sbutler.bitflask.common.configuration.exceptions.IllegalConfigurationException;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +16,8 @@ public class ServerConfigurationTest {
   @Test
   void propertyFile() {
     // Arrange
-    ServerConfigurationDefaultProvider defaultProvider = new ServerConfigurationDefaultProvider();
+    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
+        ServerConfigurationConstants.SERVER_FLAG_TO_CONFIGURATION_MAP);
     ServerConfiguration serverConfiguration = new ServerConfiguration();
     String[] argv = new String[]{};
     // Act
@@ -27,21 +29,21 @@ public class ServerConfigurationTest {
     // Assert
     assertEquals(
         Integer.parseInt(defaultProvider.getDefaultValueFor(
-            ServerConfiguration.SERVER_PORT_FLAG_SHORT)),
+            ServerConfigurationConstants.SERVER_PORT_FLAG_SHORT)),
         serverConfiguration.getPort());
     assertEquals(
         Integer.parseInt(defaultProvider.getDefaultValueFor(
-            ServerConfiguration.SERVER_PORT_FLAG_LONG)),
+            ServerConfigurationConstants.SERVER_PORT_FLAG_LONG)),
         serverConfiguration.getPort());
   }
 
   @Test
   void propertyFile_illegalConfiguration_serverPort() {
     // Arrange
-    ServerConfigurationDefaultProvider defaultProvider = mock(
-        ServerConfigurationDefaultProvider.class);
+    ConfigurationDefaultProvider defaultProvider = mock(
+        ConfigurationDefaultProvider.class);
     doReturn("-1").when(defaultProvider)
-        .getDefaultValueFor(ServerConfiguration.SERVER_PORT_FLAG_SHORT);
+        .getDefaultValueFor(ServerConfigurationConstants.SERVER_PORT_FLAG_SHORT);
 
     ServerConfiguration serverConfiguration = new ServerConfiguration();
     String[] argv = new String[]{};
@@ -55,17 +57,18 @@ public class ServerConfigurationTest {
                 .parse(argv));
     // Assert
     assertTrue(
-        exception.getMessage().contains(ServerConfiguration.SERVER_PORT_FLAG_SHORT)
+        exception.getMessage().contains(ServerConfigurationConstants.SERVER_PORT_FLAG_SHORT)
     );
   }
 
   @Test
   void commandLineFlags() {
     // Arrange
-    ServerConfigurationDefaultProvider defaultProvider = new ServerConfigurationDefaultProvider();
+    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
+        ServerConfigurationConstants.SERVER_FLAG_TO_CONFIGURATION_MAP);
     ServerConfiguration serverConfiguration = new ServerConfiguration();
     String[] argv = new String[]{
-        ServerConfiguration.SERVER_PORT_FLAG_SHORT,
+        ServerConfigurationConstants.SERVER_PORT_FLAG_SHORT,
         "9091"};
     // Act
     JCommander.newBuilder()
@@ -80,10 +83,11 @@ public class ServerConfigurationTest {
   @Test
   void commandLineFlags_illegalConfiguration_serverPort() {
     // Arrange
-    ServerConfigurationDefaultProvider defaultProvider = new ServerConfigurationDefaultProvider();
+    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
+        ServerConfigurationConstants.SERVER_FLAG_TO_CONFIGURATION_MAP);
     ServerConfiguration serverConfiguration = new ServerConfiguration();
     String[] argv = new String[]{
-        ServerConfiguration.SERVER_PORT_FLAG_SHORT,
+        ServerConfigurationConstants.SERVER_PORT_FLAG_SHORT,
         "-1"};
     // Act
     IllegalConfigurationException exception =
@@ -95,7 +99,7 @@ public class ServerConfigurationTest {
                 .parse(argv));
     // Assert
     assertTrue(
-        exception.getMessage().contains(ServerConfiguration.SERVER_PORT_FLAG_SHORT)
+        exception.getMessage().contains(ServerConfigurationConstants.SERVER_PORT_FLAG_SHORT)
     );
   }
 }

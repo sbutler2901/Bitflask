@@ -8,6 +8,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import com.beust.jcommander.JCommander;
+import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
 import dev.sbutler.bitflask.common.configuration.exceptions.IllegalConfigurationException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,7 +19,8 @@ public class StorageConfigurationTest {
   @Test
   void propertyFile() {
     // Arrange
-    StorageConfigurationDefaultProvider defaultProvider = new StorageConfigurationDefaultProvider();
+    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
+        StorageConfigurationConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageConfiguration storageConfiguration = new StorageConfiguration();
     String[] argv = new String[]{};
     // Act
@@ -30,28 +32,28 @@ public class StorageConfigurationTest {
     // Assert
     assertEquals(
         Integer.parseInt(defaultProvider.getDefaultValueFor(
-            StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG)),
+            StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG)),
         storageConfiguration.getStorageDispatcherCapacity());
     assertEquals(
         Path.of(defaultProvider.getDefaultValueFor(
-            StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG)),
+            StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG)),
         storageConfiguration.getStorageStoreDirectoryPath());
     assertEquals(Long.parseLong(defaultProvider.getDefaultValueFor(
-            StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG)),
+            StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG)),
         storageConfiguration.getStorageSegmentSizeLimit());
   }
 
   @Test
   void propertyFile_illegalConfiguration_storageDispatcherCapacity() {
     // Arrange
-    StorageConfigurationDefaultProvider defaultProvider = mock(
-        StorageConfigurationDefaultProvider.class);
+    ConfigurationDefaultProvider defaultProvider = mock(
+        ConfigurationDefaultProvider.class);
     doReturn("-1").when(defaultProvider)
-        .getDefaultValueFor(StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG);
+        .getDefaultValueFor(StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG);
     doReturn("/tmp/.bitflask").when(defaultProvider)
-        .getDefaultValueFor(StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG);
+        .getDefaultValueFor(StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG);
     doReturn("100").when(defaultProvider)
-        .getDefaultValueFor(StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
+        .getDefaultValueFor(StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
 
     StorageConfiguration storageConfiguration = new StorageConfiguration();
     String[] argv = new String[]{};
@@ -65,20 +67,21 @@ public class StorageConfigurationTest {
                 .parse(argv));
     // Assert
     assertTrue(
-        exception.getMessage().contains(StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG));
+        exception.getMessage()
+            .contains(StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG));
   }
 
   @Test
   void propertyFile_illegalConfiguration_storeDirectoryFlag() {
     // Arrange
-    StorageConfigurationDefaultProvider defaultProvider = mock(
-        StorageConfigurationDefaultProvider.class);
+    ConfigurationDefaultProvider defaultProvider = mock(
+        ConfigurationDefaultProvider.class);
     doReturn("1").when(defaultProvider)
-        .getDefaultValueFor(StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG);
+        .getDefaultValueFor(StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG);
     doReturn("~/.bitflask").when(defaultProvider)
-        .getDefaultValueFor(StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG);
+        .getDefaultValueFor(StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG);
     doReturn("100").when(defaultProvider)
-        .getDefaultValueFor(StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
+        .getDefaultValueFor(StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
 
     StorageConfiguration storageConfiguration = new StorageConfiguration();
     String[] argv = new String[]{};
@@ -92,20 +95,21 @@ public class StorageConfigurationTest {
                 .parse(argv));
     // Assert
     assertTrue(
-        exception.getMessage().contains(StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG));
+        exception.getMessage()
+            .contains(StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG));
   }
 
   @Test
   void propertyFile_illegalConfiguration_segmentSizeLimit() {
     // Arrange
-    StorageConfigurationDefaultProvider defaultProvider = mock(
-        StorageConfigurationDefaultProvider.class);
+    ConfigurationDefaultProvider defaultProvider = mock(
+        ConfigurationDefaultProvider.class);
     doReturn("1").when(defaultProvider)
-        .getDefaultValueFor(StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG);
+        .getDefaultValueFor(StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG);
     doReturn("/tmp/.bitflask").when(defaultProvider)
-        .getDefaultValueFor(StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG);
+        .getDefaultValueFor(StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG);
     doReturn("-1").when(defaultProvider)
-        .getDefaultValueFor(StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
+        .getDefaultValueFor(StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
 
     StorageConfiguration storageConfiguration = new StorageConfiguration();
     String[] argv = new String[]{};
@@ -119,22 +123,24 @@ public class StorageConfigurationTest {
                 .parse(argv));
     // Assert
     assertTrue(
-        exception.getMessage().contains(StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG));
+        exception.getMessage()
+            .contains(StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG));
   }
 
 
   @Test
   void commandLineFlags() {
     // Arrange
-    StorageConfigurationDefaultProvider defaultProvider = new StorageConfigurationDefaultProvider();
+    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
+        StorageConfigurationConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageConfiguration storageConfiguration = new StorageConfiguration();
     Path expectedSegmentDirPath = Paths.get("/random/absolute/path");
     String[] argv = new String[]{
-        StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG,
+        StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG,
         "100",
-        StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG,
+        StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG,
         expectedSegmentDirPath.toString(),
-        StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
+        StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
         "200",
     };
     // Act
@@ -152,14 +158,15 @@ public class StorageConfigurationTest {
   @Test
   void commandLineFlags_illegalConfiguration_storageDispatcherCapacity() {
     // Arrange
-    StorageConfigurationDefaultProvider defaultProvider = new StorageConfigurationDefaultProvider();
+    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
+        StorageConfigurationConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageConfiguration storageConfiguration = new StorageConfiguration();
     String[] argv = new String[]{
-        StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG,
+        StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG,
         "-1",
-        StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG,
+        StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG,
         "/random/absolute/path",
-        StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
+        StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
         "200",
     };
     // Act
@@ -172,20 +179,22 @@ public class StorageConfigurationTest {
                 .parse(argv));
     // Assert
     assertTrue(
-        exception.getMessage().contains(StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG));
+        exception.getMessage()
+            .contains(StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG));
   }
 
   @Test
   void commandLineFlags_illegalConfiguration_storeDirectoryFlag() {
     // Arrange
-    StorageConfigurationDefaultProvider defaultProvider = new StorageConfigurationDefaultProvider();
+    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
+        StorageConfigurationConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageConfiguration storageConfiguration = new StorageConfiguration();
     String[] argv = new String[]{
-        StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG,
+        StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG,
         "100",
-        StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG,
+        StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG,
         "~/random/relative/path",
-        StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
+        StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
         "200",
     };
     // Act
@@ -198,20 +207,22 @@ public class StorageConfigurationTest {
                 .parse(argv));
     // Assert
     assertTrue(
-        exception.getMessage().contains(StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG));
+        exception.getMessage()
+            .contains(StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG));
   }
 
   @Test
   void commandLineFlags_illegalConfiguration_segmentSizeLimitFlag() {
     // Arrange
-    StorageConfigurationDefaultProvider defaultProvider = new StorageConfigurationDefaultProvider();
+    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
+        StorageConfigurationConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageConfiguration storageConfiguration = new StorageConfiguration();
     String[] argv = new String[]{
-        StorageConfiguration.STORAGE_DISPATCHER_CAPACITY_FLAG,
+        StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG,
         "100",
-        StorageConfiguration.STORAGE_STORE_DIRECTORY_PATH_FLAG,
+        StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG,
         "/random/absolute/path",
-        StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
+        StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
         "-1",
     };
     // Act
@@ -224,6 +235,7 @@ public class StorageConfigurationTest {
                 .parse(argv));
     // Assert
     assertTrue(
-        exception.getMessage().contains(StorageConfiguration.STORAGE_SEGMENT_SIZE_LIMIT_FLAG));
+        exception.getMessage()
+            .contains(StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG));
   }
 }

@@ -10,14 +10,15 @@ import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
 import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
-import dev.sbutler.bitflask.server.configuration.ServerConfigurationDefaultProvider;
+import dev.sbutler.bitflask.server.configuration.ServerConfigurationConstants;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurationDefaultProvider;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurationConstants;
 import java.time.Duration;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
@@ -91,17 +92,25 @@ class Server {
     ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
 
     ServerConfiguration serverConfiguration = new ServerConfiguration();
+    ConfigurationDefaultProvider serverConfigurationDefaultProvider =
+        new ConfigurationDefaultProvider(
+            ServerConfigurationConstants.SERVER_FLAG_TO_CONFIGURATION_MAP,
+            resourceBundle);
     JCommander.newBuilder()
         .addObject(serverConfiguration)
-        .defaultProvider(new ServerConfigurationDefaultProvider(resourceBundle))
+        .defaultProvider(serverConfigurationDefaultProvider)
         .build()
         .parse(argv);
     ServerModule.setServerConfiguration(serverConfiguration);
 
     StorageConfiguration storageConfiguration = new StorageConfiguration();
+    ConfigurationDefaultProvider storageConfigurationDefaultProvider =
+        new ConfigurationDefaultProvider(
+            StorageConfigurationConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP,
+            resourceBundle);
     JCommander.newBuilder()
         .addObject(storageConfiguration)
-        .defaultProvider(new StorageConfigurationDefaultProvider(resourceBundle))
+        .defaultProvider(storageConfigurationDefaultProvider)
         .build()
         .parse(argv);
     StorageServiceModule.setStorageConfiguration(storageConfiguration);
