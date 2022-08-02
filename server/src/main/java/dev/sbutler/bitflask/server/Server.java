@@ -38,6 +38,7 @@ class Server {
   }
 
   public static void main(String[] argv) {
+    printConfigInfo();
     initializeConfigurations(argv);
     Injector injector = Guice.createInjector(ServerModule.getInstance());
     ImmutableSet<Service> services = ImmutableSet.of(
@@ -48,7 +49,6 @@ class Server {
     ExecutorService executorService = injector.getInstance(ExecutorService.class);
     addServiceManagerListener(serviceManager, executorService);
     registerShutdownHook(serviceManager, executorService);
-    printConfigInfo();
     serviceManager.startAsync();
   }
 
@@ -114,6 +114,9 @@ class Server {
         .build()
         .parse(argv);
     StorageServiceModule.setStorageConfiguration(storageConfiguration);
+
+    logger.atInfo().log(serverConfiguration.toString());
+    logger.atInfo().log(storageConfiguration.toString());
   }
 
   private static void printConfigInfo() {

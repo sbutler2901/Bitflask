@@ -55,4 +55,13 @@ public class StorageConfiguration {
   public long getStorageSegmentSizeLimit() {
     return storageSegmentSizeLimit;
   }
+
+  @Override
+  public String toString() {
+    return "StorageConfiguration{" +
+        "storageDispatcherCapacity=" + storageDispatcherCapacity +
+        ", storageStoreDirectoryPath=" + storageStoreDirectoryPath +
+        ", storageSegmentSizeLimit=" + storageSegmentSizeLimit +
+        '}';
+  }
 }
