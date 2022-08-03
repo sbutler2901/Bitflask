@@ -6,7 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.configuration.StorageStoreDirectoryPath;
+import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerImpl.ManagedSegmentsImpl;
@@ -38,11 +38,11 @@ final class SegmentLoaderImpl implements SegmentLoader {
   @Inject
   SegmentLoaderImpl(@StorageExecutorService ListeningExecutorService executorService,
       SegmentFileFactory segmentFileFactory, SegmentFactory segmentFactory,
-      @StorageStoreDirectoryPath Path storeDirectoryPath) {
+      StorageConfiguration storageConfiguration) {
     this.executorService = executorService;
     this.segmentFileFactory = segmentFileFactory;
     this.segmentFactory = segmentFactory;
-    this.storeDirectoryPath = storeDirectoryPath;
+    this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
   }
 
   @Override

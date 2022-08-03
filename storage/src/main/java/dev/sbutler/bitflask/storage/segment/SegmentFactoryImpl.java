@@ -2,8 +2,7 @@ package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.configuration.StorageSegmentSizeLimit;
-import dev.sbutler.bitflask.storage.configuration.StorageStoreDirectoryPath;
+import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -34,11 +33,10 @@ final class SegmentFactoryImpl implements SegmentFactory {
 
   @Inject
   SegmentFactoryImpl(SegmentFileFactory segmentFileFactory,
-      @StorageStoreDirectoryPath Path storeDirectoryPath,
-      @StorageSegmentSizeLimit long segmentSizeLimit) {
+      StorageConfiguration storageConfiguration) {
     this.segmentFileFactory = segmentFileFactory;
-    this.storeDirectoryPath = storeDirectoryPath;
-    this.segmentSizeLimit = segmentSizeLimit;
+    this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
+    this.segmentSizeLimit = storageConfiguration.getStorageSegmentSizeLimit();
   }
 
   @Override

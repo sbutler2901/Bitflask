@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,11 +29,15 @@ public class SegmentFactoryImplTest {
 
   SegmentFactoryImpl segmentFactory;
   SegmentFileFactory segmentFileFactory;
+  StorageConfiguration storageConfiguration;
 
   @BeforeEach
   void beforeEach() {
     segmentFileFactory = mock(SegmentFileFactory.class);
-    segmentFactory = new SegmentFactoryImpl(segmentFileFactory, Path.of("/tmp/.bitflask"), 100L);
+    storageConfiguration = mock(StorageConfiguration.class);
+    doReturn(Path.of("/tmp/.bitflask")).when(storageConfiguration).getStorageStoreDirectoryPath();
+    doReturn(100L).when(storageConfiguration).getStorageSegmentSizeLimit();
+    segmentFactory = new SegmentFactoryImpl(segmentFileFactory, storageConfiguration);
   }
 
   @Test

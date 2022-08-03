@@ -10,11 +10,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
-import dev.sbutler.bitflask.storage.configuration.StorageSegmentSizeLimit;
-import dev.sbutler.bitflask.storage.configuration.StorageStoreDirectoryPath;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
-import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 public class SegmentModuleTest {
@@ -84,10 +81,6 @@ public class SegmentModuleTest {
     @SuppressWarnings("unchecked")
     protected void configure() {
       bind(ListeningExecutorService.class).annotatedWith(StorageExecutorService.class)
-          .toProvider(mock(Provider.class));
-      bind(Path.class).annotatedWith(StorageStoreDirectoryPath.class)
-          .toProvider(mock(Provider.class));
-      bind(Long.class).annotatedWith(StorageSegmentSizeLimit.class)
           .toProvider(mock(Provider.class));
     }
 

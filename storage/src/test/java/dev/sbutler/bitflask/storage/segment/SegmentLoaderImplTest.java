@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
+import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -56,6 +57,8 @@ class SegmentLoaderImplTest {
   SegmentFileFactory segmentFileFactory;
   @Mock
   SegmentFactory segmentFactory;
+  @Mock
+  StorageConfiguration storageConfiguration;
 
   @Test
   @SuppressWarnings("unchecked")

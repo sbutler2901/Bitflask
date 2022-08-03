@@ -3,13 +3,9 @@ package dev.sbutler.bitflask.storage;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
-import dev.sbutler.bitflask.storage.configuration.StorageDispatcherCapacity;
-import dev.sbutler.bitflask.storage.configuration.StorageSegmentSizeLimit;
-import dev.sbutler.bitflask.storage.configuration.StorageStoreDirectoryPath;
 import dev.sbutler.bitflask.storage.configuration.concurrency.ConcurrencyModule;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.segment.SegmentModule;
-import java.nio.file.Path;
 import javax.inject.Singleton;
 
 public class StorageServiceModule extends AbstractModule {
@@ -47,29 +43,12 @@ public class StorageServiceModule extends AbstractModule {
   }
 
   @Provides
-  @StorageStoreDirectoryPath
-  Path provideStorageStoreDirectoryPath() {
-    return storageConfiguration.getStorageStoreDirectoryPath();
-  }
-
-  @Provides
-  @StorageDispatcherCapacity
-  int provideStorageDispatcherCapacity() {
-    return storageConfiguration.getStorageDispatcherCapacity();
-  }
-
-  @Provides
-  @StorageSegmentSizeLimit
-  long provideStorageSegmentSizeLimit() {
-    return storageConfiguration.getStorageSegmentSizeLimit();
-  }
-
-  @Provides
   @Singleton
   StorageCommandDispatcher provideStorageCommandDispatcher(
-      @StorageDispatcherCapacity int capacity) {
+      StorageConfiguration storageConfiguration) {
     if (storageCommandDispatcher == null) {
-      storageCommandDispatcher = new StorageCommandDispatcher(capacity);
+      storageCommandDispatcher = new StorageCommandDispatcher(
+          storageConfiguration.getStorageDispatcherCapacity());
     }
     return storageCommandDispatcher;
   }
