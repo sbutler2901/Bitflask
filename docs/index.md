@@ -19,6 +19,12 @@
 - Merge multiple segments into a single, new segment
 - deleting old segments
 
+### Configuration
+
+- Server Configuration
+- Storage Configuration
+- Adjustable via cli flags & property file
+
 ### Binary serialization
 
 - length header
@@ -58,10 +64,9 @@
 
 - Integration tests
 
-### Config file
+### Configuration Additions
 
 - overwrite pre-existing segment files
-- segment threshold
 - performance testing
 - logging level
 
