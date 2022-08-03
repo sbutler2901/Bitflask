@@ -23,6 +23,10 @@ public class StorageServiceModule extends AbstractModule {
   }
 
   public static StorageServiceModule getInstance() {
+    if (storageConfiguration == null) {
+      throw new IllegalStateException(
+          "The StorageServiceModule must have the StorageConfiguration set before it can be used");
+    }
     return instance;
   }
 
@@ -35,6 +39,11 @@ public class StorageServiceModule extends AbstractModule {
     super.configure();
     install(ConcurrencyModule.getInstance());
     install(new SegmentModule());
+  }
+
+  @Provides
+  StorageConfiguration provideStorageConfiguration() {
+    return storageConfiguration;
   }
 
   @Provides
