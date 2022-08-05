@@ -14,12 +14,14 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceModule;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -38,14 +40,40 @@ public class NetworkServiceTest {
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
   @Mock
+  ServerConfiguration serverConfiguration;
+  @Mock
   ServerSocketChannel serverSocketChannel;
+
+  @BeforeEach
+  void beforeEach() {
+    doReturn(9090).when(serverConfiguration).getPort();
+  }
+
+  @Test
+  void startUp() throws Exception {
+    try (MockedStatic<ServerSocketChannel> serverSocketChannelMockedStatic =
+        mockStatic(ServerSocketChannel.class)) {
+      // Arrange
+      ServerSocketChannel serverSocketChannel = mock(ServerSocketChannel.class);
+      serverSocketChannelMockedStatic.when(ServerSocketChannel::open)
+          .thenReturn(serverSocketChannel);
+      // Act
+      networkService.startUp();
+      // Assert
+      verify(serverSocketChannel, times(1)).bind(any());
+    }
+  }
 
   @Test
   void run() throws Exception {
     try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class);
-        MockedConstruction<ClientHandlingServiceModule> moduleMockedConstruction = mockConstruction(
-            ClientHandlingServiceModule.class)) {
+        MockedStatic<ServerSocketChannel> serverSocketChannelMockedStatic =
+            mockStatic(ServerSocketChannel.class);
+        MockedConstruction<ClientHandlingServiceModule> moduleMockedConstruction =
+            mockConstruction(ClientHandlingServiceModule.class)) {
       // Arrange
+      serverSocketChannelMockedStatic.when(ServerSocketChannel::open)
+          .thenReturn(serverSocketChannel);
       when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
       SocketChannel socketChannel = mock(SocketChannel.class);
       doReturn(socketChannel).when(serverSocketChannel).accept();
@@ -66,18 +94,31 @@ public class NetworkServiceTest {
 
   @Test
   void run_ClosedChannelException() throws Exception {
-    doThrow(new ClosedChannelException()).when(serverSocketChannel).accept();
-    when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
-    networkService.run();
-    verify(executorService, times(0)).execute(any(ClientHandlingService.class));
+    try (MockedStatic<ServerSocketChannel> serverSocketChannelMockedStatic =
+        mockStatic(ServerSocketChannel.class)) {
+      // Arrange
+      serverSocketChannelMockedStatic.when(ServerSocketChannel::open)
+          .thenReturn(serverSocketChannel);
+      doThrow(new ClosedChannelException()).when(serverSocketChannel).accept();
+      when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
+      // Act
+      networkService.startUp();
+      networkService.run();
+      // Assert
+      verify(executorService, times(0)).execute(any(ClientHandlingService.class));
+    }
   }
 
   @Test
   void shutdown_IOException() throws Exception {
     try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class);
+        MockedStatic<ServerSocketChannel> serverSocketChannelMockedStatic =
+            mockStatic(ServerSocketChannel.class);
         MockedConstruction<ClientHandlingServiceModule> moduleMockedConstruction = mockConstruction(
             ClientHandlingServiceModule.class)) {
       // Arrange
+      serverSocketChannelMockedStatic.when(ServerSocketChannel::open)
+          .thenReturn(serverSocketChannel);
       when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
       SocketChannel socketChannel = mock(SocketChannel.class);
       doReturn(socketChannel).when(serverSocketChannel).accept();

@@ -3,8 +3,6 @@ package dev.sbutler.bitflask.server.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -39,15 +37,14 @@ public class ServerModuleTest {
   }
 
   @Test
-  void provideServerPort() {
+  void provideServerConfiguration() {
     // Arrange
-    ServerConfiguration serverConfiguration = mock(ServerConfiguration.class);
-    doReturn(9091).when(serverConfiguration).getPort();
-    ServerModule.setServerConfiguration(serverConfiguration);
+    ServerConfiguration expectedServerConfiguration = new ServerConfiguration();
+    ServerModule.setServerConfiguration(expectedServerConfiguration);
+    ServerModule serverModule = ServerModule.getInstance();
     // Act
-    int port = ServerModule.getInstance().provideServerPort();
+    ServerConfiguration serverConfiguration = serverModule.provideServerConfiguration();
     // Assert
-    assertEquals(9091, port);
+    assertEquals(expectedServerConfiguration, serverConfiguration);
   }
-
 }

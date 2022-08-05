@@ -5,9 +5,11 @@ import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceModule;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -24,19 +26,24 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ServerSocketChannel serverSocketChannel;
   private final ExecutorService executorService;
+  private final ServerConfiguration serverConfiguration;
+  private ServerSocketChannel serverSocketChannel;
   private final HashSet<ClientHandlingService> runningClientHandlingServices = new HashSet<>();
   private volatile boolean isRunning = true;
 
   @Inject
-  NetworkService(ServerSocketChannel serverSocketChannel, ExecutorService executorService) {
-    this.serverSocketChannel = serverSocketChannel;
+  NetworkService(ExecutorService executorService, ServerConfiguration serverConfiguration) {
     this.executorService = executorService;
+    this.serverConfiguration = serverConfiguration;
   }
 
   @Override
-  protected void startUp() {
+  protected void startUp() throws IOException {
+    ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+    InetSocketAddress inetSocketAddress = new InetSocketAddress(serverConfiguration.getPort());
+    serverSocketChannel.bind(inetSocketAddress);
+    this.serverSocketChannel = serverSocketChannel;
     logger.atInfo().log("Prepared to accept incoming connections");
   }
 
