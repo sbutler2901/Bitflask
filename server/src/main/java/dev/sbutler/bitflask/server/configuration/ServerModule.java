@@ -19,6 +19,10 @@ public class ServerModule extends AbstractModule {
   }
 
   public static ServerModule getInstance() {
+    if (serverConfiguration == null) {
+      throw new IllegalStateException(
+          "The ServerModule must have the ServerConfiguration set before it can be used");
+    }
     return instance;
   }
 
@@ -28,6 +32,11 @@ public class ServerModule extends AbstractModule {
     install(ConcurrencyModule.getInstance());
     install(StorageServiceModule.getInstance());
     install(new NetworkServiceModule());
+  }
+
+  @Provides
+  ServerConfiguration provideServerConfiguration() {
+    return serverConfiguration;
   }
 
   @Provides
