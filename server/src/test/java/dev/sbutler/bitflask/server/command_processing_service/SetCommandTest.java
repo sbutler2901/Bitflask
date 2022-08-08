@@ -13,8 +13,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Status;
-import java.util.Optional;
+import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
+import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Spy;
@@ -38,8 +38,7 @@ public class SetCommandTest {
   @Test
   void execute() throws Exception {
     // Arrange
-    StorageResponse storageResponse = new StorageResponse(Status.OK, Optional.of("OK"),
-        Optional.empty());
+    StorageResponse storageResponse = new Success("OK");
     doReturn(immediateFuture(storageResponse)).when(storageCommandDispatcher).put(any());
     // Act
     ListenableFuture<String> executeFuture = setCommand.execute();
@@ -51,8 +50,7 @@ public class SetCommandTest {
   @Test
   void execute_writeFailed() throws Exception {
     // Arrange
-    StorageResponse storageResponse = new StorageResponse(Status.FAILED, Optional.empty(),
-        Optional.of("error"));
+    StorageResponse storageResponse = new Failed("error");
     doReturn(immediateFuture(storageResponse)).when(storageCommandDispatcher).put(any());
     // Act
     ListenableFuture<String> executeFuture = setCommand.execute();

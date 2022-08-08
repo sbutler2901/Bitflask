@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -18,7 +19,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommand;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommand.Type;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Status;
+import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.io.IOException;
 import java.time.Duration;
@@ -63,9 +64,9 @@ class StorageServiceTest {
     // Assert
     assertTrue(responseFuture.isDone());
     StorageResponse response = responseFuture.get();
-    assertEquals(Status.OK, response.status());
-    assertTrue(response.response().isPresent());
-    assertEquals(value, response.response().get());
+    assertInstanceOf(StorageResponse.Success.class, response);
+    StorageResponse.Success success = (Success) response;
+    assertEquals(value, success.message());
   }
 
   @Test
@@ -87,9 +88,9 @@ class StorageServiceTest {
     // Assert
     assertTrue(responseFuture.isDone());
     StorageResponse response = responseFuture.get();
-    assertEquals(Status.OK, response.status());
-    assertTrue(response.response().isPresent());
-    assertTrue(response.response().get().toLowerCase().contains("not found"));
+    assertInstanceOf(StorageResponse.Success.class, response);
+    StorageResponse.Success success = (Success) response;
+    assertTrue(success.message().toLowerCase().contains("not found"));
   }
 
   @Test
@@ -111,8 +112,7 @@ class StorageServiceTest {
     // Assert
     assertTrue(responseFuture.isDone());
     StorageResponse response = responseFuture.get();
-    assertEquals(Status.FAILED, response.status());
-    assertTrue(response.errorMessage().isPresent());
+    assertInstanceOf(StorageResponse.Failed.class, response);
   }
 
   @Test
@@ -133,7 +133,7 @@ class StorageServiceTest {
     // Assert
     assertTrue(responseFuture.isDone());
     StorageResponse response = responseFuture.get();
-    assertEquals(Status.OK, response.status());
+    assertInstanceOf(StorageResponse.Success.class, response);
   }
 
   @Test
@@ -155,8 +155,7 @@ class StorageServiceTest {
     // Assert
     assertTrue(responseFuture.isDone());
     StorageResponse response = responseFuture.get();
-    assertEquals(Status.FAILED, response.status());
-    assertTrue(response.errorMessage().isPresent());
+    assertInstanceOf(StorageResponse.Failed.class, response);
   }
 
   @Test

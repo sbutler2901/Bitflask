@@ -13,7 +13,8 @@ import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorSer
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommand;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Status;
+import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
+import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
 import java.io.IOException;
 import java.time.Duration;
@@ -86,11 +87,10 @@ public final class StorageService extends AbstractExecutionThreadService {
         if (value.isEmpty()) {
           value = Optional.of(String.format("[%s] not found", key));
         }
-        return new StorageResponse(Status.OK, value, Optional.empty());
+        return new Success(value.get());
       } catch (IOException e) {
         logger.atWarning().withCause(e).log("Failed to read [%s]", key);
-        return new StorageResponse(Status.FAILED, Optional.empty(),
-            Optional.of(String.format("Failure to read [%s]", key)));
+        return new Failed(String.format("Failure to read [%s]", key));
       }
     };
     logger.atInfo().log("Submitting read for [%s]", key);
@@ -109,11 +109,10 @@ public final class StorageService extends AbstractExecutionThreadService {
       try {
         segmentManager.write(key, value);
         logger.atInfo().log("Successful write of [%s]:[%s]", key, value);
-        return new StorageResponse(Status.OK, Optional.of("Ok"), Optional.empty());
+        return new Success("OK");
       } catch (IOException e) {
         logger.atWarning().withCause(e).log("Failed to write [%s]:[%s]", key, value);
-        return new StorageResponse(Status.FAILED, Optional.empty(),
-            Optional.of(String.format("Failure to write [%s]:[%s]", key, value)));
+        return new Failed(String.format("Failure to write [%s]:[%s]", key, value));
       }
     };
 

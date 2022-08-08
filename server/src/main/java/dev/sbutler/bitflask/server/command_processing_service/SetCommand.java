@@ -41,11 +41,11 @@ class SetCommand implements ServerCommand {
   }
 
   private String transformStorageResponse(StorageResponse storageResponse) {
-    return switch (storageResponse.status()) {
-      case OK -> storageResponse.response().orElse("OK");
-      case FAILED -> {
-        logger.atWarning().log("Storage failed writing [%s]:[%s]. %s", key, value,
-            storageResponse.errorMessage());
+    return switch (storageResponse) {
+      case StorageResponse.Success success -> success.message();
+      case StorageResponse.Failed failed -> {
+        logger.atWarning()
+            .log("Storage failed writing [%s]:[%s]. %s", key, value, failed.message());
         yield String.format("Failed to write [%s]:[%s]", key, value);
       }
     };

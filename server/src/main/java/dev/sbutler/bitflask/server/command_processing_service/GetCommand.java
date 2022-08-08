@@ -39,11 +39,10 @@ class GetCommand implements ServerCommand {
   }
 
   private String transformStorageResponse(StorageResponse storageResponse) {
-    return switch (storageResponse.status()) {
-      case OK -> storageResponse.response().orElse(String.format("[%s] not found", key));
-      case FAILED -> {
-        logger.atWarning().log("Storage failed reading [%s]: %s", key,
-            storageResponse.errorMessage());
+    return switch (storageResponse) {
+      case StorageResponse.Success success -> success.message();
+      case StorageResponse.Failed failed -> {
+        logger.atWarning().log("Storage failed reading [%s]: %s", key, failed.message());
         yield String.format("Failed to read [%s]", key);
       }
     };
