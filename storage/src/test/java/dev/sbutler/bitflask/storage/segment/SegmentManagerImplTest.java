@@ -15,6 +15,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import java.io.IOException;
@@ -165,16 +167,13 @@ public class SegmentManagerImplTest {
     Segment newWritableSegment = compactionInitiateMocks(writableSegment, frozenSegments);
     doReturn(false).when(newWritableSegment).containsKey("key");
     /// Enable compaction mocking
-    CompactionResults compactionResults = mock(CompactionResults.class);
     Segment compactedSegment = mock(Segment.class);
+    ImmutableList<Segment> providedSegments = ImmutableList.of(writableSegment,
+        frozenSegments.get(0), frozenSegments.get(1));
+    CompactionResults success = new Success(providedSegments, ImmutableList.of(compactedSegment));
     doReturn(true).when(compactedSegment).containsKey("key");
     doReturn(Optional.of("value")).when(compactedSegment).read("key");
-    doReturn(CompactionResults.Status.SUCCESS).when(compactionResults).getStatus();
-    doReturn(ImmutableList.of(compactedSegment)).when(compactionResults)
-        .getCompactedSegments();
-    doReturn(ImmutableList.of(writableSegment, frozenSegments.get(0), frozenSegments.get(1)))
-        .when(compactionResults).getSegmentsProvidedForCompaction();
-    SegmentCompactor segmentCompactor = compactorMock(compactionResults);
+    SegmentCompactor segmentCompactor = compactorMock(success);
     /// Enable Deletion mocking
     DeletionResults deletionResults = mock(DeletionResults.class);
     doReturn(DeletionResults.Status.SUCCESS).when(deletionResults).getStatus();
@@ -197,7 +196,6 @@ public class SegmentManagerImplTest {
   }
 
   @Test
-  @SuppressWarnings("ThrowableNotThrown")
   void write_compaction_failed() throws Exception {
     // Arrange
     /// Activate compaction initiation
@@ -206,11 +204,12 @@ public class SegmentManagerImplTest {
         mock(Segment.class));
     Segment newWritableSegment = compactionInitiateMocks(writableSegment, frozenSegments);
     /// Enable compaction mocking
-    CompactionResults compactionResults = mock(CompactionResults.class);
-    doReturn(CompactionResults.Status.FAILED).when(compactionResults).getStatus();
-    doReturn(new IOException("Compaction Failed")).when(compactionResults).getFailureReason();
-    doReturn(ImmutableList.of()).when(compactionResults).getFailedCompactedSegments();
-    SegmentCompactor segmentCompactor = compactorMock(compactionResults);
+    CompactionResults failed = new Failed(
+        ImmutableList.of(),
+        new IOException("Compaction Failed"),
+        ImmutableList.of()
+    );
+    SegmentCompactor segmentCompactor = compactorMock(failed);
 
     // Act
     /// Activate compaction
@@ -259,15 +258,13 @@ public class SegmentManagerImplTest {
         mock(Segment.class));
     compactionInitiateMocks(writableSegment, frozenSegments);
     /// Enable compaction mocking
-    CompactionResults compactionResults = mock(
-        CompactionResults.class);
     Segment compactedSegment = mock(Segment.class);
-    doReturn(CompactionResults.Status.SUCCESS).when(compactionResults).getStatus();
-    doReturn(ImmutableList.of(compactedSegment)).when(compactionResults)
-        .getCompactedSegments();
-    doReturn(ImmutableList.of(writableSegment, frozenSegments.get(0), frozenSegments.get(1)))
-        .when(compactionResults).getSegmentsProvidedForCompaction();
-    compactorMock(compactionResults);
+    ImmutableList<Segment> providedSegments = ImmutableList.of(writableSegment,
+        frozenSegments.get(0), frozenSegments.get(1));
+    CompactionResults success = new Success(
+        providedSegments,
+        ImmutableList.of(compactedSegment));
+    compactorMock(success);
     /// Mock Deleter for general failure
     DeletionResults generalFailureResults = mock(DeletionResults.class);
     doReturn(DeletionResults.Status.FAILED_GENERAL).when(generalFailureResults).getStatus();
@@ -290,15 +287,14 @@ public class SegmentManagerImplTest {
     ImmutableList<Segment> frozenSegments = ImmutableList.of(mock(Segment.class),
         mock(Segment.class));
     compactionInitiateMocks(writableSegment, frozenSegments);
-    CompactionResults compactionResults = mock(
-        CompactionResults.class);
     Segment compactedSegment = mock(Segment.class);
-    doReturn(CompactionResults.Status.SUCCESS).when(compactionResults).getStatus();
-    doReturn(ImmutableList.of(compactedSegment)).when(compactionResults)
-        .getCompactedSegments();
-    doReturn(ImmutableList.of(writableSegment, frozenSegments.get(0), frozenSegments.get(1)))
-        .when(compactionResults).getSegmentsProvidedForCompaction();
-    compactorMock(compactionResults);
+    ImmutableList<Segment> providedSegments = ImmutableList.of(writableSegment,
+        frozenSegments.get(0), frozenSegments.get(1));
+    CompactionResults success = new Success(
+        providedSegments,
+        ImmutableList.of(compactedSegment)
+    );
+    compactorMock(success);
   }
 
   @Test

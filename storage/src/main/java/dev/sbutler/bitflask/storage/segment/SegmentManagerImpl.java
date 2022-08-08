@@ -9,6 +9,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -152,14 +154,13 @@ final class SegmentManagerImpl implements SegmentManager {
 
     @Override
     public void onSuccess(CompactionResults result) {
-      switch (result.getStatus()) {
-        case SUCCESS -> handleCompactionSuccess(
-            result.getCompactedSegments(),
-            result.getSegmentsProvidedForCompaction()
-        );
-        case FAILED -> handleCompactionFailed(
-            result.getFailureReason(),
-            result.getFailedCompactedSegments()
+      switch (result) {
+        case Success success -> handleCompactionSuccess(
+            success.compactedSegments(),
+            success.segmentsProvidedForCompaction());
+        case Failed failed -> handleCompactionFailed(
+            failed.failureReason(),
+            failed.failedCompactionSegments()
         );
       }
     }

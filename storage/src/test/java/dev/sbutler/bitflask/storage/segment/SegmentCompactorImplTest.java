@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -19,7 +18,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Status;
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -63,15 +63,16 @@ public class SegmentCompactorImplTest {
     CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
 
     // Assert
-    assertEquals(Status.SUCCESS, compactionResults.getStatus());
-    List<Segment> compactedSegments = compactionResults.getCompactedSegments();
+    assertInstanceOf(CompactionResults.Success.class, compactionResults);
+    Success success = (Success) compactionResults;
+    List<Segment> compactedSegments = success.compactedSegments();
     assertEquals(1, compactedSegments.size());
     assertEquals(createdSegment, compactedSegments.get(0));
     verify(createdSegment, times(1)).write("0-key", "0-value");
     verify(createdSegment, times(1)).write("1-key", "1-value");
     verify(createdSegment, times(1)).write("key", "0-value");
     assertArrayEquals(List.of(headSegment, tailSegment).toArray(),
-        compactionResults.getSegmentsProvidedForCompaction().toArray());
+        success.segmentsProvidedForCompaction().toArray());
     verify(headSegment, times(1)).markCompacted();
     verify(tailSegment, times(1)).markCompacted();
   }
@@ -94,12 +95,13 @@ public class SegmentCompactorImplTest {
     CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
 
     // Assert
-    assertEquals(Status.SUCCESS, compactionResults.getStatus());
-    List<Segment> compactedSegments = compactionResults.getCompactedSegments();
+    assertInstanceOf(CompactionResults.Success.class, compactionResults);
+    Success success = (Success) compactionResults;
+    List<Segment> compactedSegments = success.compactedSegments();
     assertEquals(2, compactedSegments.size());
     verify(segmentFactory, times(2)).createSegment();
     assertArrayEquals(List.of(headSegment, tailSegment).toArray(),
-        compactionResults.getSegmentsProvidedForCompaction().toArray());
+        success.segmentsProvidedForCompaction().toArray());
   }
 
   @Test
@@ -121,14 +123,14 @@ public class SegmentCompactorImplTest {
     CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
 
     // Assert
-    assertEquals(Status.FAILED, compactionResults.getStatus());
-    assertInstanceOf(RuntimeException.class, compactionResults.getFailureReason());
+    assertInstanceOf(CompactionResults.Failed.class, compactionResults);
+    Failed failed = (Failed) compactionResults;
+    assertInstanceOf(RuntimeException.class, failed.failureReason());
     assertFalse(headSegment.hasBeenCompacted());
     assertFalse(tailSegment.hasBeenCompacted());
-    assertNull(compactionResults.getCompactedSegments());
-    assertEquals(0, compactionResults.getFailedCompactedSegments().size());
+    assertEquals(0, ((Failed) compactionResults).failedCompactionSegments().size());
     assertArrayEquals(List.of(headSegment, tailSegment).toArray(),
-        compactionResults.getSegmentsProvidedForCompaction().toArray());
+        failed.segmentsProvidedForCompaction().toArray());
   }
 
   @Test
@@ -147,15 +149,15 @@ public class SegmentCompactorImplTest {
     CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
 
     // Assert
-    assertEquals(Status.FAILED, compactionResults.getStatus());
-    assertInstanceOf(IOException.class, compactionResults.getFailureReason());
+    assertInstanceOf(CompactionResults.Failed.class, compactionResults);
+    Failed failed = (Failed) compactionResults;
+    assertInstanceOf(IOException.class, failed.failureReason());
     assertFalse(headSegment.hasBeenCompacted());
     assertFalse(tailSegment.hasBeenCompacted());
-    assertNull(compactionResults.getCompactedSegments());
-    assertEquals(1, compactionResults.getFailedCompactedSegments().size());
-    assertEquals(segment, compactionResults.getFailedCompactedSegments().get(0));
+    assertEquals(1, failed.failedCompactionSegments().size());
+    assertEquals(segment, failed.failedCompactionSegments().get(0));
     assertArrayEquals(List.of(headSegment, tailSegment).toArray(),
-        compactionResults.getSegmentsProvidedForCompaction().toArray());
+        failed.segmentsProvidedForCompaction().toArray());
   }
 
 }

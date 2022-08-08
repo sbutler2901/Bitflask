@@ -27,54 +27,22 @@ interface SegmentCompactor {
   /**
    * Used to transfer the results of a successful compaction execution.
    */
-  interface CompactionResults {
+  sealed interface CompactionResults {
 
     /**
-     * Used to indicate the status of executing the SegmentCompactor.
+     * Contains the results of a successful compaction execution
      */
-    enum Status {
-      SUCCESS,
-      FAILED
+    record Success(ImmutableList<Segment> segmentsProvidedForCompaction,
+                   ImmutableList<Segment> compactedSegments) implements CompactionResults {
+
     }
 
     /**
-     * The status of the compaction execution.
-     *
-     * @return compaction execution status
+     * Contains the results of a failed compaction execution
      */
-    Status getStatus();
+    record Failed(ImmutableList<Segment> segmentsProvidedForCompaction, Throwable failureReason,
+                  ImmutableList<Segment> failedCompactionSegments) implements CompactionResults {
 
-    /**
-     * Provides the segments that were used by the compactor during the compaction process.
-     *
-     * @return the segments provided for compaction.
-     */
-    ImmutableList<Segment> getSegmentsProvidedForCompaction();
-
-    /**
-     * Provides the compacted segments resulting from running compaction. Will be populated when the
-     * status is also set to SUCCESS.
-     *
-     * @return the compacted segments
-     */
-    ImmutableList<Segment> getCompactedSegments();
-
-    /**
-     * The reason for failure during compaction execution. Will be populated when the status is also
-     * set to FAILED.
-     *
-     * @return the reason for failure
-     */
-    Throwable getFailureReason();
-
-    /**
-     * Any segments created during execution. The segments should not be considered complete and
-     * valid for usage. Will be populated when the status is also set to FAILED.
-     *
-     * @return any segments creating during failed compaction execution
-     */
-    ImmutableList<Segment> getFailedCompactedSegments();
-
+    }
   }
-
 }

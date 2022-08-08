@@ -11,6 +11,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -107,16 +109,11 @@ final class SegmentCompactorImpl implements SegmentCompactor {
   private CompactionResults createSuccessfulCompactionResults(
       ImmutableList<Segment> compactedSegments) {
     markSegmentsCompacted();
-    return new CompactionResultsImpl(
-        segmentsToBeCompacted,
-        compactedSegments);
+    return new Success(segmentsToBeCompacted, compactedSegments);
   }
 
   private CompactionResults createFailedCompactionResults(Throwable throwable) {
-    return new CompactionResultsImpl(
-        segmentsToBeCompacted,
-        throwable,
-        failedCompactedSegments);
+    return new Failed(segmentsToBeCompacted, throwable, failedCompactedSegments);
   }
 
   private void markSegmentsCompacted() {
@@ -124,54 +121,4 @@ final class SegmentCompactorImpl implements SegmentCompactor {
       segment.markCompacted();
     }
   }
-
-  private static class CompactionResultsImpl implements CompactionResults {
-
-    private final Status status;
-    private final ImmutableList<Segment> segmentsProvidedForCompaction;
-    private ImmutableList<Segment> compactedSegments = null;
-    private Throwable failureReason = null;
-    private ImmutableList<Segment> failedCompactedSegments = null;
-
-    CompactionResultsImpl(ImmutableList<Segment> segmentsProvidedForCompaction,
-        ImmutableList<Segment> compactedSegments) {
-      this.status = Status.SUCCESS;
-      this.segmentsProvidedForCompaction = segmentsProvidedForCompaction;
-      this.compactedSegments = compactedSegments;
-    }
-
-    CompactionResultsImpl(ImmutableList<Segment> segmentsProvidedForCompaction,
-        Throwable failureReason, ImmutableList<Segment> failedCompactedSegments) {
-      this.status = Status.FAILED;
-      this.segmentsProvidedForCompaction = segmentsProvidedForCompaction;
-      this.failureReason = failureReason;
-      this.failedCompactedSegments = failedCompactedSegments;
-    }
-
-    @Override
-    public Status getStatus() {
-      return status;
-    }
-
-    @Override
-    public ImmutableList<Segment> getSegmentsProvidedForCompaction() {
-      return segmentsProvidedForCompaction;
-    }
-
-    @Override
-    public ImmutableList<Segment> getCompactedSegments() {
-      return compactedSegments;
-    }
-
-    @Override
-    public Throwable getFailureReason() {
-      return failureReason;
-    }
-
-    @Override
-    public ImmutableList<Segment> getFailedCompactedSegments() {
-      return failedCompactedSegments;
-    }
-  }
-
 }
