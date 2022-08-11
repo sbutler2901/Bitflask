@@ -8,6 +8,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Success;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -90,60 +93,13 @@ final class SegmentDeleterImpl implements SegmentDeleter {
   private DeletionResults handlePotentialSegmentFailuresOutcome(
       ImmutableMap<Segment, Throwable> potentialSegmentFailures) {
     if (potentialSegmentFailures.isEmpty()) {
-      return new DeletionResultsImpl(segmentsToBeDeleted);
+      return new Success(segmentsToBeDeleted);
     } else {
-      return new DeletionResultsImpl(segmentsToBeDeleted, potentialSegmentFailures);
+      return new FailedSegments(segmentsToBeDeleted, potentialSegmentFailures);
     }
   }
 
   private DeletionResults catchDeletionFailure(Throwable throwable) {
-    return new DeletionResultsImpl(segmentsToBeDeleted, throwable);
+    return new FailedGeneral(segmentsToBeDeleted, throwable);
   }
-
-  private static class DeletionResultsImpl implements DeletionResults {
-
-    private final Status status;
-    private final ImmutableList<Segment> segmentsProvidedForDeletion;
-    private Throwable generalFailureReason = null;
-    private ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap = null;
-
-    DeletionResultsImpl(ImmutableList<Segment> segmentsProvidedForDeletion) {
-      this.status = Status.SUCCESS;
-      this.segmentsProvidedForDeletion = segmentsProvidedForDeletion;
-    }
-
-    DeletionResultsImpl(ImmutableList<Segment> segmentsProvidedForDeletion, Throwable throwable) {
-      this.status = Status.FAILED_GENERAL;
-      this.segmentsProvidedForDeletion = segmentsProvidedForDeletion;
-      this.generalFailureReason = throwable;
-    }
-
-    DeletionResultsImpl(ImmutableList<Segment> segmentsProvidedForDeletion,
-        ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap) {
-      this.status = Status.FAILED_SEGMENTS;
-      this.segmentsProvidedForDeletion = segmentsProvidedForDeletion;
-      this.segmentsFailureReasonsMap = segmentsFailureReasonsMap;
-    }
-
-    @Override
-    public Status getStatus() {
-      return status;
-    }
-
-    @Override
-    public ImmutableList<Segment> getSegmentsProvidedForDeletion() {
-      return segmentsProvidedForDeletion;
-    }
-
-    @Override
-    public Throwable getGeneralFailureReason() {
-      return generalFailureReason;
-    }
-
-    @Override
-    public ImmutableMap<Segment, Throwable> getSegmentsFailureReasonsMap() {
-      return segmentsFailureReasonsMap;
-    }
-  }
-
 }

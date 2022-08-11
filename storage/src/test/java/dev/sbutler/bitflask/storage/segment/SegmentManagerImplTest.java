@@ -15,8 +15,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import java.io.IOException;
@@ -170,14 +168,13 @@ public class SegmentManagerImplTest {
     Segment compactedSegment = mock(Segment.class);
     ImmutableList<Segment> providedSegments = ImmutableList.of(writableSegment,
         frozenSegments.get(0), frozenSegments.get(1));
-    CompactionResults success = new Success(providedSegments, ImmutableList.of(compactedSegment));
+    CompactionResults success = new CompactionResults.Success(
+        providedSegments, ImmutableList.of(compactedSegment));
     doReturn(true).when(compactedSegment).containsKey("key");
     doReturn(Optional.of("value")).when(compactedSegment).read("key");
     SegmentCompactor segmentCompactor = compactorMock(success);
     /// Enable Deletion mocking
-    DeletionResults deletionResults = mock(DeletionResults.class);
-    doReturn(DeletionResults.Status.SUCCESS).when(deletionResults).getStatus();
-    doReturn(ImmutableList.of()).when(deletionResults).getSegmentsProvidedForDeletion();
+    DeletionResults deletionResults = new DeletionResults.Success(ImmutableList.of());
     SegmentDeleter segmentDeleter = deleterMock(deletionResults);
 
     // Act
@@ -204,7 +201,7 @@ public class SegmentManagerImplTest {
         mock(Segment.class));
     Segment newWritableSegment = compactionInitiateMocks(writableSegment, frozenSegments);
     /// Enable compaction mocking
-    CompactionResults failed = new Failed(
+    CompactionResults failed = new CompactionResults.Failed(
         ImmutableList.of(),
         new IOException("Compaction Failed"),
         ImmutableList.of()
@@ -248,7 +245,6 @@ public class SegmentManagerImplTest {
     verify(segmentDeleterFactory, times(0)).create(any());
   }
 
-  @SuppressWarnings("ThrowableNotThrown")
   @Test
   void write_deletion_failedGeneral() throws Exception {
     // Arrange
@@ -261,18 +257,16 @@ public class SegmentManagerImplTest {
     Segment compactedSegment = mock(Segment.class);
     ImmutableList<Segment> providedSegments = ImmutableList.of(writableSegment,
         frozenSegments.get(0), frozenSegments.get(1));
-    CompactionResults success = new Success(
-        providedSegments,
-        ImmutableList.of(compactedSegment));
+    CompactionResults success = new CompactionResults.Success(
+        providedSegments, ImmutableList.of(compactedSegment));
     compactorMock(success);
     /// Mock Deleter for general failure
-    DeletionResults generalFailureResults = mock(DeletionResults.class);
-    doReturn(DeletionResults.Status.FAILED_GENERAL).when(generalFailureResults).getStatus();
-    doReturn(ImmutableList.of(mock(Segment.class), mock(Segment.class)))
-        .when(generalFailureResults).getSegmentsProvidedForDeletion();
-    Throwable throwable = mock(Throwable.class);
-    doReturn("generalFailure").when(throwable).getMessage();
-    doReturn(throwable).when(generalFailureResults).getGeneralFailureReason();
+    ImmutableList<Segment> segmentsProvidedForDeletion =
+        ImmutableList.of(mock(Segment.class), mock(Segment.class));
+    Throwable failureReason = mock(Throwable.class);
+    doReturn("generalFailure").when(failureReason).getMessage();
+    DeletionResults generalFailureResults = new DeletionResults.FailedGeneral(
+        segmentsProvidedForDeletion, failureReason);
     SegmentDeleter segmentDeleter = deleterMock(generalFailureResults);
 
     // Act
@@ -290,10 +284,8 @@ public class SegmentManagerImplTest {
     Segment compactedSegment = mock(Segment.class);
     ImmutableList<Segment> providedSegments = ImmutableList.of(writableSegment,
         frozenSegments.get(0), frozenSegments.get(1));
-    CompactionResults success = new Success(
-        providedSegments,
-        ImmutableList.of(compactedSegment)
-    );
+    CompactionResults success = new CompactionResults.Success(
+        providedSegments, ImmutableList.of(compactedSegment));
     compactorMock(success);
   }
 
@@ -303,12 +295,16 @@ public class SegmentManagerImplTest {
     /// Enable compaction mocking
     compactionMockForDeletion();
     /// Mock Deleter for segment failure
-    DeletionResults segmentFailureResults = mock(DeletionResults.class);
-    doReturn(DeletionResults.Status.FAILED_SEGMENTS).when(segmentFailureResults).getStatus();
-    doReturn(ImmutableMap.of(mock(Segment.class), new IOException("deletion0 failed"),
-        mock(Segment.class),
-        new InterruptedException("deletion1 failed"))).when(segmentFailureResults)
-        .getSegmentsFailureReasonsMap();
+    Segment firstSegment = mock(Segment.class);
+    Segment secondSegment = mock(Segment.class);
+    ImmutableList<Segment> segmentsProvidedForDeletion =
+        ImmutableList.of(firstSegment, secondSegment);
+    ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap =
+        ImmutableMap.of(
+            firstSegment, new IOException("deletion0 failed"),
+            secondSegment, new InterruptedException("deletion1 failed"));
+    DeletionResults segmentFailureResults =
+        new DeletionResults.FailedSegments(segmentsProvidedForDeletion, segmentsFailureReasonsMap);
     SegmentDeleter segmentDeleter = deleterMock(segmentFailureResults);
 
     // Act

@@ -25,46 +25,30 @@ interface SegmentDeleter {
   ListenableFuture<DeletionResults> deleteSegments();
 
   /**
-   * Relays the results of deleting the Segments.
+   * Relays the results of a deletion execution
    */
-  interface DeletionResults {
+  sealed interface DeletionResults {
 
-    /**
-     * Used to indicate the status of executing the SegmentDeleter.
-     */
-    enum Status {
-      SUCCESS,
-      FAILED_GENERAL,
-      FAILED_SEGMENTS
+    record Success(ImmutableList<Segment> segmentsProvidedForDeletion)
+        implements DeletionResults {
+
     }
 
     /**
-     * The status of the deletion execution.
+     * Contains the result of failed deletion execution caused by a general failure
      */
-    Status getStatus();
+    record FailedGeneral(ImmutableList<Segment> segmentsProvidedForDeletion,
+                         Throwable failureReason) implements DeletionResults {
+
+    }
 
     /**
-     * The segments that were provided to be deleted. Their state will depend on the success /
-     * failure of deletion.
-     *
-     * @return the segments provided for deletion
+     * Contains the result of failed deletion execution caused by specific segment(s)
      */
-    ImmutableList<Segment> getSegmentsProvidedForDeletion();
+    record FailedSegments(ImmutableList<Segment> segmentsProvidedForDeletion,
+                          ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap)
+        implements DeletionResults {
 
-    /**
-     * The reason for a general failure to delete the provided segments. Will be populated when the
-     * status is also set to FAILED_GENERAL.
-     *
-     * @return the reason for general failure
-     */
-    Throwable getGeneralFailureReason();
-
-    /**
-     * A map of specific segments and why they could not be successfully deleted. Will be populated
-     * when the status is also set to FAILED_SEGMENTS.
-     *
-     * @return the map of segment to failure reasons
-     */
-    ImmutableMap<Segment, Throwable> getSegmentsFailureReasonsMap();
+    }
   }
 }

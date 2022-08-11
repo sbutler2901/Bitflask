@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -214,11 +215,12 @@ final class SegmentManagerImpl implements SegmentManager {
 
     @Override
     public void onSuccess(DeletionResults results) {
-      switch (results.getStatus()) {
-        case SUCCESS -> logger.atInfo().log(buildLogForDeletionSuccess(results));
-        case FAILED_GENERAL -> logger.atSevere().withCause(results.getGeneralFailureReason())
-            .log(buildLogForDeletionGeneralFailure(results));
-        case FAILED_SEGMENTS -> logger.atSevere().log(buildLogForSegmentsFailure(results));
+      switch (results) {
+        case DeletionResults.Success success -> handleDeletionSuccess(success);
+        case DeletionResults.FailedGeneral failedGeneral ->
+            handleDeletionFailedGeneral(failedGeneral);
+        case DeletionResults.FailedSegments failedSegments ->
+            handleDeletionFailedSegments(failedSegments);
       }
     }
 
@@ -227,25 +229,39 @@ final class SegmentManagerImpl implements SegmentManager {
       logger.atSevere().withCause(t).log("Segment deletion threw an unexpected exception");
     }
 
-    private String buildLogForDeletionSuccess(DeletionResults deletionResults) {
-      return "Compacted segments successfully deleted "
-          + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsProvidedForDeletion());
+    private void handleDeletionSuccess(DeletionResults.Success results) {
+      logger.atInfo().log(buildLogForDeletionSuccess(results.segmentsProvidedForDeletion()));
     }
 
-    private String buildLogForDeletionGeneralFailure(DeletionResults deletionResults) {
+    private void handleDeletionFailedGeneral(DeletionResults.FailedGeneral results) {
+      logger.atSevere().withCause(results.failureReason())
+          .log(buildLogForDeletionGeneralFailure(results.segmentsProvidedForDeletion()));
+    }
+
+    private void handleDeletionFailedSegments(DeletionResults.FailedSegments results) {
+      logger.atSevere().log(buildLogForSegmentsFailure(results.segmentsFailureReasonsMap()));
+    }
+
+    private String buildLogForDeletionSuccess(ImmutableList<Segment> segmentsProvidedForDeletion) {
+      return "Compacted segments successfully deleted "
+          + buildLogForSegmentsToBeDeleted(segmentsProvidedForDeletion);
+    }
+
+    private String buildLogForDeletionGeneralFailure(
+        ImmutableList<Segment> segmentsProvidedForDeletion) {
       return "Failure to delete compacted segments due to general failure"
-          + buildLogForSegmentsToBeDeleted(deletionResults.getSegmentsProvidedForDeletion());
+          + buildLogForSegmentsToBeDeleted(segmentsProvidedForDeletion);
     }
 
     private String buildLogForSegmentsToBeDeleted(ImmutableList<Segment> segmentsToBeDeleted) {
       return "[" + Joiner.on(", ").join(segmentsToBeDeleted) + "]";
     }
 
-    private String buildLogForSegmentsFailure(DeletionResults deletionResults) {
+    private String buildLogForSegmentsFailure(
+        ImmutableMap<Segment, Throwable> segmentThrowableImmutableMap) {
       Joiner.MapJoiner joiner = Joiner.on("; ").withKeyValueSeparator(", ");
       return "Failure to delete compacted segments due to specific failures [" +
-          joiner.join(deletionResults.getSegmentsFailureReasonsMap()) +
-          "]";
+          joiner.join(segmentThrowableImmutableMap) + "]";
     }
 
   }

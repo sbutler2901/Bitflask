@@ -25,7 +25,7 @@ interface SegmentCompactor {
   ListenableFuture<CompactionResults> compactSegments();
 
   /**
-   * Used to transfer the results of a successful compaction execution.
+   * Relays the results of a compaction execution.
    */
   sealed interface CompactionResults {
 
