@@ -9,8 +9,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -155,13 +153,8 @@ final class SegmentManagerImpl implements SegmentManager {
     @Override
     public void onSuccess(CompactionResults result) {
       switch (result) {
-        case Success success -> handleCompactionSuccess(
-            success.compactedSegments(),
-            success.segmentsProvidedForCompaction());
-        case Failed failed -> handleCompactionFailed(
-            failed.failureReason(),
-            failed.failedCompactionSegments()
-        );
+        case CompactionResults.Success success -> handleCompactionSuccess(success);
+        case CompactionResults.Failed failed -> handleCompactionFailed(failed);
       }
     }
 
@@ -170,18 +163,16 @@ final class SegmentManagerImpl implements SegmentManager {
       logger.atSevere().withCause(t).log("Segment compaction threw an unexpected exception");
     }
 
-    private void handleCompactionSuccess(ImmutableList<Segment> compactedSegments,
-        ImmutableList<Segment> segmentsProvidedForCompaction) {
+    private void handleCompactionSuccess(CompactionResults.Success success) {
       logger.atInfo().log("Compaction completed");
-      updateAfterCompaction(compactedSegments);
-      queueSegmentsForDeletion(segmentsProvidedForCompaction);
+      updateAfterCompaction(success.compactedSegments());
+      queueSegmentsForDeletion(success.segmentsProvidedForCompaction());
       compactionActive.set(false);
     }
 
-    private void handleCompactionFailed(Throwable throwable,
-        ImmutableList<Segment> failedCompactionSegments) {
-      logger.atSevere().withCause(throwable).log("Compaction failed");
-      queueSegmentsForDeletion(failedCompactionSegments);
+    private void handleCompactionFailed(CompactionResults.Failed failed) {
+      logger.atSevere().withCause(failed.failureReason()).log("Compaction failed");
+      queueSegmentsForDeletion(failed.failedCompactionSegments());
       compactionActive.set(false);
     }
 
