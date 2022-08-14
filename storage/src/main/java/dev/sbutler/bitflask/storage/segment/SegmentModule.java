@@ -1,11 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
-import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
-import java.io.IOException;
-import javax.inject.Singleton;
 
 public class SegmentModule extends AbstractModule {
 
@@ -20,11 +16,5 @@ public class SegmentModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(SegmentFile.class, SegmentFileImpl.class)
         .build(SegmentFileFactory.class));
-  }
-
-  @Provides
-  @Singleton
-  ManagedSegments provideManagedSegments(SegmentLoader segmentLoader) throws IOException {
-    return segmentLoader.loadExistingSegments();
   }
 }

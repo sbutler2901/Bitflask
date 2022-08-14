@@ -1,8 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -11,7 +9,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import org.junit.jupiter.api.Test;
 
 public class SegmentModuleTest {
@@ -22,24 +19,13 @@ public class SegmentModuleTest {
     Injector injector = Guice.createInjector(new MockModule(), new SegmentModule());
     try {
       // act
-      injector.getBinding(SegmentManager.class);
+      injector.getBinding(SegmentCompactorFactory.class);
+      injector.getBinding(SegmentDeleterFactory.class);
+      injector.getBinding(SegmentFileFactory.class);
       // assert
     } catch (Exception e) {
       fail(e.getMessage());
     }
-  }
-
-  @Test
-  void provideManagedSegments() throws Exception {
-    // Arrange
-    SegmentModule segmentModule = new SegmentModule();
-    SegmentLoader segmentLoader = mock(SegmentLoader.class);
-    ManagedSegments managedSegmentsMock = mock(ManagedSegments.class);
-    doReturn(managedSegmentsMock).when(segmentLoader).loadExistingSegments();
-    // Act
-    ManagedSegments managedSegments = segmentModule.provideManagedSegments(segmentLoader);
-    // Assert
-    assertEquals(managedSegmentsMock, managedSegments);
   }
 
   private static class MockModule extends AbstractModule {
