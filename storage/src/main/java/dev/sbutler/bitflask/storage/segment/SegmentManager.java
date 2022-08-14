@@ -22,6 +22,11 @@ public interface SegmentManager {
   void initialize() throws IOException;
 
   /**
+   * Provides the currently managed segments
+   */
+  ManagedSegments getManagedSegments();
+
+  /**
    * Writes the provided key and value to the current active segment.
    *
    * @param key   the key to be written

@@ -58,7 +58,15 @@ final class SegmentManagerImpl implements SegmentManager {
     if (managedSegmentsAtomicReference.get() != null) {
       return;
     }
-    managedSegmentsAtomicReference.set(segmentLoader.loadExistingSegments());
+    ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
+    managedSegments.getWritableSegment()
+        .registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
+    managedSegmentsAtomicReference.set(managedSegments);
+  }
+
+  @Override
+  public ManagedSegments getManagedSegments() {
+    return managedSegmentsAtomicReference.get();
   }
 
   @Override
@@ -93,7 +101,6 @@ final class SegmentManagerImpl implements SegmentManager {
     logger.atInfo().log("Writing [%s] : [%s] to segment [%d]", key, value,
         writableSegment.getSegmentFileKey());
     writableSegment.write(key, value);
-    checkWritableSegmentAndCompaction();
   }
 
   @Override
@@ -103,22 +110,20 @@ final class SegmentManagerImpl implements SegmentManager {
     managedSegments.getFrozenSegments().forEach(Segment::close);
   }
 
-  /**
-   * Determine if a new writable segment and / or compaction should be performed.
-   *
-   * @throws IOException if an error occurs creating a new writable segment.
-   */
-  private synchronized void checkWritableSegmentAndCompaction() throws IOException {
-    if (shouldCreateAndUpdateWritableSegment()) {
+  private synchronized void segmentSizeLimitExceededConsumer(Segment segment) {
+    if (!segment.equals(managedSegmentsAtomicReference.get().getWritableSegment())) {
+      return;
+    }
+    try {
       createNewWritableSegmentAndUpdateManagedSegments();
+      // TODO: simplify compaction activation / handling
+      if (shouldInitiateCompaction()) {
+        initiateCompaction();
+      }
+    } catch (IOException e) {
+      // TODO: improve error handling
+      logger.atSevere().log("Failed to create a new writable segment");
     }
-    if (shouldInitiateCompaction()) {
-      initiateCompaction();
-    }
-  }
-
-  private boolean shouldCreateAndUpdateWritableSegment() {
-    return managedSegmentsAtomicReference.get().getWritableSegment().exceedsStorageThreshold();
   }
 
   private synchronized void createNewWritableSegmentAndUpdateManagedSegments() throws IOException {
@@ -130,6 +135,7 @@ final class SegmentManagerImpl implements SegmentManager {
         .addAll(currentManagedSegments.getFrozenSegments())
         .build();
 
+    newWritableSegment.registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
     managedSegmentsAtomicReference.set(
         new ManagedSegmentsImpl(newWritableSegment, newFrozenSegments));
   }

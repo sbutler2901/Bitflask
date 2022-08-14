@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.storage.segment;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Represents a single self-contained file for storing data
@@ -85,4 +86,5 @@ interface Segment {
    */
   boolean hasBeenCompacted();
 
+  void registerSizeLimitExceededConsumer(Consumer<Segment> sizeLimitExceededConsumer);
 }

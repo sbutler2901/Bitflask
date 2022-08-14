@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 
 final class SegmentImpl implements Segment {
 
@@ -20,6 +21,7 @@ final class SegmentImpl implements Segment {
   private final AtomicLong currentFileWriteOffset;
   private final long segmentSizeLimit;
   private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+  private volatile Consumer<Segment> sizeLimitExceededConsumer = null;
   private volatile boolean hasBeenCompacted = false;
 
   public SegmentImpl(SegmentFile segmentFile, ConcurrentMap<String, Long> keyedEntryFileOffsetMap,
@@ -33,6 +35,7 @@ final class SegmentImpl implements Segment {
   @Override
   public void write(String key, String value) throws IOException {
     if (!isOpen()) {
+      // TODO: adjust for consumers to try again
       throw new RuntimeException("This segment has been closed and cannot be written to");
     }
 
@@ -51,6 +54,10 @@ final class SegmentImpl implements Segment {
             ? writtenOffset
             : retrievedOffset
     );
+
+    if (exceedsStorageThreshold() && sizeLimitExceededConsumer != null) {
+      sizeLimitExceededConsumer.accept(this);
+    }
   }
 
   @Override
@@ -162,6 +169,11 @@ final class SegmentImpl implements Segment {
   @Override
   public boolean hasBeenCompacted() {
     return hasBeenCompacted;
+  }
+
+  @Override
+  public void registerSizeLimitExceededConsumer(Consumer<Segment> sizeLimitExceededConsumer) {
+    this.sizeLimitExceededConsumer = sizeLimitExceededConsumer;
   }
 
   @Override
