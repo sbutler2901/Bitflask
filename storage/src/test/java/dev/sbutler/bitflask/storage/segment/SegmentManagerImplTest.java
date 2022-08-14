@@ -29,7 +29,7 @@
 //public class SegmentManagerImplTest {
 //
 //  @InjectMocks
-//  SegmentManagerImpl segmentManager;
+//  SegmentManager segmentManager;
 //  @Spy
 //  @SuppressWarnings("UnstableApiUsage")
 //  ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();

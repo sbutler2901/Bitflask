@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
-final class SegmentManagerImpl implements SegmentManager {
+public final class SegmentManager {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -39,7 +39,7 @@ final class SegmentManagerImpl implements SegmentManager {
       DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
 
   @Inject
-  SegmentManagerImpl(
+  SegmentManager(
       @StorageExecutorService ListeningExecutorService executorService,
       SegmentFactory segmentFactory,
       SegmentCompactorFactory segmentCompactorFactory,
@@ -52,7 +52,6 @@ final class SegmentManagerImpl implements SegmentManager {
     this.segmentLoader = segmentLoader;
   }
 
-  @Override
   public synchronized void initialize() throws IOException {
     if (managedSegmentsAtomicReference.get() != null) {
       return;
@@ -63,12 +62,10 @@ final class SegmentManagerImpl implements SegmentManager {
     managedSegmentsAtomicReference.set(managedSegments);
   }
 
-  @Override
   public ManagedSegments getManagedSegments() {
     return managedSegmentsAtomicReference.get();
   }
 
-  @Override
   public void close() {
     ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
     managedSegments.getWritableSegment().close();
@@ -102,7 +99,7 @@ final class SegmentManagerImpl implements SegmentManager {
 
     newWritableSegment.registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
     managedSegmentsAtomicReference.set(
-        new ManagedSegmentsImpl(newWritableSegment, newFrozenSegments));
+        new ManagedSegments(newWritableSegment, newFrozenSegments));
   }
 
   private boolean shouldInitiateCompaction() {
@@ -149,7 +146,7 @@ final class SegmentManagerImpl implements SegmentManager {
     }
 
     private void updateAfterCompaction(ImmutableList<Segment> compactedSegments) {
-      synchronized (SegmentManagerImpl.this) {
+      synchronized (SegmentManager.this) {
         logger.atInfo().log("Updating after compaction");
         ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
         Deque<Segment> newFrozenSegments = new ArrayDeque<>();
@@ -163,7 +160,7 @@ final class SegmentManagerImpl implements SegmentManager {
             newFrozenSegments.size() + DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
 
         managedSegmentsAtomicReference.set(
-            new ManagedSegmentsImpl(currentManagedSegment.getWritableSegment(),
+            new ManagedSegments(currentManagedSegment.getWritableSegment(),
                 ImmutableList.copyOf(newFrozenSegments)));
       }
     }
@@ -237,15 +234,13 @@ final class SegmentManagerImpl implements SegmentManager {
 
   }
 
-  record ManagedSegmentsImpl(Segment writableSegment,
-                             ImmutableList<Segment> frozenSegments) implements ManagedSegments {
+  public record ManagedSegments(Segment writableSegment,
+                                ImmutableList<Segment> frozenSegments) {
 
-    @Override
     public Segment getWritableSegment() {
       return writableSegment;
     }
 
-    @Override
     public ImmutableList<Segment> getFrozenSegments() {
       return frozenSegments;
     }

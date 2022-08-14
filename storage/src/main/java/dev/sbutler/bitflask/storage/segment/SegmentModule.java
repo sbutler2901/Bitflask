@@ -24,7 +24,7 @@ public class SegmentModule extends AbstractModule {
 
   @Provides
   @Singleton
-  SegmentManager provideSegmentManager(SegmentManagerImpl segmentManager) {
+  SegmentManager provideSegmentManager(SegmentManager segmentManager) {
     return segmentManager;
   }
 

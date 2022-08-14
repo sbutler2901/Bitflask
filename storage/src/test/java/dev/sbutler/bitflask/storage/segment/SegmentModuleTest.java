@@ -33,7 +33,7 @@ public class SegmentModuleTest {
   void provideSegmentManager() {
     // Arrange
     SegmentModule segmentModule = new SegmentModule();
-    SegmentManagerImpl segmentManagerImpl = mock(SegmentManagerImpl.class);
+    SegmentManager segmentManagerImpl = mock(SegmentManager.class);
     // Act
     SegmentManager segmentManager = segmentModule.provideSegmentManager(segmentManagerImpl);
     // Assert
