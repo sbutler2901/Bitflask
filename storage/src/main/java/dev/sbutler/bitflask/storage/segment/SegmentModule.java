@@ -23,11 +23,6 @@ public class SegmentModule extends AbstractModule {
   }
 
   @Provides
-  SegmentLoader provideSegmentLoader(SegmentLoaderImpl segmentLoader) {
-    return segmentLoader;
-  }
-
-  @Provides
   @Singleton
   ManagedSegments provideManagedSegments(SegmentLoader segmentLoader) throws IOException {
     return segmentLoader.loadExistingSegments();

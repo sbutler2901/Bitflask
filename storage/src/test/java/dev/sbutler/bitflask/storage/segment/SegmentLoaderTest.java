@@ -46,10 +46,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.OngoingStubbing;
 
 @ExtendWith(MockitoExtension.class)
-class SegmentLoaderImplTest {
+class SegmentLoaderTest {
 
   @InjectMocks
-  SegmentLoaderImpl segmentLoader;
+  SegmentLoader segmentLoader;
   @Spy
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();

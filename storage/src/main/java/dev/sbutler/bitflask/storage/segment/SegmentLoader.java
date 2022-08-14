@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
 
-final class SegmentLoaderImpl implements SegmentLoader {
+final class SegmentLoader {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -35,7 +35,7 @@ final class SegmentLoaderImpl implements SegmentLoader {
   private final Path storeDirectoryPath;
 
   @Inject
-  SegmentLoaderImpl(@StorageExecutorService ListeningExecutorService executorService,
+  SegmentLoader(@StorageExecutorService ListeningExecutorService executorService,
       SegmentFileFactory segmentFileFactory, SegmentFactory segmentFactory,
       StorageConfiguration storageConfiguration) {
     this.executorService = executorService;

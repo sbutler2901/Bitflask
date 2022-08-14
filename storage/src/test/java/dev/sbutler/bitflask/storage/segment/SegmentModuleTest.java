@@ -30,17 +30,6 @@ public class SegmentModuleTest {
   }
 
   @Test
-  void provideSegmentLoader() {
-    // Arrange
-    SegmentModule segmentModule = new SegmentModule();
-    SegmentLoaderImpl segmentLoaderImpl = mock(SegmentLoaderImpl.class);
-    // Act
-    SegmentLoader segmentLoader = segmentModule.provideSegmentLoader(segmentLoaderImpl);
-    // Assert
-    assertEquals(segmentLoaderImpl, segmentLoader);
-  }
-
-  @Test
   void provideManagedSegments() throws Exception {
     // Arrange
     SegmentModule segmentModule = new SegmentModule();
