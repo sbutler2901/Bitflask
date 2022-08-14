@@ -31,6 +31,7 @@ public class WriteCommand implements StorageCommand {
   public ListenableFuture<StorageResponse> execute() {
     String key = writeDTO.key();
     String value = writeDTO.value();
+
     Callable<StorageResponse> writeTask = () -> {
       try {
         segmentManager.write(key, value);

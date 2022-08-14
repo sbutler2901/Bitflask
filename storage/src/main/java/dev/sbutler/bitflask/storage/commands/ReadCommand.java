@@ -31,6 +31,7 @@ public class ReadCommand implements StorageCommand {
   @Override
   public ListenableFuture<StorageResponse> execute() {
     String key = readDTO.key();
+
     Callable<StorageResponse> readTask = () -> {
       try {
         Optional<String> value = segmentManager.read(key);
@@ -44,6 +45,7 @@ public class ReadCommand implements StorageCommand {
         return new Failed(String.format("Failure to read [%s]", key));
       }
     };
+
     logger.atInfo().log("Submitting read for [%s]", key);
     return Futures.submit(readTask, executorService);
   }
