@@ -12,9 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.inject.Inject;
 
-final class SegmentFactoryImpl implements SegmentFactory {
+final class SegmentFactoryImpl {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -31,7 +30,6 @@ final class SegmentFactoryImpl implements SegmentFactory {
   private final long segmentSizeLimit;
   private final AtomicInteger nextSegmentKey = new AtomicInteger(0);
 
-  @Inject
   SegmentFactoryImpl(SegmentFileFactory segmentFileFactory,
       StorageConfiguration storageConfiguration) {
     this.segmentFileFactory = segmentFileFactory;
@@ -39,13 +37,25 @@ final class SegmentFactoryImpl implements SegmentFactory {
     this.segmentSizeLimit = storageConfiguration.getStorageSegmentSizeLimit();
   }
 
-  @Override
+  /**
+   * Creates a new Segment, and it's associate SegmentFile in the filesystem
+   *
+   * @return the created Segment
+   * @throws IOException if an error occurs while creating the segment
+   */
   public Segment createSegment() throws IOException {
     SegmentFile segmentFile = createSegmentFile();
     return createSegmentFromFile(segmentFile);
   }
 
-  @Override
+  /**
+   * Creates a segment from a preexisting SegmentFile. This does not increment the key used for
+   * creating new Segments.
+   *
+   * @param segmentFile the associated SegmentFile for the Segment being created
+   * @return the created segment
+   * @throws IOException if an error occurs while creating the segment
+   */
   public Segment createSegmentFromFile(SegmentFile segmentFile) throws IOException {
     AtomicLong currentFileWriteOffset = new AtomicLong(segmentFile.size());
     ConcurrentMap<String, Long> keyedEntryFileOffsetMap = generateKeyedEntryOffsetMap(segmentFile,
@@ -104,12 +114,21 @@ final class SegmentFactoryImpl implements SegmentFactory {
     return FileChannel.open(nextSegmentFilePath, fileChannelOptions);
   }
 
-  @Override
+  /**
+   * Sets the key that is used as the file key when creating new Segments. This is incremented with
+   * each new Segment while a SegmentFile is created.
+   *
+   * @param segmentStartKey the key to be used on next segment creation
+   */
   public void setSegmentStartKey(int segmentStartKey) {
     nextSegmentKey.set(segmentStartKey);
   }
 
-  @Override
+  /**
+   * Creates the segment store directory if it doesn't exist.
+   *
+   * @return true if the directory was created
+   */
   public boolean createSegmentStoreDir() throws IOException {
     boolean segmentStoreDirExists = Files.isDirectory(storeDirectoryPath);
     if (!segmentStoreDirExists) {
@@ -121,11 +140,15 @@ final class SegmentFactoryImpl implements SegmentFactory {
     return false;
   }
 
-  @Override
+  /**
+   * Retrieves the key for a segment from its file path.
+   *
+   * @param path the path to retrieve the segment key from
+   * @return the Segment's Key.
+   */
   public int getSegmentKeyFromPath(Path path) {
     String segmentFileName = path.getFileName().toString();
     int keyEndIndex = segmentFileName.indexOf('_');
     return Integer.parseInt(segmentFileName.substring(0, keyEndIndex));
   }
-
 }
