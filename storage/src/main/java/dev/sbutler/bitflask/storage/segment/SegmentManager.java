@@ -187,8 +187,10 @@ public final class SegmentManager {
     public void onSuccess(DeletionResults results) {
       switch (results) {
         case DeletionResults.Success success -> handleDeletionSuccess(success);
-        case DeletionResults.FailedGeneral failedGeneral -> handleDeletionFailedGeneral(failedGeneral);
-        case DeletionResults.FailedSegments failedSegments -> handleDeletionFailedSegments(failedSegments);
+        case DeletionResults.FailedGeneral failedGeneral ->
+            handleDeletionFailedGeneral(failedGeneral);
+        case DeletionResults.FailedSegments failedSegments ->
+            handleDeletionFailedSegments(failedSegments);
       }
     }
 

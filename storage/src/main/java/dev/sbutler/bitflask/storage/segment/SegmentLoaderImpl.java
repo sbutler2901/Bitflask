@@ -44,7 +44,13 @@ final class SegmentLoaderImpl implements SegmentLoader {
     this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
   }
 
-  @Override
+  /**
+   * Loads preexisting segments from the filesystem and initializes them for usage. Assumes the
+   * directory for storing segments exists.
+   *
+   * @return the loaded segments
+   * @throws IOException if an error occurs while loading the segments
+   */
   public ManagedSegments loadExistingSegments() throws IOException {
     boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
     if (segmentStoreDirCreated) {
