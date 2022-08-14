@@ -25,9 +25,9 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class SegmentFactoryImplTest {
+public class SegmentFactoryTest {
 
-  SegmentFactoryImpl segmentFactory;
+  SegmentFactory segmentFactory;
   SegmentFileFactory segmentFileFactory;
   StorageConfiguration storageConfiguration;
 
@@ -37,7 +37,7 @@ public class SegmentFactoryImplTest {
     storageConfiguration = mock(StorageConfiguration.class);
     doReturn(Path.of("/tmp/.bitflask")).when(storageConfiguration).getStorageStoreDirectoryPath();
     doReturn(100L).when(storageConfiguration).getStorageSegmentSizeLimit();
-    segmentFactory = new SegmentFactoryImpl(segmentFileFactory, storageConfiguration);
+    segmentFactory = new SegmentFactory(segmentFileFactory, storageConfiguration);
   }
 
   @Test
@@ -118,11 +118,11 @@ public class SegmentFactoryImplTest {
   void getSegmentKeyFromPath() {
     Path path;
     // Arrange
-    path = Path.of(String.format(SegmentFactoryImpl.DEFAULT_SEGMENT_FILENAME, 0));
+    path = Path.of(String.format(SegmentFactory.DEFAULT_SEGMENT_FILENAME, 0));
     // Act / Assert
     assertEquals(0, segmentFactory.getSegmentKeyFromPath(path));
     // Arrange
-    path = Path.of(String.format(SegmentFactoryImpl.DEFAULT_SEGMENT_FILENAME, 10));
+    path = Path.of(String.format(SegmentFactory.DEFAULT_SEGMENT_FILENAME, 10));
     // Act / Assert
     assertEquals(10, segmentFactory.getSegmentKeyFromPath(path));
   }

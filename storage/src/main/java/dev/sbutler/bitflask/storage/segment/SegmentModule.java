@@ -29,12 +29,6 @@ public class SegmentModule extends AbstractModule {
   }
 
   @Provides
-  @Singleton
-  SegmentFactory provideSegmentFactory(SegmentFactoryImpl segmentFactory) {
-    return segmentFactory;
-  }
-
-  @Provides
   SegmentLoader provideSegmentLoader(SegmentLoaderImpl segmentLoader) {
     return segmentLoader;
   }

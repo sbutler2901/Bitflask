@@ -41,17 +41,6 @@ public class SegmentModuleTest {
   }
 
   @Test
-  void provideSegmentFactory() {
-    // Arrange
-    SegmentModule segmentModule = new SegmentModule();
-    SegmentFactoryImpl segmentFactoryImpl = mock(SegmentFactoryImpl.class);
-    // Act
-    SegmentFactory segmentFactory = segmentModule.provideSegmentFactory(segmentFactoryImpl);
-    // Assert
-    assertEquals(segmentFactoryImpl, segmentFactory);
-  }
-
-  @Test
   void provideSegmentLoader() {
     // Arrange
     SegmentModule segmentModule = new SegmentModule();

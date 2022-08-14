@@ -12,8 +12,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
-final class SegmentFactoryImpl {
+@Singleton
+final class SegmentFactory {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -30,7 +33,8 @@ final class SegmentFactoryImpl {
   private final long segmentSizeLimit;
   private final AtomicInteger nextSegmentKey = new AtomicInteger(0);
 
-  SegmentFactoryImpl(SegmentFileFactory segmentFileFactory,
+  @Inject
+  SegmentFactory(SegmentFileFactory segmentFileFactory,
       StorageConfiguration storageConfiguration) {
     this.segmentFileFactory = segmentFileFactory;
     this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
