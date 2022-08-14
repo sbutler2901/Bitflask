@@ -19,7 +19,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public final class SegmentManager {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -185,10 +187,8 @@ public final class SegmentManager {
     public void onSuccess(DeletionResults results) {
       switch (results) {
         case DeletionResults.Success success -> handleDeletionSuccess(success);
-        case DeletionResults.FailedGeneral failedGeneral ->
-            handleDeletionFailedGeneral(failedGeneral);
-        case DeletionResults.FailedSegments failedSegments ->
-            handleDeletionFailedSegments(failedSegments);
+        case DeletionResults.FailedGeneral failedGeneral -> handleDeletionFailedGeneral(failedGeneral);
+        case DeletionResults.FailedSegments failedSegments -> handleDeletionFailedSegments(failedSegments);
       }
     }
 
