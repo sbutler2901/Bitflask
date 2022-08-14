@@ -5,15 +5,11 @@ import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTe
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.SettableFuture;
 import dev.sbutler.bitflask.common.dispatcher.DispatcherSubmission;
-import dev.sbutler.bitflask.storage.commands.ReadCommand;
+import dev.sbutler.bitflask.storage.commands.CommandMapper;
 import dev.sbutler.bitflask.storage.commands.StorageCommand;
-import dev.sbutler.bitflask.storage.commands.WriteCommand;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.segment.SegmentManager;
@@ -33,14 +29,17 @@ public final class StorageService extends AbstractExecutionThreadService {
   private final ListeningExecutorService executorService;
   private final SegmentManager segmentManager;
   private final StorageCommandDispatcher commandDispatcher;
+  private final CommandMapper commandMapper;
   private volatile boolean isRunning = true;
 
   @Inject
   public StorageService(@StorageExecutorService ListeningExecutorService executorService,
-      SegmentManager segmentManager, StorageCommandDispatcher commandDispatcher) {
+      SegmentManager segmentManager, StorageCommandDispatcher commandDispatcher,
+      CommandMapper commandMapper) {
     this.executorService = executorService;
     this.segmentManager = segmentManager;
     this.commandDispatcher = commandDispatcher;
+    this.commandMapper = commandMapper;
   }
 
   @Override
@@ -63,16 +62,8 @@ public final class StorageService extends AbstractExecutionThreadService {
 
   private void processSubmission(DispatcherSubmission<StorageCommandDTO,
       StorageResponse> submission) {
-    StorageCommand command = dtoToCommandMapper(submission.commandDTO());
-    SettableFuture<StorageResponse> response = submission.responseFuture();
-    response.setFuture(command.execute());
-  }
-
-  private StorageCommand dtoToCommandMapper(StorageCommandDTO commandDTO) {
-    return switch (commandDTO) {
-      case ReadDTO readDTO -> new ReadCommand(executorService, segmentManager, readDTO);
-      case WriteDTO writeDTO -> new WriteCommand(executorService, segmentManager, writeDTO);
-    };
+    StorageCommand command = commandMapper.mapToCommand(submission.commandDTO());
+    submission.responseFuture().setFuture(command.execute());
   }
 
   @SuppressWarnings("UnstableApiUsage")

@@ -8,42 +8,46 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.segment.SegmentManager;
+import dev.sbutler.bitflask.storage.segment.Segment;
+import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import java.io.IOException;
-import java.util.concurrent.Callable;
 
 public class WriteCommand implements StorageCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
-  private final SegmentManager segmentManager;
+  private final ManagedSegments managedSegments;
   private final WriteDTO writeDTO;
 
-  public WriteCommand(ListeningExecutorService executorService, SegmentManager segmentManager,
+  public WriteCommand(ListeningExecutorService executorService, ManagedSegments managedSegments,
       WriteDTO writeDTO) {
     this.executorService = executorService;
-    this.segmentManager = segmentManager;
+    this.managedSegments = managedSegments;
     this.writeDTO = writeDTO;
   }
 
   @Override
   public ListenableFuture<StorageResponse> execute() {
+    logger.atInfo().log("Submitting write for [%s] : [%s]", writeDTO.key(), writeDTO.value());
+    return Futures.submit(this::write, executorService);
+  }
+
+  private StorageResponse write() {
     String key = writeDTO.key();
     String value = writeDTO.value();
+    Segment writableSegment = managedSegments.getWritableSegment();
 
-    Callable<StorageResponse> writeTask = () -> {
-      try {
-        segmentManager.write(key, value);
-        logger.atInfo().log("Successful write of [%s]:[%s]", key, value);
-        return new Success("OK");
-      } catch (IOException e) {
-        logger.atWarning().withCause(e).log("Failed to write [%s]:[%s]", key, value);
-        return new Failed(String.format("Failure to write [%s]:[%s]", key, value));
-      }
-    };
+    logger.atInfo().log("Writing [%s] : [%s] to segment [%d]", key, value,
+        writableSegment.getSegmentFileKey());
 
-    logger.atInfo().log("Submitting write for [%s] : [%s]", key, value);
-    return Futures.submit(writeTask, executorService);
+    try {
+      writableSegment.write(key, value);
+      logger.atInfo().log("Successful write of [%s]:[%s]", key, value);
+      return new Success("OK");
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Failed to write [%s]:[%s]", key, value);
+      return new Failed(String.format("Failure to write [%s]:[%s]", key, value));
+    }
   }
 }

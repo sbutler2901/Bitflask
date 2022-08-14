@@ -8,45 +8,72 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.segment.SegmentManager;
+import dev.sbutler.bitflask.storage.segment.Segment;
+import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 
 public class ReadCommand implements StorageCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
-  private final SegmentManager segmentManager;
+  private final ManagedSegments managedSegments;
   private final ReadDTO readDTO;
 
-  public ReadCommand(ListeningExecutorService executorService, SegmentManager segmentManager,
+  public ReadCommand(ListeningExecutorService executorService, ManagedSegments managedSegments,
       ReadDTO readDTO) {
     this.executorService = executorService;
-    this.segmentManager = segmentManager;
+    this.managedSegments = managedSegments;
     this.readDTO = readDTO;
   }
 
   @Override
   public ListenableFuture<StorageResponse> execute() {
+    logger.atInfo().log("Submitting read for [%s]", readDTO.key());
+    return Futures.submit(this::read, executorService);
+  }
+
+  private StorageResponse read() {
+    return findLatestSegmentWithKey()
+        .map(this::readFromSegment)
+        .orElseGet(() -> {
+          logger.atInfo().log("Could not find a segment containing key [%s]", readDTO.key());
+          return notFoundResponse();
+        });
+  }
+
+  private StorageResponse readFromSegment(Segment segment) {
     String key = readDTO.key();
 
-    Callable<StorageResponse> readTask = () -> {
-      try {
-        Optional<String> value = segmentManager.read(key);
-        logger.atInfo().log("Successful read of [%s]:[%s]", key, value);
-        if (value.isEmpty()) {
-          value = Optional.of(String.format("[%s] not found", key));
-        }
-        return new Success(value.get());
-      } catch (IOException e) {
-        logger.atWarning().withCause(e).log("Failed to read [%s]", key);
-        return new Failed(String.format("Failure to read [%s]", key));
-      }
-    };
+    logger.atInfo()
+        .log("Reading value of [%s] from segment [%d]", key,
+            segment.getSegmentFileKey());
 
-    logger.atInfo().log("Submitting read for [%s]", key);
-    return Futures.submit(readTask, executorService);
+    try {
+      return segment.read(key)
+          .<StorageResponse>map(Success::new)
+          .orElseGet(this::notFoundResponse);
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Failed to read [%s]", key);
+      return new Failed(String.format("Failure to read [%s]", key));
+    }
+  }
+
+  private StorageResponse notFoundResponse() {
+    return new Success(String.format("[%s] not found", readDTO.key()));
+  }
+
+  private Optional<Segment> findLatestSegmentWithKey() {
+    String key = readDTO.key();
+    if (managedSegments.getWritableSegment().containsKey(key)) {
+      return Optional.of(managedSegments.getWritableSegment());
+    }
+    for (Segment segment : managedSegments.getFrozenSegments()) {
+      if (segment.containsKey(key)) {
+        return Optional.of(segment);
+      }
+    }
+    return Optional.empty();
   }
 }

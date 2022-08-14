@@ -14,7 +14,6 @@ import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -67,40 +66,6 @@ final class SegmentManagerImpl implements SegmentManager {
   @Override
   public ManagedSegments getManagedSegments() {
     return managedSegmentsAtomicReference.get();
-  }
-
-  @Override
-  public Optional<String> read(String key) throws IOException {
-    Optional<Segment> optionalSegment = findLatestSegmentWithKey(key);
-    if (optionalSegment.isEmpty()) {
-      logger.atInfo().log("Could not find a segment containing key [%s]", key);
-      return Optional.empty();
-    }
-    Segment segment = optionalSegment.get();
-    logger.atInfo()
-        .log("Reading value of [%s] from segment [%d]", key, segment.getSegmentFileKey());
-    return segment.read(key);
-  }
-
-  private Optional<Segment> findLatestSegmentWithKey(String key) {
-    ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
-    if (managedSegments.getWritableSegment().containsKey(key)) {
-      return Optional.of(managedSegments.getWritableSegment());
-    }
-    for (Segment segment : managedSegments.getFrozenSegments()) {
-      if (segment.containsKey(key)) {
-        return Optional.of(segment);
-      }
-    }
-    return Optional.empty();
-  }
-
-  @Override
-  public void write(String key, String value) throws IOException {
-    Segment writableSegment = managedSegmentsAtomicReference.get().getWritableSegment();
-    logger.atInfo().log("Writing [%s] : [%s] to segment [%d]", key, value,
-        writableSegment.getSegmentFileKey());
-    writableSegment.write(key, value);
   }
 
   @Override
