@@ -12,7 +12,7 @@ import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorSer
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.segment.SegmentManager;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
@@ -27,24 +27,24 @@ public final class StorageService extends AbstractExecutionThreadService {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
-  private final SegmentManager segmentManager;
+  private final SegmentManagerService segmentManagerService;
   private final StorageCommandDispatcher commandDispatcher;
   private final CommandMapper commandMapper;
   private volatile boolean isRunning = true;
 
   @Inject
   public StorageService(@StorageExecutorService ListeningExecutorService executorService,
-      SegmentManager segmentManager, StorageCommandDispatcher commandDispatcher,
+      SegmentManagerService segmentManagerService, StorageCommandDispatcher commandDispatcher,
       CommandMapper commandMapper) {
     this.executorService = executorService;
-    this.segmentManager = segmentManager;
+    this.segmentManagerService = segmentManagerService;
     this.commandDispatcher = commandDispatcher;
     this.commandMapper = commandMapper;
   }
 
   @Override
   protected void startUp() throws Exception {
-    segmentManager.initialize();
+    segmentManagerService.startUp();
     logger.atInfo().log("StorageService started");
   }
 
@@ -72,7 +72,7 @@ public final class StorageService extends AbstractExecutionThreadService {
     System.out.println("StorageService shutdown triggered");
     isRunning = false;
     commandDispatcher.closeAndDrain();
-    segmentManager.close();
+    segmentManagerService.shutDown();
     shutdownAndAwaitTermination(executorService, Duration.ofSeconds(5));
     System.out.println("StorageService completed shutdown");
   }

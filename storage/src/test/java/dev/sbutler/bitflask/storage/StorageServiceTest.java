@@ -20,7 +20,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.segment.SegmentManager;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class StorageServiceTest {
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
   @Mock
-  SegmentManager segmentManager;
+  SegmentManagerService segmentManagerService;
   @Mock
   StorageCommandDispatcher storageCommandDispatcher;
   @Mock

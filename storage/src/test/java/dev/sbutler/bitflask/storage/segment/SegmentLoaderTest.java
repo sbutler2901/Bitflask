@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
-import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryIteratorException;

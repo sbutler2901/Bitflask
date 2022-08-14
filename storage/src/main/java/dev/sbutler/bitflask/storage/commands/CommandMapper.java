@@ -5,24 +5,24 @@ import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorSer
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
-import dev.sbutler.bitflask.storage.segment.SegmentManager;
-import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import javax.inject.Inject;
 
 public class CommandMapper {
 
   private final ListeningExecutorService executorService;
-  private final SegmentManager segmentManager;
+  private final SegmentManagerService segmentManagerService;
 
   @Inject
   public CommandMapper(@StorageExecutorService ListeningExecutorService executorService,
-      SegmentManager segmentManager) {
+      SegmentManagerService segmentManagerService) {
     this.executorService = executorService;
-    this.segmentManager = segmentManager;
+    this.segmentManagerService = segmentManagerService;
   }
 
   public StorageCommand mapToCommand(StorageCommandDTO commandDTO) {
-    ManagedSegments managedSegments = segmentManager.getManagedSegments();
+    ManagedSegments managedSegments = segmentManagerService.getManagedSegments();
     return switch (commandDTO) {
       case ReadDTO readDTO -> new ReadCommand(executorService, managedSegments, readDTO);
       case WriteDTO writeDTO -> new WriteCommand(executorService, managedSegments, writeDTO);

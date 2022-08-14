@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
+import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -22,7 +23,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public final class SegmentManager {
+public final class SegmentManagerService extends AbstractIdleService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -41,7 +42,7 @@ public final class SegmentManager {
       DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
 
   @Inject
-  SegmentManager(
+  SegmentManagerService(
       @StorageExecutorService ListeningExecutorService executorService,
       SegmentFactory segmentFactory,
       SegmentCompactorFactory segmentCompactorFactory,
@@ -54,7 +55,8 @@ public final class SegmentManager {
     this.segmentLoader = segmentLoader;
   }
 
-  public synchronized void initialize() throws IOException {
+  @Override
+  public void startUp() throws IOException {
     if (managedSegmentsAtomicReference.get() != null) {
       return;
     }
@@ -64,14 +66,15 @@ public final class SegmentManager {
     managedSegmentsAtomicReference.set(managedSegments);
   }
 
-  public ManagedSegments getManagedSegments() {
-    return managedSegmentsAtomicReference.get();
-  }
-
-  public void close() {
+  @Override
+  public void shutDown() {
     ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
     managedSegments.getWritableSegment().close();
     managedSegments.getFrozenSegments().forEach(Segment::close);
+  }
+
+  public ManagedSegments getManagedSegments() {
+    return managedSegmentsAtomicReference.get();
   }
 
   private synchronized void segmentSizeLimitExceededConsumer(Segment segment) {
@@ -148,7 +151,7 @@ public final class SegmentManager {
     }
 
     private void updateAfterCompaction(ImmutableList<Segment> compactedSegments) {
-      synchronized (SegmentManager.this) {
+      synchronized (SegmentManagerService.this) {
         logger.atInfo().log("Updating after compaction");
         ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
         Deque<Segment> newFrozenSegments = new ArrayDeque<>();

@@ -14,7 +14,7 @@
 //import com.google.common.util.concurrent.testing.TestingExecutors;
 //import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 //import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
-//import dev.sbutler.bitflask.storage.segment.SegmentManager.ManagedSegments;
+//import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 //import java.io.IOException;
 //import java.util.Optional;
 //import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +29,7 @@
 //public class SegmentManagerImplTest {
 //
 //  @InjectMocks
-//  SegmentManager segmentManager;
+//  SegmentManagerService segmentManager;
 //  @Spy
 //  @SuppressWarnings("UnstableApiUsage")
 //  ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
