@@ -11,6 +11,7 @@
 
 - [Java theory and practice: Thread pools and work queues, Brian Goetz](https://codeantenna.com/a/B2xXjD1Hql)
 - [Guava Service Examples](https://cdap.atlassian.net/wiki/spaces/CE/pages/1595185014/Guava+services+tutorial+with+examples)
+- [Data-Oriented Programming, Brian Goetz](https://www.infoq.com/articles/data-oriented-programming-java/)
 
 ## Notes
 
