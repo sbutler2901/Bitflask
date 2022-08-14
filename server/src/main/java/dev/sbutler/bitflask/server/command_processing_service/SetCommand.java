@@ -1,11 +1,10 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommand;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommand.Type;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import java.util.concurrent.ExecutorService;
@@ -31,9 +30,9 @@ class SetCommand implements ServerCommand {
   @SuppressWarnings("UnstableApiUsage")
   @Override
   public ListenableFuture<String> execute() {
-    StorageCommand storageCommand = new StorageCommand(Type.WRITE, ImmutableList.of(key, value));
-    ListenableFuture<StorageResponse> storageResponseFuture = storageCommandDispatcher.put(
-        storageCommand);
+    StorageCommandDTO storageCommandDTO = new WriteDTO(key, value);
+    ListenableFuture<StorageResponse> storageResponseFuture =
+        storageCommandDispatcher.put(storageCommandDTO);
 
     return FluentFuture.from(storageResponseFuture)
         .transform(this::transformStorageResponse, executorService)

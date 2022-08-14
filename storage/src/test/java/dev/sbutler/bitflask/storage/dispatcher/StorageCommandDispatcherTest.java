@@ -3,9 +3,8 @@ package dev.sbutler.bitflask.storage.dispatcher;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommand.Type;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
@@ -15,11 +14,10 @@ public class StorageCommandDispatcherTest {
   public void capacity() throws Exception {
     // Arrange
     StorageCommandDispatcher storageCommandDispatcher = new StorageCommandDispatcher(1);
-    storageCommandDispatcher.offer(new StorageCommand(
-        Type.READ, ImmutableList.of("key")));
+    storageCommandDispatcher.offer(new ReadDTO("key"));
     // Act
     ListenableFuture<StorageResponse> responseFuture =
-        storageCommandDispatcher.offer(new StorageCommand(Type.READ, ImmutableList.of("key")));
+        storageCommandDispatcher.offer(new ReadDTO("key"));
     // Assert
     assertTrue(responseFuture.isDone());
     try {

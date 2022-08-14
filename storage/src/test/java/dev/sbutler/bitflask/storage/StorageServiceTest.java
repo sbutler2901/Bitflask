@@ -10,13 +10,13 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.common.dispatcher.DispatcherSubmission;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommand;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommand.Type;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
@@ -50,10 +50,8 @@ class StorageServiceTest {
     // Arrange
     String key = "key", value = "value";
     SettableFuture<StorageResponse> responseFuture = SettableFuture.create();
-    DispatcherSubmission<StorageCommand, StorageResponse> submission =
-        new DispatcherSubmission<>(
-            new StorageCommand(Type.READ, ImmutableList.of(key)),
-            responseFuture);
+    DispatcherSubmission<StorageCommandDTO, StorageResponse> submission =
+        new DispatcherSubmission<>(new ReadDTO(key), responseFuture);
     doReturn(submission).when(storageCommandDispatcher).poll(anyLong(), any(TimeUnit.class));
     doReturn(Optional.of(value)).when(segmentManager).read(anyString());
     // Act
@@ -74,10 +72,8 @@ class StorageServiceTest {
     // Arrange
     String key = "key";
     SettableFuture<StorageResponse> responseFuture = SettableFuture.create();
-    DispatcherSubmission<StorageCommand, StorageResponse> submission =
-        new DispatcherSubmission<>(
-            new StorageCommand(Type.READ, ImmutableList.of(key)),
-            responseFuture);
+    DispatcherSubmission<StorageCommandDTO, StorageResponse> submission =
+        new DispatcherSubmission<>(new ReadDTO(key), responseFuture);
     doReturn(submission).when(storageCommandDispatcher).poll(anyLong(), any(TimeUnit.class));
     doReturn(Optional.empty()).when(segmentManager).read(anyString());
     // Act
@@ -98,10 +94,8 @@ class StorageServiceTest {
     // Arrange
     String key = "key";
     SettableFuture<StorageResponse> responseFuture = SettableFuture.create();
-    DispatcherSubmission<StorageCommand, StorageResponse> submission =
-        new DispatcherSubmission<>(
-            new StorageCommand(Type.READ, ImmutableList.of(key)),
-            responseFuture);
+    DispatcherSubmission<StorageCommandDTO, StorageResponse> submission =
+        new DispatcherSubmission<>(new ReadDTO(key), responseFuture);
     doReturn(submission).when(storageCommandDispatcher).poll(anyLong(), any(TimeUnit.class));
     doThrow(IOException.class).when(segmentManager).read(anyString());
     // Act
@@ -120,10 +114,8 @@ class StorageServiceTest {
     // Arrange
     String key = "key", value = "value";
     SettableFuture<StorageResponse> responseFuture = SettableFuture.create();
-    DispatcherSubmission<StorageCommand, StorageResponse> submission =
-        new DispatcherSubmission<>(
-            new StorageCommand(Type.WRITE, ImmutableList.of(key, value)),
-            responseFuture);
+    DispatcherSubmission<StorageCommandDTO, StorageResponse> submission =
+        new DispatcherSubmission<>(new WriteDTO(key, value), responseFuture);
     doReturn(submission).when(storageCommandDispatcher).poll(anyLong(), any(TimeUnit.class));
     // Act
     storage.startAsync().awaitRunning();
@@ -141,10 +133,8 @@ class StorageServiceTest {
     // Arrange
     String key = "key", value = "value";
     SettableFuture<StorageResponse> responseFuture = SettableFuture.create();
-    DispatcherSubmission<StorageCommand, StorageResponse> submission =
-        new DispatcherSubmission<>(
-            new StorageCommand(Type.WRITE, ImmutableList.of(key, value)),
-            responseFuture);
+    DispatcherSubmission<StorageCommandDTO, StorageResponse> submission =
+        new DispatcherSubmission<>(new WriteDTO(key, value), responseFuture);
     doReturn(submission).when(storageCommandDispatcher).poll(anyLong(), any(TimeUnit.class));
     doThrow(IOException.class).when(segmentManager).write(anyString(), anyString());
     // Act

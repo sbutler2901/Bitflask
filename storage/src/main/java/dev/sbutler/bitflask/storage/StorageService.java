@@ -10,7 +10,9 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 import dev.sbutler.bitflask.common.dispatcher.DispatcherSubmission;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommand;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
@@ -54,7 +56,7 @@ public final class StorageService extends AbstractExecutionThreadService {
   @Override
   protected void run() throws Exception {
     while (isRunning) {
-      DispatcherSubmission<StorageCommand, StorageResponse> submission =
+      DispatcherSubmission<StorageCommandDTO, StorageResponse> submission =
           commandDispatcher.poll(1, TimeUnit.SECONDS);
       if (submission != null) {
         processSubmission(submission);
@@ -62,14 +64,15 @@ public final class StorageService extends AbstractExecutionThreadService {
     }
   }
 
-  private void processSubmission(DispatcherSubmission<StorageCommand, StorageResponse> submission) {
+  private void processSubmission(
+      DispatcherSubmission<StorageCommandDTO, StorageResponse> submission) {
     // TODO: bound executor task acceptance
-    StorageCommand command = submission.command();
+    StorageCommandDTO commandDTO = submission.commandDTO();
     SettableFuture<StorageResponse> response = submission.responseFuture();
-    switch (command.type()) {
-      case READ -> response.setFuture(read(command.arguments().get(0)));
-      case WRITE ->
-          response.setFuture(write(command.arguments().get(0), command.arguments().get(1)));
+    // TODO: map to command with execute
+    switch (commandDTO) {
+      case ReadDTO readDTO -> response.setFuture(read(readDTO.key()));
+      case WriteDTO writeDTO -> response.setFuture(write(writeDTO.key(), writeDTO.value()));
     }
   }
 
