@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,6 +80,20 @@ public class SegmentImplTest {
     // Assert
     assertEquals(5L, mergeBiFunction.apply(0L, 5L));
     assertEquals(5L, mergeBiFunction.apply(5L, 0L));
+  }
+
+  @Test
+  void write_sizeLimitExceededConsumer() throws Exception {
+    // Arrange
+    segment = new SegmentImpl(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset, 1);
+    doReturn(true).when(segmentFile).isOpen();
+    AtomicBoolean wasCalled = new AtomicBoolean(false);
+    Consumer<Segment> limitConsumer = (ignored) -> wasCalled.set(true);
+    segment.registerSizeLimitExceededConsumer(limitConsumer);
+    // Act
+    segment.write("key", "value");
+    // Assert
+    assertTrue(wasCalled.get());
   }
 
   @Test
