@@ -28,10 +28,10 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class SegmentManagerImplTest {
+public class SegmentManagerServiceTest {
 
   @InjectMocks
-  SegmentManagerService segmentManager;
+  SegmentManagerService segmentManagerService;
   @Spy
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
@@ -53,7 +53,7 @@ public class SegmentManagerImplTest {
     Segment writableSegment = mock(Segment.class);
     doReturn(writableSegment).when(managedSegments).getWritableSegment();
     // Act
-    segmentManager.startAsync().awaitRunning();
+    segmentManagerService.startAsync().awaitRunning();
   }
 
   @Test
@@ -61,7 +61,8 @@ public class SegmentManagerImplTest {
     // Arrange
     doThrow(IOException.class).when(segmentLoader).loadExistingSegments();
     // Act / Assert
-    assertThrows(IllegalStateException.class, () -> segmentManager.startAsync().awaitRunning());
+    assertThrows(IllegalStateException.class,
+        () -> segmentManagerService.startAsync().awaitRunning());
   }
 
   @Test
@@ -73,8 +74,8 @@ public class SegmentManagerImplTest {
     Segment frozenSegment = mock(Segment.class);
     doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).getFrozenSegments();
     // Act
-    segmentManager.startAsync().awaitRunning();
-    segmentManager.stopAsync().awaitTerminated();
+    segmentManagerService.startAsync().awaitRunning();
+    segmentManagerService.stopAsync().awaitTerminated();
     // Assert
     verify(writableSegment, times(1)).close();
     verify(frozenSegment, times(1)).close();
@@ -87,8 +88,8 @@ public class SegmentManagerImplTest {
     Segment writableSegment = mock(Segment.class);
     doReturn(writableSegment).when(managedSegments).getWritableSegment();
     // Act
-    segmentManager.startAsync().awaitRunning();
-    ManagedSegments retrievedManagedSegments = segmentManager.getManagedSegments();
+    segmentManagerService.startAsync().awaitRunning();
+    ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
     assertEquals(managedSegments, retrievedManagedSegments);
   }
@@ -106,11 +107,11 @@ public class SegmentManagerImplTest {
     doReturn(newWritableSegment).when(segmentFactory).createSegment();
     ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
     // Act
-    segmentManager.startAsync().awaitRunning();
+    segmentManagerService.startAsync().awaitRunning();
     verify(writableSegment).registerSizeLimitExceededConsumer(captor.capture());
     Consumer<Segment> limitConsumer = captor.getValue();
     limitConsumer.accept(writableSegment);
-    ManagedSegments retrievedManagedSegments = segmentManager.getManagedSegments();
+    ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
     assertEquals(newWritableSegment, retrievedManagedSegments.getWritableSegment());
     assertEquals(writableSegment, retrievedManagedSegments.frozenSegments().get(0));
@@ -125,11 +126,11 @@ public class SegmentManagerImplTest {
     doReturn(writableSegment).when(managedSegments).getWritableSegment();
     ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
     // Act
-    segmentManager.startAsync().awaitRunning();
+    segmentManagerService.startAsync().awaitRunning();
     verify(writableSegment).registerSizeLimitExceededConsumer(captor.capture());
     Consumer<Segment> limitConsumer = captor.getValue();
     limitConsumer.accept(mock(Segment.class));
-    ManagedSegments retrievedManagedSegments = segmentManager.getManagedSegments();
+    ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
     assertEquals(writableSegment, retrievedManagedSegments.getWritableSegment());
   }
@@ -145,13 +146,13 @@ public class SegmentManagerImplTest {
     doThrow(e).when(segmentFactory).createSegment();
     ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
     // Act
-    segmentManager.startAsync().awaitRunning();
+    segmentManagerService.startAsync().awaitRunning();
     verify(writableSegment).registerSizeLimitExceededConsumer(captor.capture());
     Consumer<Segment> limitConsumer = captor.getValue();
     limitConsumer.accept(writableSegment);
     // Assert
-    assertFalse(segmentManager.isRunning());
-    assertEquals(e, segmentManager.failureCause());
+    assertFalse(segmentManagerService.isRunning());
+    assertEquals(e, segmentManagerService.failureCause());
   }
 
   /*@SuppressWarnings("unchecked")
