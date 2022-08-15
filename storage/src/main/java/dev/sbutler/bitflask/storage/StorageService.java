@@ -4,7 +4,8 @@ import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTe
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
-import com.google.common.util.concurrent.AbstractExecutionThreadService;
+import com.google.common.util.concurrent.AbstractService;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.Service;
 import com.google.common.util.concurrent.ServiceManager;
@@ -27,7 +28,7 @@ import javax.inject.Singleton;
  * Manages persisting and retrieving data.
  */
 @Singleton
-public final class StorageService extends AbstractExecutionThreadService {
+public final class StorageService extends AbstractService implements Runnable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -48,20 +49,28 @@ public final class StorageService extends AbstractExecutionThreadService {
   }
 
   @Override
-  protected void startUp() {
-    serviceManager.awaitHealthy();
+  protected void doStart() {
+    addServiceManagerListener();
+    serviceManager.startAsync().awaitHealthy();
+    Futures.submit(this, executorService);
+    notifyStarted();
     logger.atInfo().log("StorageService started");
   }
 
   @Override
-  protected void run() throws Exception {
-    while (isRunning) {
-      // TODO: bound executor task acceptance
-      DispatcherSubmission<StorageCommandDTO, StorageResponse> submission =
-          commandDispatcher.poll(1, TimeUnit.SECONDS);
-      if (submission != null) {
-        processSubmission(submission);
+  public void run() {
+    try {
+      while (isRunning) {
+        // TODO: bound executor task acceptance
+        DispatcherSubmission<StorageCommandDTO, StorageResponse> submission =
+            commandDispatcher.poll(1, TimeUnit.SECONDS);
+        if (submission != null) {
+          processSubmission(submission);
+        }
       }
+    } catch (Exception e) {
+      logger.atSevere().withCause(e).log("Running failed, marking service as failed");
+      notifyFailed(e);
     }
   }
 
@@ -73,13 +82,14 @@ public final class StorageService extends AbstractExecutionThreadService {
 
   @SuppressWarnings("UnstableApiUsage")
   @Override
-  protected void triggerShutdown() {
-    System.out.println("StorageService shutdown triggered");
+  protected void doStop() {
+    logger.atInfo().log("Stopping triggered");
     isRunning = false;
     commandDispatcher.closeAndDrain();
     stopServices();
     shutdownAndAwaitTermination(executorService, Duration.ofSeconds(5));
-    System.out.println("StorageService completed shutdown");
+    notifyStopped();
+    logger.atInfo().log("Completed shutdown");
   }
 
   private void stopServices() {
@@ -89,7 +99,7 @@ public final class StorageService extends AbstractExecutionThreadService {
       serviceManager.stopAsync().awaitStopped(5, TimeUnit.SECONDS);
     } catch (TimeoutException timeout) {
       // stopping timed out
-      System.err.println("StorageService's ServiceManager timed out while stopping" + timeout);
+      logger.atSevere().log("StorageService's ServiceManager timed out while stopping" + timeout);
     }
   }
 
@@ -97,7 +107,7 @@ public final class StorageService extends AbstractExecutionThreadService {
     serviceManager.addListener(
         new ServiceManager.Listener() {
           public void stopped() {
-            System.out.println("StorageService: All services have stopped.");
+            logger.atInfo().log("All services have stopped");
           }
 
           public void healthy() {
@@ -105,7 +115,7 @@ public final class StorageService extends AbstractExecutionThreadService {
           }
 
           public void failure(@Nonnull Service service) {
-            System.err.printf("StorageService: [%s] failed to start.", service.getClass());
+            notifyFailed(new RuntimeException(String.format("[%s] failed.", service)));
           }
         }, executorService);
   }

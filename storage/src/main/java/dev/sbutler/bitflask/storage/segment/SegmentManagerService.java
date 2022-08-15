@@ -4,7 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
-import com.google.common.util.concurrent.AbstractIdleService;
+import com.google.common.util.concurrent.AbstractService;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -23,7 +23,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public final class SegmentManagerService extends AbstractIdleService {
+public final class SegmentManagerService extends AbstractService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -56,21 +56,23 @@ public final class SegmentManagerService extends AbstractIdleService {
   }
 
   @Override
-  public void startUp() throws IOException {
-    if (managedSegmentsAtomicReference.get() != null) {
-      return;
+  protected void doStart() {
+    try {
+      ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
+      managedSegments.getWritableSegment()
+          .registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
+      managedSegmentsAtomicReference.set(managedSegments);
+    } catch (IOException e) {
+      notifyFailed(e);
     }
-    ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
-    managedSegments.getWritableSegment()
-        .registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
-    managedSegmentsAtomicReference.set(managedSegments);
   }
 
   @Override
-  public void shutDown() {
+  protected void doStop() {
     ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
     managedSegments.getWritableSegment().close();
     managedSegments.getFrozenSegments().forEach(Segment::close);
+    notifyStopped();
   }
 
   public ManagedSegments getManagedSegments() {
@@ -81,15 +83,19 @@ public final class SegmentManagerService extends AbstractIdleService {
     if (!segment.equals(managedSegmentsAtomicReference.get().getWritableSegment())) {
       return;
     }
+
     try {
       createNewWritableSegmentAndUpdateManagedSegments();
-      // TODO: simplify compaction activation / handling
-      if (shouldInitiateCompaction()) {
-        initiateCompaction();
-      }
     } catch (IOException e) {
+      notifyFailed(e);
       // TODO: improve error handling
-      logger.atSevere().log("Failed to create a new writable segment");
+      logger.atSevere().withCause(e).log("Failed to create a new writable segment");
+      return;
+    }
+
+    // TODO: simplify compaction activation / handling
+    if (shouldInitiateCompaction()) {
+      initiateCompaction();
     }
   }
 
