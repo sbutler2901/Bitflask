@@ -65,6 +65,7 @@ public final class SegmentManagerService extends AbstractService {
     } catch (IOException e) {
       notifyFailed(e);
     }
+    notifyStarted();
   }
 
   @Override
@@ -87,9 +88,8 @@ public final class SegmentManagerService extends AbstractService {
     try {
       createNewWritableSegmentAndUpdateManagedSegments();
     } catch (IOException e) {
-      notifyFailed(e);
-      // TODO: improve error handling
       logger.atSevere().withCause(e).log("Failed to create a new writable segment");
+      notifyFailed(e);
       return;
     }
 
