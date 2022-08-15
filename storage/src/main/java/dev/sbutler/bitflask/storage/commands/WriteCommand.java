@@ -36,7 +36,7 @@ public class WriteCommand implements StorageCommand {
   private StorageResponse write() {
     String key = writeDTO.key();
     String value = writeDTO.value();
-    Segment writableSegment = managedSegments.getWritableSegment();
+    Segment writableSegment = managedSegments.writableSegment();
 
     logger.atInfo().log("Writing [%s] : [%s] to segment [%d]", key, value,
         writableSegment.getSegmentFileKey());

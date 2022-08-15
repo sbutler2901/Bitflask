@@ -44,6 +44,12 @@ public class StorageConfiguration {
       description = "The size limit of a segment before a new one will be created")
   private long storageSegmentSizeLimit;
 
+  @Parameter(names = StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG,
+      validateWith = PositiveIntegerValidator.class,
+      description = "The number of new segments to be created before compaction is performed"
+  )
+  private int storageCompactionThreshold;
+
   public int getStorageDispatcherCapacity() {
     return storageDispatcherCapacity;
   }
@@ -56,12 +62,17 @@ public class StorageConfiguration {
     return storageSegmentSizeLimit;
   }
 
+  public int getStorageCompactionThreshold() {
+    return storageCompactionThreshold;
+  }
+
   @Override
   public String toString() {
     return "StorageConfiguration{" +
         "storageDispatcherCapacity=" + storageDispatcherCapacity +
         ", storageStoreDirectoryPath=" + storageStoreDirectoryPath +
         ", storageSegmentSizeLimit=" + storageSegmentSizeLimit +
+        ", storageCompactionThreshold=" + storageCompactionThreshold +
         '}';
   }
 }

@@ -9,6 +9,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
@@ -27,8 +28,6 @@ public final class SegmentManagerService extends AbstractService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private static final int DEFAULT_COMPACTION_THRESHOLD_INCREMENT = 3;
-
   private final ListeningExecutorService executorService;
   private final SegmentFactory segmentFactory;
   private final SegmentCompactorFactory segmentCompactorFactory;
@@ -37,9 +36,9 @@ public final class SegmentManagerService extends AbstractService {
 
   private final AtomicReference<ManagedSegments> managedSegmentsAtomicReference = new AtomicReference<>();
 
+  private final int compactionThreshold;
   private final AtomicBoolean compactionActive = new AtomicBoolean(false);
-  private final AtomicInteger nextCompactionThreshold = new AtomicInteger(
-      DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
+  private final AtomicInteger nextCompactionThreshold = new AtomicInteger();
 
   @Inject
   SegmentManagerService(
@@ -47,21 +46,24 @@ public final class SegmentManagerService extends AbstractService {
       SegmentFactory segmentFactory,
       SegmentCompactorFactory segmentCompactorFactory,
       SegmentDeleterFactory segmentDeleterFactory,
-      SegmentLoader segmentLoader) {
+      SegmentLoader segmentLoader,
+      StorageConfiguration storageConfiguration) {
     this.executorService = executorService;
     this.segmentFactory = segmentFactory;
     this.segmentCompactorFactory = segmentCompactorFactory;
     this.segmentDeleterFactory = segmentDeleterFactory;
     this.segmentLoader = segmentLoader;
+    this.compactionThreshold = storageConfiguration.getStorageCompactionThreshold();
   }
 
   @Override
   protected void doStart() {
     try {
       ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
-      managedSegments.getWritableSegment()
+      managedSegments.writableSegment()
           .registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
       managedSegmentsAtomicReference.set(managedSegments);
+      nextCompactionThreshold.set(compactionThreshold + managedSegments.frozenSegments().size());
     } catch (IOException e) {
       notifyFailed(e);
     }
@@ -71,8 +73,8 @@ public final class SegmentManagerService extends AbstractService {
   @Override
   protected void doStop() {
     ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
-    managedSegments.getWritableSegment().close();
-    managedSegments.getFrozenSegments().forEach(Segment::close);
+    managedSegments.writableSegment().close();
+    managedSegments.frozenSegments().forEach(Segment::close);
     notifyStopped();
   }
 
@@ -81,7 +83,7 @@ public final class SegmentManagerService extends AbstractService {
   }
 
   private synchronized void segmentSizeLimitExceededConsumer(Segment segment) {
-    if (!segment.equals(managedSegmentsAtomicReference.get().getWritableSegment())) {
+    if (!segment.equals(managedSegmentsAtomicReference.get().writableSegment())) {
       return;
     }
 
@@ -104,8 +106,8 @@ public final class SegmentManagerService extends AbstractService {
     ManagedSegments currentManagedSegments = managedSegmentsAtomicReference.get();
     Segment newWritableSegment = segmentFactory.createSegment();
     ImmutableList<Segment> newFrozenSegments = new ImmutableList.Builder<Segment>()
-        .add(currentManagedSegments.getWritableSegment())
-        .addAll(currentManagedSegments.getFrozenSegments())
+        .add(currentManagedSegments.writableSegment())
+        .addAll(currentManagedSegments.frozenSegments())
         .build();
 
     newWritableSegment.registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
@@ -115,7 +117,7 @@ public final class SegmentManagerService extends AbstractService {
 
   private boolean shouldInitiateCompaction() {
     return !compactionActive.get()
-        && managedSegmentsAtomicReference.get().getFrozenSegments().size()
+        && managedSegmentsAtomicReference.get().frozenSegments().size()
         >= nextCompactionThreshold.get();
   }
 
@@ -123,7 +125,7 @@ public final class SegmentManagerService extends AbstractService {
     logger.atInfo().log("Initiating Compaction");
     compactionActive.set(true);
     SegmentCompactor segmentCompactor = segmentCompactorFactory.create(
-        managedSegmentsAtomicReference.get().getFrozenSegments());
+        managedSegmentsAtomicReference.get().frozenSegments());
     ListenableFuture<CompactionResults> compactionResults = segmentCompactor.compactSegments();
     Futures.addCallback(compactionResults, new CompactionResultsFutureCallback(), executorService);
   }
@@ -162,16 +164,15 @@ public final class SegmentManagerService extends AbstractService {
         ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
         Deque<Segment> newFrozenSegments = new ArrayDeque<>();
 
-        currentManagedSegment.getFrozenSegments().stream()
+        currentManagedSegment.frozenSegments().stream()
             .filter((segment) -> !segment.hasBeenCompacted())
             .forEach(newFrozenSegments::offerFirst);
         newFrozenSegments.addAll(compactedSegments);
 
-        nextCompactionThreshold.set(
-            newFrozenSegments.size() + DEFAULT_COMPACTION_THRESHOLD_INCREMENT);
+        nextCompactionThreshold.set(compactionThreshold + newFrozenSegments.size());
 
         managedSegmentsAtomicReference.set(
-            new ManagedSegments(currentManagedSegment.getWritableSegment(),
+            new ManagedSegments(currentManagedSegment.writableSegment(),
                 ImmutableList.copyOf(newFrozenSegments)));
       }
     }
@@ -248,11 +249,11 @@ public final class SegmentManagerService extends AbstractService {
   public record ManagedSegments(Segment writableSegment,
                                 ImmutableList<Segment> frozenSegments) {
 
-    public Segment getWritableSegment() {
+    public Segment writableSegment() {
       return writableSegment;
     }
 
-    public ImmutableList<Segment> getFrozenSegments() {
+    public ImmutableList<Segment> frozenSegments() {
       return frozenSegments;
     }
   }

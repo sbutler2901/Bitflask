@@ -14,15 +14,16 @@ import static org.mockito.Mockito.verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
+import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -30,7 +31,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class SegmentManagerServiceTest {
 
-  @InjectMocks
   SegmentManagerService segmentManagerService;
   @Spy
   @SuppressWarnings("UnstableApiUsage")
@@ -44,14 +44,30 @@ public class SegmentManagerServiceTest {
   @Mock
   SegmentLoader segmentLoader;
   @Mock
+  StorageConfiguration storageConfiguration = new StorageConfiguration();
+  @Mock
   ManagedSegments managedSegments;
+
+  @BeforeEach
+  void beforeEach() {
+    doReturn(3).when(storageConfiguration).getStorageCompactionThreshold();
+    segmentManagerService = new SegmentManagerService(
+        executorService,
+        segmentFactory,
+        segmentCompactorFactory,
+        segmentDeleterFactory,
+        segmentLoader,
+        storageConfiguration
+    );
+  }
 
   @Test
   void doStart() throws Exception {
     // Arrange
     doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).getWritableSegment();
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
     // Act
     segmentManagerService.startAsync().awaitRunning();
   }
@@ -70,9 +86,9 @@ public class SegmentManagerServiceTest {
     // Arrange
     doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).getWritableSegment();
+    doReturn(writableSegment).when(managedSegments).writableSegment();
     Segment frozenSegment = mock(Segment.class);
-    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).getFrozenSegments();
+    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
     // Act
     segmentManagerService.startAsync().awaitRunning();
     segmentManagerService.stopAsync().awaitTerminated();
@@ -86,7 +102,8 @@ public class SegmentManagerServiceTest {
     // Arrange
     doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).getWritableSegment();
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
     // Act
     segmentManagerService.startAsync().awaitRunning();
     ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
@@ -100,9 +117,9 @@ public class SegmentManagerServiceTest {
     // Arrange
     doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).getWritableSegment();
+    doReturn(writableSegment).when(managedSegments).writableSegment();
     Segment frozenSegment = mock(Segment.class);
-    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).getFrozenSegments();
+    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
     Segment newWritableSegment = mock(Segment.class);
     doReturn(newWritableSegment).when(segmentFactory).createSegment();
     ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
@@ -113,7 +130,7 @@ public class SegmentManagerServiceTest {
     limitConsumer.accept(writableSegment);
     ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
-    assertEquals(newWritableSegment, retrievedManagedSegments.getWritableSegment());
+    assertEquals(newWritableSegment, retrievedManagedSegments.writableSegment());
     assertEquals(writableSegment, retrievedManagedSegments.frozenSegments().get(0));
   }
 
@@ -123,7 +140,8 @@ public class SegmentManagerServiceTest {
     // Arrange
     doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).getWritableSegment();
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
     ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
     // Act
     segmentManagerService.startAsync().awaitRunning();
@@ -132,7 +150,7 @@ public class SegmentManagerServiceTest {
     limitConsumer.accept(mock(Segment.class));
     ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
-    assertEquals(writableSegment, retrievedManagedSegments.getWritableSegment());
+    assertEquals(writableSegment, retrievedManagedSegments.writableSegment());
   }
 
   @SuppressWarnings("unchecked")
@@ -141,7 +159,8 @@ public class SegmentManagerServiceTest {
     // Arrange
     doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).getWritableSegment();
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
     IOException e = new IOException();
     doThrow(e).when(segmentFactory).createSegment();
     ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
@@ -161,9 +180,9 @@ public class SegmentManagerServiceTest {
     // Arrange
     doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).getWritableSegment();
+    doReturn(writableSegment).when(managedSegments).writableSegment();
     Segment frozenSegment = mock(Segment.class);
-    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).getFrozenSegments();
+    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
     Segment newWritableSegment = mock(Segment.class);
     doReturn(newWritableSegment).when(segmentFactory).createSegment();
     ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
@@ -174,14 +193,14 @@ public class SegmentManagerServiceTest {
     limitConsumer.accept(writableSegment);
     ManagedSegments retrievedManagedSegments = segmentManager.getManagedSegments();
     // Assert
-    assertEquals(newWritableSegment, retrievedManagedSegments.getWritableSegment());
+    assertEquals(newWritableSegment, retrievedManagedSegments.writableSegment());
     assertEquals(writableSegment, retrievedManagedSegments.frozenSegments().get(0));
   }*/
 
   Segment compactionInitiateMocks(Segment writableSegment, ImmutableList<Segment> frozenSegments)
       throws Exception {
-    doReturn(writableSegment).when(managedSegments).getWritableSegment();
-    doReturn(frozenSegments).when(managedSegments).getFrozenSegments();
+    doReturn(writableSegment).when(managedSegments).writableSegment();
+    doReturn(frozenSegments).when(managedSegments).frozenSegments();
     doReturn(true).when(writableSegment).exceedsStorageThreshold();
     Segment newWritableSegment = mock(Segment.class);
     doReturn(newWritableSegment).when(segmentFactory).createSegment();

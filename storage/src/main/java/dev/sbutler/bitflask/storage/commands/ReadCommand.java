@@ -66,10 +66,10 @@ public class ReadCommand implements StorageCommand {
 
   private Optional<Segment> findLatestSegmentWithKey() {
     String key = readDTO.key();
-    if (managedSegments.getWritableSegment().containsKey(key)) {
-      return Optional.of(managedSegments.getWritableSegment());
+    if (managedSegments.writableSegment().containsKey(key)) {
+      return Optional.of(managedSegments.writableSegment());
     }
-    for (Segment segment : managedSegments.getFrozenSegments()) {
+    for (Segment segment : managedSegments.frozenSegments()) {
       if (segment.containsKey(key)) {
         return Optional.of(segment);
       }

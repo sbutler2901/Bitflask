@@ -45,6 +45,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.OngoingStubbing;
 
+@SuppressWarnings("resource")
 @ExtendWith(MockitoExtension.class)
 class SegmentLoaderTest {
 
@@ -102,9 +103,9 @@ class SegmentLoaderTest {
       ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
 
       // Assert
-      assertEquals(firstSegment, managedSegments.getWritableSegment());
-      assertEquals(1, managedSegments.getFrozenSegments().size());
-      assertEquals(secondSegment, managedSegments.getFrozenSegments().get(0));
+      assertEquals(firstSegment, managedSegments.writableSegment());
+      assertEquals(1, managedSegments.frozenSegments().size());
+      assertEquals(secondSegment, managedSegments.frozenSegments().get(0));
       // Verify path sorted order maintained
       fileChannelOrder.verify(fileChannelMockedStatic,
           () -> FileChannel.open(eq(secondPath), anySet()));
@@ -122,8 +123,8 @@ class SegmentLoaderTest {
     // Act
     ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
     // Assert
-    assertEquals(writableSegment, managedSegments.getWritableSegment());
-    assertEquals(0, managedSegments.getFrozenSegments().size());
+    assertEquals(writableSegment, managedSegments.writableSegment());
+    assertEquals(0, managedSegments.frozenSegments().size());
   }
 
   @Test
@@ -144,8 +145,8 @@ class SegmentLoaderTest {
       // Act
       ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
       // Assert
-      assertEquals(writableSegment, managedSegments.getWritableSegment());
-      assertEquals(0, managedSegments.getFrozenSegments().size());
+      assertEquals(writableSegment, managedSegments.writableSegment());
+      assertEquals(0, managedSegments.frozenSegments().size());
     }
   }
 
