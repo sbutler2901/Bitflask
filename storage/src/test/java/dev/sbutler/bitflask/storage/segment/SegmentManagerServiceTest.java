@@ -8,10 +8,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
@@ -19,12 +21,14 @@ import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -151,6 +155,30 @@ public class SegmentManagerServiceTest {
     ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
     assertEquals(writableSegment, retrievedManagedSegments.writableSegment());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void segmentSizeLimitExceededConsumer_failedSubmission() throws Exception {
+    try (MockedStatic<Futures> futuresMockedStatic = mockStatic(Futures.class)) {
+      // Arrange
+      doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+      Segment writableSegment = mock(Segment.class);
+      doReturn(writableSegment).when(managedSegments).writableSegment();
+      Segment frozenSegment = mock(Segment.class);
+      doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
+      ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
+      RejectedExecutionException e = new RejectedExecutionException();
+      futuresMockedStatic.when(() -> Futures.submit(any(Runnable.class), any()))
+          .thenThrow(e);
+      // Act
+      segmentManagerService.startAsync().awaitRunning();
+      verify(writableSegment).registerSizeLimitExceededConsumer(captor.capture());
+      Consumer<Segment> limitConsumer = captor.getValue();
+      limitConsumer.accept(writableSegment);
+      // Assert
+      assertEquals(e, segmentManagerService.failureCause());
+    }
   }
 
   @SuppressWarnings("unchecked")

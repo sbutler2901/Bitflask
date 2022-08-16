@@ -85,34 +85,49 @@ public final class SegmentManagerService extends AbstractService {
     return managedSegmentsAtomicReference.get();
   }
 
-  private synchronized void segmentSizeLimitExceededConsumer(Segment segment) {
-    if (creatingNewActiveSegment.get()
-        || !segment.equals(managedSegmentsAtomicReference.get().writableSegment())) {
+  public record ManagedSegments(Segment writableSegment,
+                                ImmutableList<Segment> frozenSegments) {
+
+  }
+
+  private void segmentSizeLimitExceededConsumer(Segment segment) {
+    // Attempt, without blocking calling segment, to reduce scheduling jobs that will instantly complete
+    if (shouldSkipCreatingNewActiveSegment(segment)) {
       return;
     }
-    creatingNewActiveSegment.set(true);
 
     try {
-      Futures.submit(() -> {
-        try {
-          createNewWritableSegmentAndUpdateManagedSegments();
-
-          // TODO: simplify compaction activation / handling
-          if (shouldInitiateCompaction()) {
-            initiateCompaction();
-          }
-        } catch (IOException e) {
-          logger.atSevere().withCause(e).log("Failed to create new active segment.");
-          notifyFailed(e);
-        } finally {
-          creatingNewActiveSegment.set(false);
-        }
-      }, executorService);
+      Futures.submit(() -> handleSegmentSizeLimitExceeded(segment), executorService);
     } catch (RejectedExecutionException e) {
       logger.atSevere().withCause(e).log("Failed to submit creation of new active segment");
-      creatingNewActiveSegment.set(false);
       notifyFailed(e);
     }
+  }
+
+  private synchronized void handleSegmentSizeLimitExceeded(Segment segment) {
+    if (shouldSkipCreatingNewActiveSegment(segment)) {
+      return;
+    }
+
+    creatingNewActiveSegment.set(true);
+    try {
+      createNewWritableSegmentAndUpdateManagedSegments();
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log("Failed to create new active segment.");
+      notifyFailed(e);
+    } finally {
+      creatingNewActiveSegment.set(false);
+    }
+
+    // TODO: simplify compaction activation / handling
+    if (shouldInitiateCompaction()) {
+      initiateCompaction();
+    }
+  }
+
+  private boolean shouldSkipCreatingNewActiveSegment(Segment segment) {
+    return creatingNewActiveSegment.get() || !segment.equals(
+        managedSegmentsAtomicReference.get().writableSegment());
   }
 
   private synchronized void createNewWritableSegmentAndUpdateManagedSegments() throws IOException {
@@ -135,13 +150,42 @@ public final class SegmentManagerService extends AbstractService {
         >= nextCompactionThreshold.get();
   }
 
-  private void initiateCompaction() {
+  private synchronized void initiateCompaction() {
     logger.atInfo().log("Initiating Compaction");
     compactionActive.set(true);
     SegmentCompactor segmentCompactor = segmentCompactorFactory.create(
         managedSegmentsAtomicReference.get().frozenSegments());
     ListenableFuture<CompactionResults> compactionResults = segmentCompactor.compactSegments();
     Futures.addCallback(compactionResults, new CompactionResultsFutureCallback(), executorService);
+  }
+
+  private synchronized void updateAfterCompaction(ImmutableList<Segment> compactedSegments) {
+    logger.atInfo().log("Updating after compaction");
+    ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
+    Deque<Segment> newFrozenSegments = new ArrayDeque<>();
+
+    currentManagedSegment.frozenSegments().stream()
+        .filter((segment) -> !segment.hasBeenCompacted())
+        .forEach(newFrozenSegments::offerFirst);
+    newFrozenSegments.addAll(compactedSegments);
+
+    nextCompactionThreshold.set(compactionThreshold + newFrozenSegments.size());
+
+    managedSegmentsAtomicReference.set(
+        new ManagedSegments(currentManagedSegment.writableSegment(),
+            ImmutableList.copyOf(newFrozenSegments)));
+  }
+
+  private void queueSegmentsForDeletion(ImmutableList<Segment> segmentsForDeletion) {
+    if (segmentsForDeletion.isEmpty()) {
+      return;
+    }
+    logger.atInfo()
+        .log("Queueing [%d] segments for deletion after compaction", segmentsForDeletion.size());
+    SegmentDeleter segmentDeleter = segmentDeleterFactory.create(segmentsForDeletion);
+    ListenableFuture<DeletionResults> deletionResults = segmentDeleter.deleteSegments();
+    Futures.addCallback(deletionResults, new DeletionResultsFutureCallback(),
+        executorService);
   }
 
   private class CompactionResultsFutureCallback implements FutureCallback<CompactionResults> {
@@ -152,69 +196,37 @@ public final class SegmentManagerService extends AbstractService {
         case CompactionResults.Success success -> handleCompactionSuccess(success);
         case CompactionResults.Failed failed -> handleCompactionFailed(failed);
       }
+      compactionActive.set(false);
     }
 
     @Override
     public void onFailure(@Nonnull Throwable t) {
       logger.atSevere().withCause(t).log("Segment compaction threw an unexpected exception");
+      compactionActive.set(false);
+      notifyFailed(t);
     }
 
     private void handleCompactionSuccess(CompactionResults.Success success) {
       logger.atInfo().log("Compaction completed");
       updateAfterCompaction(success.compactedSegments());
       queueSegmentsForDeletion(success.segmentsProvidedForCompaction());
-      compactionActive.set(false);
     }
 
     private void handleCompactionFailed(CompactionResults.Failed failed) {
       logger.atSevere().withCause(failed.failureReason()).log("Compaction failed");
       queueSegmentsForDeletion(failed.failedCompactionSegments());
-      compactionActive.set(false);
     }
-
-    private void updateAfterCompaction(ImmutableList<Segment> compactedSegments) {
-      synchronized (SegmentManagerService.this) {
-        logger.atInfo().log("Updating after compaction");
-        ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
-        Deque<Segment> newFrozenSegments = new ArrayDeque<>();
-
-        currentManagedSegment.frozenSegments().stream()
-            .filter((segment) -> !segment.hasBeenCompacted())
-            .forEach(newFrozenSegments::offerFirst);
-        newFrozenSegments.addAll(compactedSegments);
-
-        nextCompactionThreshold.set(compactionThreshold + newFrozenSegments.size());
-
-        managedSegmentsAtomicReference.set(
-            new ManagedSegments(currentManagedSegment.writableSegment(),
-                ImmutableList.copyOf(newFrozenSegments)));
-      }
-    }
-
-    private void queueSegmentsForDeletion(ImmutableList<Segment> segmentsForDeletion) {
-      if (segmentsForDeletion.isEmpty()) {
-        return;
-      }
-      logger.atInfo()
-          .log("Queueing [%d] segments for deletion after compaction", segmentsForDeletion.size());
-      SegmentDeleter segmentDeleter = segmentDeleterFactory.create(segmentsForDeletion);
-      ListenableFuture<DeletionResults> deletionResults = segmentDeleter.deleteSegments();
-      Futures.addCallback(deletionResults, new DeletionResultsFutureCallback(),
-          executorService);
-    }
-
   }
 
+  // TODO: improve error handling
   private record DeletionResultsFutureCallback() implements FutureCallback<DeletionResults> {
 
     @Override
     public void onSuccess(DeletionResults results) {
       switch (results) {
         case DeletionResults.Success success -> handleDeletionSuccess(success);
-        case DeletionResults.FailedGeneral failedGeneral ->
-            handleDeletionFailedGeneral(failedGeneral);
-        case DeletionResults.FailedSegments failedSegments ->
-            handleDeletionFailedSegments(failedSegments);
+        case DeletionResults.FailedGeneral failedGeneral -> handleDeletionFailedGeneral(failedGeneral);
+        case DeletionResults.FailedSegments failedSegments -> handleDeletionFailedSegments(failedSegments);
       }
     }
 
@@ -224,27 +236,18 @@ public final class SegmentManagerService extends AbstractService {
     }
 
     private void handleDeletionSuccess(DeletionResults.Success results) {
-      logger.atInfo().log(buildLogForDeletionSuccess(results.segmentsProvidedForDeletion()));
+      logger.atInfo().log("Compacted segments successfully deleted "
+          + buildLogForSegmentsToBeDeleted(results.segmentsProvidedForDeletion()));
     }
 
     private void handleDeletionFailedGeneral(DeletionResults.FailedGeneral results) {
       logger.atSevere().withCause(results.failureReason())
-          .log(buildLogForDeletionGeneralFailure(results.segmentsProvidedForDeletion()));
+          .log("Failure to delete compacted segments due to general failure"
+              + buildLogForSegmentsToBeDeleted(results.segmentsProvidedForDeletion()));
     }
 
     private void handleDeletionFailedSegments(DeletionResults.FailedSegments results) {
       logger.atSevere().log(buildLogForSegmentsFailure(results.segmentsFailureReasonsMap()));
-    }
-
-    private String buildLogForDeletionSuccess(ImmutableList<Segment> segmentsProvidedForDeletion) {
-      return "Compacted segments successfully deleted "
-          + buildLogForSegmentsToBeDeleted(segmentsProvidedForDeletion);
-    }
-
-    private String buildLogForDeletionGeneralFailure(
-        ImmutableList<Segment> segmentsProvidedForDeletion) {
-      return "Failure to delete compacted segments due to general failure"
-          + buildLogForSegmentsToBeDeleted(segmentsProvidedForDeletion);
     }
 
     private String buildLogForSegmentsToBeDeleted(ImmutableList<Segment> segmentsToBeDeleted) {
@@ -258,17 +261,5 @@ public final class SegmentManagerService extends AbstractService {
           joiner.join(segmentThrowableImmutableMap) + "]";
     }
 
-  }
-
-  public record ManagedSegments(Segment writableSegment,
-                                ImmutableList<Segment> frozenSegments) {
-
-    public Segment writableSegment() {
-      return writableSegment;
-    }
-
-    public ImmutableList<Segment> frozenSegments() {
-      return frozenSegments;
-    }
   }
 }
