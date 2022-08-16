@@ -16,6 +16,7 @@ import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,8 +38,10 @@ public final class SegmentManagerService extends AbstractService {
   private final AtomicReference<ManagedSegments> managedSegmentsAtomicReference = new AtomicReference<>();
 
   private final int compactionThreshold;
-  private final AtomicBoolean compactionActive = new AtomicBoolean(false);
   private final AtomicInteger nextCompactionThreshold = new AtomicInteger();
+
+  private final AtomicBoolean creatingNewActiveSegment = new AtomicBoolean(false);
+  private final AtomicBoolean compactionActive = new AtomicBoolean(false);
 
   @Inject
   SegmentManagerService(
@@ -83,21 +86,32 @@ public final class SegmentManagerService extends AbstractService {
   }
 
   private synchronized void segmentSizeLimitExceededConsumer(Segment segment) {
-    if (!segment.equals(managedSegmentsAtomicReference.get().writableSegment())) {
+    if (creatingNewActiveSegment.get()
+        || !segment.equals(managedSegmentsAtomicReference.get().writableSegment())) {
       return;
     }
+    creatingNewActiveSegment.set(true);
 
     try {
-      createNewWritableSegmentAndUpdateManagedSegments();
-    } catch (IOException e) {
-      logger.atSevere().withCause(e).log("Failed to create a new writable segment");
-      notifyFailed(e);
-      return;
-    }
+      Futures.submit(() -> {
+        try {
+          createNewWritableSegmentAndUpdateManagedSegments();
 
-    // TODO: simplify compaction activation / handling
-    if (shouldInitiateCompaction()) {
-      initiateCompaction();
+          // TODO: simplify compaction activation / handling
+          if (shouldInitiateCompaction()) {
+            initiateCompaction();
+          }
+        } catch (IOException e) {
+          logger.atSevere().withCause(e).log("Failed to create new active segment.");
+          notifyFailed(e);
+        } finally {
+          creatingNewActiveSegment.set(false);
+        }
+      }, executorService);
+    } catch (RejectedExecutionException e) {
+      logger.atSevere().withCause(e).log("Failed to submit creation of new active segment");
+      creatingNewActiveSegment.set(false);
+      notifyFailed(e);
     }
   }
 
