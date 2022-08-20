@@ -219,7 +219,7 @@ public final class SegmentManagerService extends AbstractService {
   }
 
   // TODO: improve error handling
-  private record DeletionResultsFutureCallback() implements FutureCallback<DeletionResults> {
+  private class DeletionResultsFutureCallback implements FutureCallback<DeletionResults> {
 
     @Override
     public void onSuccess(DeletionResults results) {
@@ -235,6 +235,7 @@ public final class SegmentManagerService extends AbstractService {
     @Override
     public void onFailure(@Nonnull Throwable t) {
       logger.atSevere().withCause(t).log("Segment deletion threw an unexpected exception");
+      notifyFailed(t);
     }
 
     private void handleDeletionSuccess(DeletionResults.Success results) {
