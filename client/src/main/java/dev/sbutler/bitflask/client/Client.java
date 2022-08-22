@@ -14,7 +14,7 @@ import javax.annotation.Nonnull;
 
 public class Client {
 
-  public Client() {
+  private Client() {
   }
 
   public static void main(String[] args) {
@@ -34,7 +34,6 @@ public class Client {
           @Override
           public void failure(@Nonnull Service service) {
             System.err.printf("[%s] failed.", service.getClass());
-            System.exit(1);
           }
         }, MoreExecutors.directExecutor());
   }
