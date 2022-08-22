@@ -14,12 +14,12 @@ import java.net.Socket;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 
-public class ConnectionManagerImplTest {
+public class ConnectionManagerTest {
 
   @Test
   void close() throws IOException {
     try (MockedConstruction<Socket> socketMockedConstruction = mockConstruction(Socket.class)) {
-      ConnectionManagerImpl connectionManager = new ConnectionManagerImpl("host", 9090);
+      ConnectionManager connectionManager = new ConnectionManager("host", 9090);
       Socket mockSocket = socketMockedConstruction.constructed().get(0);
       connectionManager.close();
       verify(mockSocket, times(1)).close();
@@ -29,7 +29,7 @@ public class ConnectionManagerImplTest {
   @Test
   void getInputStream() throws IOException {
     try (MockedConstruction<Socket> socketMockedConstruction = mockConstruction(Socket.class)) {
-      ConnectionManagerImpl connectionManager = new ConnectionManagerImpl("host", 9090);
+      ConnectionManager connectionManager = new ConnectionManager("host", 9090);
       Socket mockSocket = socketMockedConstruction.constructed().get(0);
       InputStream mockInputStream = mock(InputStream.class);
       doReturn(mockInputStream).when(mockSocket).getInputStream();
@@ -42,7 +42,7 @@ public class ConnectionManagerImplTest {
   @Test
   void getOutputStream() throws IOException {
     try (MockedConstruction<Socket> socketMockedConstruction = mockConstruction(Socket.class)) {
-      ConnectionManagerImpl connectionManager = new ConnectionManagerImpl("host", 9090);
+      ConnectionManager connectionManager = new ConnectionManager("host", 9090);
       Socket mockSocket = socketMockedConstruction.constructed().get(0);
       OutputStream mockOutputStream = mock(OutputStream.class);
       doReturn(mockOutputStream).when(mockSocket).getOutputStream();

@@ -23,7 +23,7 @@ public class ConnectionModule extends AbstractModule {
 
   @Provides
   @Singleton
-  ConnectionManager provideConnectionManager(ConnectionManagerImpl connectionManager) {
+  ConnectionManager provideConnectionManager(ConnectionManager connectionManager) {
     return connectionManager;
   }
 

@@ -28,11 +28,11 @@ public class ConnectionModuleTest {
 
   @Test
   void provideConnectionManager() {
-    ConnectionManagerImpl connectionManagerImpl = mock(ConnectionManagerImpl.class);
+    ConnectionManager connectionManagerImpl = mock(ConnectionManager.class);
     ConnectionManager connectionManager = connectionModule.provideConnectionManager(
         connectionManagerImpl);
     assertEquals(connectionManagerImpl, connectionManager);
-    assertInstanceOf(ConnectionManagerImpl.class, connectionManager);
+    assertInstanceOf(ConnectionManager.class, connectionManager);
   }
 
   @Test
