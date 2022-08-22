@@ -13,7 +13,7 @@ public class CommandProcessingModuleTest {
   @Test
   void provideCommandProcessor() {
     RespCommandProcessor respCommandProcessor = mock(RespCommandProcessor.class);
-    CommandProcessor commandProcessor = commandProcessingModule.provideCommandProcessor(
+    RemoteCommandProcessor commandProcessor = commandProcessingModule.provideCommandProcessor(
         respCommandProcessor);
     assertEquals(respCommandProcessor, commandProcessor);
     assertInstanceOf(RespCommandProcessor.class, commandProcessor);

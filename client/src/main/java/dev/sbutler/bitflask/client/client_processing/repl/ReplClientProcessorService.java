@@ -6,8 +6,12 @@ import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
-import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
+import dev.sbutler.bitflask.client.command_processing.LocalCommand;
+import dev.sbutler.bitflask.client.command_processing.LocalCommand.Exit;
+import dev.sbutler.bitflask.client.command_processing.LocalCommand.Help;
 import dev.sbutler.bitflask.client.command_processing.ProcessingException;
+import dev.sbutler.bitflask.client.command_processing.RemoteCommand;
+import dev.sbutler.bitflask.client.command_processing.RemoteCommandProcessor;
 import javax.inject.Inject;
 
 public class ReplClientProcessorService extends AbstractExecutionThreadService implements
@@ -15,16 +19,17 @@ public class ReplClientProcessorService extends AbstractExecutionThreadService i
 
   private static final String SHELL_PREFIX = "> ";
 
-  private final CommandProcessor commandProcessor;
+  private final RemoteCommandProcessor remoteCommandProcessor;
   private final InputParser inputParser;
   private final OutputWriter outputWriter;
 
   private boolean continueProcessingClientInput = true;
 
   @Inject
-  public ReplClientProcessorService(CommandProcessor commandProcessor, InputParser inputParser,
+  public ReplClientProcessorService(RemoteCommandProcessor remoteCommandProcessor,
+      InputParser inputParser,
       OutputWriter outputWriter) {
-    this.commandProcessor = commandProcessor;
+    this.remoteCommandProcessor = remoteCommandProcessor;
     this.inputParser = inputParser;
     this.outputWriter = outputWriter;
   }
@@ -48,42 +53,44 @@ public class ReplClientProcessorService extends AbstractExecutionThreadService i
     if (clientInput.size() == 0) {
       return;
     }
-    ClientCommand clientCommand = new ClientCommand(
-        clientInput.get(0),
-        clientInput.subList(1, clientInput.size())
-    );
 
-    if (ReplCommand.isReplCommand(clientCommand.command())) {
-      processReplCommand(clientCommand);
-    } else {
-      processServerCommand(clientCommand);
+    ClientCommand clientCommand = mapClientInputToCommand(clientInput);
+    switch (clientCommand) {
+      case LocalCommand localCommand -> processLocalCommand(localCommand);
+      case RemoteCommand remoteCommand -> processRemoteCommand(remoteCommand);
     }
   }
 
-  private void processReplCommand(ClientCommand clientCommand) {
-    ReplCommand replCommand = ReplCommand
-        .valueOf(clientCommand.command().trim().toUpperCase());
-    if (!ReplCommand.isValidReplCommandWithArgs(replCommand, clientCommand.args())) {
-      outputWriter.writeWithNewLine(
-          "Invalid REPL command: " + replCommand + ", " + clientCommand.args());
-      return;
-    }
-
-    switch (replCommand) {
-      case EXIT -> stopProcessingClientInput();
-      case HELP -> outputWriter.writeWithNewLine("I can't help you.");
+  private void processLocalCommand(LocalCommand localCommand) {
+    switch (localCommand) {
+      case Exit _exit -> stopProcessingClientInput();
+      case Help _help -> outputWriter.writeWithNewLine("I can't help you.");
     }
   }
 
-  private void processServerCommand(ClientCommand clientCommand) {
+  private void processRemoteCommand(RemoteCommand remoteCommand) {
     try {
-      String result = commandProcessor.runCommand(clientCommand);
+      String result = remoteCommandProcessor.runCommand(remoteCommand);
       outputWriter.writeWithNewLine(result);
     } catch (ProcessingException e) {
       outputWriter.writeWithNewLine(
-          "Failure to process command [" + clientCommand.command() + "]: " + e.getMessage());
+          "Failure to process command [" + remoteCommand.command() + "]: " + e.getMessage());
       stopProcessingClientInput();
     }
+  }
+
+  private ClientCommand mapClientInputToCommand(ImmutableList<String> clientInput) {
+    String command = clientInput.get(0);
+
+    if (Help.commandStringMatches(command)) {
+      return new Help();
+    }
+    if (Exit.commandStringMatches(command)) {
+      return new Exit();
+    }
+
+    ImmutableList<String> args = clientInput.subList(1, clientInput.size());
+    return new RemoteCommand(command, args);
   }
 
   private void stopProcessingClientInput() {

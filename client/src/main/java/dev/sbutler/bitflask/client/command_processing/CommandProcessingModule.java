@@ -6,7 +6,7 @@ import com.google.inject.Provides;
 public class CommandProcessingModule extends AbstractModule {
 
   @Provides
-  CommandProcessor provideCommandProcessor(RespCommandProcessor commandProcessor) {
+  RemoteCommandProcessor provideCommandProcessor(RespCommandProcessor commandProcessor) {
     return commandProcessor;
   }
 

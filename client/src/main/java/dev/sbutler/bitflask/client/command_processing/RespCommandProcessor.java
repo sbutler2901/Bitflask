@@ -5,7 +5,7 @@ import dev.sbutler.bitflask.resp.network.writer.RespWriter;
 import java.io.IOException;
 import javax.inject.Inject;
 
-public class RespCommandProcessor implements CommandProcessor {
+public class RespCommandProcessor implements RemoteCommandProcessor {
 
   private final RespReader respReader;
   private final RespWriter respWriter;
@@ -16,12 +16,12 @@ public class RespCommandProcessor implements CommandProcessor {
     this.respWriter = respWriter;
   }
 
-  public String runCommand(ClientCommand command) throws ProcessingException {
+  public String runCommand(RemoteCommand command) throws ProcessingException {
     writeCommand(command);
     return readResponse();
   }
 
-  private void writeCommand(ClientCommand command) throws ProcessingException {
+  private void writeCommand(RemoteCommand command) throws ProcessingException {
     try {
       respWriter.writeRespType(command.getAsRespArray());
     } catch (IOException e) {
