@@ -1,17 +1,17 @@
 package dev.sbutler.bitflask.client.client_processing.repl;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
-import dev.sbutler.bitflask.client.command_processing.ClientCommand;
 import dev.sbutler.bitflask.client.command_processing.ProcessingException;
 import dev.sbutler.bitflask.client.command_processing.RespCommandProcessor;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,7 +21,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ReplClientProcessorServiceTest {
 
-  final ClientCommand exitCommand = new ClientCommand("exit", null);
+  //  final ClientCommand exitCommand = new ClientCommand("exit", null);
+  final ImmutableList<String> exitCommand = ImmutableList.of("exit");
 
   @InjectMocks
   ReplClientProcessorService replClientProcessorService;
@@ -35,7 +36,7 @@ public class ReplClientProcessorServiceTest {
   @Test
   void anyCommand_nullInput() {
     // Arrange
-    doReturn(null, exitCommand).when(inputParser).getNextCommand();
+    doReturn(ImmutableList.of(), exitCommand).when(inputParser).getClientNextInput();
     // Act
     replClientProcessorService.run();
     // Assert
@@ -45,7 +46,7 @@ public class ReplClientProcessorServiceTest {
   @Test
   void replCommand_exit() {
     // Arrange
-    doReturn(exitCommand).when(inputParser).getNextCommand();
+    doReturn(exitCommand).when(inputParser).getClientNextInput();
     // Act
     replClientProcessorService.run();
     // Assert
@@ -55,8 +56,8 @@ public class ReplClientProcessorServiceTest {
   @Test
   void replCommand_help() {
     // Arrange
-    ClientCommand command = new ClientCommand("help", null);
-    doReturn(command, exitCommand).when(inputParser).getNextCommand();
+    ImmutableList<String> command = ImmutableList.of("help");
+    doReturn(command, exitCommand).when(inputParser).getClientNextInput();
     // Act
     replClientProcessorService.run();
     // Assert
@@ -67,8 +68,8 @@ public class ReplClientProcessorServiceTest {
   @Test
   void replCommand_invalidArgs() {
     // Arrange
-    ClientCommand command = new ClientCommand("help", List.of("invalid-arg"));
-    doReturn(command, exitCommand).when(inputParser).getNextCommand();
+    ImmutableList<String> command = ImmutableList.of("help", "invalid-arg");
+    doReturn(command, exitCommand).when(inputParser).getClientNextInput();
     // Act
     replClientProcessorService.run();
     // Assert
@@ -79,10 +80,10 @@ public class ReplClientProcessorServiceTest {
   @Test
   void serverCommand() throws ProcessingException {
     // Arrange
-    ClientCommand command = new ClientCommand("ping", null);
-    doReturn(command, exitCommand).when(inputParser).getNextCommand();
+    ImmutableList<String> command = ImmutableList.of("ping");
+    doReturn(command, exitCommand).when(inputParser).getClientNextInput();
     String response = "pong";
-    doReturn(response).when(respCommandProcessor).runCommand(command);
+    doReturn(response).when(respCommandProcessor).runCommand(any());
     // Act
     replClientProcessorService.run();
     // Assert
@@ -92,10 +93,10 @@ public class ReplClientProcessorServiceTest {
   @Test
   void serverCommand_IOException() throws ProcessingException {
     // Arrange
-    ClientCommand command = new ClientCommand("ping", null);
-    doReturn(command).when(inputParser).getNextCommand();
+    ImmutableList<String> command = ImmutableList.of("ping");
+    doReturn(command, exitCommand).when(inputParser).getClientNextInput();
     doThrow(new ProcessingException("Test: commandProcessor")).when(respCommandProcessor)
-        .runCommand(command);
+        .runCommand(any());
     // Act
     replClientProcessorService.run();
     // Assert

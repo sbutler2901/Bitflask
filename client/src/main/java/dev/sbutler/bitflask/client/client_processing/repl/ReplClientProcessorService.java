@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.client.client_processing.repl;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.input.InputParser;
@@ -43,10 +44,14 @@ public class ReplClientProcessorService extends AbstractExecutionThreadService i
   }
 
   private void processClientInput() {
-    ClientCommand clientCommand = inputParser.getNextCommand();
-    if (clientCommand == null) {
+    ImmutableList<String> clientInput = inputParser.getClientNextInput();
+    if (clientInput.size() == 0) {
       return;
     }
+    ClientCommand clientCommand = new ClientCommand(
+        clientInput.get(0),
+        clientInput.subList(1, clientInput.size())
+    );
 
     if (ReplCommand.isReplCommand(clientCommand.command())) {
       processReplCommand(clientCommand);

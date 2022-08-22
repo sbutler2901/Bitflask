@@ -1,14 +1,11 @@
 package dev.sbutler.bitflask.client.client_processing.input;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
-import dev.sbutler.bitflask.client.command_processing.ClientCommand;
+import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,36 +27,46 @@ public class StdinInputParserTest {
 
   @Test
   void getNextCommand_withArgs() {
+    // Arrange
     String nextLine = "get test-key";
+    ImmutableList<String> expected = ImmutableList.of("get", "test-key");
+    // Act
     initParser(nextLine);
-    ClientCommand expected = new ClientCommand("get", List.of("test-key"));
-
-    assertEquals(expected, stdinInputParser.getNextCommand());
+    // Assert
+    assertEquals(expected, stdinInputParser.getClientNextInput());
   }
 
   @Test
   void getNextCommand_withoutArgs() {
+    // Arrange
     String nextLine = "get";
+    ImmutableList<String> expected = ImmutableList.of("get");
+    // Act
     initParser(nextLine);
-    ClientCommand expected = new ClientCommand("get", new ArrayList<>());
-
-    assertEquals(expected, stdinInputParser.getNextCommand());
+    // Assert
+    assertEquals(expected, stdinInputParser.getClientNextInput());
   }
 
   @Test
   void getNextCommand_emptyString() {
+    // Arrange
     String nextLine = "\n";
+    ImmutableList<String> expected = ImmutableList.of();
+    // Act
     initParser(nextLine);
-
-    assertNull(stdinInputParser.getNextCommand());
+    // Assert
+    assertEquals(expected, stdinInputParser.getClientNextInput());
   }
 
   @Test
   void getNextCommand_whitespaceOnly() {
+    // Arrange
     String nextLine = " ";
+    ImmutableList<String> expected = ImmutableList.of();
+    // Act
     initParser(nextLine);
-
-    assertNull(stdinInputParser.getNextCommand());
+    // Assert
+    assertEquals(expected, stdinInputParser.getClientNextInput());
   }
 
 }

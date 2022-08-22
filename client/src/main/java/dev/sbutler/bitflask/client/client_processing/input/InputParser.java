@@ -1,9 +1,12 @@
 package dev.sbutler.bitflask.client.client_processing.input;
 
-import dev.sbutler.bitflask.client.command_processing.ClientCommand;
+import com.google.common.collect.ImmutableList;
 
 public interface InputParser {
 
-  ClientCommand getNextCommand();
+  /**
+   * Retrieves the user's input as a list of Strings
+   */
+  ImmutableList<String> getClientNextInput();
 
 }

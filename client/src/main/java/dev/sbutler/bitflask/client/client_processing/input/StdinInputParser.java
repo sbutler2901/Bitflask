@@ -1,10 +1,10 @@
 package dev.sbutler.bitflask.client.client_processing.input;
 
-import dev.sbutler.bitflask.client.command_processing.ClientCommand;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
+import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 public class StdinInputParser implements InputParser {
 
@@ -16,22 +16,10 @@ public class StdinInputParser implements InputParser {
     this.inputScanner = new Scanner(System.in);
   }
 
-  /**
-   * Retrieves the next command submitted by the user and any arguments
-   *
-   * @return the command along with the args
-   */
-  public ClientCommand getNextCommand() {
+  public ImmutableList<String> getClientNextInput() {
     String line = inputScanner.nextLine();
-    List<String> parsedInput = Arrays.stream(line.split(SPACE_REGEX))
-        .filter((arg) -> !arg.isBlank()).collect(Collectors.toList());
-
-    if (parsedInput.size() > 0) {
-      String command = parsedInput.get(0);
-      List<String> args = parsedInput.subList(1, parsedInput.size());
-      return new ClientCommand(command, args);
-    }
-    return null;
+    return Arrays.stream(line.split(SPACE_REGEX))
+        .filter((arg) -> !arg.isBlank()).collect(toImmutableList());
   }
 
 }
