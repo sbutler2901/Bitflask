@@ -6,7 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.sun.jdi.InternalException;
-import dev.sbutler.bitflask.client.client_processing.ClientProcessor;
+import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
 import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
@@ -23,18 +23,18 @@ public class ClientTest {
   @Mock
   ConnectionManager connectionManager;
   @Mock
-  ClientProcessor clientProcessor;
+  ClientProcessorService clientProcessorService;
 
   @Test
   void client_start() {
     client.start();
-    verify(clientProcessor, times(1)).start();
+    verify(clientProcessorService, times(1)).start();
   }
 
   @Test
   void client_close() throws IOException {
     client.close();
-    verify(clientProcessor, times(1)).halt();
+    verify(clientProcessorService, times(1)).halt();
     verify(connectionManager, times(1)).close();
   }
 
@@ -42,7 +42,7 @@ public class ClientTest {
   void client_close_IOException() throws IOException {
     doThrow(new IOException("Test: socket")).when(connectionManager).close();
     assertThrows(InternalException.class, client::close);
-    verify(clientProcessor, times(1)).halt();
+    verify(clientProcessorService, times(1)).halt();
     verify(connectionManager, times(1)).close();
   }
 

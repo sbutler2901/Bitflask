@@ -18,9 +18,10 @@ public class ClientProcessingModuleTest {
   @Test
   void provideClientProcessor() {
     Repl repl = mock(Repl.class);
-    ClientProcessor clientProcessor = clientProcessingModule.provideClientProcessor(repl);
-    assertEquals(repl, clientProcessor);
-    assertInstanceOf(Repl.class, clientProcessor);
+    ClientProcessorService clientProcessorService = clientProcessingModule.provideClientProcessor(
+        repl);
+    assertEquals(repl, clientProcessorService);
+    assertInstanceOf(Repl.class, clientProcessorService);
   }
 
   @Test

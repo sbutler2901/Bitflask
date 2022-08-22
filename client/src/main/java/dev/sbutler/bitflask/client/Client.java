@@ -4,7 +4,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.sun.jdi.InternalException;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessingModule;
-import dev.sbutler.bitflask.client.client_processing.ClientProcessor;
+import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import dev.sbutler.bitflask.client.connection.ConnectionModule;
@@ -14,17 +14,17 @@ import javax.inject.Inject;
 
 public class Client {
 
-  private static final String INITIALIZATION_FAILURE = "Failed to initialize the client";
   private static final String TERMINATING_CONNECTION = "Disconnecting server";
   private static final String TERMINATION_FAILURE = "Failed to close the socket";
 
   private final ConnectionManager connectionManager;
-  private final ClientProcessor clientProcessor;
+  private final ClientProcessorService clientProcessorService;
 
   @Inject
-  public Client(ConnectionManager connectionManager, ClientProcessor clientProcessor) {
+  public Client(ConnectionManager connectionManager,
+      ClientProcessorService clientProcessorService) {
     this.connectionManager = connectionManager;
-    this.clientProcessor = clientProcessor;
+    this.clientProcessorService = clientProcessorService;
   }
 
   public static void main(String[] args) {
@@ -41,12 +41,12 @@ public class Client {
   }
 
   public void start() {
-    clientProcessor.start();
+    clientProcessorService.start();
   }
 
   public void close() {
     System.out.println(TERMINATING_CONNECTION);
-    clientProcessor.halt();
+    clientProcessorService.halt();
     try {
       connectionManager.close();
     } catch (IOException e) {

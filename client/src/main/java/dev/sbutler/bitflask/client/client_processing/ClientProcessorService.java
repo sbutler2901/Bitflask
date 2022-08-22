@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.client.client_processing;
 
-public interface ClientProcessor {
+public interface ClientProcessorService {
 
   void start();
 

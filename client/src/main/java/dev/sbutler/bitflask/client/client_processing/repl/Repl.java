@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.client.client_processing.repl;
 
-import dev.sbutler.bitflask.client.client_processing.ClientProcessor;
+import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
@@ -8,7 +8,7 @@ import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.client.command_processing.ProcessingException;
 import javax.inject.Inject;
 
-public class Repl implements ClientProcessor {
+public class Repl implements ClientProcessorService {
 
   private static final String SHELL_PREFIX = "> ";
 

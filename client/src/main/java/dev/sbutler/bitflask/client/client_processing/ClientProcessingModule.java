@@ -11,7 +11,7 @@ import dev.sbutler.bitflask.client.client_processing.repl.Repl;
 public class ClientProcessingModule extends AbstractModule {
 
   @Provides
-  ClientProcessor provideClientProcessor(Repl repl) {
+  ClientProcessorService provideClientProcessor(Repl repl) {
     return repl;
   }
 
