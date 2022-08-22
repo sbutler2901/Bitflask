@@ -1,49 +1,41 @@
 package dev.sbutler.bitflask.client;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.sun.jdi.InternalException;
+import com.google.common.util.concurrent.ServiceManager;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
-import dev.sbutler.bitflask.client.connection.ConnectionManager;
-import java.io.IOException;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockedConstruction;
+import org.mockito.MockedStatic;
 
-@ExtendWith(MockitoExtension.class)
 public class ClientTest {
 
-  @InjectMocks
-  Client client;
-  @Mock
-  ConnectionManager connectionManager;
-  @Mock
-  ClientProcessorService clientProcessorService;
-
   @Test
-  void client_start() {
-    client.start();
-    verify(clientProcessorService, times(1)).start();
+  void main() {
+    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
+      try (MockedConstruction<ServiceManager> serviceManagerMockedConstruction = mockConstruction(
+          ServiceManager.class)) {
+        // Arrange
+        Injector injector = mock(Injector.class);
+        doReturn(mock(ClientProcessorService.class)).when(injector)
+            .getInstance(ClientProcessorService.class);
+        guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
+            .thenReturn(injector);
+        // Act
+        Client.main(new String[0]);
+        ServiceManager serviceManager = serviceManagerMockedConstruction.constructed().get(0);
+        // Assert
+        verify(injector, times(1)).getInstance(ClientProcessorService.class);
+        verify(serviceManager, times(1)).startAsync();
+      }
+    }
   }
-
-  @Test
-  void client_close() throws IOException {
-    client.close();
-    verify(clientProcessorService, times(1)).halt();
-    verify(connectionManager, times(1)).close();
-  }
-
-  @Test
-  void client_close_IOException() throws IOException {
-    doThrow(new IOException("Test: socket")).when(connectionManager).close();
-    assertThrows(InternalException.class, client::close);
-    verify(clientProcessorService, times(1)).halt();
-    verify(connectionManager, times(1)).close();
-  }
-
 }

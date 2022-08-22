@@ -1,57 +1,55 @@
 package dev.sbutler.bitflask.client;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.Service;
+import com.google.common.util.concurrent.ServiceManager;
+import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.sun.jdi.InternalException;
-import dev.sbutler.bitflask.client.client_processing.ClientProcessingModule;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
-import dev.sbutler.bitflask.client.command_processing.CommandProcessingModule;
-import dev.sbutler.bitflask.client.connection.ConnectionManager;
-import dev.sbutler.bitflask.client.connection.ConnectionModule;
-import dev.sbutler.bitflask.resp.network.RespNetworkModule;
-import java.io.IOException;
-import javax.inject.Inject;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import javax.annotation.Nonnull;
 
 public class Client {
 
-  private static final String TERMINATING_CONNECTION = "Disconnecting server";
-  private static final String TERMINATION_FAILURE = "Failed to close the socket";
-
-  private final ConnectionManager connectionManager;
-  private final ClientProcessorService clientProcessorService;
-
-  @Inject
-  public Client(ConnectionManager connectionManager,
-      ClientProcessorService clientProcessorService) {
-    this.connectionManager = connectionManager;
-    this.clientProcessorService = clientProcessorService;
+  public Client() {
   }
 
   public static void main(String[] args) {
-    Injector injector = Guice.createInjector(
-        new ConnectionModule(),
-        new RespNetworkModule(),
-        new CommandProcessingModule(),
-        new ClientProcessingModule()
+    Injector injector = Guice.createInjector(new ClientModule());
+    ImmutableSet<Service> services = ImmutableSet.of(
+        injector.getInstance(ClientProcessorService.class)
     );
-
-    Client client = injector.getInstance(Client.class);
-    client.start();
-    client.close();
+    ServiceManager serviceManager = new ServiceManager(services);
+    addServiceManagerListener(serviceManager);
+    registerShutdownHook(serviceManager);
+    serviceManager.startAsync();
   }
 
-  public void start() {
-    clientProcessorService.start();
+  private static void addServiceManagerListener(ServiceManager serviceManager) {
+    serviceManager.addListener(
+        new Listener() {
+          @Override
+          public void failure(@Nonnull Service service) {
+            System.err.printf("[%s] failed.", service.getClass());
+            System.exit(1);
+          }
+        }, MoreExecutors.directExecutor());
   }
 
-  public void close() {
-    System.out.println(TERMINATING_CONNECTION);
-    clientProcessorService.halt();
-    try {
-      connectionManager.close();
-    } catch (IOException e) {
-      throw new InternalException(TERMINATION_FAILURE + e.getMessage());
-    }
+  private static void registerShutdownHook(ServiceManager serviceManager) {
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      System.out.println("Exiting...");
+      // Give the services 5 seconds to stop to ensure that we are responsive to shut down
+      // requests.
+      try {
+        serviceManager.stopAsync().awaitStopped(500, TimeUnit.MILLISECONDS);
+      } catch (TimeoutException timeout) {
+        // stopping timed out
+        System.err.println("ServiceManager timed out while stopping" + timeout);
+      }
+    }));
   }
-
 }

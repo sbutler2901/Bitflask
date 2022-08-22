@@ -1,9 +1,7 @@
 package dev.sbutler.bitflask.client.client_processing;
 
-public interface ClientProcessorService {
+import com.google.common.util.concurrent.Service;
 
-  void start();
-
-  void halt();
+public interface ClientProcessorService extends Service {
 
 }

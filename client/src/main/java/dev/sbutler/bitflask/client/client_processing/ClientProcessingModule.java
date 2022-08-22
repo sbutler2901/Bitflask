@@ -6,13 +6,14 @@ import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.input.StdinInputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import dev.sbutler.bitflask.client.client_processing.output.StdoutOutputWriter;
-import dev.sbutler.bitflask.client.client_processing.repl.Repl;
+import dev.sbutler.bitflask.client.client_processing.repl.ReplClientProcessorService;
 
 public class ClientProcessingModule extends AbstractModule {
 
   @Provides
-  ClientProcessorService provideClientProcessor(Repl repl) {
-    return repl;
+  ClientProcessorService provideClientProcessor(
+      ReplClientProcessorService replClientProcessorService) {
+    return replClientProcessorService;
   }
 
   @Provides

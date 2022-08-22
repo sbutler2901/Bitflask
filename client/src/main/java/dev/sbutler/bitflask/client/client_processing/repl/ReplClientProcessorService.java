@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.client.client_processing.repl;
 
+import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
@@ -8,7 +9,8 @@ import dev.sbutler.bitflask.client.command_processing.CommandProcessor;
 import dev.sbutler.bitflask.client.command_processing.ProcessingException;
 import javax.inject.Inject;
 
-public class Repl implements ClientProcessorService {
+public class ReplClientProcessorService extends AbstractExecutionThreadService implements
+    ClientProcessorService {
 
   private static final String SHELL_PREFIX = "> ";
 
@@ -19,22 +21,25 @@ public class Repl implements ClientProcessorService {
   private boolean continueProcessingClientInput = true;
 
   @Inject
-  public Repl(CommandProcessor commandProcessor, InputParser inputParser,
+  public ReplClientProcessorService(CommandProcessor commandProcessor, InputParser inputParser,
       OutputWriter outputWriter) {
     this.commandProcessor = commandProcessor;
     this.inputParser = inputParser;
     this.outputWriter = outputWriter;
   }
 
-  /**
-   * Runs the REPL loop
-   */
-  public void start() {
-    outputWriter.writeWithNewLine("Hello from client");
+  @Override
+  protected void run() {
     while (continueProcessingClientInput) {
       outputWriter.write(SHELL_PREFIX);
       processClientInput();
     }
+  }
+
+  @SuppressWarnings("UnstableApiUsage")
+  @Override
+  protected void triggerShutdown() {
+    stopProcessingClientInput();
   }
 
   private void processClientInput() {
@@ -60,7 +65,7 @@ public class Repl implements ClientProcessorService {
     }
 
     switch (replCommand) {
-      case EXIT -> halt();
+      case EXIT -> stopProcessingClientInput();
       case HELP -> outputWriter.writeWithNewLine("I can't help you.");
     }
   }
@@ -72,12 +77,11 @@ public class Repl implements ClientProcessorService {
     } catch (ProcessingException e) {
       outputWriter.writeWithNewLine(
           "Failure to process command [" + clientCommand.command() + "]: " + e.getMessage());
-      halt();
+      stopProcessingClientInput();
     }
   }
 
-  public void halt() {
-    outputWriter.writeWithNewLine("Exiting...");
+  private void stopProcessingClientInput() {
     continueProcessingClientInput = false;
   }
 }

@@ -8,7 +8,7 @@ import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.input.StdinInputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import dev.sbutler.bitflask.client.client_processing.output.StdoutOutputWriter;
-import dev.sbutler.bitflask.client.client_processing.repl.Repl;
+import dev.sbutler.bitflask.client.client_processing.repl.ReplClientProcessorService;
 import org.junit.jupiter.api.Test;
 
 public class ClientProcessingModuleTest {
@@ -17,11 +17,11 @@ public class ClientProcessingModuleTest {
 
   @Test
   void provideClientProcessor() {
-    Repl repl = mock(Repl.class);
+    ReplClientProcessorService replClientProcessorService = mock(ReplClientProcessorService.class);
     ClientProcessorService clientProcessorService = clientProcessingModule.provideClientProcessor(
-        repl);
-    assertEquals(repl, clientProcessorService);
-    assertInstanceOf(Repl.class, clientProcessorService);
+        replClientProcessorService);
+    assertEquals(replClientProcessorService, clientProcessorService);
+    assertInstanceOf(ReplClientProcessorService.class, clientProcessorService);
   }
 
   @Test
