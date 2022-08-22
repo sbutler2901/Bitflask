@@ -5,7 +5,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class ConnectionManager {
 
   private final Socket socket;

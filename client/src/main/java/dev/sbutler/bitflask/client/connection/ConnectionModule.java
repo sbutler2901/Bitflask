@@ -5,7 +5,6 @@ import com.google.inject.Provides;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import javax.inject.Singleton;
 
 public class ConnectionModule extends AbstractModule {
 
@@ -19,12 +18,6 @@ public class ConnectionModule extends AbstractModule {
   @ServerPort
   static int provideServerPort() {
     return 9090;
-  }
-
-  @Provides
-  @Singleton
-  ConnectionManager provideConnectionManager(ConnectionManager connectionManager) {
-    return connectionManager;
   }
 
   @Provides
