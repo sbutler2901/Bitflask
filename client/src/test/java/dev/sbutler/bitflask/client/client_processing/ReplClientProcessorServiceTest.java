@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client.client_processing.repl;
+package dev.sbutler.bitflask.client.client_processing;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;

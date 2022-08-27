@@ -8,7 +8,6 @@ import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.input.StdinInputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import dev.sbutler.bitflask.client.client_processing.output.StdoutOutputWriter;
-import dev.sbutler.bitflask.client.client_processing.repl.ReplClientProcessorService;
 import org.junit.jupiter.api.Test;
 
 public class ClientProcessingModuleTest {
