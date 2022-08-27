@@ -15,6 +15,8 @@ import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
+import dev.sbutler.bitflask.client.connection.ConnectionManager;
+import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -61,6 +63,10 @@ public class ClientTest {
         ClientProcessorService clientProcessorService = mock(ClientProcessorService.class);
         doReturn(clientProcessorService).when(injector)
             .getInstance(ClientProcessorService.class);
+        ConnectionManager connectionManager = mock(ConnectionManager.class);
+        doThrow(IOException.class).when(connectionManager).close();
+        doReturn(connectionManager).when(injector)
+            .getInstance(ConnectionManager.class);
         guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
             .thenReturn(injector);
         // Act

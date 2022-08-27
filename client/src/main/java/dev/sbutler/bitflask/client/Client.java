@@ -8,6 +8,8 @@ import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
+import dev.sbutler.bitflask.client.connection.ConnectionManager;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nonnull;
@@ -24,7 +26,7 @@ public class Client {
     );
     ServiceManager serviceManager = new ServiceManager(services);
     addServiceManagerListener(serviceManager);
-    registerShutdownHook(serviceManager);
+    registerShutdownHook(serviceManager, injector.getInstance(ConnectionManager.class));
     serviceManager.startAsync();
   }
 
@@ -38,7 +40,8 @@ public class Client {
         }, MoreExecutors.directExecutor());
   }
 
-  private static void registerShutdownHook(ServiceManager serviceManager) {
+  private static void registerShutdownHook(ServiceManager serviceManager,
+      ConnectionManager connectionManager) {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       System.out.println("Exiting...");
       // Give the services 5 seconds to stop to ensure that we are responsive to shut down
@@ -48,6 +51,11 @@ public class Client {
       } catch (TimeoutException timeout) {
         // stopping timed out
         System.err.println("ServiceManager timed out while stopping" + timeout);
+      }
+      try {
+        connectionManager.close();
+      } catch (IOException e) {
+        System.err.println("Failure to close connection: " + e);
       }
     }));
   }

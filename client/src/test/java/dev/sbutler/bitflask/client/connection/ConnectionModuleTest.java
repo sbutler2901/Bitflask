@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.client.connection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -24,15 +23,6 @@ public class ConnectionModuleTest {
   void provideServerPort() {
     int serverPort = ConnectionModule.provideServerPort();
     assertEquals(9090, serverPort);
-  }
-
-  @Test
-  void provideConnectionManager() {
-    ConnectionManager connectionManagerImpl = mock(ConnectionManager.class);
-    ConnectionManager connectionManager = connectionModule.provideConnectionManager(
-        connectionManagerImpl);
-    assertEquals(connectionManagerImpl, connectionManager);
-    assertInstanceOf(ConnectionManager.class, connectionManager);
   }
 
   @Test
