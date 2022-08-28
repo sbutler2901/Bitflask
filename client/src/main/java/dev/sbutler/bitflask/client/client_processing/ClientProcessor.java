@@ -40,10 +40,10 @@ public class ClientProcessor {
 
   private boolean processLocalCommand(LocalCommand localCommand) {
     switch (localCommand) {
-      case Exit _exit -> {
+      case Exit ignored -> {
         return false;
       }
-      case Help _help -> outputWriter.writeWithNewLine("I can't help you.");
+      case Help help -> help.execute();
     }
     return true;
   }
@@ -64,7 +64,7 @@ public class ClientProcessor {
     String command = clientInput.get(0);
 
     if (Help.commandStringMatches(command)) {
-      return new Help();
+      return new Help(outputWriter);
     }
     if (Exit.commandStringMatches(command)) {
       return new Exit();
