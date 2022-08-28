@@ -15,15 +15,6 @@ public class ClientProcessingModuleTest {
   private final ClientProcessingModule clientProcessingModule = new ClientProcessingModule();
 
   @Test
-  void provideClientProcessor() {
-    ReplClientProcessorService replClientProcessorService = mock(ReplClientProcessorService.class);
-    ClientProcessorService clientProcessorService = clientProcessingModule.provideClientProcessor(
-        replClientProcessorService);
-    assertEquals(replClientProcessorService, clientProcessorService);
-    assertInstanceOf(ReplClientProcessorService.class, clientProcessorService);
-  }
-
-  @Test
   void provideInputParser() {
     StdinInputParser stdinInputParser = mock(StdinInputParser.class);
     InputParser inputParser = clientProcessingModule.provideInputParser(stdinInputParser);

@@ -7,7 +7,7 @@ import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
+import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -22,7 +22,7 @@ public class Client {
   public static void main(String[] args) {
     Injector injector = Guice.createInjector(new ClientModule());
     ImmutableSet<Service> services = ImmutableSet.of(
-        injector.getInstance(ClientProcessorService.class)
+        injector.getInstance(ReplClientProcessorService.class)
     );
     ServiceManager serviceManager = new ServiceManager(services);
     addServiceManagerListener(serviceManager);

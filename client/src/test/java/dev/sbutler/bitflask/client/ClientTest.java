@@ -14,7 +14,7 @@ import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
+import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -33,8 +33,8 @@ public class ClientTest {
           ServiceManager.class)) {
         // Arrange
         Injector injector = mock(Injector.class);
-        doReturn(mock(ClientProcessorService.class)).when(injector)
-            .getInstance(ClientProcessorService.class);
+        doReturn(mock(ReplClientProcessorService.class)).when(injector)
+            .getInstance(ReplClientProcessorService.class);
         guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
             .thenReturn(injector);
         // Act
@@ -42,7 +42,7 @@ public class ClientTest {
         ServiceManager serviceManager = serviceManagerMockedConstruction.constructed().get(0);
         doReturn(serviceManager).when(serviceManager).stopAsync();
         // Assert
-        verify(injector, times(1)).getInstance(ClientProcessorService.class);
+        verify(injector, times(1)).getInstance(ReplClientProcessorService.class);
         verify(serviceManager, times(1)).startAsync();
       }
     }
@@ -60,9 +60,10 @@ public class ClientTest {
           })) {
         // Arrange
         Injector injector = mock(Injector.class);
-        ClientProcessorService clientProcessorService = mock(ClientProcessorService.class);
-        doReturn(clientProcessorService).when(injector)
-            .getInstance(ClientProcessorService.class);
+        ReplClientProcessorService replClientProcessorService = mock(
+            ReplClientProcessorService.class);
+        doReturn(replClientProcessorService).when(injector)
+            .getInstance(ReplClientProcessorService.class);
         ConnectionManager connectionManager = mock(ConnectionManager.class);
         doThrow(IOException.class).when(connectionManager).close();
         doReturn(connectionManager).when(injector)
@@ -77,9 +78,9 @@ public class ClientTest {
         doReturn(serviceManager).when(serviceManager).stopAsync();
         doThrow(TimeoutException.class).when(serviceManager).awaitStopped(anyLong(), any());
         Listener serviceManagerListener = listenerArgumentCaptor.getValue();
-        serviceManagerListener.failure(clientProcessorService);
+        serviceManagerListener.failure(replClientProcessorService);
         // Assert
-        verify(injector, times(1)).getInstance(ClientProcessorService.class);
+        verify(injector, times(1)).getInstance(ReplClientProcessorService.class);
         verify(serviceManager, times(1)).startAsync();
       }
     }

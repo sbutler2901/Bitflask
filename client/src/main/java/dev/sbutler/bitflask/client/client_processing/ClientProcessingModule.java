@@ -10,12 +10,6 @@ import dev.sbutler.bitflask.client.client_processing.output.StdoutOutputWriter;
 public class ClientProcessingModule extends AbstractModule {
 
   @Provides
-  ClientProcessorService provideClientProcessor(
-      ReplClientProcessorService replClientProcessorService) {
-    return replClientProcessorService;
-  }
-
-  @Provides
   InputParser provideInputParser(StdinInputParser inputParser) {
     return inputParser;
   }
