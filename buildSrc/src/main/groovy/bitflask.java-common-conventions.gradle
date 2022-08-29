@@ -38,3 +38,15 @@ dependencies {
     testImplementation 'org.mockito:mockito-junit-jupiter:+'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:+'
 }
+
+tasks.withType(JavaCompile).all {
+    options.compilerArgs += ['--enable-preview']
+}
+
+tasks.withType(Test).all {
+    jvmArgs += '--enable-preview'
+}
+
+tasks.withType(JavaExec) {
+    jvmArgs += '--enable-preview'
+}

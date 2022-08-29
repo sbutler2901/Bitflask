@@ -10,5 +10,7 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClassName 'dev.sbutler.bitflask.server.Server'
+    mainClass.set('dev.sbutler.bitflask.server.Server')
+
+    applicationDefaultJvmArgs = ['--enable-preview']
 }
