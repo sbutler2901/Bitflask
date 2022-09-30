@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.server.configuration.concurrency;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
@@ -18,11 +17,6 @@ public class ConcurrencyModuleTest {
   private final ConcurrencyModule concurrencyModule = ConcurrencyModule.getInstance();
 
   @Test
-  void provideServerNumThreads() {
-    assertEquals(4, concurrencyModule.provideServerNumThreads());
-  }
-
-  @Test
   void provideThreadFactory() {
     ThreadFactory threadFactory = concurrencyModule.provideThreadFactory();
     assertInstanceOf(ServerThreadFactory.class, threadFactory);
@@ -34,9 +28,9 @@ public class ConcurrencyModuleTest {
       ExecutorService mockExecutorService = mock(ExecutorService.class);
       ThreadFactory threadFactory = mock(ThreadFactory.class);
       executorsMockedStatic.when(
-              () -> Executors.newFixedThreadPool(anyInt(), any(ThreadFactory.class)))
+              () -> Executors.newThreadPerTaskExecutor(any(ThreadFactory.class)))
           .thenReturn(mockExecutorService);
-      ExecutorService executorService = concurrencyModule.provideExecutorService(4, threadFactory);
+      ExecutorService executorService = concurrencyModule.provideExecutorService(threadFactory);
       assertEquals(mockExecutorService, executorService);
     }
   }

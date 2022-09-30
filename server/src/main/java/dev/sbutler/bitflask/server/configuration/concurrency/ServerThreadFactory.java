@@ -12,6 +12,6 @@ class ServerThreadFactory implements ThreadFactory {
   @Override
   public Thread newThread(@Nonnull Runnable r) {
     String threadName = NETWORK_SERVICE_THREAD_NAME + threadNum++;
-    return new Thread(r, threadName);
+    return Thread.ofVirtual().name(threadName).unstarted(r);
   }
 }

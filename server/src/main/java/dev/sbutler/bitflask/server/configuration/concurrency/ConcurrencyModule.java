@@ -21,12 +21,6 @@ public class ConcurrencyModule extends AbstractModule {
   }
 
   @Provides
-  @ServerNumThreads
-  int provideServerNumThreads() {
-    return 4;
-  }
-
-  @Provides
   @Singleton
   ThreadFactory provideThreadFactory() {
     return new ServerThreadFactory();
@@ -34,10 +28,9 @@ public class ConcurrencyModule extends AbstractModule {
 
   @Provides
   @Singleton
-  ExecutorService provideExecutorService(@ServerNumThreads int numThreads,
-      ThreadFactory threadFactory) {
+  ExecutorService provideExecutorService(ThreadFactory threadFactory) {
     if (executorService == null) {
-      executorService = Executors.newFixedThreadPool(numThreads, threadFactory);
+      executorService = Executors.newThreadPerTaskExecutor(threadFactory);
     }
     return executorService;
   }
