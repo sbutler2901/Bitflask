@@ -19,7 +19,6 @@ public class SegmentModuleTest {
     Injector injector = Guice.createInjector(new MockModule(), new SegmentModule());
     try {
       // act
-      injector.getBinding(SegmentDeleterFactory.class);
       injector.getBinding(SegmentFileFactory.class);
       // assert
     } catch (Exception e) {

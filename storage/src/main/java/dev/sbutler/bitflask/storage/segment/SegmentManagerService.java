@@ -32,7 +32,7 @@ public final class SegmentManagerService extends AbstractService {
   private final ListeningExecutorService executorService;
   private final SegmentFactory segmentFactory;
   private final SegmentCompactor.Factory segmentCompactorFactory;
-  private final SegmentDeleterFactory segmentDeleterFactory;
+  private final SegmentDeleter.Factory segmentDeleterFactory;
   private final SegmentLoader segmentLoader;
 
   private final AtomicReference<ManagedSegments> managedSegmentsAtomicReference = new AtomicReference<>();
@@ -48,7 +48,7 @@ public final class SegmentManagerService extends AbstractService {
       @StorageExecutorService ListeningExecutorService executorService,
       SegmentFactory segmentFactory,
       SegmentCompactor.Factory segmentCompactorFactory,
-      SegmentDeleterFactory segmentDeleterFactory,
+      SegmentDeleter.Factory segmentDeleterFactory,
       SegmentLoader segmentLoader,
       StorageConfiguration storageConfiguration) {
     this.executorService = executorService;

@@ -6,8 +6,6 @@ import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.inject.assistedinject.Assisted;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Success;
@@ -50,13 +48,35 @@ final class SegmentDeleter {
     }
   }
 
+  /**
+   * Factory for creating new SegmentDeleter instances.
+   */
+  static class Factory {
+
+    private final ListeningExecutorService executorService;
+
+    @Inject
+    Factory(ListeningExecutorService executorService) {
+      this.executorService = executorService;
+    }
+
+    /**
+     * Creates a SegmentDeleter for deleting the provided segments.
+     *
+     * @param segmentsToBeDeleted the segments to be deleted by the SegmentDeleter
+     * @return the created SegmentDeleter
+     */
+    SegmentDeleter create(ImmutableList<Segment> segmentsToBeDeleted) {
+      return new SegmentDeleter(executorService, segmentsToBeDeleted);
+    }
+  }
+
   private final ListeningExecutorService executorService;
   private final ImmutableList<Segment> segmentsToBeDeleted;
   private ListenableFuture<DeletionResults> deletionFuture = null;
 
-  @Inject
-  SegmentDeleter(@StorageExecutorService ListeningExecutorService executorService,
-      @Assisted ImmutableList<Segment> segmentsToBeDeleted) {
+  SegmentDeleter(ListeningExecutorService executorService,
+      ImmutableList<Segment> segmentsToBeDeleted) {
     this.executorService = executorService;
     this.segmentsToBeDeleted = segmentsToBeDeleted;
   }

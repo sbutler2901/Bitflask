@@ -16,19 +16,19 @@ import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Success;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleter.Factory;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class SegmentDeleterTest {
 
-  @InjectMocks
   SegmentDeleter segmentDeleter;
   @Spy
   @SuppressWarnings("UnstableApiUsage")
@@ -36,6 +36,12 @@ public class SegmentDeleterTest {
   @Spy
   ImmutableList<Segment> segmentsToBeCompacted = ImmutableList.of(mock(Segment.class),
       mock(Segment.class));
+
+  @BeforeEach
+  void setup() {
+    SegmentDeleter.Factory segmentDeleterFactory = new Factory(executorService);
+    segmentDeleter = segmentDeleterFactory.create(segmentsToBeCompacted);
+  }
 
   @Test
   void deletion_success() throws Exception {
