@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 /**
  * Represents a single self-contained file for storing data
  */
-final class SegmentImpl {
+public final class Segment {
 
   private final SegmentFile segmentFile;
   private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap;
@@ -27,7 +27,7 @@ final class SegmentImpl {
   private volatile Consumer<Segment> sizeLimitExceededConsumer = null;
   private volatile boolean hasBeenCompacted = false;
 
-  public SegmentImpl(SegmentFile segmentFile, ConcurrentMap<String, Long> keyedEntryFileOffsetMap,
+  Segment(SegmentFile segmentFile, ConcurrentMap<String, Long> keyedEntryFileOffsetMap,
       AtomicLong currentFileWriteOffset, long segmentSizeLimit) {
     this.segmentFile = segmentFile;
     this.keyedEntryFileOffsetMap = keyedEntryFileOffsetMap;

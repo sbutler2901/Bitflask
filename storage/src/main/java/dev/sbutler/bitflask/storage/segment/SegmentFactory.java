@@ -65,7 +65,7 @@ final class SegmentFactory {
     ConcurrentMap<String, Long> keyedEntryFileOffsetMap = generateKeyedEntryOffsetMap(segmentFile,
         currentFileWriteOffset);
 
-    Segment newSegment = new SegmentImpl(segmentFile, keyedEntryFileOffsetMap,
+    Segment newSegment = new Segment(segmentFile, keyedEntryFileOffsetMap,
         currentFileWriteOffset, segmentSizeLimit);
     logger.atInfo().log("Created new segment with fileKey [%s]", newSegment.getSegmentFileKey());
     return newSegment;

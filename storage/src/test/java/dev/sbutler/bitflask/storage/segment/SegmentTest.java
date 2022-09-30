@@ -35,9 +35,9 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class SegmentImplTest {
+public class SegmentTest {
 
-  SegmentImpl segment;
+  Segment segment;
   @Mock
   SegmentFile segmentFile;
   @Mock
@@ -47,7 +47,7 @@ public class SegmentImplTest {
 
   @BeforeEach
   void beforeEach() {
-    segment = new SegmentImpl(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset,
+    segment = new Segment(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset,
         segmentSizeLimit);
   }
 
@@ -55,7 +55,7 @@ public class SegmentImplTest {
   void write() throws Exception {
     // Arrange
     String key = "key", value = "value";
-    byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
+    byte[] encoded = Segment.encodeKeyAndValue(key, value);
     doReturn(true).when(segmentFile).isOpen();
     // Act
     segment.write(key, value);
@@ -85,7 +85,7 @@ public class SegmentImplTest {
   @Test
   void write_sizeLimitExceededConsumer() throws Exception {
     // Arrange
-    segment = new SegmentImpl(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset, 1);
+    segment = new Segment(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset, 1);
     doReturn(true).when(segmentFile).isOpen();
     AtomicBoolean wasCalled = new AtomicBoolean(false);
     Consumer<Segment> limitConsumer = (ignored) -> wasCalled.set(true);
@@ -171,25 +171,25 @@ public class SegmentImplTest {
     char valueLengthEncoded = (char) value.length();
     byte[] expected = (keyLengthEncoded + key + valueLengthEncoded + value).getBytes();
     // Act
-    byte[] encoded = SegmentImpl.encodeKeyAndValue(key, value);
+    byte[] encoded = Segment.encodeKeyAndValue(key, value);
     // Assert
     assertArrayEquals(expected, encoded);
   }
 
   @Test
   void encodedKeyAndValue_key_invalidArg() {
-    assertThrows(NullPointerException.class, () -> SegmentImpl.encodeKeyAndValue(null, "value"));
-    assertThrows(IllegalArgumentException.class, () -> SegmentImpl.encodeKeyAndValue("", "value"));
+    assertThrows(NullPointerException.class, () -> Segment.encodeKeyAndValue(null, "value"));
+    assertThrows(IllegalArgumentException.class, () -> Segment.encodeKeyAndValue("", "value"));
     assertThrows(IllegalArgumentException.class,
-        () -> SegmentImpl.encodeKeyAndValue(new String(new byte[257]), "value"));
+        () -> Segment.encodeKeyAndValue(new String(new byte[257]), "value"));
   }
 
   @Test
   void encodedKeyAndValue_value_invalidArg() {
-    assertThrows(NullPointerException.class, () -> SegmentImpl.encodeKeyAndValue("key", null));
-    assertThrows(IllegalArgumentException.class, () -> SegmentImpl.encodeKeyAndValue("key", ""));
+    assertThrows(NullPointerException.class, () -> Segment.encodeKeyAndValue("key", null));
+    assertThrows(IllegalArgumentException.class, () -> Segment.encodeKeyAndValue("key", ""));
     assertThrows(IllegalArgumentException.class,
-        () -> SegmentImpl.encodeKeyAndValue("key", new String(new byte[257])));
+        () -> Segment.encodeKeyAndValue("key", new String(new byte[257])));
   }
 
   @Test
@@ -208,7 +208,7 @@ public class SegmentImplTest {
   @Test
   void exceedsStorageThreshold() throws Exception {
     // Arrange
-    segment = new SegmentImpl(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset, 1);
+    segment = new Segment(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset, 1);
     doReturn(true).when(segmentFile).isOpen();
     segment.write("key", "value");
     // Act / Assert
