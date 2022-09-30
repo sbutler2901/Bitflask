@@ -1,24 +1,32 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import jdk.incubator.concurrent.StructuredTaskScope;
 
 /**
- * Asynchronously compacts multiple segments by de-duplicating key:value pairs and create new
- * segments to store the deduplicate pairs. Assumes Segments are in order from most recently written
- * to the earliest written.
+ * Compacts multiple segments by de-duplicating key:value pairs and create new segments to store the
+ * deduplicate pairs. Assumes Segments are in order from most recently written to the earliest
+ * written.
  */
 final class SegmentCompactor {
 
@@ -50,10 +58,12 @@ final class SegmentCompactor {
   static class Factory {
 
     private final SegmentFactory segmentFactory;
+    private final StorageThreadFactory storageThreadFactory;
 
     @Inject
-    Factory(SegmentFactory segmentFactory) {
+    Factory(SegmentFactory segmentFactory, StorageThreadFactory storageThreadFactory) {
       this.segmentFactory = segmentFactory;
+      this.storageThreadFactory = storageThreadFactory;
     }
 
     /**
@@ -64,32 +74,34 @@ final class SegmentCompactor {
      * @return the created SegmentCompactor
      */
     SegmentCompactor create(ImmutableList<Segment> segmentsToBeCompacted) {
-      return new SegmentCompactor(segmentFactory, segmentsToBeCompacted);
+      return new SegmentCompactor(segmentFactory, storageThreadFactory, segmentsToBeCompacted);
     }
   }
 
   private final SegmentFactory segmentFactory;
+  private final StorageThreadFactory storageThreadFactory;
   private final ImmutableList<Segment> segmentsToBeCompacted;
 
   private final AtomicBoolean compactionStarted = new AtomicBoolean();
 
   private SegmentCompactor(SegmentFactory segmentFactory,
+      StorageThreadFactory storageThreadFactory,
       ImmutableList<Segment> segmentsToBeCompacted) {
     this.segmentFactory = segmentFactory;
+    this.storageThreadFactory = storageThreadFactory;
     this.segmentsToBeCompacted = segmentsToBeCompacted;
   }
 
   /**
    * Starts the compaction process for all Segments provided.
    *
-   * <p>The compaction process can only be started once. After the initial call, subsequent calls
-   * will return the same ListenableFuture as the initial.
+   * <p>This is a blocking call.
    *
-   * <p>Any exceptions thrown during execution will be captured and provided in the returned
-   * CompactionResults.
+   * <p>The compaction process can only be started once. Subsequent calls will result in an
+   * IllegalStateException being thrown.
    *
-   * @return a Future that will be fulfilled with the results of compaction, whether successful or
-   * failed
+   * <p>Anticipated exceptions thrown during execution will be captured and provided in the
+   * returned CompactionResults.
    */
   public CompactionResults compactSegments() {
     if (compactionStarted.getAndSet(true)) {
@@ -97,13 +109,18 @@ final class SegmentCompactor {
     }
 
     ImmutableMap<String, Segment> keySegmentMap = createKeySegmentMap();
-    return compactSegments(keySegmentMap);
+    ImmutableMap<String, String> keyValueMap;
+    try {
+      keyValueMap = createKeyValueMap(keySegmentMap);
+    } catch (InterruptedException | ExecutionException e) {
+      return createFailedCompactionResults(e, ImmutableList.of());
+    }
+
+    return compactSegments(keyValueMap);
   }
 
   /**
    * Creates a map of keys to the segment with the most up-to-date value for key.
-   *
-   * @return a map of keys to the Segment from which its corresponding value should be read
    */
   private ImmutableMap<String, Segment> createKeySegmentMap() {
     Map<String, Segment> keySegmentMap = new HashMap<>();
@@ -119,33 +136,59 @@ final class SegmentCompactor {
   }
 
   /**
-   * Creates compacted segments using the most up-to-date value for each key.
-   *
-   * @param keySegmentMap a map of keys to the Segment from which its corresponding value should be
-   *                      read
-   * @return all compacted segments created
+   * Creates a key value map by reading the value of a key from the mapped Segment.
    */
-  @Nonnull
-  private CompactionResults compactSegments(ImmutableMap<String, Segment> keySegmentMap) {
-    List<Segment> compactedSegments = new ArrayList<>();
+  private ImmutableMap<String, String> createKeyValueMap(
+      ImmutableMap<String, Segment> keySegmentMap) throws InterruptedException, ExecutionException {
+    try (var scope = new StructuredTaskScope.ShutdownOnFailure("compaction-key-value-map-scope",
+        storageThreadFactory)) {
+      ImmutableList<Future<Entry<String, String>>> taskFutures =
+          keySegmentMap.entrySet().stream()
+              .map(this::createKeyValueCallable)
+              .map(scope::fork)
+              .collect(toImmutableList());
+      scope.join();
+      scope.throwIfFailed();
+
+      return taskFutures.stream().map(Future::resultNow)
+          .collect(toImmutableMap(Entry::getKey, Entry::getValue));
+    }
+  }
+
+  /**
+   * Creates a Callable that reads a key's value from its mapped Segment.
+   */
+  private Callable<Entry<String, String>> createKeyValueCallable(
+      Map.Entry<String, Segment> keySegmentEntry) {
+    return () -> {
+      String key = keySegmentEntry.getKey();
+      Segment segment = keySegmentEntry.getValue();
+      String value = segment.read(key).orElseThrow(
+          () -> new RuntimeException(
+              "Compaction failure: value not found while reading key [%s] from segment [%s]".formatted(
+                  key, segment.getSegmentFileKey())));
+      return Maps.immutableEntry(key, value);
+    };
+  }
+
+  /**
+   * Creates the compacted segments using the provided key:value map.
+   */
+  private CompactionResults compactSegments(ImmutableMap<String, String> keyValueMap) {
+    Deque<Segment> compactedSegments = new ArrayDeque<>();
     try {
-      compactedSegments.add(0, segmentFactory.createSegment());
-      for (Map.Entry<String, Segment> entry : keySegmentMap.entrySet()) {
-        String key = entry.getKey();
-        Optional<String> valueOptional = entry.getValue().read(key);
-        if (valueOptional.isEmpty()) {
-          throw new RuntimeException("Compaction failure: value not found while reading segment");
+      compactedSegments.offerFirst(segmentFactory.createSegment());
+      for (Map.Entry<String, String> entry : keyValueMap.entrySet()) {
+        if (compactedSegments.getFirst().exceedsStorageThreshold()) {
+          compactedSegments.offerFirst(segmentFactory.createSegment());
         }
-
-        if (compactedSegments.get(0).exceedsStorageThreshold()) {
-          compactedSegments.add(0, segmentFactory.createSegment());
-        }
-
-        compactedSegments.get(0).write(key, valueOptional.get());
+        compactedSegments.getFirst().write(entry.getKey(), entry.getValue());
       }
-      return createSuccessfulCompactionResults(ImmutableList.copyOf(compactedSegments));
+      return createSuccessfulCompactionResults(
+          compactedSegments.stream().collect(toImmutableList()));
     } catch (IOException e) {
-      return createFailedCompactionResults(e, ImmutableList.copyOf(compactedSegments));
+      return createFailedCompactionResults(e,
+          compactedSegments.stream().collect(toImmutableList()));
     }
   }
 

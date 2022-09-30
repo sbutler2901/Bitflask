@@ -6,7 +6,7 @@ import javax.annotation.Nonnull;
 import javax.inject.Singleton;
 
 @Singleton
-class StorageThreadFactory implements ThreadFactory {
+public class StorageThreadFactory implements ThreadFactory {
 
   private static final String STORAGE_SERVICE_THREAD_NAME = "storage-pool-";
 
