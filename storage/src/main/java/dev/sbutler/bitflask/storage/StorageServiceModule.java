@@ -17,16 +17,16 @@ public class StorageServiceModule extends AbstractModule {
   private StorageServiceModule() {
   }
 
+  public static void setStorageConfiguration(StorageConfiguration storageConfiguration) {
+    StorageServiceModule.storageConfiguration = storageConfiguration;
+  }
+
   public static StorageServiceModule getInstance() {
     if (storageConfiguration == null) {
       throw new IllegalStateException(
           "The StorageServiceModule must have the StorageConfiguration set before it can be used");
     }
     return instance;
-  }
-
-  public static void setStorageConfiguration(StorageConfiguration storageConfiguration) {
-    StorageServiceModule.storageConfiguration = storageConfiguration;
   }
 
   @Override
