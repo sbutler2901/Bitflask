@@ -22,7 +22,34 @@ import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nonnull;
 
-final class SegmentCompactorImpl implements SegmentCompactor {
+/**
+ * Asynchronously compacts multiple segments by de-duplicating key:value pairs and create new
+ * segments to store the deduplicate pairs. Assumes Segments are in order from most recently written
+ * to the earliest written.
+ */
+final class SegmentCompactorImpl {
+
+  /**
+   * Relays the results of a compaction execution.
+   */
+  sealed interface CompactionResults {
+
+    /**
+     * Contains the results of a successful compaction execution
+     */
+    record Success(ImmutableList<Segment> segmentsProvidedForCompaction,
+                   ImmutableList<Segment> compactedSegments) implements CompactionResults {
+
+    }
+
+    /**
+     * Contains the results of a failed compaction execution
+     */
+    record Failed(ImmutableList<Segment> segmentsProvidedForCompaction, Throwable failureReason,
+                  ImmutableList<Segment> failedCompactionSegments) implements CompactionResults {
+
+    }
+  }
 
   private final ListeningExecutorService executorService;
   private final SegmentFactory segmentFactory;
@@ -40,8 +67,19 @@ final class SegmentCompactorImpl implements SegmentCompactor {
     this.segmentsToBeCompacted = segmentsToBeCompacted;
   }
 
+  /**
+   * Starts the compaction process for all Segments provided.
+   *
+   * <p>The compaction process can only be started once. After the initial call, subsequent calls
+   * will return the same ListenableFuture as the initial.
+   *
+   * <p>Any exceptions thrown during execution will be captured and provided in the returned
+   * CompactionResults.
+   *
+   * @return a Future that will be fulfilled with the results of compaction, whether successful or
+   * failed
+   */
   @SuppressWarnings("UnstableApiUsage")
-  @Override
   public synchronized ListenableFuture<CompactionResults> compactSegments() {
     if (compactionFuture != null) {
       return compactionFuture;
