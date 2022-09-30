@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Success;
@@ -56,7 +57,7 @@ final class SegmentDeleter {
     private final ListeningExecutorService executorService;
 
     @Inject
-    Factory(ListeningExecutorService executorService) {
+    Factory(@StorageExecutorService ListeningExecutorService executorService) {
       this.executorService = executorService;
     }
 
