@@ -2,22 +2,18 @@ package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.FluentFuture;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Success;
-import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
+import jdk.incubator.concurrent.StructuredTaskScope;
 
 /**
- * Asynchronously deletes multiple segments Handles the process of deleting multiple Segments from
- * the file system.
+ * Handling the process of closing and deleting multiple Segments from the file system.
  */
 final class SegmentDeleter {
 
@@ -54,11 +50,11 @@ final class SegmentDeleter {
    */
   static class Factory {
 
-    private final ListeningExecutorService executorService;
+    private final StorageThreadFactory storageThreadFactory;
 
     @Inject
-    Factory(@StorageExecutorService ListeningExecutorService executorService) {
-      this.executorService = executorService;
+    Factory(StorageThreadFactory storageThreadFactory) {
+      this.storageThreadFactory = storageThreadFactory;
     }
 
     /**
@@ -68,43 +64,47 @@ final class SegmentDeleter {
      * @return the created SegmentDeleter
      */
     SegmentDeleter create(ImmutableList<Segment> segmentsToBeDeleted) {
-      return new SegmentDeleter(executorService, segmentsToBeDeleted);
+      return new SegmentDeleter(storageThreadFactory, segmentsToBeDeleted);
     }
   }
 
-  private final ListeningExecutorService executorService;
+  private final StorageThreadFactory storageThreadFactory;
   private final ImmutableList<Segment> segmentsToBeDeleted;
-  private ListenableFuture<DeletionResults> deletionFuture = null;
 
-  private SegmentDeleter(ListeningExecutorService executorService,
+  private final AtomicBoolean deletionStarted = new AtomicBoolean();
+
+  private SegmentDeleter(StorageThreadFactory storageThreadFactory,
       ImmutableList<Segment> segmentsToBeDeleted) {
-    this.executorService = executorService;
+    this.storageThreadFactory = storageThreadFactory;
     this.segmentsToBeDeleted = segmentsToBeDeleted;
   }
 
   /**
    * Starts the deletion process for all Segments provided.
    *
-   * <p>The deletion process can only be started once. After the initial call, subsequent calls
-   * will return the same ListenableFuture as the initial.
+   * <p>This is a blocking call.
    *
-   * <p>Any exceptions thrown during execution will be captured and provided in the returned
-   * DeletionResults.
+   * <p>The deletion process can only be started once. Subsequent calls will result in an
+   * IllegalStateException being thrown.
    *
-   * @return a Future that will be fulfilled with the results of deletion, whether success or
-   * failure
+   * <p>Anticipated exceptions thrown while closing and deleting an exception will
+   * be captured and provided in the returned DeletionResults.
    */
-  @SuppressWarnings("UnstableApiUsage")
-  public synchronized ListenableFuture<DeletionResults> deleteSegments() {
-    if (deletionFuture != null) {
-      return deletionFuture;
+  public DeletionResults deleteSegments() {
+    if (deletionStarted.getAndSet(true)) {
+      throw new IllegalStateException("Deletion has already been started");
     }
 
-    return deletionFuture =
-        FluentFuture.from(Futures.submit(this::closeAndDeleteSegments, executorService))
-            .transform(this::mapPotentialSegmentFailures, executorService)
-            .transform(this::handlePotentialSegmentFailuresOutcome, executorService)
-            .catching(Throwable.class, this::catchDeletionFailure, executorService);
+    ImmutableMap<Segment, Future<Void>> segmentCloseAndDeleteFutures;
+    try {
+      segmentCloseAndDeleteFutures = closeAndDeleteSegments();
+    } catch (Exception e) {
+      return new FailedGeneral(segmentsToBeDeleted, e);
+    }
+
+    ImmutableMap<Segment, Throwable> segmentFailuresMap =
+        mapPotentialSegmentFailures(segmentCloseAndDeleteFutures);
+    return handlePotentialSegmentFailuresOutcome(segmentFailuresMap);
   }
 
   /**
@@ -112,26 +112,21 @@ final class SegmentDeleter {
    *
    * @return a map of segments to their corresponding deletion futures
    */
-  private ImmutableMap<Segment, ListenableFuture<Void>> closeAndDeleteSegments()
-      throws InterruptedException {
-    ImmutableList.Builder<Callable<Void>> deletionCallables = ImmutableList.builder();
-    for (Segment segment : segmentsToBeDeleted) {
-      deletionCallables.add(() -> {
-        segment.close();
-        segment.delete();
-        return null;
-      });
+  private ImmutableMap<Segment, Future<Void>> closeAndDeleteSegments() throws Exception {
+    try (var scope = new StructuredTaskScope<>("deletion-close-delete-scope",
+        storageThreadFactory)) {
+      ImmutableMap.Builder<Segment, Future<Void>> segmentDeletionFutureMap = ImmutableMap.builder();
+      for (Segment segment : segmentsToBeDeleted) {
+        Future<Void> closeAndDeleteFuture = scope.fork(() -> {
+          segment.close();
+          segment.delete();
+          return null;
+        });
+        segmentDeletionFutureMap.put(segment, closeAndDeleteFuture);
+      }
+      scope.join();
+      return segmentDeletionFutureMap.build();
     }
-
-    @SuppressWarnings({"unchecked", "rawtypes"}) // guaranteed by invokeAll contract
-    List<ListenableFuture<Void>> deletionFutures =
-        (List) executorService.invokeAll(deletionCallables.build());
-
-    ImmutableMap.Builder<Segment, ListenableFuture<Void>> segmentDeletionFutureMap = ImmutableMap.builder();
-    for (int i = 0; i < segmentsToBeDeleted.size(); i++) {
-      segmentDeletionFutureMap.put(segmentsToBeDeleted.get(i), deletionFutures.get(i));
-    }
-    return segmentDeletionFutureMap.build();
   }
 
   /**
@@ -142,7 +137,7 @@ final class SegmentDeleter {
    * @return a map of segments which failed to be deleted and their reason for failure
    */
   private ImmutableMap<Segment, Throwable> mapPotentialSegmentFailures(
-      ImmutableMap<Segment, ListenableFuture<Void>> segmentDeletionFutures) {
+      ImmutableMap<Segment, Future<Void>> segmentDeletionFutures) {
     ImmutableMap.Builder<Segment, Throwable> segmentFailuresMap = ImmutableMap.builder();
     segmentDeletionFutures.forEach((segment, deletionFuture) -> {
       try {
@@ -154,6 +149,13 @@ final class SegmentDeleter {
     return segmentFailuresMap.build();
   }
 
+  /**
+   * Processes the segment failure map creating the {@link DeletionResults} for this execution.
+   *
+   * @param potentialSegmentFailures a map of failed segments to their reason for failure.
+   * @return {@link Success} will be returned if there were no failures. A {@link FailedSegments} if
+   * some segments failed to be closed and deleted.
+   */
   private DeletionResults handlePotentialSegmentFailuresOutcome(
       ImmutableMap<Segment, Throwable> potentialSegmentFailures) {
     if (potentialSegmentFailures.isEmpty()) {
@@ -161,9 +163,5 @@ final class SegmentDeleter {
     } else {
       return new FailedSegments(segmentsToBeDeleted, potentialSegmentFailures);
     }
-  }
-
-  private DeletionResults catchDeletionFailure(Throwable throwable) {
-    return new FailedGeneral(segmentsToBeDeleted, throwable);
   }
 }

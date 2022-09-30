@@ -7,7 +7,6 @@ import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractService;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
@@ -259,9 +258,10 @@ public final class SegmentManagerService extends AbstractService {
     logger.atInfo()
         .log("Queueing [%d] segments for deletion after compaction", segmentsForDeletion.size());
     SegmentDeleter segmentDeleter = segmentDeleterFactory.create(segmentsForDeletion);
-    ListenableFuture<DeletionResults> deletionResults = segmentDeleter.deleteSegments();
-    Futures.addCallback(deletionResults, new DeletionResultsFutureCallback(),
-        executorService);
+    DeletionResults deletionResults = segmentDeleter.deleteSegments();
+    // TODO: fix
+//    Futures.addCallback(deletionResults, new DeletionResultsFutureCallback(),
+//        executorService);
   }
 
   // TODO: improve error handling

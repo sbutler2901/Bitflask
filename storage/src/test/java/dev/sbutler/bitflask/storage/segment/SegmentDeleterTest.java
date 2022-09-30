@@ -2,16 +2,16 @@ package dev.sbutler.bitflask.storage.segment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.testing.TestingExecutors;
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
@@ -31,15 +31,14 @@ public class SegmentDeleterTest {
 
   SegmentDeleter segmentDeleter;
   @Spy
-  @SuppressWarnings("UnstableApiUsage")
-  ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
+  StorageThreadFactory storageThreadFactory = new StorageThreadFactory();
   @Spy
   ImmutableList<Segment> segmentsToBeCompacted = ImmutableList.of(mock(Segment.class),
       mock(Segment.class));
 
   @BeforeEach
   void setup() {
-    SegmentDeleter.Factory segmentDeleterFactory = new Factory(executorService);
+    SegmentDeleter.Factory segmentDeleterFactory = new Factory(storageThreadFactory);
     segmentDeleter = segmentDeleterFactory.create(segmentsToBeCompacted);
   }
 
@@ -49,7 +48,7 @@ public class SegmentDeleterTest {
     Segment headSegment = segmentsToBeCompacted.get(0);
     Segment tailSegment = segmentsToBeCompacted.get(1);
     // Act
-    DeletionResults deletionResults = segmentDeleter.deleteSegments().get();
+    DeletionResults deletionResults = segmentDeleter.deleteSegments();
     // Assert
     assertInstanceOf(Success.class, deletionResults);
     Success success = (Success) deletionResults;
@@ -63,21 +62,29 @@ public class SegmentDeleterTest {
 
   @Test
   void deletion_repeatedCalls() {
-    ListenableFuture<DeletionResults> firstCall = segmentDeleter.deleteSegments();
-    assertEquals(firstCall, segmentDeleter.deleteSegments());
+    // Arrange
+    SegmentDeleter.Factory segmentDeleterFactory = new Factory(storageThreadFactory);
+    segmentDeleter = segmentDeleterFactory.create(ImmutableList.of());
+    segmentDeleter.deleteSegments();
+    // Act
+    IllegalStateException e = assertThrows(IllegalStateException.class,
+        () -> segmentDeleter.deleteSegments());
+    // Assert
+    assertTrue(e.getMessage().contains("already been started"));
   }
 
   @Test
-  void deletion_executorInterrupted() throws Exception {
+  void deletion_closeAndDelete_Exception() {
     // Arrange
-    InterruptedException interruptedException = new InterruptedException("Interrupted");
-    doThrow(interruptedException).when(executorService).invokeAll(anyList());
+    SegmentDeleter.Factory segmentDeleterFactory = new Factory(storageThreadFactory);
+    // Artificially cause failure
+    segmentDeleter = segmentDeleterFactory.create(null);
     // Act
-    DeletionResults deletionResults = segmentDeleter.deleteSegments().get();
+    DeletionResults deletionResults = segmentDeleter.deleteSegments();
+    // Assert
     assertInstanceOf(FailedGeneral.class, deletionResults);
     FailedGeneral failedGeneral = (FailedGeneral) deletionResults;
-    // Assert
-    assertEquals(interruptedException, failedGeneral.failureReason());
+    assertNull(failedGeneral.segmentsProvidedForDeletion());
   }
 
   @Test
@@ -86,7 +93,7 @@ public class SegmentDeleterTest {
     Segment headSegment = segmentsToBeCompacted.get(0);
     doThrow(IOException.class).when(headSegment).delete();
     // Act
-    DeletionResults deletionResults = segmentDeleter.deleteSegments().get();
+    DeletionResults deletionResults = segmentDeleter.deleteSegments();
     // Assert
     assertInstanceOf(FailedSegments.class, deletionResults);
     FailedSegments failedSegments = (FailedSegments) deletionResults;
