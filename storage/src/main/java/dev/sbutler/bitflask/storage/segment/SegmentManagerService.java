@@ -116,32 +116,19 @@ public final class SegmentManagerService extends AbstractService {
       if (shouldSkipCreatingNewActiveSegment(segment)) {
         return;
       }
-
       creatingNewActiveSegment.set(true);
-      try {
-        createNewWritableSegmentAndUpdateManagedSegments();
-      } catch (IOException e) {
-        logger.atSevere().withCause(e).log("Failed to create new active segment.");
-        notifyFailed(e);
-      } finally {
-        creatingNewActiveSegment.set(false);
-      }
     } finally {
       newSegmentLock.unlock();
     }
-  }
 
-  private void handleInitiatingCompaction() {
-    compactionLock.lock();
     try {
-      if (!shouldInitiateCompaction()) {
-        return;
-      }
-      compactionActive.set(true);
+      createNewWritableSegmentAndUpdateManagedSegments();
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log("Failed to create new active segment.");
+      notifyFailed(e);
     } finally {
-      compactionLock.unlock();
+      creatingNewActiveSegment.set(false);
     }
-    initiateCompaction();
   }
 
   private boolean shouldSkipCreatingNewActiveSegment(Segment segment) {
@@ -163,10 +150,28 @@ public final class SegmentManagerService extends AbstractService {
         new ManagedSegments(newWritableSegment, newFrozenSegments));
   }
 
-  private boolean shouldInitiateCompaction() {
-    return !compactionActive.get()
-        && managedSegmentsAtomicReference.get().frozenSegments().size()
-        >= nextCompactionThreshold.get();
+  private void handleInitiatingCompaction() {
+    compactionLock.lock();
+    try {
+      if (shouldSkipCompaction()) {
+        return;
+      }
+      compactionActive.set(true);
+    } finally {
+      compactionLock.unlock();
+    }
+
+    try {
+      initiateCompaction();
+    } finally {
+      compactionActive.set(false);
+    }
+  }
+
+  private boolean shouldSkipCompaction() {
+    return compactionActive.get()
+        || managedSegmentsAtomicReference.get().frozenSegments.size()
+        < nextCompactionThreshold.get();
   }
 
   private void initiateCompaction() {
@@ -182,7 +187,6 @@ public final class SegmentManagerService extends AbstractService {
       case CompactionResults.Success success -> handleCompactionSuccess(success);
       case CompactionResults.Failed failed -> handleCompactionFailed(failed);
     }
-    compactionActive.set(false);
   }
 
   private void handleCompactionSuccess(CompactionResults.Success success) {
