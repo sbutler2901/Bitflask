@@ -75,7 +75,7 @@ final class SegmentDeleter {
   private final ImmutableList<Segment> segmentsToBeDeleted;
   private ListenableFuture<DeletionResults> deletionFuture = null;
 
-  SegmentDeleter(ListeningExecutorService executorService,
+  private SegmentDeleter(ListeningExecutorService executorService,
       ImmutableList<Segment> segmentsToBeDeleted) {
     this.executorService = executorService;
     this.segmentsToBeDeleted = segmentsToBeDeleted;
