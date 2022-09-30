@@ -28,12 +28,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class SegmentFactoryTest {
 
   SegmentFactory segmentFactory;
-  SegmentFileFactory segmentFileFactory;
+  SegmentFile.Factory segmentFileFactory;
   StorageConfiguration storageConfiguration;
 
   @BeforeEach
   void beforeEach() {
-    segmentFileFactory = mock(SegmentFileFactory.class);
+    segmentFileFactory = mock(SegmentFile.Factory.class);
     storageConfiguration = mock(StorageConfiguration.class);
     doReturn(Path.of("/tmp/.bitflask")).when(storageConfiguration).getStorageStoreDirectoryPath();
     doReturn(100L).when(storageConfiguration).getStorageSegmentSizeLimit();
@@ -41,7 +41,7 @@ public class SegmentFactoryTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked"})
   void createSegment() throws Exception {
     try (MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(FileChannel.class)) {
       // Arrange
@@ -73,7 +73,7 @@ public class SegmentFactoryTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked"})
   void setSegmentStartIndex() throws Exception {
     try (MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(FileChannel.class)) {
       // Arrange

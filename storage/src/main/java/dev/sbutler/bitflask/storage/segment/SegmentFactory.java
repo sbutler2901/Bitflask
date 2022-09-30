@@ -28,13 +28,13 @@ final class SegmentFactory {
 //      StandardOpenOption.TRUNCATE_EXISTING
   );
 
-  private final SegmentFileFactory segmentFileFactory;
+  private final SegmentFile.Factory segmentFileFactory;
   private final Path storeDirectoryPath;
   private final long segmentSizeLimit;
   private final AtomicInteger nextSegmentKey = new AtomicInteger(0);
 
   @Inject
-  SegmentFactory(SegmentFileFactory segmentFileFactory,
+  SegmentFactory(SegmentFile.Factory segmentFileFactory,
       StorageConfiguration storageConfiguration) {
     this.segmentFileFactory = segmentFileFactory;
     this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();

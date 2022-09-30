@@ -30,13 +30,13 @@ final class SegmentLoader {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
-  private final SegmentFileFactory segmentFileFactory;
+  private final SegmentFile.Factory segmentFileFactory;
   private final SegmentFactory segmentFactory;
   private final Path storeDirectoryPath;
 
   @Inject
   SegmentLoader(@StorageExecutorService ListeningExecutorService executorService,
-      SegmentFileFactory segmentFileFactory, SegmentFactory segmentFactory,
+      SegmentFile.Factory segmentFileFactory, SegmentFactory segmentFactory,
       StorageConfiguration storageConfiguration) {
     this.executorService = executorService;
     this.segmentFileFactory = segmentFileFactory;

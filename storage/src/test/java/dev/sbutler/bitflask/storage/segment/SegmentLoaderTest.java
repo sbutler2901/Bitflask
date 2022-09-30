@@ -55,7 +55,7 @@ class SegmentLoaderTest {
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
   @Mock
-  SegmentFileFactory segmentFileFactory;
+  SegmentFile.Factory segmentFileFactory;
   @Mock
   SegmentFactory segmentFactory;
   @Mock

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import dev.sbutler.bitflask.storage.segment.SegmentFile.Factory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -29,7 +30,8 @@ public class SegmentFileTest {
   @BeforeEach
   void beforeEach() {
     fileChannel = mock(FileChannel.class);
-    segmentFile = new SegmentFile(fileChannel, path, segmentFileKey);
+    SegmentFile.Factory segmentFileFactory = new Factory();
+    segmentFile = segmentFileFactory.create(fileChannel, path, segmentFileKey);
   }
 
   @Test

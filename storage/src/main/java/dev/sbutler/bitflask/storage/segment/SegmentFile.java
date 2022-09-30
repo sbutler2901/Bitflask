@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import com.google.inject.assistedinject.Assisted;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -9,13 +8,33 @@ import javax.inject.Inject;
 
 final class SegmentFile {
 
+  /**
+   * Factory for creating new SegmentFile instances.
+   */
+  static class Factory {
+
+    @Inject
+    Factory() {
+    }
+
+    /**
+     * Creates a SegmentFile.
+     *
+     * @param segmentFileChannel File channel for storing segment data
+     * @param segmentFilePath    path of the segment file
+     * @param segmentFileKey     key of the segment file
+     * @return the created SegmentFile
+     */
+    SegmentFile create(FileChannel segmentFileChannel, Path segmentFilePath, int segmentFileKey) {
+      return new SegmentFile(segmentFileChannel, segmentFilePath, segmentFileKey);
+    }
+  }
+
   private final FileChannel segmentFileChannel;
   private final Path segmentFilePath;
   private final int segmentFileKey;
 
-  @Inject
-  public SegmentFile(@Assisted FileChannel segmentFileChannel, @Assisted Path segmentFilePath,
-      @Assisted int segmentFileKey) {
+  private SegmentFile(FileChannel segmentFileChannel, Path segmentFilePath, int segmentFileKey) {
     this.segmentFileChannel = segmentFileChannel;
     this.segmentFilePath = segmentFilePath;
     this.segmentFileKey = segmentFileKey;
