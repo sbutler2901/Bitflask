@@ -4,7 +4,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import javax.inject.Singleton;
 
 public class ConcurrencyModule extends AbstractModule {
@@ -22,15 +21,9 @@ public class ConcurrencyModule extends AbstractModule {
 
   @Provides
   @Singleton
-  ThreadFactory provideThreadFactory() {
-    return new ServerThreadFactory();
-  }
-
-  @Provides
-  @Singleton
-  ExecutorService provideExecutorService(ThreadFactory threadFactory) {
+  ExecutorService provideExecutorService(ServerThreadFactory serverThreadFactory) {
     if (executorService == null) {
-      executorService = Executors.newThreadPerTaskExecutor(threadFactory);
+      executorService = Executors.newThreadPerTaskExecutor(serverThreadFactory);
     }
     return executorService;
   }

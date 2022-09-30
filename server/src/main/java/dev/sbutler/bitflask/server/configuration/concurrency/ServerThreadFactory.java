@@ -1,17 +1,20 @@
 package dev.sbutler.bitflask.server.configuration.concurrency;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
+import javax.inject.Singleton;
 
+@Singleton
 class ServerThreadFactory implements ThreadFactory {
 
   private static final String NETWORK_SERVICE_THREAD_NAME = "server-pool-";
 
-  private static int threadNum = 0;
+  private static final AtomicInteger threadNum = new AtomicInteger();
 
   @Override
   public Thread newThread(@Nonnull Runnable r) {
-    String threadName = NETWORK_SERVICE_THREAD_NAME + threadNum++;
+    String threadName = NETWORK_SERVICE_THREAD_NAME + threadNum.getAndIncrement();
     return Thread.ofVirtual().name(threadName).unstarted(r);
   }
 }
