@@ -26,10 +26,10 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class SegmentDeleterImplTest {
+public class SegmentDeleterTest {
 
   @InjectMocks
-  SegmentDeleterImpl segmentDeleterImpl;
+  SegmentDeleter segmentDeleter;
   @Spy
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
@@ -43,7 +43,7 @@ public class SegmentDeleterImplTest {
     Segment headSegment = segmentsToBeCompacted.get(0);
     Segment tailSegment = segmentsToBeCompacted.get(1);
     // Act
-    DeletionResults deletionResults = segmentDeleterImpl.deleteSegments().get();
+    DeletionResults deletionResults = segmentDeleter.deleteSegments().get();
     // Assert
     assertInstanceOf(Success.class, deletionResults);
     Success success = (Success) deletionResults;
@@ -57,8 +57,8 @@ public class SegmentDeleterImplTest {
 
   @Test
   void deletion_repeatedCalls() {
-    ListenableFuture<DeletionResults> firstCall = segmentDeleterImpl.deleteSegments();
-    assertEquals(firstCall, segmentDeleterImpl.deleteSegments());
+    ListenableFuture<DeletionResults> firstCall = segmentDeleter.deleteSegments();
+    assertEquals(firstCall, segmentDeleter.deleteSegments());
   }
 
   @Test
@@ -67,7 +67,7 @@ public class SegmentDeleterImplTest {
     InterruptedException interruptedException = new InterruptedException("Interrupted");
     doThrow(interruptedException).when(executorService).invokeAll(anyList());
     // Act
-    DeletionResults deletionResults = segmentDeleterImpl.deleteSegments().get();
+    DeletionResults deletionResults = segmentDeleter.deleteSegments().get();
     assertInstanceOf(FailedGeneral.class, deletionResults);
     FailedGeneral failedGeneral = (FailedGeneral) deletionResults;
     // Assert
@@ -78,10 +78,9 @@ public class SegmentDeleterImplTest {
   void deletion_segmentFailures() throws Exception {
     // Arrange
     Segment headSegment = segmentsToBeCompacted.get(0);
-    Segment tailSegment = segmentsToBeCompacted.get(1);
     doThrow(IOException.class).when(headSegment).delete();
     // Act
-    DeletionResults deletionResults = segmentDeleterImpl.deleteSegments().get();
+    DeletionResults deletionResults = segmentDeleter.deleteSegments().get();
     // Assert
     assertInstanceOf(FailedSegments.class, deletionResults);
     FailedSegments failedSegments = (FailedSegments) deletionResults;

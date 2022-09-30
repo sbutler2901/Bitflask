@@ -8,9 +8,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleterImpl.DeletionResults.FailedGeneral;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleterImpl.DeletionResults.FailedSegments;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleterImpl.DeletionResults.Success;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Success;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -20,7 +20,7 @@ import javax.inject.Inject;
  * Asynchronously deletes multiple segments Handles the process of deleting multiple Segments from
  * the file system.
  */
-final class SegmentDeleterImpl {
+final class SegmentDeleter {
 
   /**
    * Relays the results of a deletion execution
@@ -55,7 +55,7 @@ final class SegmentDeleterImpl {
   private ListenableFuture<DeletionResults> deletionFuture = null;
 
   @Inject
-  SegmentDeleterImpl(@StorageExecutorService ListeningExecutorService executorService,
+  SegmentDeleter(@StorageExecutorService ListeningExecutorService executorService,
       @Assisted ImmutableList<Segment> segmentsToBeDeleted) {
     this.executorService = executorService;
     this.segmentsToBeDeleted = segmentsToBeDeleted;
