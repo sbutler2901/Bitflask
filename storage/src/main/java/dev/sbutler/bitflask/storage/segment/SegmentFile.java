@@ -7,14 +7,14 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import javax.inject.Inject;
 
-final class SegmentFileImpl {
+final class SegmentFile {
 
   private final FileChannel segmentFileChannel;
   private final Path segmentFilePath;
   private final int segmentFileKey;
 
   @Inject
-  public SegmentFileImpl(@Assisted FileChannel segmentFileChannel, @Assisted Path segmentFilePath,
+  public SegmentFile(@Assisted FileChannel segmentFileChannel, @Assisted Path segmentFilePath,
       @Assisted int segmentFileKey) {
     this.segmentFileChannel = segmentFileChannel;
     this.segmentFilePath = segmentFilePath;
