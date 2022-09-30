@@ -27,6 +27,11 @@ import javax.inject.Singleton;
 @Singleton
 public final class SegmentManagerService extends AbstractService {
 
+  public record ManagedSegments(Segment writableSegment,
+                                ImmutableList<Segment> frozenSegments) {
+
+  }
+
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
@@ -83,11 +88,6 @@ public final class SegmentManagerService extends AbstractService {
 
   public ManagedSegments getManagedSegments() {
     return managedSegmentsAtomicReference.get();
-  }
-
-  public record ManagedSegments(Segment writableSegment,
-                                ImmutableList<Segment> frozenSegments) {
-
   }
 
   private void segmentSizeLimitExceededConsumer(Segment segment) {
