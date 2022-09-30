@@ -31,7 +31,7 @@ public final class SegmentManagerService extends AbstractService {
 
   private final ListeningExecutorService executorService;
   private final SegmentFactory segmentFactory;
-  private final SegmentCompactorFactory segmentCompactorFactory;
+  private final SegmentCompactor.Factory segmentCompactorFactory;
   private final SegmentDeleterFactory segmentDeleterFactory;
   private final SegmentLoader segmentLoader;
 
@@ -47,7 +47,7 @@ public final class SegmentManagerService extends AbstractService {
   SegmentManagerService(
       @StorageExecutorService ListeningExecutorService executorService,
       SegmentFactory segmentFactory,
-      SegmentCompactorFactory segmentCompactorFactory,
+      SegmentCompactor.Factory segmentCompactorFactory,
       SegmentDeleterFactory segmentDeleterFactory,
       SegmentLoader segmentLoader,
       StorageConfiguration storageConfiguration) {

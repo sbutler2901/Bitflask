@@ -45,7 +45,7 @@ public class SegmentManagerServiceTest {
   @Mock
   SegmentFactory segmentFactory;
   @Mock
-  SegmentCompactorFactory segmentCompactorFactory;
+  SegmentCompactor.Factory segmentCompactorFactory;
   @Mock
   SegmentDeleterFactory segmentDeleterFactory;
   @Mock

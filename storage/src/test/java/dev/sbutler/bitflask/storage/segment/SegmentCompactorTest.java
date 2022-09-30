@@ -20,21 +20,21 @@ import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
+import dev.sbutler.bitflask.storage.segment.SegmentCompactor.Factory;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class SegmentCompactorImplTest {
+public class SegmentCompactorTest {
 
-  @InjectMocks
-  SegmentCompactorImpl segmentCompactorImpl;
+  SegmentCompactor segmentCompactor;
   @Spy
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
@@ -43,6 +43,12 @@ public class SegmentCompactorImplTest {
   @Spy
   ImmutableList<Segment> segmentsToBeCompacted = ImmutableList.of(mock(Segment.class),
       mock(Segment.class));
+
+  @BeforeEach
+  void setup() {
+    SegmentCompactor.Factory segmentCompactorFactory = new Factory(executorService, segmentFactory);
+    segmentCompactor = segmentCompactorFactory.create(segmentsToBeCompacted);
+  }
 
   @Test
   void duplicateKeyValueRemoval() throws Exception {
@@ -60,7 +66,7 @@ public class SegmentCompactorImplTest {
     doReturn(false).when(createdSegment).exceedsStorageThreshold();
 
     // Act
-    CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
+    CompactionResults compactionResults = segmentCompactor.compactSegments().get();
 
     // Assert
     assertInstanceOf(CompactionResults.Success.class, compactionResults);
@@ -92,7 +98,7 @@ public class SegmentCompactorImplTest {
     when(createdSegment.exceedsStorageThreshold()).thenReturn(true).thenReturn(false);
 
     // Act
-    CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
+    CompactionResults compactionResults = segmentCompactor.compactSegments().get();
 
     // Assert
     assertInstanceOf(CompactionResults.Success.class, compactionResults);
@@ -106,8 +112,8 @@ public class SegmentCompactorImplTest {
 
   @Test
   void compaction_repeatedCalls() {
-    ListenableFuture<CompactionResults> firstCall = segmentCompactorImpl.compactSegments();
-    assertEquals(firstCall, segmentCompactorImpl.compactSegments());
+    ListenableFuture<CompactionResults> firstCall = segmentCompactor.compactSegments();
+    assertEquals(firstCall, segmentCompactor.compactSegments());
   }
 
   @Test
@@ -120,7 +126,7 @@ public class SegmentCompactorImplTest {
     doReturn(Optional.empty()).when(headSegment).read(anyString());
 
     // Act
-    CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
+    CompactionResults compactionResults = segmentCompactor.compactSegments().get();
 
     // Assert
     assertInstanceOf(CompactionResults.Failed.class, compactionResults);
@@ -146,7 +152,7 @@ public class SegmentCompactorImplTest {
     doReturn(segment).when(segmentFactory).createSegment();
 
     // Act
-    CompactionResults compactionResults = segmentCompactorImpl.compactSegments().get();
+    CompactionResults compactionResults = segmentCompactor.compactSegments().get();
 
     // Assert
     assertInstanceOf(CompactionResults.Failed.class, compactionResults);

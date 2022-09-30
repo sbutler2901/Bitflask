@@ -8,8 +8,6 @@ import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
@@ -21,13 +19,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 
 /**
  * Asynchronously compacts multiple segments by de-duplicating key:value pairs and create new
  * segments to store the deduplicate pairs. Assumes Segments are in order from most recently written
  * to the earliest written.
  */
-final class SegmentCompactorImpl {
+final class SegmentCompactor {
 
   /**
    * Relays the results of a compaction execution.
@@ -51,6 +50,33 @@ final class SegmentCompactorImpl {
     }
   }
 
+  /**
+   * Factory for creating new SegmentCompactor instances.
+   */
+  static class Factory {
+
+    private final ListeningExecutorService executorService;
+    private final SegmentFactory segmentFactory;
+
+    @Inject
+    Factory(@StorageExecutorService ListeningExecutorService executorService,
+        SegmentFactory segmentFactory) {
+      this.executorService = executorService;
+      this.segmentFactory = segmentFactory;
+    }
+
+    /**
+     * Creates a SegmentCompactor for compacting the provided segments. The provided Segments should
+     * be in order from most recently written to the earliest written.
+     *
+     * @param segmentsToBeCompacted the segments that should be compacted by the created instance
+     * @return the created SegmentCompactor
+     */
+    SegmentCompactor create(ImmutableList<Segment> segmentsToBeCompacted) {
+      return new SegmentCompactor(executorService, segmentFactory, segmentsToBeCompacted);
+    }
+  }
+
   private final ListeningExecutorService executorService;
   private final SegmentFactory segmentFactory;
   private final ImmutableList<Segment> segmentsToBeCompacted;
@@ -58,10 +84,9 @@ final class SegmentCompactorImpl {
   private ListenableFuture<CompactionResults> compactionFuture = null;
   private ImmutableList<Segment> failedCompactedSegments = ImmutableList.of();
 
-  @Inject
-  SegmentCompactorImpl(@StorageExecutorService ListeningExecutorService executorService,
+  private SegmentCompactor(ListeningExecutorService executorService,
       SegmentFactory segmentFactory,
-      @Assisted ImmutableList<Segment> segmentsToBeCompacted) {
+      ImmutableList<Segment> segmentsToBeCompacted) {
     this.executorService = executorService;
     this.segmentFactory = segmentFactory;
     this.segmentsToBeCompacted = segmentsToBeCompacted;
