@@ -8,15 +8,47 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Success;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleterImpl.DeletionResults.FailedGeneral;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleterImpl.DeletionResults.FailedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentDeleterImpl.DeletionResults.Success;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
 
-final class SegmentDeleterImpl implements SegmentDeleter {
+/**
+ * Asynchronously deletes multiple segments Handles the process of deleting multiple Segments from
+ * the file system.
+ */
+final class SegmentDeleterImpl {
+
+  /**
+   * Relays the results of a deletion execution
+   */
+  sealed interface DeletionResults {
+
+    record Success(ImmutableList<Segment> segmentsProvidedForDeletion)
+        implements DeletionResults {
+
+    }
+
+    /**
+     * Contains the result of failed deletion execution caused by a general failure
+     */
+    record FailedGeneral(ImmutableList<Segment> segmentsProvidedForDeletion,
+                         Throwable failureReason) implements DeletionResults {
+
+    }
+
+    /**
+     * Contains the result of failed deletion execution caused by specific segment(s)
+     */
+    record FailedSegments(ImmutableList<Segment> segmentsProvidedForDeletion,
+                          ImmutableMap<Segment, Throwable> segmentsFailureReasonsMap)
+        implements DeletionResults {
+
+    }
+  }
 
   private final ListeningExecutorService executorService;
   private final ImmutableList<Segment> segmentsToBeDeleted;
@@ -29,8 +61,19 @@ final class SegmentDeleterImpl implements SegmentDeleter {
     this.segmentsToBeDeleted = segmentsToBeDeleted;
   }
 
+  /**
+   * Starts the deletion process for all Segments provided.
+   *
+   * <p>The deletion process can only be started once. After the initial call, subsequent calls
+   * will return the same ListenableFuture as the initial.
+   *
+   * <p>Any exceptions thrown during execution will be captured and provided in the returned
+   * DeletionResults.
+   *
+   * @return a Future that will be fulfilled with the results of deletion, whether success or
+   * failure
+   */
   @SuppressWarnings("UnstableApiUsage")
-  @Override
   public synchronized ListenableFuture<DeletionResults> deleteSegments() {
     if (deletionFuture != null) {
       return deletionFuture;
