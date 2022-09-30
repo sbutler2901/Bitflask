@@ -1,11 +1,20 @@
 package dev.sbutler.bitflask.storage.configuration.concurrency;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import javax.inject.Qualifier;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nonnull;
+import javax.inject.Singleton;
 
-@Qualifier
-@Retention(RetentionPolicy.RUNTIME)
-@interface StorageThreadFactory {
+@Singleton
+class StorageThreadFactory implements ThreadFactory {
 
+  private static final String STORAGE_SERVICE_THREAD_NAME = "storage-pool-%d";
+
+  private static final AtomicInteger threadNum = new AtomicInteger();
+
+  @Override
+  public Thread newThread(@Nonnull Runnable r) {
+    String threadName = STORAGE_SERVICE_THREAD_NAME + threadNum.getAndIncrement();
+    return Thread.ofVirtual().name(threadName).unstarted(r);
+  }
 }

@@ -2,7 +2,6 @@ package dev.sbutler.bitflask.storage.configuration.concurrency;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
@@ -18,24 +17,15 @@ public class ConcurrencyModuleTest {
   private final ConcurrencyModule concurrencyModule = ConcurrencyModule.getInstance();
 
   @Test
-  void provideThreadFactory() {
-    concurrencyModule.provideStorageThreadFactory();
-  }
-
-  @Test
-  void provideStorageNumThreads() {
-    assertEquals(4, concurrencyModule.provideStorageNumThreads());
-  }
-
-  @Test
   void provideExecutorService() {
     try (MockedStatic<Executors> executorsMockedStatic = mockStatic(Executors.class)) {
       ListeningExecutorService mockExecutorService = mock(ListeningExecutorService.class);
-      ThreadFactory threadFactory = mock(ThreadFactory.class);
+      StorageThreadFactory storageThreadFactory = mock(StorageThreadFactory.class);
       executorsMockedStatic.when(
-              () -> Executors.newFixedThreadPool(anyInt(), any(ThreadFactory.class)))
+              () -> Executors.newThreadPerTaskExecutor(any(ThreadFactory.class)))
           .thenReturn(mockExecutorService);
-      ExecutorService executorService = concurrencyModule.provideExecutorService(4, threadFactory);
+      ExecutorService executorService = concurrencyModule.provideExecutorService(
+          storageThreadFactory);
       assertEquals(mockExecutorService, executorService);
     }
   }
