@@ -5,7 +5,6 @@ import com.google.inject.Provides;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.ConcurrencyModule;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
-import dev.sbutler.bitflask.storage.segment.SegmentModule;
 import javax.inject.Singleton;
 
 public class StorageServiceModule extends AbstractModule {
@@ -34,7 +33,6 @@ public class StorageServiceModule extends AbstractModule {
   protected void configure() {
     super.configure();
     install(ConcurrencyModule.getInstance());
-    install(new SegmentModule());
   }
 
   @Provides

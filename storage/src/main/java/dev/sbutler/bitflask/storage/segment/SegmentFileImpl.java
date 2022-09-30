@@ -7,7 +7,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import javax.inject.Inject;
 
-final class SegmentFileImpl implements SegmentFile {
+final class SegmentFileImpl {
 
   private final FileChannel segmentFileChannel;
   private final Path segmentFilePath;
