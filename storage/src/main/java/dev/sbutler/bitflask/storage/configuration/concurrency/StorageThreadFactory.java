@@ -8,7 +8,7 @@ import javax.inject.Singleton;
 @Singleton
 class StorageThreadFactory implements ThreadFactory {
 
-  private static final String STORAGE_SERVICE_THREAD_NAME = "storage-pool-%d";
+  private static final String STORAGE_SERVICE_THREAD_NAME = "storage-pool-";
 
   private static final AtomicInteger threadNum = new AtomicInteger();
 
