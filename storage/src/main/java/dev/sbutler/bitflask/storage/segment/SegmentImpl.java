@@ -14,7 +14,10 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
-final class SegmentImpl implements Segment {
+/**
+ * Represents a single self-contained file for storing data
+ */
+final class SegmentImpl {
 
   private final SegmentFile segmentFile;
   private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap;
@@ -32,7 +35,12 @@ final class SegmentImpl implements Segment {
     this.segmentSizeLimit = segmentSizeLimit;
   }
 
-  @Override
+  /**
+   * Writes the provided key and value to the segment file
+   *
+   * @param key   the key to be written and saved for retrieving data
+   * @param value the associated data value to be written
+   */
   public void write(String key, String value) throws IOException {
     if (!isOpen()) {
       // TODO: adjust for consumers to try again
@@ -60,7 +68,12 @@ final class SegmentImpl implements Segment {
     }
   }
 
-  @Override
+  /**
+   * Reads the provided key's value from the segment file
+   *
+   * @param key the key to find the data in the segment file
+   * @return the value for the key from the segment file, if it exists
+   */
   public Optional<String> read(String key) throws IOException {
     if (!isOpen()) {
       throw new RuntimeException("This segment has been closed and cannot be read from");
@@ -112,27 +125,46 @@ final class SegmentImpl implements Segment {
         value.length());
   }
 
-  @Override
+  /**
+   * Checks if the segment contains the provided key
+   *
+   * @param key the key to be searched for
+   * @return whether it contains the key, or not
+   */
   public boolean containsKey(String key) {
     return keyedEntryFileOffsetMap.containsKey(key);
   }
 
-  @Override
+  /**
+   * Checks if the segment exceeds the new segment threshold
+   *
+   * @return whether it exceeds the threshold, or not
+   */
   public boolean exceedsStorageThreshold() {
     return currentFileWriteOffset.get() > segmentSizeLimit;
   }
 
-  @Override
+  /**
+   * Returns all keys stored by the segment
+   *
+   * @return a set of the keys stored by the segment
+   */
   public ImmutableSet<String> getSegmentKeys() {
     return ImmutableSet.copyOf(keyedEntryFileOffsetMap.keySet());
   }
 
-  @Override
+  /**
+   * Returns the segment's file's key
+   *
+   * @return the segment's file's key
+   */
   public int getSegmentFileKey() {
     return segmentFile.getSegmentFileKey();
   }
 
-  @Override
+  /**
+   * Closes the segment for reading and writing
+   */
   public void close() {
     try {
       readWriteLock.writeLock().lock();
@@ -142,12 +174,20 @@ final class SegmentImpl implements Segment {
     }
   }
 
-  @Override
+  /**
+   * Checks if the segment is open and able to be read or written
+   *
+   * @return whether the segment is open or not
+   */
   public boolean isOpen() {
     return segmentFile.isOpen();
   }
 
-  @Override
+  /**
+   * Deletes the segment from the filesystem
+   *
+   * @throws IOException if there is an issue deleting the segment
+   */
   public void delete() throws IOException {
     if (isOpen()) {
       throw new RuntimeException("Segment should be closed before deleting");
@@ -161,17 +201,25 @@ final class SegmentImpl implements Segment {
     }
   }
 
-  @Override
+  /**
+   * Marks the segment as compacted
+   */
   public void markCompacted() {
     hasBeenCompacted = true;
   }
 
-  @Override
+  /**
+   * Checks if a segment has been marked as compacted
+   *
+   * @return whether the segment has been compacted or not
+   */
   public boolean hasBeenCompacted() {
     return hasBeenCompacted;
   }
 
-  @Override
+  /**
+   * Registers a consumer to be called once this segment's size limit has been reached.
+   */
   public void registerSizeLimitExceededConsumer(Consumer<Segment> sizeLimitExceededConsumer) {
     this.sizeLimitExceededConsumer = sizeLimitExceededConsumer;
   }
