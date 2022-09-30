@@ -20,6 +20,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -45,7 +46,9 @@ public final class SegmentManagerService extends AbstractService {
   private final int compactionThreshold;
   private final AtomicInteger nextCompactionThreshold = new AtomicInteger();
 
+  private final ReentrantLock newSegmentLock = new ReentrantLock();
   private final AtomicBoolean creatingNewActiveSegment = new AtomicBoolean(false);
+  private final ReentrantLock compactionLock = new ReentrantLock();
   private final AtomicBoolean compactionActive = new AtomicBoolean(false);
 
   @Inject
@@ -97,31 +100,45 @@ public final class SegmentManagerService extends AbstractService {
     }
 
     try {
-      Futures.submit(() -> handleSegmentSizeLimitExceeded(segment), executorService);
+      Futures.submit(() -> {
+        handleSegmentSizeLimitExceeded(segment);
+        handleInitiatingCompaction();
+      }, executorService);
     } catch (RejectedExecutionException e) {
       logger.atSevere().withCause(e).log("Failed to submit creation of new active segment");
       notifyFailed(e);
     }
   }
 
-  private synchronized void handleSegmentSizeLimitExceeded(Segment segment) {
-    if (shouldSkipCreatingNewActiveSegment(segment)) {
-      return;
-    }
-
-    creatingNewActiveSegment.set(true);
+  private void handleSegmentSizeLimitExceeded(Segment segment) {
+    newSegmentLock.lock();
     try {
-      createNewWritableSegmentAndUpdateManagedSegments();
-    } catch (IOException e) {
-      logger.atSevere().withCause(e).log("Failed to create new active segment.");
-      notifyFailed(e);
-    } finally {
-      creatingNewActiveSegment.set(false);
-    }
+      if (shouldSkipCreatingNewActiveSegment(segment)) {
+        return;
+      }
 
-    // TODO: simplify compaction activation / handling
-    if (shouldInitiateCompaction()) {
-      initiateCompaction();
+      creatingNewActiveSegment.set(true);
+      try {
+        createNewWritableSegmentAndUpdateManagedSegments();
+      } catch (IOException e) {
+        logger.atSevere().withCause(e).log("Failed to create new active segment.");
+        notifyFailed(e);
+      } finally {
+        creatingNewActiveSegment.set(false);
+      }
+    } finally {
+      newSegmentLock.unlock();
+    }
+  }
+
+  private void handleInitiatingCompaction() {
+    compactionLock.lock();
+    try {
+      if (shouldInitiateCompaction()) {
+        initiateCompaction();
+      }
+    } finally {
+      compactionLock.unlock();
     }
   }
 
@@ -130,7 +147,7 @@ public final class SegmentManagerService extends AbstractService {
         managedSegmentsAtomicReference.get().writableSegment());
   }
 
-  private synchronized void createNewWritableSegmentAndUpdateManagedSegments() throws IOException {
+  private void createNewWritableSegmentAndUpdateManagedSegments() throws IOException {
     logger.atInfo().log("Creating new active segment");
     ManagedSegments currentManagedSegments = managedSegmentsAtomicReference.get();
     Segment newWritableSegment = segmentFactory.createSegment();
@@ -150,7 +167,7 @@ public final class SegmentManagerService extends AbstractService {
         >= nextCompactionThreshold.get();
   }
 
-  private synchronized void initiateCompaction() {
+  private void initiateCompaction() {
     logger.atInfo().log("Initiating Compaction");
     compactionActive.set(true);
     SegmentCompactor segmentCompactor = segmentCompactorFactory.create(
@@ -159,7 +176,7 @@ public final class SegmentManagerService extends AbstractService {
     Futures.addCallback(compactionResults, new CompactionResultsFutureCallback(), executorService);
   }
 
-  private synchronized void updateAfterCompaction(ImmutableList<Segment> compactedSegments) {
+  private void updateAfterCompaction(ImmutableList<Segment> compactedSegments) {
     logger.atInfo().log("Updating after compaction");
     ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
     Deque<Segment> newFrozenSegments = new ArrayDeque<>();
