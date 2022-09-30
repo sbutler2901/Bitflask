@@ -1,14 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import static com.google.common.util.concurrent.Futures.immediateFuture;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.FluentFuture;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
 import java.io.IOException;
@@ -18,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
@@ -55,13 +49,10 @@ final class SegmentCompactor {
    */
   static class Factory {
 
-    private final ListeningExecutorService executorService;
     private final SegmentFactory segmentFactory;
 
     @Inject
-    Factory(@StorageExecutorService ListeningExecutorService executorService,
-        SegmentFactory segmentFactory) {
-      this.executorService = executorService;
+    Factory(SegmentFactory segmentFactory) {
       this.segmentFactory = segmentFactory;
     }
 
@@ -73,21 +64,17 @@ final class SegmentCompactor {
      * @return the created SegmentCompactor
      */
     SegmentCompactor create(ImmutableList<Segment> segmentsToBeCompacted) {
-      return new SegmentCompactor(executorService, segmentFactory, segmentsToBeCompacted);
+      return new SegmentCompactor(segmentFactory, segmentsToBeCompacted);
     }
   }
 
-  private final ListeningExecutorService executorService;
   private final SegmentFactory segmentFactory;
   private final ImmutableList<Segment> segmentsToBeCompacted;
 
-  private ListenableFuture<CompactionResults> compactionFuture = null;
-  private ImmutableList<Segment> failedCompactedSegments = ImmutableList.of();
+  private final AtomicBoolean compactionStarted = new AtomicBoolean();
 
-  private SegmentCompactor(ListeningExecutorService executorService,
-      SegmentFactory segmentFactory,
+  private SegmentCompactor(SegmentFactory segmentFactory,
       ImmutableList<Segment> segmentsToBeCompacted) {
-    this.executorService = executorService;
     this.segmentFactory = segmentFactory;
     this.segmentsToBeCompacted = segmentsToBeCompacted;
   }
@@ -104,17 +91,13 @@ final class SegmentCompactor {
    * @return a Future that will be fulfilled with the results of compaction, whether successful or
    * failed
    */
-  @SuppressWarnings("UnstableApiUsage")
-  public synchronized ListenableFuture<CompactionResults> compactSegments() {
-    if (compactionFuture != null) {
-      return compactionFuture;
+  public CompactionResults compactSegments() {
+    if (compactionStarted.getAndSet(true)) {
+      throw new IllegalStateException("Compaction has already been started");
     }
 
-    return compactionFuture =
-        FluentFuture.from(Futures.submit(this::createKeySegmentMap, executorService))
-            .transformAsync(this::createCompactedSegments, executorService)
-            .transform(this::createSuccessfulCompactionResults, executorService)
-            .catching(Throwable.class, this::createFailedCompactionResults, executorService);
+    ImmutableMap<String, Segment> keySegmentMap = createKeySegmentMap();
+    return compactSegments(keySegmentMap);
   }
 
   /**
@@ -143,8 +126,7 @@ final class SegmentCompactor {
    * @return all compacted segments created
    */
   @Nonnull
-  private ListenableFuture<ImmutableList<Segment>> createCompactedSegments(
-      ImmutableMap<String, Segment> keySegmentMap) throws IOException {
+  private CompactionResults compactSegments(ImmutableMap<String, Segment> keySegmentMap) {
     List<Segment> compactedSegments = new ArrayList<>();
     try {
       compactedSegments.add(0, segmentFactory.createSegment());
@@ -161,12 +143,10 @@ final class SegmentCompactor {
 
         compactedSegments.get(0).write(key, valueOptional.get());
       }
+      return createSuccessfulCompactionResults(ImmutableList.copyOf(compactedSegments));
     } catch (IOException e) {
-      failedCompactedSegments = ImmutableList.copyOf(compactedSegments);
-      throw e;
+      return createFailedCompactionResults(e, ImmutableList.copyOf(compactedSegments));
     }
-
-    return immediateFuture(ImmutableList.copyOf(compactedSegments));
   }
 
   private CompactionResults createSuccessfulCompactionResults(
@@ -175,7 +155,8 @@ final class SegmentCompactor {
     return new Success(segmentsToBeCompacted, compactedSegments);
   }
 
-  private CompactionResults createFailedCompactionResults(Throwable throwable) {
+  private CompactionResults createFailedCompactionResults(Throwable throwable,
+      ImmutableList<Segment> failedCompactedSegments) {
     return new Failed(segmentsToBeCompacted, throwable, failedCompactedSegments);
   }
 

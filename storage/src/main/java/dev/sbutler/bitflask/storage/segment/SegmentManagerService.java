@@ -134,12 +134,14 @@ public final class SegmentManagerService extends AbstractService {
   private void handleInitiatingCompaction() {
     compactionLock.lock();
     try {
-      if (shouldInitiateCompaction()) {
-        initiateCompaction();
+      if (!shouldInitiateCompaction()) {
+        return;
       }
+      compactionActive.set(true);
     } finally {
       compactionLock.unlock();
     }
+    initiateCompaction();
   }
 
   private boolean shouldSkipCreatingNewActiveSegment(Segment segment) {
@@ -169,11 +171,29 @@ public final class SegmentManagerService extends AbstractService {
 
   private void initiateCompaction() {
     logger.atInfo().log("Initiating Compaction");
-    compactionActive.set(true);
     SegmentCompactor segmentCompactor = segmentCompactorFactory.create(
         managedSegmentsAtomicReference.get().frozenSegments());
-    ListenableFuture<CompactionResults> compactionResults = segmentCompactor.compactSegments();
-    Futures.addCallback(compactionResults, new CompactionResultsFutureCallback(), executorService);
+    CompactionResults compactionResults = segmentCompactor.compactSegments();
+    handleCompactionResults(compactionResults);
+  }
+
+  private void handleCompactionResults(CompactionResults compactionResults) {
+    switch (compactionResults) {
+      case CompactionResults.Success success -> handleCompactionSuccess(success);
+      case CompactionResults.Failed failed -> handleCompactionFailed(failed);
+    }
+    compactionActive.set(false);
+  }
+
+  private void handleCompactionSuccess(CompactionResults.Success success) {
+    logger.atInfo().log("Compaction completed");
+    updateAfterCompaction(success.compactedSegments());
+    queueSegmentsForDeletion(success.segmentsProvidedForCompaction());
+  }
+
+  private void handleCompactionFailed(CompactionResults.Failed failed) {
+    logger.atSevere().withCause(failed.failureReason()).log("Compaction failed");
+    queueSegmentsForDeletion(failed.failedCompactionSegments());
   }
 
   private void updateAfterCompaction(ImmutableList<Segment> compactedSegments) {
@@ -203,36 +223,6 @@ public final class SegmentManagerService extends AbstractService {
     ListenableFuture<DeletionResults> deletionResults = segmentDeleter.deleteSegments();
     Futures.addCallback(deletionResults, new DeletionResultsFutureCallback(),
         executorService);
-  }
-
-  private class CompactionResultsFutureCallback implements FutureCallback<CompactionResults> {
-
-    @Override
-    public void onSuccess(CompactionResults result) {
-      switch (result) {
-        case CompactionResults.Success success -> handleCompactionSuccess(success);
-        case CompactionResults.Failed failed -> handleCompactionFailed(failed);
-      }
-      compactionActive.set(false);
-    }
-
-    @Override
-    public void onFailure(@Nonnull Throwable t) {
-      logger.atSevere().withCause(t).log("Segment compaction threw an unexpected exception");
-      compactionActive.set(false);
-      notifyFailed(t);
-    }
-
-    private void handleCompactionSuccess(CompactionResults.Success success) {
-      logger.atInfo().log("Compaction completed");
-      updateAfterCompaction(success.compactedSegments());
-      queueSegmentsForDeletion(success.segmentsProvidedForCompaction());
-    }
-
-    private void handleCompactionFailed(CompactionResults.Failed failed) {
-      logger.atSevere().withCause(failed.failureReason()).log("Compaction failed");
-      queueSegmentsForDeletion(failed.failedCompactionSegments());
-    }
   }
 
   // TODO: improve error handling
