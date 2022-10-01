@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.resp.network.reader.RespReaderImpl;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespError;
@@ -26,10 +25,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class RespReaderImplTest {
+public class RespReaderTest {
 
   @InjectMocks
-  RespReaderImpl respReaderImpl;
+  RespReader respReader;
 
   @Mock
   BufferedReader bufferedReader;
@@ -37,13 +36,13 @@ public class RespReaderImplTest {
   @Test
   void exception_EOFException() throws IOException {
     when(bufferedReader.read()).thenReturn(-1);
-    assertThrows(EOFException.class, () -> respReaderImpl.readNextRespType());
+    assertThrows(EOFException.class, () -> respReader.readNextRespType());
   }
 
   @Test
   void exception_ProtocolException() throws IOException {
     when(bufferedReader.read()).thenReturn(Integer.valueOf('a'));
-    assertThrows(ProtocolException.class, () -> respReaderImpl.readNextRespType());
+    assertThrows(ProtocolException.class, () -> respReader.readNextRespType());
   }
 
   @Test
@@ -51,7 +50,7 @@ public class RespReaderImplTest {
     String expected = "simple-string";
     when(bufferedReader.read()).thenReturn(Integer.valueOf(RespSimpleString.TYPE_PREFIX));
     when(bufferedReader.readLine()).thenReturn(expected);
-    RespType<?> res = respReaderImpl.readNextRespType();
+    RespType<?> res = respReader.readNextRespType();
     assertTrue(res instanceof RespSimpleString);
     assertEquals(expected, res.getValue());
   }
@@ -63,7 +62,7 @@ public class RespReaderImplTest {
     when(bufferedReader.readLine())
         .thenReturn(String.valueOf(expected.length()))
         .thenReturn(expected);
-    RespType<?> res = respReaderImpl.readNextRespType();
+    RespType<?> res = respReader.readNextRespType();
     assertTrue(res instanceof RespBulkString);
     assertEquals(expected, res.getValue());
   }
@@ -73,7 +72,7 @@ public class RespReaderImplTest {
     when(bufferedReader.read()).thenReturn(Integer.valueOf(RespBulkString.TYPE_PREFIX));
     when(bufferedReader.readLine())
         .thenReturn(String.valueOf(-1));
-    RespType<?> res = respReaderImpl.readNextRespType();
+    RespType<?> res = respReader.readNextRespType();
     assertTrue(res instanceof RespBulkString);
     assertNull(res.getValue());
   }
@@ -85,7 +84,7 @@ public class RespReaderImplTest {
     when(bufferedReader.readLine())
         .thenReturn(String.valueOf(0))
         .thenReturn(expected);
-    assertThrows(ProtocolException.class, () -> respReaderImpl.readNextRespType());
+    assertThrows(ProtocolException.class, () -> respReader.readNextRespType());
   }
 
   @Test
@@ -94,7 +93,7 @@ public class RespReaderImplTest {
     when(bufferedReader.read()).thenReturn(Integer.valueOf(RespInteger.TYPE_PREFIX));
     when(bufferedReader.readLine())
         .thenReturn(String.valueOf(expected));
-    RespType<?> res = respReaderImpl.readNextRespType();
+    RespType<?> res = respReader.readNextRespType();
     assertTrue(res instanceof RespInteger);
     assertEquals(expected, ((RespInteger) res).getValue());
   }
@@ -104,7 +103,7 @@ public class RespReaderImplTest {
     String expected = "error";
     when(bufferedReader.read()).thenReturn(Integer.valueOf(RespError.TYPE_PREFIX));
     when(bufferedReader.readLine()).thenReturn(expected);
-    RespType<?> res = respReaderImpl.readNextRespType();
+    RespType<?> res = respReader.readNextRespType();
     assertTrue(res instanceof RespError);
     assertEquals(expected, res.getValue());
   }
@@ -118,7 +117,7 @@ public class RespReaderImplTest {
     when(bufferedReader.readLine())
         .thenReturn(String.valueOf(1))
         .thenReturn(String.valueOf(1));
-    RespType<?> res = respReaderImpl.readNextRespType();
+    RespType<?> res = respReader.readNextRespType();
     assertTrue(res instanceof RespArray);
     RespArray resCasted = (RespArray) res;
     assertEquals(expected.size(), resCasted.getValue().size());
@@ -129,7 +128,7 @@ public class RespReaderImplTest {
   void respArray_null() throws IOException {
     when(bufferedReader.read()).thenReturn(Integer.valueOf(RespArray.TYPE_PREFIX));
     when(bufferedReader.readLine()).thenReturn(String.valueOf(RespArray.NULL_ARRAY_LENGTH));
-    RespType<?> res = respReaderImpl.readNextRespType();
+    RespType<?> res = respReader.readNextRespType();
     assertTrue(res instanceof RespArray);
     assertNull(res.getValue());
   }

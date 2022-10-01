@@ -14,12 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 
-class RespReaderImpl {
+public class RespReader {
 
   private final BufferedReader bufferedReader;
 
   @Inject
-  RespReaderImpl(@RespReaderBufferedReader BufferedReader reader) {
+  RespReader(@RespReaderBufferedReader BufferedReader reader) {
     this.bufferedReader = reader;
   }
 

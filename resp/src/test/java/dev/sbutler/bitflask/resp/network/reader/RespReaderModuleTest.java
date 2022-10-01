@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.resp.network.reader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 
@@ -14,14 +13,6 @@ import org.mockito.MockedConstruction;
 public class RespReaderModuleTest {
 
   private final RespReaderModule respReaderModule = new RespReaderModule();
-
-  @Test
-  void provideRespReader() {
-    RespReaderImpl respReaderImpl = mock(RespReaderImpl.class);
-    RespReader respReader = respReaderModule.provideRespReader(respReaderImpl);
-    assertEquals(respReaderImpl, respReader);
-    assertInstanceOf(RespReaderImpl.class, respReader);
-  }
 
   @Test
   void provideBufferedReader() {
