@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.resp.network.writer;
+package dev.sbutler.bitflask.resp.network;
 
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;

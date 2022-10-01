@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.resp.network.writer;
+package dev.sbutler.bitflask.resp.network;
 
 import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.IOException;
