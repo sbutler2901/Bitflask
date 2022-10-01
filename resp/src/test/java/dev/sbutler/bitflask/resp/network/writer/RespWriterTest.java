@@ -14,10 +14,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class RespWriterImplTest {
+public class RespWriterTest {
 
   @InjectMocks
-  RespWriterImpl respWriterImpl;
+  RespWriter respWriter;
 
   @Mock
   BufferedOutputStream bufferedOutputStream;
@@ -25,7 +25,7 @@ public class RespWriterImplTest {
   @Test
   void writeRespType_success() throws IOException {
     RespType<?> toWrite = new RespBulkString("test");
-    respWriterImpl.writeRespType(toWrite);
+    respWriter.writeRespType(toWrite);
     verify(bufferedOutputStream, times(1)).write(toWrite.getEncodedBytes());
   }
 

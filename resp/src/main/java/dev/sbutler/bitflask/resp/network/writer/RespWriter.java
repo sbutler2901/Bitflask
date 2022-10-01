@@ -5,12 +5,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import javax.inject.Inject;
 
-class RespWriterImpl implements RespWriter {
+public class RespWriter {
 
   private final OutputStream outputStream;
 
   @Inject
-  RespWriterImpl(OutputStream outputStream) {
+  RespWriter(OutputStream outputStream) {
     this.outputStream = outputStream;
   }
 
