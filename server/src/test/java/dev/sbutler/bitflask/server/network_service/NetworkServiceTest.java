@@ -4,7 +4,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -16,7 +15,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
-import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceModule;
+import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceChildModule;
+import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceParentModule;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -68,20 +67,22 @@ public class NetworkServiceTest {
   void run() throws Exception {
     try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class);
         MockedStatic<ServerSocketChannel> serverSocketChannelMockedStatic =
-            mockStatic(ServerSocketChannel.class);
-        MockedConstruction<ClientHandlingServiceModule> moduleMockedConstruction =
-            mockConstruction(ClientHandlingServiceModule.class)) {
+            mockStatic(ServerSocketChannel.class)) {
       // Arrange
       serverSocketChannelMockedStatic.when(ServerSocketChannel::open)
           .thenReturn(serverSocketChannel);
       when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
       SocketChannel socketChannel = mock(SocketChannel.class);
       doReturn(socketChannel).when(serverSocketChannel).accept();
-      Injector injector = mock(Injector.class);
-      guiceMockedStatic.when(() -> Guice.createInjector(any(ClientHandlingServiceModule.class)))
-          .thenReturn(injector);
+      Injector parentInjector = mock(Injector.class);
+      guiceMockedStatic.when(
+              () -> Guice.createInjector(any(ClientHandlingServiceParentModule.class)))
+          .thenReturn(parentInjector);
+      Injector childInjector = mock(Injector.class);
+      doReturn(childInjector).when(parentInjector).createChildInjector(any(
+          ClientHandlingServiceChildModule.class));
       ClientHandlingService clientHandlingService = mock(ClientHandlingService.class);
-      doReturn(clientHandlingService).when(injector).getInstance(ClientHandlingService.class);
+      doReturn(clientHandlingService).when(childInjector).getInstance(ClientHandlingService.class);
       // Act
       networkService.startUp();
       networkService.run();
@@ -113,20 +114,22 @@ public class NetworkServiceTest {
   void shutdown_IOException() throws Exception {
     try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class);
         MockedStatic<ServerSocketChannel> serverSocketChannelMockedStatic =
-            mockStatic(ServerSocketChannel.class);
-        MockedConstruction<ClientHandlingServiceModule> moduleMockedConstruction = mockConstruction(
-            ClientHandlingServiceModule.class)) {
+            mockStatic(ServerSocketChannel.class)) {
       // Arrange
       serverSocketChannelMockedStatic.when(ServerSocketChannel::open)
           .thenReturn(serverSocketChannel);
       when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
       SocketChannel socketChannel = mock(SocketChannel.class);
       doReturn(socketChannel).when(serverSocketChannel).accept();
-      Injector injector = mock(Injector.class);
-      guiceMockedStatic.when(() -> Guice.createInjector(any(ClientHandlingServiceModule.class)))
-          .thenReturn(injector);
+      Injector parentInjector = mock(Injector.class);
+      guiceMockedStatic.when(
+              () -> Guice.createInjector(any(ClientHandlingServiceParentModule.class)))
+          .thenReturn(parentInjector);
+      Injector childInjector = mock(Injector.class);
+      doReturn(childInjector).when(parentInjector).createChildInjector(any(
+          ClientHandlingServiceChildModule.class));
       ClientHandlingService clientHandlingService = mock(ClientHandlingService.class);
-      doReturn(clientHandlingService).when(injector).getInstance(ClientHandlingService.class);
+      doReturn(clientHandlingService).when(childInjector).getInstance(ClientHandlingService.class);
       doThrow(IOException.class).when(serverSocketChannel).close();
       // Act
       networkService.startUp();

@@ -7,7 +7,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
-import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceModule;
+import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceChildModule;
+import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceParentModule;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -29,6 +30,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
   private final ExecutorService executorService;
   private final ServerConfiguration serverConfiguration;
   private ServerSocketChannel serverSocketChannel;
+  private Injector parentInjector;
   private final HashSet<ClientHandlingService> runningClientHandlingServices = new HashSet<>();
   private volatile boolean isRunning = true;
 
@@ -44,6 +46,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
     InetSocketAddress inetSocketAddress = new InetSocketAddress(serverConfiguration.getPort());
     serverSocketChannel.bind(inetSocketAddress);
     this.serverSocketChannel = serverSocketChannel;
+    this.parentInjector = Guice.createInjector(new ClientHandlingServiceParentModule());
     logger.atInfo().log("Prepared to accept incoming connections");
   }
 
@@ -57,9 +60,9 @@ public final class NetworkService extends AbstractExecutionThreadService {
   private void acceptAndExecuteNextClientConnection() throws IOException {
     try {
       SocketChannel socketChannel = serverSocketChannel.accept();
-      Injector injector = Guice.createInjector(
-          new ClientHandlingServiceModule(socketChannel));
-      ClientHandlingService clientHandlingService = injector.getInstance(
+      Injector childInjector = parentInjector.createChildInjector(
+          new ClientHandlingServiceChildModule(socketChannel));
+      ClientHandlingService clientHandlingService = childInjector.getInstance(
           ClientHandlingService.class);
 
       logger.atInfo()
