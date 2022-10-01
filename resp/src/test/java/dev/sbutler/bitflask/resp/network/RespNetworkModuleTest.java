@@ -1,41 +1,48 @@
 package dev.sbutler.bitflask.resp.network;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockConstruction;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
-import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
 
 public class RespNetworkModuleTest {
+
+  private final RespNetworkModule respNetworkModule = new RespNetworkModule();
 
   @Test
   void configure() {
     Injector injector = Guice.createInjector(
         new MockStreamProvider(),
-        new RespNetworkModule()
+        respNetworkModule
     );
     injector.getProvider(RespReader.class);
     injector.getProvider(RespWriter.class);
   }
 
   @Test
-  void provideBufferedReader() {
-    try (MockedConstruction<BufferedReader> bufferedReaderMockedConstruction = mockConstruction(
-        BufferedReader.class)) {
-      RespNetworkModule respNetworkModule = new RespNetworkModule();
-      InputStream inputStream = mock(InputStream.class);
-      BufferedReader providedBufferedReader = respNetworkModule.provideBufferedReader(inputStream);
-      BufferedReader mockedBufferedReader = bufferedReaderMockedConstruction.constructed().get(0);
-      assertEquals(mockedBufferedReader, providedBufferedReader);
-    }
+  void provideRespReader() {
+    // Arrange
+    InputStream inputStream = mock(InputStream.class);
+    // Act
+    RespReader respReader = respNetworkModule.provideRespReader(inputStream);
+    // Assert
+    assertNotNull(respReader);
+  }
+
+  @Test
+  void provideRespWriter() {
+    // Arrange
+    OutputStream outputStream = mock(OutputStream.class);
+    // Act
+    RespWriter respWriter = respNetworkModule.provideRespWriter(outputStream);
+    // Assert
+    assertNotNull(respWriter);
   }
 
   static class MockStreamProvider extends AbstractModule {

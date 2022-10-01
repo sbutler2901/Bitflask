@@ -12,14 +12,12 @@ import java.io.IOException;
 import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
 
 public class RespReader {
 
   private final BufferedReader bufferedReader;
 
-  @Inject
-  RespReader(@RespReaderBufferedReader BufferedReader reader) {
+  RespReader(BufferedReader reader) {
     this.bufferedReader = reader;
   }
 

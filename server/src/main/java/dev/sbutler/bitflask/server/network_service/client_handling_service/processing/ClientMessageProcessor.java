@@ -25,7 +25,7 @@ public class ClientMessageProcessor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  CommandProcessingService commandProcessingService;
+  private final CommandProcessingService commandProcessingService;
   private final RespReader respReader;
   private final RespWriter respWriter;
 

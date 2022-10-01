@@ -3,13 +3,11 @@ package dev.sbutler.bitflask.resp.network;
 import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.IOException;
 import java.io.OutputStream;
-import javax.inject.Inject;
 
 public class RespWriter {
 
   private final OutputStream outputStream;
 
-  @Inject
   RespWriter(OutputStream outputStream) {
     this.outputStream = outputStream;
   }

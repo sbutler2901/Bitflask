@@ -5,17 +5,17 @@ import com.google.inject.Provides;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 
 public class RespNetworkModule extends AbstractModule {
 
-  @Override
-  protected void configure() {
-    super.configure();
+  @Provides
+  RespReader provideRespReader(InputStream inputStream) {
+    return new RespReader(new BufferedReader(new InputStreamReader(inputStream)));
   }
 
   @Provides
-  @RespReaderBufferedReader
-  BufferedReader provideBufferedReader(InputStream inputStream) {
-    return new BufferedReader(new InputStreamReader(inputStream));
+  RespWriter provideRespWriter(OutputStream outputStream) {
+    return new RespWriter(outputStream);
   }
 }
