@@ -9,11 +9,6 @@ import java.io.InputStreamReader;
 public class RespReaderModule extends AbstractModule {
 
   @Provides
-  RespReader provideRespReader(RespReaderImpl respReader) {
-    return respReader;
-  }
-
-  @Provides
   @RespReaderBufferedReader
   BufferedReader provideBufferedReader(
       @RespReaderInputStreamReader InputStreamReader inputStreamReader) {

@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 
-class RespReaderImpl implements RespReader {
+class RespReaderImpl {
 
   private final BufferedReader bufferedReader;
 
@@ -23,6 +23,14 @@ class RespReaderImpl implements RespReader {
     this.bufferedReader = reader;
   }
 
+  /**
+   * Reads the next RespType from the underlying input-stream
+   *
+   * @return the read RespType
+   * @throws EOFException      if the underlying input-stream is closed
+   * @throws ProtocolException if the read input data is malformed
+   * @throws IOException       if a general failure occurs while reading
+   */
   public RespType<?> readNextRespType() throws IOException {
     int code = bufferedReader.read();
     if (code == -1) {
