@@ -10,14 +10,7 @@ public class RespReaderModule extends AbstractModule {
 
   @Provides
   @RespReaderBufferedReader
-  BufferedReader provideBufferedReader(
-      @RespReaderInputStreamReader InputStreamReader inputStreamReader) {
-    return new BufferedReader(inputStreamReader);
-  }
-
-  @Provides
-  @RespReaderInputStreamReader
-  InputStreamReader provideInputStreamReader(InputStream inputStream) {
-    return new InputStreamReader(inputStream);
+  BufferedReader provideBufferedReader(InputStream inputStream) {
+    return new BufferedReader(new InputStreamReader(inputStream));
   }
 }
