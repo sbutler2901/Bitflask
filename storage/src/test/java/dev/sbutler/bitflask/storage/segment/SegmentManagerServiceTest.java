@@ -1,7 +1,5 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
-import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,7 +10,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -24,6 +21,7 @@ import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -143,7 +141,7 @@ public class SegmentManagerServiceTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  void segmentSizeLimitExceededConsumer_outdatedUpdate_preSubmission() throws Exception {
+  void segmentSizeLimitExceededConsumer_outdatedUpdate() throws Exception {
     // Arrange
     doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
     Segment writableSegment = mock(Segment.class);
@@ -162,29 +160,6 @@ public class SegmentManagerServiceTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  void segmentSizeLimitExceededConsumer_outdatedUpdate_postSubmission() throws Exception {
-    // Arrange
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
-    Segment origWritableSegment = mock(Segment.class);
-    Segment concurrentlyCreatedWritableSegment = mock(Segment.class);
-    // Bypass preemptive skip and simulate concurrent thread already updated writable
-    // when task executes
-    when(managedSegments.writableSegment()).thenReturn(origWritableSegment)
-        .thenReturn(origWritableSegment)
-        .thenReturn(concurrentlyCreatedWritableSegment);
-    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
-    ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
-    // Act
-    segmentManagerService.startAsync().awaitRunning();
-    verify(origWritableSegment).registerSizeLimitExceededConsumer(captor.capture());
-    Consumer<Segment> limitConsumer = captor.getValue();
-    limitConsumer.accept(origWritableSegment);
-    // Assert
-    verify(segmentFactory, times(0)).createSegment();
-  }
-
-  @SuppressWarnings("unchecked")
-  @Test
   void segmentSizeLimitExceededConsumer_failedSubmission() throws Exception {
     try (MockedStatic<Futures> futuresMockedStatic = mockStatic(Futures.class)) {
       // Arrange
@@ -195,7 +170,7 @@ public class SegmentManagerServiceTest {
       doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
       ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
       RejectedExecutionException e = new RejectedExecutionException();
-      futuresMockedStatic.when(() -> Futures.submit(any(Runnable.class), any()))
+      futuresMockedStatic.when(() -> Futures.submit(any(Callable.class), any()))
           .thenThrow(e);
       // Act
       segmentManagerService.startAsync().awaitRunning();
@@ -203,6 +178,7 @@ public class SegmentManagerServiceTest {
       Consumer<Segment> limitConsumer = captor.getValue();
       limitConsumer.accept(writableSegment);
       // Assert
+      assertFalse(segmentManagerService.isRunning());
       assertEquals(e, segmentManagerService.failureCause());
     }
   }
@@ -314,36 +290,6 @@ public class SegmentManagerServiceTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  void segmentSizeLimitExceededConsumer_compactionExecutionFailure() throws Exception {
-    // Arrange
-    setupForCompaction();
-
-    // Callback initializing compaction
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
-    Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
-    Segment newWritableSegment = mock(Segment.class);
-    doReturn(newWritableSegment).when(segmentFactory).createSegment();
-
-    // After compaction
-    SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
-    doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
-    IOException e = new IOException("test");
-    doReturn(immediateFailedFuture(e)).when(segmentCompactor).compactSegments();
-
-    ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
-    // Act
-    segmentManagerService.startAsync().awaitRunning();
-    verify(writableSegment).registerSizeLimitExceededConsumer(captor.capture());
-    Consumer<Segment> limitConsumer = captor.getValue();
-    limitConsumer.accept(writableSegment);
-    // Assert
-    assertEquals(e, segmentManagerService.failureCause());
-  }
-
-  @SuppressWarnings("unchecked")
-  @Test
   void segmentSizeLimitExceededConsumer_deletionFailedGeneral() throws Exception {
     // Arrange
     setupForCompaction();
@@ -420,46 +366,6 @@ public class SegmentManagerServiceTest {
     verify(segmentDeleterFactory, times(1)).create(segmentsForCompaction);
   }
 
-  @SuppressWarnings("unchecked")
-  @Test
-  void segmentSizeLimitExceededConsumer_deletionExecutionFailure() throws Exception {
-    // Arrange
-    setupForCompaction();
-
-    // Callback initializing compaction
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
-    Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
-    Segment newWritableSegment = mock(Segment.class);
-    doReturn(newWritableSegment).when(segmentFactory).createSegment();
-
-    // After compaction
-    doReturn(true).when(writableSegment).hasBeenCompacted();
-    ImmutableList<Segment> segmentsForCompaction = ImmutableList.of(writableSegment);
-    Segment compactedSegment = mock(Segment.class);
-    CompactionResults compactionResults = new CompactionResults.Success(
-        segmentsForCompaction,
-        ImmutableList.of(compactedSegment));
-    compactorMock(compactionResults);
-
-    // After deletion
-
-    SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
-    doReturn(segmentDeleter).when(segmentDeleterFactory).create(any());
-    IOException e = new IOException("test");
-    doReturn(immediateFailedFuture(e)).when(segmentDeleter).deleteSegments();
-
-    ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
-    // Act
-    segmentManagerService.startAsync().awaitRunning();
-    verify(writableSegment).registerSizeLimitExceededConsumer(captor.capture());
-    Consumer<Segment> limitConsumer = captor.getValue();
-    limitConsumer.accept(writableSegment);
-    // Assert
-    assertEquals(e, segmentManagerService.failureCause());
-  }
-
   private void setupForCompaction() {
     doReturn(1).when(storageConfiguration).getStorageCompactionThreshold();
     segmentManagerService = new SegmentManagerService(
@@ -475,12 +381,12 @@ public class SegmentManagerServiceTest {
   private void compactorMock(CompactionResults compactionResults) {
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
     doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
-    doReturn(immediateFuture(compactionResults)).when(segmentCompactor).compactSegments();
+    doReturn(compactionResults).when(segmentCompactor).compactSegments();
   }
 
   private void deleterMock(DeletionResults deletionResults) {
     SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
     doReturn(segmentDeleter).when(segmentDeleterFactory).create(any());
-    doReturn(immediateFuture(deletionResults)).when(segmentDeleter).deleteSegments();
+    doReturn(deletionResults).when(segmentDeleter).deleteSegments();
   }
 }
