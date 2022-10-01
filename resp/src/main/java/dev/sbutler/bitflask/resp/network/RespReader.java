@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.resp.network.reader;
+package dev.sbutler.bitflask.resp.network;
 
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;

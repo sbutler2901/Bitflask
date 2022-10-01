@@ -13,8 +13,8 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
+import dev.sbutler.bitflask.resp.network.RespReader;
 import dev.sbutler.bitflask.resp.network.RespWriter;
-import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespInteger;

@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.resp.network.reader;
+package dev.sbutler.bitflask.resp.network;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;

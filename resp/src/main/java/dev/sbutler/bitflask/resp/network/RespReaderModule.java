@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.resp.network.reader;
+package dev.sbutler.bitflask.resp.network;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;

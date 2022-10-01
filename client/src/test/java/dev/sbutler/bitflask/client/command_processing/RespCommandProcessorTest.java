@@ -9,8 +9,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
+import dev.sbutler.bitflask.resp.network.RespReader;
 import dev.sbutler.bitflask.resp.network.RespWriter;
-import dev.sbutler.bitflask.resp.network.reader.RespReader;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.IOException;

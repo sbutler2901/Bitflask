@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.resp.network.reader;
+package dev.sbutler.bitflask.resp.network;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
