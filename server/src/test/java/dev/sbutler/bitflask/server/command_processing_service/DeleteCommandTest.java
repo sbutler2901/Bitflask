@@ -19,9 +19,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Spy;
 
-public class DelCommandTest {
+public class DeleteCommandTest {
 
-  DelCommand command;
+  DeleteCommand command;
   @Spy
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
@@ -31,7 +31,7 @@ public class DelCommandTest {
   @BeforeEach
   void beforeEach() {
     storageCommandDispatcher = mock(StorageCommandDispatcher.class);
-    command = new DelCommand(executorService, storageCommandDispatcher, key);
+    command = new DeleteCommand(executorService, storageCommandDispatcher, key);
   }
 
   @Test

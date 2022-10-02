@@ -9,7 +9,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import java.util.concurrent.ExecutorService;
 
-public class DelCommand implements ServerCommand {
+public class DeleteCommand implements ServerCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -17,7 +17,7 @@ public class DelCommand implements ServerCommand {
   private final StorageCommandDispatcher storageCommandDispatcher;
   private final String key;
 
-  public DelCommand(
+  public DeleteCommand(
       ExecutorService executorService,
       StorageCommandDispatcher storageCommandDispatcher,
       String key) {
