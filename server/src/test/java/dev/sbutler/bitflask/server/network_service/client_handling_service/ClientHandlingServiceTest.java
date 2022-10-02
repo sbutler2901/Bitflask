@@ -6,8 +6,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import dev.sbutler.bitflask.server.network_service.client_handling_service.connection.ClientConnectionManager;
-import dev.sbutler.bitflask.server.network_service.client_handling_service.processing.ClientMessageProcessor;
 import java.io.IOException;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;

@@ -1,8 +1,6 @@
 package dev.sbutler.bitflask.server.network_service.client_handling_service;
 
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.server.network_service.client_handling_service.connection.ClientConnectionManager;
-import dev.sbutler.bitflask.server.network_service.client_handling_service.processing.ClientMessageProcessor;
 import java.io.Closeable;
 import java.io.IOException;
 import javax.inject.Inject;

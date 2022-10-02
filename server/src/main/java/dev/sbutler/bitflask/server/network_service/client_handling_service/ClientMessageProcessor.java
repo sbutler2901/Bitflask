@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.network_service.client_handling_service.processing;
+package dev.sbutler.bitflask.server.network_service.client_handling_service;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -15,7 +15,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.ProtocolException;
 import java.util.concurrent.ExecutionException;
-import javax.inject.Inject;
 
 /**
  * Handles receiving a client's incoming messages, parsing them, submitting them for processing, and
@@ -29,8 +28,9 @@ public class ClientMessageProcessor {
   private final RespReader respReader;
   private final RespWriter respWriter;
 
-  @Inject
-  ClientMessageProcessor(CommandProcessingService commandProcessingService, RespReader respReader,
+  ClientMessageProcessor(
+      CommandProcessingService commandProcessingService,
+      RespReader respReader,
       RespWriter respWriter) {
     this.commandProcessingService = commandProcessingService;
     this.respReader = respReader;
