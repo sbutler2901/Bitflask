@@ -7,6 +7,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 
+/**
+ * Provides the necessary Guice binds for create RespReader and RespWriter instances.
+ *
+ * <p>This module is dependent on externally provided bindings for {@link InputStream} and
+ * {@link OutputStream} instances.
+ */
 public class RespNetworkModule extends AbstractModule {
 
   @Provides

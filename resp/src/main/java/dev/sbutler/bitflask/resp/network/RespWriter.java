@@ -4,6 +4,12 @@ import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * Handles writing RESP data types to an underlying {@link OutputStream}.
+ *
+ * <p>this class does not handle lifecycle management of the provided OutputStream, such as closing
+ * it.
+ */
 public class RespWriter {
 
   private final OutputStream outputStream;

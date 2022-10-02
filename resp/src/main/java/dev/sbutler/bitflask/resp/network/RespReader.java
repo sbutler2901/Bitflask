@@ -13,6 +13,13 @@ import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Handles reading RESP data types from an underlying {@link java.io.InputStream} via a
+ * {@link BufferedReader}.
+ *
+ * <p>This class does not handle lifecycle management of the provided BufferedReader, such as
+ * closing it.
+ */
 public class RespReader {
 
   private final BufferedReader bufferedReader;
