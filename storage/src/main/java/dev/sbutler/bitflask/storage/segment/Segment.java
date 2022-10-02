@@ -97,7 +97,7 @@ public final class Segment {
   }
 
   public void delete(String key) {
-    // TODO: implement
+    keyedEntryFileOffsetMap.remove(key);
   }
 
   /**

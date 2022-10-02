@@ -164,6 +164,15 @@ public class SegmentTest {
   }
 
   @Test
+  void delete() {
+    // Act
+    String key = "key";
+    segment.delete(key);
+    // Assert
+    verify(keyedEntryFileOffsetMap, times(1)).remove(key);
+  }
+
+  @Test
   void encodedKeyAndValue() {
     // Arrange
     String key = "key", value = "value";
@@ -248,7 +257,7 @@ public class SegmentTest {
   }
 
   @Test
-  void delete() throws Exception {
+  void deleteSegment() throws Exception {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       // Act
       segment.close();
