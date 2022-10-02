@@ -188,11 +188,11 @@ public final class Segment {
   }
 
   /**
-   * Deletes the segment from the filesystem
+   * Deletes this segment from the filesystem
    *
    * @throws IOException if there is an issue deleting the segment
    */
-  public void delete() throws IOException {
+  public void deleteSegment() throws IOException {
     if (isOpen()) {
       throw new RuntimeException("Segment should be closed before deleting");
     }

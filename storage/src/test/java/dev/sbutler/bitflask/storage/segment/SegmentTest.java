@@ -252,7 +252,7 @@ public class SegmentTest {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       // Act
       segment.close();
-      segment.delete();
+      segment.deleteSegment();
       // Assert
       filesMockedStatic.verify(() -> {
         try {
@@ -267,7 +267,7 @@ public class SegmentTest {
   @Test
   void delete_withoutClosing() {
     doReturn(true).when(segmentFile).isOpen();
-    assertThrows(RuntimeException.class, () -> segment.delete());
+    assertThrows(RuntimeException.class, () -> segment.deleteSegment());
   }
 
   @Test

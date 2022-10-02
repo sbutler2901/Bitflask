@@ -119,7 +119,7 @@ final class SegmentDeleter {
       for (Segment segment : segmentsToBeDeleted) {
         Future<Void> closeAndDeleteFuture = scope.fork(() -> {
           segment.close();
-          segment.delete();
+          segment.deleteSegment();
           return null;
         });
         segmentDeletionFutureMap.put(segment, closeAndDeleteFuture);

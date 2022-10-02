@@ -55,9 +55,9 @@ public class SegmentDeleterTest {
     assertEquals(headSegment, success.segmentsProvidedForDeletion().get(0));
     assertEquals(tailSegment, success.segmentsProvidedForDeletion().get(1));
     verify(headSegment, times(1)).close();
-    verify(headSegment, times(1)).delete();
+    verify(headSegment, times(1)).deleteSegment();
     verify(tailSegment, times(1)).close();
-    verify(tailSegment, times(1)).delete();
+    verify(tailSegment, times(1)).deleteSegment();
   }
 
   @Test
@@ -91,7 +91,7 @@ public class SegmentDeleterTest {
   void deletion_segmentFailures() throws Exception {
     // Arrange
     Segment headSegment = segmentsToBeCompacted.get(0);
-    doThrow(IOException.class).when(headSegment).delete();
+    doThrow(IOException.class).when(headSegment).deleteSegment();
     // Act
     DeletionResults deletionResults = segmentDeleter.deleteSegments();
     // Assert
