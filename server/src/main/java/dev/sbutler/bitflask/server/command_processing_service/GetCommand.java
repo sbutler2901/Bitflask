@@ -9,6 +9,9 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import java.util.concurrent.ExecutorService;
 
+/**
+ * Asynchronously submits a read request to the storage engine and processes the results.
+ */
 class GetCommand implements ServerCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
