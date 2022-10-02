@@ -13,6 +13,10 @@ import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegment
 import java.io.IOException;
 import java.util.Optional;
 
+/**
+ * Handles submitting an asynchronous task to the storage engine for reading the value of a provided
+ * key.
+ */
 public class ReadCommand implements StorageCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();

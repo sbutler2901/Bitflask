@@ -12,6 +12,9 @@ import dev.sbutler.bitflask.storage.segment.Segment;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
 
+/**
+ * Handles submitting an asynchronous task to the storage engine for writing a key:value mapping.
+ */
 public class WriteCommand implements StorageCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();

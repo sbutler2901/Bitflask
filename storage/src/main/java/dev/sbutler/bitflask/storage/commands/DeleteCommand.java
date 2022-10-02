@@ -10,6 +10,10 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.segment.Segment;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 
+/**
+ * Handles submitting an asynchronous task to the storage engine for deleting any mappings for the
+ * provided key.
+ */
 public class DeleteCommand implements StorageCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
