@@ -33,4 +33,14 @@ public sealed interface StorageCommandDTO {
       InputValidator.validateValue(value);
     }
   }
+
+  /**
+   * Use when the provides {@code key}'s mapping should be deleted.
+   */
+  record DeleteDTO(String key) implements StorageCommandDTO {
+
+    public DeleteDTO {
+      InputValidator.validateKey(key);
+    }
+  }
 }
