@@ -131,4 +131,38 @@ public class CommandProcessingServiceTest {
       fail("invalid exception");
     }
   }
+
+  @Test
+  void delete() {
+    try (MockedConstruction<DeleteCommand> deleteMockedConstruction = mockConstruction(
+        DeleteCommand.class)) {
+      // Arrange
+      ImmutableList<String> message = ImmutableList.of("del", "key");
+      // Act
+      commandProcessingService.processCommandMessage(message);
+      // Assert
+      assertEquals(1, deleteMockedConstruction.constructed().size());
+      DeleteCommand deleteCommand = deleteMockedConstruction.constructed().get(0);
+      verify(deleteCommand, times(1)).execute();
+    }
+  }
+
+  @Test
+  void delete_invalid() {
+    // Arrange
+    ImmutableList<String> message = ImmutableList.of("del", "key", "invalid");
+    // Act
+    ListenableFuture<String> responseFuture = commandProcessingService.processCommandMessage(
+        message);
+    // Assert
+    assertTrue(responseFuture.isDone());
+    try {
+      responseFuture.get();
+      fail("ExecutionException should have been thrown");
+    } catch (ExecutionException e) {
+      assertInstanceOf(IllegalArgumentException.class, e.getCause());
+    } catch (InterruptedException e) {
+      fail("invalid exception");
+    }
+  }
 }

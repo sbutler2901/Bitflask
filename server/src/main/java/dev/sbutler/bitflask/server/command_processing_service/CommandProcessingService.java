@@ -54,13 +54,14 @@ public class CommandProcessingService {
       case GET -> new GetCommand(executorService, storageCommandDispatcher, args.get(0));
       case SET ->
           new SetCommand(executorService, storageCommandDispatcher, args.get(0), args.get(1));
+      case DEL -> new DeleteCommand(executorService, storageCommandDispatcher, args.get(0));
     };
   }
 
   private static boolean isValidCommandArgs(CommandType commandType, List<String> args) {
     return switch (commandType) {
       case PING -> args.size() == 0;
-      case GET -> args.size() == 1;
+      case GET, DEL -> args.size() == 1;
       case SET -> args.size() == 2;
     };
   }
