@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -12,6 +13,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
+import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,4 +46,27 @@ public class DelCommandTest {
     assertEquals("OK", executeFuture.get());
   }
 
+  @Test
+  void execute_deleteFailed() throws Exception {
+    // Arrange
+    StorageResponse storageResponse = new Failed("error");
+    doReturn(immediateFuture(storageResponse)).when(storageCommandDispatcher).put(any());
+    // Act
+    ListenableFuture<String> executeFuture = command.execute();
+    // Assert
+    assertTrue(executeFuture.isDone());
+    assertTrue(executeFuture.get().toLowerCase().contains("failed"));
+  }
+
+  @Test
+  void execute_storageException() throws Exception {
+    // Arrange
+    doReturn(immediateFailedFuture(new RuntimeException("test")))
+        .when(storageCommandDispatcher).put(any());
+    // Act
+    ListenableFuture<String> executeFuture = command.execute();
+    // Assert
+    assertTrue(executeFuture.isDone());
+    assertTrue(executeFuture.get().toLowerCase().contains("unexpected"));
+  }
 }
