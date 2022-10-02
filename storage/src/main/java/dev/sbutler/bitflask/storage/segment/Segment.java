@@ -96,6 +96,10 @@ public final class Segment {
     }
   }
 
+  public void delete(String key) {
+    // TODO: implement
+  }
+
   /**
    * Encodes a key and value into a byte array. Uses a single byte each for encoding key and value
    * lengths (limiting them to a max length of 256)
