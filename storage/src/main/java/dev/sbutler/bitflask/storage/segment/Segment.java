@@ -97,6 +97,7 @@ public final class Segment {
   }
 
   public void delete(String key) {
+    // TODO: tombstone to prevent loading on restart
     keyedEntryFileOffsetMap.remove(key);
   }
 
