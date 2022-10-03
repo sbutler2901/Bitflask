@@ -12,19 +12,45 @@ import java.nio.charset.StandardCharsets;
  * <pre>
  *   | header (1 byte) | key's length (1 byte) | key (X bytes) | value's length (1 byte) | value (X bytes) |
  * </pre>
+ *
+ * <p>The 1 byte header allows encoding 256 descriptions of an entry. The 1 byte key and value
+ * length limits those entities' length to a maximum of 256.
  */
 class Encoder {
 
-  private static final String ENCODING_FORMAT = "%c%c%s%c%s";
+  /**
+   * The types of headers supported for encoding
+   */
+  enum Header {
+    KEY_VALUE((byte) 0),
+    DELETED((byte) 1);
 
-  private Encoder() {
+    private final byte byteMap;
 
+    Header(byte byteMap) {
+      this.byteMap = byteMap;
+    }
+
+    byte getByteMap() {
+      return byteMap;
+    }
+
+    static Header byteToHeaderMapper(byte headerByte) {
+      for (Header header : Header.values()) {
+        if (header.byteMap == headerByte) {
+          return header;
+        }
+      }
+      throw new IllegalArgumentException("No header type found for the provided byte");
+    }
   }
+
+  private static final String ENCODING_FORMAT = "%c%c%s%c%s";
 
   /**
    * Encodes a header, key, and value into bytes.
    */
-  static byte[] encode(char header, String key, String value) {
+  static byte[] encode(Header header, String key, String value) {
     verifyKey(key);
     verifyValue(value);
     return convertToBytes(header, key, value);
@@ -33,7 +59,7 @@ class Encoder {
   /**
    * Encodes a header and key into bytes
    */
-  static byte[] encodeNoValue(char header, String key) {
+  static byte[] encodeNoValue(Header header, String key) {
     verifyKey(key);
     return convertToBytes(header, key, "");
   }
@@ -41,11 +67,11 @@ class Encoder {
   /**
    * Performs core encoding.
    */
-  private static byte[] convertToBytes(char header, String key, String value) {
+  private static byte[] convertToBytes(Header header, String key, String value) {
     char keyLength = (char) key.length();
     char valueLength = (char) value.length();
     String encoded = ENCODING_FORMAT
-        .formatted(header, keyLength, key, valueLength, value);
+        .formatted(header.byteMap, keyLength, key, valueLength, value);
 
     return encoded.getBytes(StandardCharsets.UTF_8);
   }
@@ -92,4 +118,9 @@ class Encoder {
       long value) {
 
   }
+
+  private Encoder() {
+
+  }
+
 }

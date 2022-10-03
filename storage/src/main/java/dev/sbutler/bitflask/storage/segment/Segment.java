@@ -1,11 +1,9 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.collect.ImmutableSet;
+import dev.sbutler.bitflask.storage.segment.Encoder.Header;
+import dev.sbutler.bitflask.storage.segment.Encoder.Offsets;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
@@ -47,11 +45,11 @@ public final class Segment {
       throw new RuntimeException("This segment has been closed and cannot be written to");
     }
 
-    byte[] encodedKeyAndValue = encodeKeyAndValue(key, value);
+    byte[] encodedKeyAndValue = Encoder.encode(Header.KEY_VALUE, key, value);
     long writeOffset = currentFileWriteOffset.getAndAdd(encodedKeyAndValue.length);
 
+    readWriteLock.writeLock().lock();
     try {
-      readWriteLock.writeLock().lock();
       segmentFile.write(encodedKeyAndValue, writeOffset);
     } finally {
       readWriteLock.writeLock().unlock();
@@ -83,13 +81,20 @@ public final class Segment {
     }
 
     long entryFileOffset = keyedEntryFileOffsetMap.get(key);
-    long valueLengthOffsetStart = entryFileOffset + 1 + key.length();
-    long valueOffsetStart = valueLengthOffsetStart + 1;
+    Offsets offsets = Encoder.decode(entryFileOffset, key);
 
+    readWriteLock.readLock().lock();
     try {
-      readWriteLock.readLock().lock();
-      int valueLength = segmentFile.readByte(valueLengthOffsetStart);
-      String value = segmentFile.readAsString(valueLength, valueOffsetStart);
+      byte headerByte = segmentFile.readByte(offsets.header());
+      Header header = Header.byteToHeaderMapper(headerByte);
+      if (!header.equals(Header.KEY_VALUE)) {
+        throw new RuntimeException(
+            String.format(
+                "The header for entry with key [%s] was not KEY_VALUE: [%s]", key, header));
+      }
+
+      int valueLength = segmentFile.readByte(offsets.valueLength());
+      String value = segmentFile.readAsString(valueLength, offsets.value());
       return Optional.of(value);
     } finally {
       readWriteLock.readLock().unlock();
@@ -99,35 +104,6 @@ public final class Segment {
   public void delete(String key) {
     // TODO: tombstone to prevent loading on restart
     keyedEntryFileOffsetMap.remove(key);
-  }
-
-  /**
-   * Encodes a key and value into a byte array. Uses a single byte each for encoding key and value
-   * lengths (limiting them to a max length of 256)
-   *
-   * @param key   the key to be encoded
-   * @param value the value to be encoded
-   * @return the combined encoding of the key and value
-   */
-  static byte[] encodeKeyAndValue(String key, String value) {
-    verifyEncodedArgs(key, value);
-
-    char encodedKeyLength = (char) key.length();
-    char encodedValueLength = (char) value.length();
-    String encoded = String.format("%c%s%c%s", encodedKeyLength, key, encodedValueLength,
-        value);
-    return encoded.getBytes(StandardCharsets.UTF_8);
-  }
-
-  private static void verifyEncodedArgs(String key, String value) {
-    checkNotNull(key);
-    checkArgument(!key.isBlank(), "Expected non-blank key, but was [%s]", key);
-    checkArgument(key.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
-        key.length());
-    checkNotNull(value);
-    checkArgument(!value.isBlank(), "Expected non-blank key, but was [%s]", value);
-    checkArgument(value.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
-        value.length());
   }
 
   /**

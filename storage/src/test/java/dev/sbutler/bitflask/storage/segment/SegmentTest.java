@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,8 +15,10 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
+import dev.sbutler.bitflask.storage.segment.Encoder.Header;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
@@ -55,7 +56,7 @@ public class SegmentTest {
   void write() throws Exception {
     // Arrange
     String key = "key", value = "value";
-    byte[] encoded = Segment.encodeKeyAndValue(key, value);
+    byte[] encoded = Encoder.encode(Header.KEY_VALUE, key, value);
     doReturn(true).when(segmentFile).isOpen();
     // Act
     segment.write(key, value);
@@ -120,7 +121,9 @@ public class SegmentTest {
     doReturn(true).when(segmentFile).isOpen();
     doReturn(true).when(keyedEntryFileOffsetMap).containsKey(key);
     doReturn(0L).when(keyedEntryFileOffsetMap).get(key);
-    doReturn((byte) 5).when(segmentFile).readByte(anyLong());
+    when(segmentFile.readByte(anyLong()))
+        .thenReturn(Header.KEY_VALUE.getByteMap())
+        .thenReturn((byte) 5);
     doReturn(value).when(segmentFile).readAsString(anyInt(), anyLong());
     // Act
     Optional<String> result = segment.read(key);
@@ -137,7 +140,9 @@ public class SegmentTest {
     doReturn(true).when(segmentFile).isOpen();
     doReturn(true).when(keyedEntryFileOffsetMap).containsKey(key);
     doReturn(0L).when(keyedEntryFileOffsetMap).get(key);
-    doReturn((byte) 5).when(segmentFile).readByte(anyLong());
+    when(segmentFile.readByte(anyLong()))
+        .thenReturn(Header.KEY_VALUE.getByteMap())
+        .thenReturn((byte) 5);
     doThrow(IOException.class).when(segmentFile).readAsString(anyInt(), anyLong());
     // Act
     assertThrows(IOException.class, () -> segment.read(key));
@@ -170,35 +175,6 @@ public class SegmentTest {
     segment.delete(key);
     // Assert
     verify(keyedEntryFileOffsetMap, times(1)).remove(key);
-  }
-
-  @Test
-  void encodedKeyAndValue() {
-    // Arrange
-    String key = "key", value = "value";
-    char keyLengthEncoded = (char) key.length();
-    char valueLengthEncoded = (char) value.length();
-    byte[] expected = (keyLengthEncoded + key + valueLengthEncoded + value).getBytes();
-    // Act
-    byte[] encoded = Segment.encodeKeyAndValue(key, value);
-    // Assert
-    assertArrayEquals(expected, encoded);
-  }
-
-  @Test
-  void encodedKeyAndValue_key_invalidArg() {
-    assertThrows(NullPointerException.class, () -> Segment.encodeKeyAndValue(null, "value"));
-    assertThrows(IllegalArgumentException.class, () -> Segment.encodeKeyAndValue("", "value"));
-    assertThrows(IllegalArgumentException.class,
-        () -> Segment.encodeKeyAndValue(new String(new byte[257]), "value"));
-  }
-
-  @Test
-  void encodedKeyAndValue_value_invalidArg() {
-    assertThrows(NullPointerException.class, () -> Segment.encodeKeyAndValue("key", null));
-    assertThrows(IllegalArgumentException.class, () -> Segment.encodeKeyAndValue("key", ""));
-    assertThrows(IllegalArgumentException.class,
-        () -> Segment.encodeKeyAndValue("key", new String(new byte[257])));
   }
 
   @Test
