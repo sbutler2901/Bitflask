@@ -6,7 +6,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 class InputValidator {
 
   static final int KEY_MAX_SIZE = 256;
-  static final int VALUE_MAX_SIZE = 1024;
+  static final int VALUE_MAX_SIZE = 256;
 
   private InputValidator() {
 
