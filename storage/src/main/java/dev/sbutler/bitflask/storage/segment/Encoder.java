@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
  * </pre>
  *
  * <p>The 1 byte header allows encoding 256 descriptions of an entry. The 1 byte key and value
- * length limits those entities' length to a maximum of 256.
+ * length limits those entities' length to a maximum of 255 characters.
  */
 class Encoder {
 
@@ -41,7 +41,8 @@ class Encoder {
           return header;
         }
       }
-      throw new IllegalArgumentException("No header type found for the provided byte");
+      throw new IllegalArgumentException(
+          String.format("Header type not found for the provided byte [%d]", (int) headerByte));
     }
   }
 

@@ -1,6 +1,8 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.sbutler.bitflask.storage.segment.Encoder.Header;
 import dev.sbutler.bitflask.storage.segment.Encoder.Offsets;
@@ -71,6 +73,16 @@ public class EncoderTest {
       Header header = Header.byteToHeaderMapper((byte) 1);
       // Assert
       assertEquals(Header.DELETED, header);
+    }
+
+    @Test
+    public void byteToHeaderMapper_invalidByte() {
+      // Act
+      IllegalArgumentException e = assertThrows(
+          IllegalArgumentException.class,
+          () -> Header.byteToHeaderMapper((byte) 3));
+      // Assert
+      assertTrue(e.getMessage().contains("type not found"));
     }
   }
 }
