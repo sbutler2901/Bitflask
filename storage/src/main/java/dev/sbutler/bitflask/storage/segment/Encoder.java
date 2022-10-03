@@ -80,14 +80,14 @@ class Encoder {
   private static void verifyKey(String key) {
     checkNotNull(key);
     checkArgument(!key.isBlank(), "Expected non-blank key, but was [%s]", key);
-    checkArgument(key.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
+    checkArgument(key.length() < 256, "Expect key smaller than 256 characters, but was [%d]",
         key.length());
   }
 
   private static void verifyValue(String value) {
     checkNotNull(value);
     checkArgument(!value.isBlank(), "Expected non-blank key, but was [%s]", value);
-    checkArgument(value.length() <= 256, "Expect key smaller than 256 characters, but was [%d]",
+    checkArgument(value.length() < 256, "Expect key smaller than 256 characters, but was [%d]",
         value.length());
   }
 

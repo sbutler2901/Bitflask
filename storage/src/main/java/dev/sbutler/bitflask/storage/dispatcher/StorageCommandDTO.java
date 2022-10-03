@@ -8,7 +8,7 @@ package dev.sbutler.bitflask.storage.dispatcher;
  * long.
  *
  * <p>A key or value must not be blank, defined by {@code string.isBlank()}. A key or value cannot
- * be longer than 256 each.
+ * be longer than 255 each.
  */
 public sealed interface StorageCommandDTO {
 
