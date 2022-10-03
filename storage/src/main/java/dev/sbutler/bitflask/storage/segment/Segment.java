@@ -34,39 +34,6 @@ public final class Segment {
   }
 
   /**
-   * Writes the provided key and value to the segment file
-   *
-   * @param key   the key to be written and saved for retrieving data
-   * @param value the associated data value to be written
-   */
-  public void write(String key, String value) throws IOException {
-    if (!isOpen()) {
-      // TODO: adjust for consumers to try again
-      throw new RuntimeException("This segment has been closed and cannot be written to");
-    }
-
-    byte[] encodedKeyAndValue = Encoder.encode(Header.KEY_VALUE, key, value);
-    long writeOffset = currentFileWriteOffset.getAndAdd(encodedKeyAndValue.length);
-
-    readWriteLock.writeLock().lock();
-    try {
-      segmentFile.write(encodedKeyAndValue, writeOffset);
-    } finally {
-      readWriteLock.writeLock().unlock();
-    }
-
-    keyedEntryFileOffsetMap.merge(key, writeOffset, (retrievedOffset, writtenOffset) ->
-        retrievedOffset < writtenOffset
-            ? writtenOffset
-            : retrievedOffset
-    );
-
-    if (exceedsStorageThreshold() && sizeLimitExceededConsumer != null) {
-      sizeLimitExceededConsumer.accept(this);
-    }
-  }
-
-  /**
    * Reads the provided key's value from the segment file
    *
    * @param key the key to find the data in the segment file
@@ -98,6 +65,39 @@ public final class Segment {
       return Optional.of(value);
     } finally {
       readWriteLock.readLock().unlock();
+    }
+  }
+
+  /**
+   * Writes the provided key and value to the segment file
+   *
+   * @param key   the key to be written and saved for retrieving data
+   * @param value the associated data value to be written
+   */
+  public void write(String key, String value) throws IOException {
+    if (!isOpen()) {
+      // TODO: adjust for consumers to try again
+      throw new RuntimeException("This segment has been closed and cannot be written to");
+    }
+
+    byte[] encodedKeyAndValue = Encoder.encode(Header.KEY_VALUE, key, value);
+    long writeOffset = currentFileWriteOffset.getAndAdd(encodedKeyAndValue.length);
+
+    readWriteLock.writeLock().lock();
+    try {
+      segmentFile.write(encodedKeyAndValue, writeOffset);
+    } finally {
+      readWriteLock.writeLock().unlock();
+    }
+
+    keyedEntryFileOffsetMap.merge(key, writeOffset, (retrievedOffset, writtenOffset) ->
+        retrievedOffset < writtenOffset
+            ? writtenOffset
+            : retrievedOffset
+    );
+
+    if (exceedsStorageThreshold() && sizeLimitExceededConsumer != null) {
+      sizeLimitExceededConsumer.accept(this);
     }
   }
 
