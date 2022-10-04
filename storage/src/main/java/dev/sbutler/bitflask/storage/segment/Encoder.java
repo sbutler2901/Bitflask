@@ -94,10 +94,10 @@ class Encoder {
   /**
    * Decodes the offsets of an entry.
    */
-  static Offsets decode(long entryOffset, String key) {
+  static Offsets decode(long entryOffset, int keyLength) {
     long keyLengthOffset = entryOffset + 1;
     long keyOffset = keyLengthOffset + 1;
-    long valueLengthOffset = keyOffset + key.length();
+    long valueLengthOffset = keyOffset + keyLength;
     long valueOffset = valueLengthOffset + 1;
     return new Offsets(
         entryOffset,
@@ -109,6 +109,14 @@ class Encoder {
   }
 
   /**
+   * Partially decodes the offsets when only the entry's offset is available.
+   */
+  static PartialOffsets decodePartial(long entryOffset) {
+    long keyLengthOffset = entryOffset + 1;
+    return new PartialOffsets(entryOffset, keyLengthOffset);
+  }
+
+  /**
    * The offsets of each entity encoded
    */
   record Offsets(
@@ -117,6 +125,13 @@ class Encoder {
       long key,
       long valueLength,
       long value) {
+
+  }
+
+  record PartialOffsets(
+      long header,
+      long keyLength
+  ) {
 
   }
 

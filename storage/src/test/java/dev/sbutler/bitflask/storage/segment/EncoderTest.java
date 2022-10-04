@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.sbutler.bitflask.storage.segment.Encoder.Header;
 import dev.sbutler.bitflask.storage.segment.Encoder.Offsets;
+import dev.sbutler.bitflask.storage.segment.Encoder.PartialOffsets;
 import org.junit.jupiter.api.Test;
 
 public class EncoderTest {
@@ -48,13 +49,24 @@ public class EncoderTest {
     long offset = 0;
     String key = "k";
     // Act
-    Offsets offsets = Encoder.decode(offset, key);
+    Offsets offsets = Encoder.decode(offset, key.length());
     // Assert
     assertEquals(offsets.header(), offset);
     assertEquals(offsets.keyLength(), offsets.header() + 1);
     assertEquals(offsets.key(), offsets.keyLength() + 1);
     assertEquals(offsets.valueLength(), offsets.key() + 1);
     assertEquals(offsets.value(), offsets.valueLength() + 1);
+  }
+
+  @Test
+  public void decodePartial() {
+    // Arrange
+    long offset = 0;
+    // Act
+    PartialOffsets partialOffsets = Encoder.decodePartial(offset);
+    // Assert
+    assertEquals(partialOffsets.header(), offset);
+    assertEquals(partialOffsets.keyLength(), partialOffsets.header() + 1);
   }
 
   static class HeaderTest {
