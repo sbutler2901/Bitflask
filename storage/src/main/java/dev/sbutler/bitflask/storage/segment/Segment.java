@@ -91,17 +91,7 @@ public final class Segment {
     long writeOffset = currentFileWriteOffset.getAndAdd(encodedBytes.length);
     Entry entry = new Entry(Header.KEY_VALUE, writeOffset);
 
-    readWriteLock.writeLock().lock();
-    try {
-      segmentFile.write(encodedBytes, writeOffset);
-      keyedEntryMap.put(key, entry);
-    } finally {
-      readWriteLock.writeLock().unlock();
-    }
-
-    if (exceedsStorageThreshold() && sizeLimitExceededConsumer != null) {
-      sizeLimitExceededConsumer.accept(this);
-    }
+    writeAndUpdateEntries(key, encodedBytes, entry);
   }
 
   public void delete(String key) throws IOException {
@@ -116,11 +106,17 @@ public final class Segment {
 
     byte[] encodedBytes = Encoder.encodeNoValue(Header.DELETED, key);
     long writeOffset = currentFileWriteOffset.getAndAdd(encodedBytes.length);
+    Entry tombstoneEntry = new Entry(Header.DELETED, writeOffset);
 
+    writeAndUpdateEntries(key, encodedBytes, tombstoneEntry);
+  }
+
+  private void writeAndUpdateEntries(String key, byte[] encodedBytes, Entry entry)
+      throws IOException {
     readWriteLock.writeLock().lock();
     try {
-      segmentFile.write(encodedBytes, writeOffset);
-      keyedEntryMap.remove(key);
+      segmentFile.write(encodedBytes, entry.offset());
+      keyedEntryMap.put(key, entry);
     } finally {
       readWriteLock.writeLock().unlock();
     }
