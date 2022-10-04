@@ -8,7 +8,6 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.segment.Segment;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
 
@@ -43,9 +42,6 @@ public class DeleteCommand implements StorageCommand {
     String key = deleteDTO.key();
     try {
       managedSegments.writableSegment().delete(key);
-      for (Segment segment : managedSegments.frozenSegments()) {
-        segment.delete(key);
-      }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Failed to delete [%s]", key);
       return new Failed(String.format("Failure to delete [%s]", key));

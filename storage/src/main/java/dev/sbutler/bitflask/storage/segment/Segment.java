@@ -17,18 +17,22 @@ import java.util.function.Consumer;
  */
 public final class Segment {
 
+  record Entry(Header header, long offset) {
+
+  }
+
   private final SegmentFile segmentFile;
-  private final ConcurrentMap<String, Long> keyedEntryFileOffsetMap;
+  private final ConcurrentMap<String, Entry> keyedEntryMap;
   private final AtomicLong currentFileWriteOffset;
   private final long segmentSizeLimit;
   private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
   private volatile Consumer<Segment> sizeLimitExceededConsumer = null;
   private volatile boolean hasBeenCompacted = false;
 
-  Segment(SegmentFile segmentFile, ConcurrentMap<String, Long> keyedEntryFileOffsetMap,
+  Segment(SegmentFile segmentFile, ConcurrentMap<String, Entry> keyedEntryMap,
       AtomicLong currentFileWriteOffset, long segmentSizeLimit) {
     this.segmentFile = segmentFile;
-    this.keyedEntryFileOffsetMap = keyedEntryFileOffsetMap;
+    this.keyedEntryMap = keyedEntryMap;
     this.currentFileWriteOffset = currentFileWriteOffset;
     this.segmentSizeLimit = segmentSizeLimit;
   }
@@ -47,9 +51,12 @@ public final class Segment {
       return Optional.empty();
     }
 
-    long entryFileOffset = keyedEntryFileOffsetMap.get(key);
-    Offsets offsets = Encoder.decode(entryFileOffset, key);
+    Entry entry = keyedEntryMap.get(key);
+    if (entry.header().equals(Header.DELETED)) {
+      return Optional.empty();
+    }
 
+    Offsets offsets = Encoder.decode(entry.offset(), key.length());
     readWriteLock.readLock().lock();
     try {
       byte headerByte = segmentFile.readByte(offsets.header());
@@ -80,30 +87,47 @@ public final class Segment {
       throw new RuntimeException("This segment has been closed and cannot be written to");
     }
 
-    byte[] encodedKeyAndValue = Encoder.encode(Header.KEY_VALUE, key, value);
-    long writeOffset = currentFileWriteOffset.getAndAdd(encodedKeyAndValue.length);
+    byte[] encodedBytes = Encoder.encode(Header.KEY_VALUE, key, value);
+    long writeOffset = currentFileWriteOffset.getAndAdd(encodedBytes.length);
+    Entry entry = new Entry(Header.KEY_VALUE, writeOffset);
 
     readWriteLock.writeLock().lock();
     try {
-      segmentFile.write(encodedKeyAndValue, writeOffset);
+      segmentFile.write(encodedBytes, writeOffset);
+      keyedEntryMap.put(key, entry);
     } finally {
       readWriteLock.writeLock().unlock();
     }
-
-    keyedEntryFileOffsetMap.merge(key, writeOffset, (retrievedOffset, writtenOffset) ->
-        retrievedOffset < writtenOffset
-            ? writtenOffset
-            : retrievedOffset
-    );
 
     if (exceedsStorageThreshold() && sizeLimitExceededConsumer != null) {
       sizeLimitExceededConsumer.accept(this);
     }
   }
 
-  public void delete(String key) {
-    // TODO: tombstone to prevent loading on restart
-    keyedEntryFileOffsetMap.remove(key);
+  public void delete(String key) throws IOException {
+    Entry entry = keyedEntryMap.get(key);
+    if (entry.header().equals(Header.DELETED)) {
+      return;
+    }
+    if (!isOpen()) {
+      // TODO: adjust for consumers to try again
+      throw new RuntimeException("This segment has been closed and cannot be written to");
+    }
+
+    byte[] encodedBytes = Encoder.encodeNoValue(Header.DELETED, key);
+    long writeOffset = currentFileWriteOffset.getAndAdd(encodedBytes.length);
+
+    readWriteLock.writeLock().lock();
+    try {
+      segmentFile.write(encodedBytes, writeOffset);
+      keyedEntryMap.remove(key);
+    } finally {
+      readWriteLock.writeLock().unlock();
+    }
+
+    if (exceedsStorageThreshold() && sizeLimitExceededConsumer != null) {
+      sizeLimitExceededConsumer.accept(this);
+    }
   }
 
   /**
@@ -113,7 +137,7 @@ public final class Segment {
    * @return whether it contains the key, or not
    */
   public boolean containsKey(String key) {
-    return keyedEntryFileOffsetMap.containsKey(key);
+    return keyedEntryMap.containsKey(key);
   }
 
   /**
@@ -131,7 +155,7 @@ public final class Segment {
    * @return a set of the keys stored by the segment
    */
   public ImmutableSet<String> getSegmentKeys() {
-    return ImmutableSet.copyOf(keyedEntryFileOffsetMap.keySet());
+    return ImmutableSet.copyOf(keyedEntryMap.keySet());
   }
 
   /**
