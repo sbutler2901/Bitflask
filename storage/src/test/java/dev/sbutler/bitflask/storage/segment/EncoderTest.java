@@ -67,6 +67,20 @@ public class EncoderTest {
     // Assert
     assertEquals(partialOffsets.header(), offset);
     assertEquals(partialOffsets.keyLength(), partialOffsets.header() + 1);
+    assertEquals(partialOffsets.key(), partialOffsets.keyLength() + 1);
+  }
+
+  @Test
+  public void getNextOffsetAfterEntity() {
+    // Arrange
+    long offset = 0;
+    String key = "k";
+    String value = "v";
+    Offsets offsets = Encoder.decode(offset, key.length());
+    // Act
+    long nextOffsetAfterEntity = Encoder.getNextOffsetAfterEntity(offsets, value.length());
+    // Assert
+    assertEquals(nextOffsetAfterEntity, offsets.value() + value.length());
   }
 
   static class HeaderTest {
