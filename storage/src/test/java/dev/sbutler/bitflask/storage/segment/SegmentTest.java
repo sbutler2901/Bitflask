@@ -52,55 +52,6 @@ public class SegmentTest {
   }
 
   @Test
-  void write() throws Exception {
-    // Arrange
-    String key = "key", value = "value";
-    byte[] encoded = Encoder.encode(Header.KEY_VALUE, key, value);
-    doReturn(true).when(segmentFile).isOpen();
-    // Act
-    segment.write(key, value);
-    // Assert
-    verify(segmentFile, times(1)).write(aryEq(encoded), anyLong());
-    verify(keyedEntryMap, times(1)).put(eq(key), any(Entry.class));
-  }
-
-  @Test
-  void write_sizeLimitExceededConsumer() throws Exception {
-    // Arrange
-    segment = new Segment(segmentFile, keyedEntryMap, currentFileWriteOffset, 1);
-    doReturn(true).when(segmentFile).isOpen();
-    AtomicBoolean wasCalled = new AtomicBoolean(false);
-    Consumer<Segment> limitConsumer = (ignored) -> wasCalled.set(true);
-    segment.registerSizeLimitExceededConsumer(limitConsumer);
-    // Act
-    segment.write("key", "value");
-    // Assert
-    assertTrue(wasCalled.get());
-  }
-
-  @Test
-  void write_Exception() throws Exception {
-    // Arrange
-    String key = "key", value = "value";
-    doReturn(true).when(segmentFile).isOpen();
-    doThrow(IOException.class).when(segmentFile).write(any(), anyLong());
-    // Act / Assert
-    assertThrows(IOException.class, () -> segment.write(key, value));
-    verify(segmentFile, times(1)).write(any(), anyLong());
-  }
-
-  @Test
-  void write_afterClose() {
-    // Arrange
-    doReturn(false).when(segmentFile).isOpen();
-    // Act
-    RuntimeException e =
-        assertThrows(RuntimeException.class, () -> segment.write("key", "value"));
-    // Assert
-    assertTrue(e.getMessage().contains("closed"));
-  }
-
-  @Test
   void read_keyValueEntry() throws Exception {
     // Arrange
     String key = "key", value = "value";
@@ -173,6 +124,55 @@ public class SegmentTest {
     // Act
     RuntimeException e =
         assertThrows(RuntimeException.class, () -> segment.read(key));
+    // Assert
+    assertTrue(e.getMessage().contains("closed"));
+  }
+
+  @Test
+  void write() throws Exception {
+    // Arrange
+    String key = "key", value = "value";
+    byte[] encoded = Encoder.encode(Header.KEY_VALUE, key, value);
+    doReturn(true).when(segmentFile).isOpen();
+    // Act
+    segment.write(key, value);
+    // Assert
+    verify(segmentFile, times(1)).write(aryEq(encoded), anyLong());
+    verify(keyedEntryMap, times(1)).put(eq(key), any(Entry.class));
+  }
+
+  @Test
+  void write_sizeLimitExceededConsumer() throws Exception {
+    // Arrange
+    segment = new Segment(segmentFile, keyedEntryMap, currentFileWriteOffset, 1);
+    doReturn(true).when(segmentFile).isOpen();
+    AtomicBoolean wasCalled = new AtomicBoolean(false);
+    Consumer<Segment> limitConsumer = (ignored) -> wasCalled.set(true);
+    segment.registerSizeLimitExceededConsumer(limitConsumer);
+    // Act
+    segment.write("key", "value");
+    // Assert
+    assertTrue(wasCalled.get());
+  }
+
+  @Test
+  void write_Exception() throws Exception {
+    // Arrange
+    String key = "key", value = "value";
+    doReturn(true).when(segmentFile).isOpen();
+    doThrow(IOException.class).when(segmentFile).write(any(), anyLong());
+    // Act / Assert
+    assertThrows(IOException.class, () -> segment.write(key, value));
+    verify(segmentFile, times(1)).write(any(), anyLong());
+  }
+
+  @Test
+  void write_afterClose() {
+    // Arrange
+    doReturn(false).when(segmentFile).isOpen();
+    // Act
+    RuntimeException e =
+        assertThrows(RuntimeException.class, () -> segment.write("key", "value"));
     // Assert
     assertTrue(e.getMessage().contains("closed"));
   }
