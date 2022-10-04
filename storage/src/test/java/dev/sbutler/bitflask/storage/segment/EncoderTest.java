@@ -110,5 +110,11 @@ public class EncoderTest {
       // Assert
       assertTrue(e.getMessage().contains("type not found"));
     }
+
+    @Test
+    public void getByteMap() {
+      assertEquals(0, Header.KEY_VALUE.getByteMap());
+      assertEquals(1, Header.DELETED.getByteMap());
+    }
   }
 }
