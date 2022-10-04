@@ -9,6 +9,7 @@ import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
@@ -60,7 +61,7 @@ public class SegmentTest {
     segment.write(key, value);
     // Assert
     verify(segmentFile, times(1)).write(aryEq(encoded), anyLong());
-    verify(keyedEntryMap, times(1)).put(key, any(Entry.class));
+    verify(keyedEntryMap, times(1)).put(eq(key), any(Entry.class));
   }
 
   @Test
@@ -90,17 +91,23 @@ public class SegmentTest {
 
   @Test
   void write_afterClose() {
+    // Arrange
     doReturn(false).when(segmentFile).isOpen();
-    assertThrows(RuntimeException.class, () -> segment.write("key", "value"));
+    // Act
+    RuntimeException e =
+        assertThrows(RuntimeException.class, () -> segment.write("key", "value"));
+    // Assert
+    assertTrue(e.getMessage().contains("closed"));
   }
 
   @Test
-  void read() throws Exception {
+  void read_keyValueEntry() throws Exception {
     // Arrange
     String key = "key", value = "value";
+    Entry entry = new Entry(Header.KEY_VALUE, 0L);
     doReturn(true).when(segmentFile).isOpen();
     doReturn(true).when(keyedEntryMap).containsKey(key);
-    doReturn(0L).when(keyedEntryMap).get(key);
+    doReturn(entry).when(keyedEntryMap).get(key);
     when(segmentFile.readByte(anyLong()))
         .thenReturn(Header.KEY_VALUE.getByteMap())
         .thenReturn((byte) 5);
@@ -114,12 +121,27 @@ public class SegmentTest {
   }
 
   @Test
+  void read_deletedEntry() throws Exception {
+    // Arrange
+    String key = "key";
+    Entry entry = new Entry(Header.DELETED, 0L);
+    doReturn(true).when(segmentFile).isOpen();
+    doReturn(true).when(keyedEntryMap).containsKey(key);
+    doReturn(entry).when(keyedEntryMap).get(key);
+    // Act
+    Optional<String> result = segment.read(key);
+    // Assert
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
   void read_exception() throws Exception {
     // Arrange
     String key = "key";
-    doReturn(true).when(segmentFile).isOpen();
+    Entry entry = new Entry(Header.KEY_VALUE, 0L);
     doReturn(true).when(keyedEntryMap).containsKey(key);
-    doReturn(0L).when(keyedEntryMap).get(key);
+    doReturn(true).when(segmentFile).isOpen();
+    doReturn(entry).when(keyedEntryMap).get(key);
     when(segmentFile.readByte(anyLong()))
         .thenReturn(Header.KEY_VALUE.getByteMap())
         .thenReturn((byte) 5);
@@ -134,7 +156,7 @@ public class SegmentTest {
   void read_keyNotFound() throws Exception {
     // Arrange
     String key = "key";
-    doReturn(true).when(segmentFile).isOpen();
+    doReturn(false).when(keyedEntryMap).containsKey(key);
     // Act
     Optional<String> readResults = segment.read(key);
     // Assert
@@ -144,8 +166,15 @@ public class SegmentTest {
 
   @Test
   void read_afterClose() {
+    // Arrange
+    String key = "key";
+    doReturn(true).when(keyedEntryMap).containsKey(key);
     doReturn(false).when(segmentFile).isOpen();
-    assertThrows(RuntimeException.class, () -> segment.read("key"));
+    // Act
+    RuntimeException e =
+        assertThrows(RuntimeException.class, () -> segment.read(key));
+    // Assert
+    assertTrue(e.getMessage().contains("closed"));
   }
 
   @Test

@@ -44,11 +44,11 @@ public final class Segment {
    * @return the value for the key from the segment file, if it exists
    */
   public Optional<String> read(String key) throws IOException {
-    if (!isOpen()) {
-      throw new RuntimeException("This segment has been closed and cannot be read from");
-    }
     if (!containsKey(key)) {
       return Optional.empty();
+    }
+    if (!isOpen()) {
+      throw new RuntimeException("This segment has been closed and cannot be read from");
     }
 
     Entry entry = keyedEntryMap.get(key);
