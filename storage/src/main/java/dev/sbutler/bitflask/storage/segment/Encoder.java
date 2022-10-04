@@ -46,6 +46,29 @@ class Encoder {
     }
   }
 
+  /**
+   * The offsets of each entity encoded
+   */
+  record Offsets(
+      long header,
+      long keyLength,
+      long key,
+      long valueLength,
+      long value) {
+
+  }
+
+  /**
+   * Partial offsets of an entity
+   */
+  record PartialOffsets(
+      long header,
+      long keyLength,
+      long key
+  ) {
+
+  }
+
   private static final String ENCODING_FORMAT = "%c%c%s%c%s";
 
   /**
@@ -113,30 +136,28 @@ class Encoder {
    */
   static PartialOffsets decodePartial(long entryOffset) {
     long keyLengthOffset = entryOffset + 1;
-    return new PartialOffsets(entryOffset, keyLengthOffset);
+    long keyOffset = keyLengthOffset + 1;
+    return new PartialOffsets(
+        entryOffset,
+        keyLengthOffset,
+        keyOffset);
   }
 
   /**
-   * The offsets of each entity encoded
+   * Gets the offset after the end of an entity.
+   *
+   * <p>This can be used to get the starting offset of an entity after the one provided.
+   *
+   * @param entityOffsets       the current entity's offsets from which the following entity's
+   *                            offset should be found
+   * @param lengthOfEntityValue the character length of the current entity's value field.
+   *                            <strong>NOT</strong> the offset of the current entity's value
    */
-  record Offsets(
-      long header,
-      long keyLength,
-      long key,
-      long valueLength,
-      long value) {
-
-  }
-
-  record PartialOffsets(
-      long header,
-      long keyLength
-  ) {
-
+  static long getNextOffsetAfterEntity(Offsets entityOffsets, int lengthOfEntityValue) {
+    return entityOffsets.value + lengthOfEntityValue;
   }
 
   private Encoder() {
 
   }
-
 }

@@ -3,6 +3,10 @@ package dev.sbutler.bitflask.storage.segment;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
+import dev.sbutler.bitflask.storage.segment.Encoder.Header;
+import dev.sbutler.bitflask.storage.segment.Encoder.Offsets;
+import dev.sbutler.bitflask.storage.segment.Encoder.PartialOffsets;
+import dev.sbutler.bitflask.storage.segment.Segment.Entry;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -62,10 +66,10 @@ final class SegmentFactory {
    */
   public Segment createSegmentFromFile(SegmentFile segmentFile) throws IOException {
     AtomicLong currentFileWriteOffset = new AtomicLong(segmentFile.size());
-    ConcurrentMap<String, Long> keyedEntryFileOffsetMap = generateKeyedEntryOffsetMap(segmentFile,
-        currentFileWriteOffset);
+    ConcurrentMap<String, Entry> keyedEntryMap =
+        generateKeyedEntryMap(segmentFile, currentFileWriteOffset);
 
-    Segment newSegment = new Segment(segmentFile, keyedEntryFileOffsetMap,
+    Segment newSegment = new Segment(segmentFile, keyedEntryMap,
         currentFileWriteOffset, segmentSizeLimit);
     logger.atInfo().log("Created new segment with fileKey [%s]", newSegment.getSegmentFileKey());
     return newSegment;
@@ -77,25 +81,31 @@ final class SegmentFactory {
    *
    * @throws IOException if an error occurs while populating the key offset map
    */
-  private ConcurrentMap<String, Long> generateKeyedEntryOffsetMap(SegmentFile segmentFile,
+  private ConcurrentMap<String, Entry> generateKeyedEntryMap(SegmentFile segmentFile,
       AtomicLong currentFileWriteOffset) throws IOException {
     // todo: handle empty spaces that occur because of failed writes
-    ConcurrentMap<String, Long> keyedEntryFileOffsetMap = new ConcurrentHashMap<>();
-    long nextOffsetStart = 0;
-    while (nextOffsetStart < currentFileWriteOffset.get()) {
-      long entryStartOffset = nextOffsetStart;
+    ConcurrentMap<String, Entry> keyedEntryMap = new ConcurrentHashMap<>();
+    long nextEntryOffset = 0;
+    while (nextEntryOffset < currentFileWriteOffset.get()) {
+      long currentEntryOffset = nextEntryOffset;
+      PartialOffsets partialOffsets = Encoder.decodePartial(currentEntryOffset);
 
-      // Get key and update offset map
-      int keyLength = segmentFile.readByte(nextOffsetStart++);
-      String key = segmentFile.readAsString(keyLength, nextOffsetStart);
-      nextOffsetStart += keyLength;
-      keyedEntryFileOffsetMap.put(key, entryStartOffset);
+      // Get offsets and key
+      int keyLength = segmentFile.readByte(partialOffsets.keyLength());
+      Offsets offsets = Encoder.decode(currentEntryOffset, keyLength);
+      String key = segmentFile.readAsString(keyLength, offsets.key());
+
+      // Create and insert keyed entry
+      byte headerByte = segmentFile.readByte(offsets.header());
+      Header header = Header.byteToHeaderMapper(headerByte);
+      Entry entry = new Entry(header, currentEntryOffset);
+      keyedEntryMap.put(key, entry);
 
       // Start next iteration offset after current entry's value
-      int valueLength = segmentFile.readByte(nextOffsetStart++);
-      nextOffsetStart += valueLength;
+      int valueLength = segmentFile.readByte(offsets.valueLength());
+      nextEntryOffset = Encoder.getNextOffsetAfterEntity(offsets, valueLength);
     }
-    return keyedEntryFileOffsetMap;
+    return keyedEntryMap;
   }
 
   private SegmentFile createSegmentFile() throws IOException {
