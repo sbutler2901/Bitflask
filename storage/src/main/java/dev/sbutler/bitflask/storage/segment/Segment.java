@@ -59,14 +59,6 @@ public final class Segment {
     Offsets offsets = Encoder.decode(entry.offset(), key.length());
     readWriteLock.readLock().lock();
     try {
-      byte headerByte = segmentFile.readByte(offsets.header());
-      Header header = Header.byteToHeaderMapper(headerByte);
-      if (!header.equals(Header.KEY_VALUE)) {
-        throw new RuntimeException(
-            String.format(
-                "The header for entry with key [%s] was not KEY_VALUE: [%s]", key, header));
-      }
-
       int valueLength = segmentFile.readByte(offsets.valueLength());
       String value = segmentFile.readAsString(valueLength, offsets.value());
       return Optional.of(value);

@@ -179,11 +179,61 @@ public class SegmentTest {
 
   @Test
   void delete() throws Exception {
-    // Act
+    // Arrange
     String key = "key";
+    byte[] encoded = Encoder.encodeNoValue(Header.DELETED, key);
+    Entry entry = new Entry(Header.KEY_VALUE, 0L);
+    doReturn(entry).when(keyedEntryMap).get(key);
+    doReturn(true).when(segmentFile).isOpen();
+    // Act
     segment.delete(key);
     // Assert
-    verify(keyedEntryMap, times(1)).remove(key);
+    verify(segmentFile, times(1)).write(aryEq(encoded), anyLong());
+    verify(keyedEntryMap, times(1)).put(eq(key), any(Entry.class));
+  }
+
+  @Test
+  void delete_sizeLimitExceededConsumer() throws Exception {
+    // Arrange
+    String key = "key";
+    Entry entry = new Entry(Header.KEY_VALUE, 0L);
+    doReturn(entry).when(keyedEntryMap).get(key);
+    doReturn(true).when(segmentFile).isOpen();
+    segment = new Segment(segmentFile, keyedEntryMap, currentFileWriteOffset, 1);
+    AtomicBoolean wasCalled = new AtomicBoolean(false);
+    Consumer<Segment> limitConsumer = (ignored) -> wasCalled.set(true);
+    segment.registerSizeLimitExceededConsumer(limitConsumer);
+    // Act
+    segment.delete(key);
+    // Assert
+    assertTrue(wasCalled.get());
+  }
+
+  @Test
+  void delete_Exception() throws Exception {
+    // Arrange
+    String key = "key";
+    Entry entry = new Entry(Header.KEY_VALUE, 0L);
+    doReturn(entry).when(keyedEntryMap).get(key);
+    doReturn(true).when(segmentFile).isOpen();
+    doThrow(IOException.class).when(segmentFile).write(any(), anyLong());
+    // Act / Assert
+    assertThrows(IOException.class, () -> segment.delete(key));
+    verify(segmentFile, times(1)).write(any(), anyLong());
+  }
+
+  @Test
+  void delete_afterClose() {
+    // Arrange
+    String key = "key";
+    Entry entry = new Entry(Header.KEY_VALUE, 0L);
+    doReturn(entry).when(keyedEntryMap).get(key);
+    doReturn(false).when(segmentFile).isOpen();
+    // Act
+    RuntimeException e =
+        assertThrows(RuntimeException.class, () -> segment.delete(key));
+    // Assert
+    assertTrue(e.getMessage().contains("closed"));
   }
 
   @Test
