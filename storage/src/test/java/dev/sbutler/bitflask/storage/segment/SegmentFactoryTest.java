@@ -57,18 +57,21 @@ public class SegmentFactoryTest {
   }
 
   @Test
-  void createSegment_SegmentFileProvided() throws Exception {
+  void createSegment_SegmentFileProvided_valuePresent() throws Exception {
     // Arrange
     String key = "a";
     SegmentFile segmentFile = mock(SegmentFile.class);
-    doReturn(4L).when(segmentFile).size();
-    when(segmentFile.readByte(anyLong())).thenReturn((byte) 1).thenReturn((byte) 1);
+    doReturn(5L).when(segmentFile).size();
+    when(segmentFile.readByte(anyLong()))
+        .thenReturn((byte) 1)
+        .thenReturn((byte) 0) // key_value header
+        .thenReturn((byte) 1);
     doReturn(key).when(segmentFile).readAsString(anyInt(), anyLong());
     // Act
     Segment segment = segmentFactory.createSegmentFromFile(segmentFile);
     // Assert
     assertTrue(segment.containsKey(key));
-    verify(segmentFile, times(2)).readByte(anyLong());
+    verify(segmentFile, times(3)).readByte(anyLong());
     verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
   }
 
