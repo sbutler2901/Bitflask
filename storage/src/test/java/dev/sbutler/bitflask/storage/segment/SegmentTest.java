@@ -9,7 +9,6 @@ import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
@@ -19,18 +18,17 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import dev.sbutler.bitflask.storage.segment.Encoder.Header;
+import dev.sbutler.bitflask.storage.segment.Segment.Entry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -42,13 +40,13 @@ public class SegmentTest {
   @Mock
   SegmentFile segmentFile;
   @Mock
-  ConcurrentMap<String, Long> keyedEntryFileOffsetMap;
+  ConcurrentMap<String, Entry> keyedEntryMap;
   AtomicLong currentFileWriteOffset = new AtomicLong();
   Long segmentSizeLimit = 100L;
 
   @BeforeEach
   void beforeEach() {
-    segment = new Segment(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset,
+    segment = new Segment(segmentFile, keyedEntryMap, currentFileWriteOffset,
         segmentSizeLimit);
   }
 
@@ -62,31 +60,13 @@ public class SegmentTest {
     segment.write(key, value);
     // Assert
     verify(segmentFile, times(1)).write(aryEq(encoded), anyLong());
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  void write_merge() throws Exception {
-    // Arrange
-    doReturn(true).when(segmentFile).isOpen();
-    ArgumentCaptor<BiFunction<Long, Long, Long>> invokeAllArgumentCaptor =
-        ArgumentCaptor.forClass(BiFunction.class);
-
-    // Act
-    segment.write("key", "value");
-    verify(keyedEntryFileOffsetMap).merge(anyString(), anyLong(),
-        invokeAllArgumentCaptor.capture());
-    BiFunction<Long, Long, Long> mergeBiFunction = invokeAllArgumentCaptor.getValue();
-
-    // Assert
-    assertEquals(5L, mergeBiFunction.apply(0L, 5L));
-    assertEquals(5L, mergeBiFunction.apply(5L, 0L));
+    verify(keyedEntryMap, times(1)).put(key, any(Entry.class));
   }
 
   @Test
   void write_sizeLimitExceededConsumer() throws Exception {
     // Arrange
-    segment = new Segment(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset, 1);
+    segment = new Segment(segmentFile, keyedEntryMap, currentFileWriteOffset, 1);
     doReturn(true).when(segmentFile).isOpen();
     AtomicBoolean wasCalled = new AtomicBoolean(false);
     Consumer<Segment> limitConsumer = (ignored) -> wasCalled.set(true);
@@ -119,8 +99,8 @@ public class SegmentTest {
     // Arrange
     String key = "key", value = "value";
     doReturn(true).when(segmentFile).isOpen();
-    doReturn(true).when(keyedEntryFileOffsetMap).containsKey(key);
-    doReturn(0L).when(keyedEntryFileOffsetMap).get(key);
+    doReturn(true).when(keyedEntryMap).containsKey(key);
+    doReturn(0L).when(keyedEntryMap).get(key);
     when(segmentFile.readByte(anyLong()))
         .thenReturn(Header.KEY_VALUE.getByteMap())
         .thenReturn((byte) 5);
@@ -138,8 +118,8 @@ public class SegmentTest {
     // Arrange
     String key = "key";
     doReturn(true).when(segmentFile).isOpen();
-    doReturn(true).when(keyedEntryFileOffsetMap).containsKey(key);
-    doReturn(0L).when(keyedEntryFileOffsetMap).get(key);
+    doReturn(true).when(keyedEntryMap).containsKey(key);
+    doReturn(0L).when(keyedEntryMap).get(key);
     when(segmentFile.readByte(anyLong()))
         .thenReturn(Header.KEY_VALUE.getByteMap())
         .thenReturn((byte) 5);
@@ -169,12 +149,12 @@ public class SegmentTest {
   }
 
   @Test
-  void delete() {
+  void delete() throws Exception {
     // Act
     String key = "key";
     segment.delete(key);
     // Assert
-    verify(keyedEntryFileOffsetMap, times(1)).remove(key);
+    verify(keyedEntryMap, times(1)).remove(key);
   }
 
   @Test
@@ -183,7 +163,7 @@ public class SegmentTest {
     String key = "key", value = "value";
     assertFalse(segment.containsKey(key));
     doReturn(true).when(segmentFile).isOpen();
-    doReturn(true).when(keyedEntryFileOffsetMap).containsKey(key);
+    doReturn(true).when(keyedEntryMap).containsKey(key);
     // Act
     segment.write(key, value);
     // Assert
@@ -193,7 +173,7 @@ public class SegmentTest {
   @Test
   void exceedsStorageThreshold() throws Exception {
     // Arrange
-    segment = new Segment(segmentFile, keyedEntryFileOffsetMap, currentFileWriteOffset, 1);
+    segment = new Segment(segmentFile, keyedEntryMap, currentFileWriteOffset, 1);
     doReturn(true).when(segmentFile).isOpen();
     segment.write("key", "value");
     // Act / Assert
@@ -205,7 +185,7 @@ public class SegmentTest {
     // Arrange
     String key = "key", value = "value";
     doReturn(true).when(segmentFile).isOpen();
-    doReturn(ImmutableSet.of(key)).when(keyedEntryFileOffsetMap).keySet();
+    doReturn(ImmutableSet.of(key)).when(keyedEntryMap).keySet();
     // Act
     segment.write(key, value);
     // Assert
