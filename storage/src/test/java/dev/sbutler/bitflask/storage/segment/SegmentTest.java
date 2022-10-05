@@ -17,7 +17,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
 import dev.sbutler.bitflask.storage.segment.Encoder.Header;
 import dev.sbutler.bitflask.storage.segment.Segment.Entry;
 import java.io.IOException;
@@ -260,15 +260,25 @@ public class SegmentTest {
   }
 
   @Test
-  void getSegmentKeys() throws Exception {
+  void getSegmentKeyHeaderMap() {
     // Arrange
-    String key = "key", value = "value";
-    doReturn(true).when(segmentFile).isOpen();
-    doReturn(ImmutableSet.of(key)).when(keyedEntryMap).keySet();
+    var keyedEntryMapEntries = ImmutableMap.of(
+        "key0",
+        new Entry(Header.KEY_VALUE, 0L),
+        "key1",
+        new Entry(Header.DELETED, 10L)
+    );
+    doReturn(keyedEntryMapEntries.entrySet()).when(keyedEntryMap).entrySet();
     // Act
-    segment.write(key, value);
+    ImmutableMap<String, Header> keyHeaderMap = segment.getSegmentKeyHeaderMap();
     // Assert
-    assertTrue(segment.getSegmentKeys().contains(key));
+    ImmutableMap<String, Header> expected = ImmutableMap.of(
+        "key0",
+        Header.KEY_VALUE,
+        "key1",
+        Header.DELETED
+    );
+    assertEquals(expected, keyHeaderMap);
   }
 
   @Test

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -15,8 +16,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
+import dev.sbutler.bitflask.storage.segment.Encoder.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
@@ -56,8 +58,20 @@ public class SegmentCompactorTest {
     // Arrange
     Segment headSegment = segmentsToBeCompacted.get(0);
     Segment tailSegment = segmentsToBeCompacted.get(1);
-    doReturn(ImmutableSet.of("0-key", "key")).when(headSegment).getSegmentKeys();
-    doReturn(ImmutableSet.of("1-key", "key")).when(tailSegment).getSegmentKeys();
+    ImmutableMap<String, Header> headKeyHeaderMap = ImmutableMap.of(
+        "key",
+        Header.KEY_VALUE,
+        "0-key",
+        Header.KEY_VALUE
+    );
+    ImmutableMap<String, Header> tailKeyHeaderMap = ImmutableMap.of(
+        "key",
+        Header.KEY_VALUE,
+        "1-key",
+        Header.KEY_VALUE
+    );
+    doReturn(headKeyHeaderMap).when(headSegment).getSegmentKeyHeaderMap();
+    doReturn(tailKeyHeaderMap).when(tailSegment).getSegmentKeyHeaderMap();
     doReturn(Optional.of("0-value")).when(headSegment).read("0-key");
     doReturn(Optional.of("0-value")).when(headSegment).read("key");
     doReturn(Optional.of("1-value")).when(tailSegment).read("1-key");
@@ -85,12 +99,65 @@ public class SegmentCompactorTest {
   }
 
   @Test
+  void ignoreDeletedKeysAfterFirstEncounter() throws Exception {
+    // Arrange
+    Segment headSegment = segmentsToBeCompacted.get(0);
+    Segment tailSegment = segmentsToBeCompacted.get(1);
+    ImmutableMap<String, Header> headKeyHeaderMap = ImmutableMap.of(
+        "key",
+        Header.DELETED,
+        "0-key",
+        Header.KEY_VALUE
+    );
+    ImmutableMap<String, Header> tailKeyHeaderMap = ImmutableMap.of(
+        "key",
+        Header.KEY_VALUE,
+        "1-key",
+        Header.KEY_VALUE
+    );
+    doReturn(headKeyHeaderMap).when(headSegment).getSegmentKeyHeaderMap();
+    doReturn(tailKeyHeaderMap).when(tailSegment).getSegmentKeyHeaderMap();
+    doReturn(Optional.of("0-value")).when(headSegment).read("0-key");
+    doReturn(Optional.of("0-value")).when(headSegment).read("key");
+    doReturn(Optional.of("1-value")).when(tailSegment).read("1-key");
+
+    Segment createdSegment = mock(Segment.class);
+    doReturn(createdSegment).when(segmentFactory).createSegment();
+    doReturn(false).when(createdSegment).exceedsStorageThreshold();
+
+    // Act
+    CompactionResults compactionResults = segmentCompactor.compactSegments();
+
+    // Assert
+    assertInstanceOf(CompactionResults.Success.class, compactionResults);
+    Success success = (Success) compactionResults;
+    List<Segment> compactedSegments = success.compactedSegments();
+    assertEquals(1, compactedSegments.size());
+    assertEquals(createdSegment, compactedSegments.get(0));
+    verify(createdSegment, times(1)).write("0-key", "0-value");
+    verify(createdSegment, times(1)).write("1-key", "1-value");
+    verify(createdSegment, times(0)).write(eq("key"), anyString());
+    assertArrayEquals(List.of(headSegment, tailSegment).toArray(),
+        success.segmentsProvidedForCompaction().toArray());
+    verify(headSegment, times(1)).markCompacted();
+    verify(tailSegment, times(1)).markCompacted();
+  }
+
+  @Test
   void compactionSegmentStorageExceeded() throws Exception {
     // Arrange
     Segment headSegment = segmentsToBeCompacted.get(0);
     Segment tailSegment = segmentsToBeCompacted.get(1);
-    doReturn(ImmutableSet.of("0-key")).when(headSegment).getSegmentKeys();
-    doReturn(ImmutableSet.of("1-key")).when(tailSegment).getSegmentKeys();
+    ImmutableMap<String, Header> headKeyHeaderMap = ImmutableMap.of(
+        "0-key",
+        Header.KEY_VALUE
+    );
+    ImmutableMap<String, Header> tailKeyHeaderMap = ImmutableMap.of(
+        "1-key",
+        Header.KEY_VALUE
+    );
+    doReturn(headKeyHeaderMap).when(headSegment).getSegmentKeyHeaderMap();
+    doReturn(tailKeyHeaderMap).when(tailSegment).getSegmentKeyHeaderMap();
     doReturn(Optional.of("0-value")).when(headSegment).read("0-key");
     doReturn(Optional.of("1-value")).when(tailSegment).read("1-key");
 
@@ -116,7 +183,7 @@ public class SegmentCompactorTest {
     // Arrange
     // Artificially cause failure to halt processing
     Segment headSegment = segmentsToBeCompacted.get(0);
-    doThrow(RuntimeException.class).when(headSegment).getSegmentKeys();
+    doThrow(RuntimeException.class).when(headSegment).getSegmentKeyHeaderMap();
     assertThrows(RuntimeException.class, () -> segmentCompactor.compactSegments());
     // Act
     IllegalStateException e = assertThrows(IllegalStateException.class,
@@ -130,8 +197,16 @@ public class SegmentCompactorTest {
     // Arrange
     Segment headSegment = segmentsToBeCompacted.get(0);
     Segment tailSegment = segmentsToBeCompacted.get(1);
-    doReturn(ImmutableSet.of("0-key")).when(headSegment).getSegmentKeys();
-    doReturn(ImmutableSet.of("1-key")).when(tailSegment).getSegmentKeys();
+    ImmutableMap<String, Header> headKeyHeaderMap = ImmutableMap.of(
+        "0-key",
+        Header.KEY_VALUE
+    );
+    ImmutableMap<String, Header> tailKeyHeaderMap = ImmutableMap.of(
+        "1-key",
+        Header.KEY_VALUE
+    );
+    doReturn(headKeyHeaderMap).when(headSegment).getSegmentKeyHeaderMap();
+    doReturn(tailKeyHeaderMap).when(tailSegment).getSegmentKeyHeaderMap();
     doReturn(Optional.empty()).when(headSegment).read(anyString());
 
     // Act
@@ -154,8 +229,16 @@ public class SegmentCompactorTest {
     // Arrange
     Segment headSegment = segmentsToBeCompacted.get(0);
     Segment tailSegment = segmentsToBeCompacted.get(1);
-    doReturn(ImmutableSet.of("0-key")).when(headSegment).getSegmentKeys();
-    doReturn(ImmutableSet.of("1-key")).when(tailSegment).getSegmentKeys();
+    ImmutableMap<String, Header> headKeyHeaderMap = ImmutableMap.of(
+        "0-key",
+        Header.KEY_VALUE
+    );
+    ImmutableMap<String, Header> tailKeyHeaderMap = ImmutableMap.of(
+        "1-key",
+        Header.KEY_VALUE
+    );
+    doReturn(headKeyHeaderMap).when(headSegment).getSegmentKeyHeaderMap();
+    doReturn(tailKeyHeaderMap).when(tailSegment).getSegmentKeyHeaderMap();
     doThrow(IOException.class).when(headSegment).read(anyString());
 
     // Act
@@ -178,8 +261,16 @@ public class SegmentCompactorTest {
     // Arrange
     Segment headSegment = segmentsToBeCompacted.get(0);
     Segment tailSegment = segmentsToBeCompacted.get(1);
-    doReturn(ImmutableSet.of("0-key")).when(headSegment).getSegmentKeys();
-    doReturn(ImmutableSet.of("1-key")).when(tailSegment).getSegmentKeys();
+    ImmutableMap<String, Header> headKeyHeaderMap = ImmutableMap.of(
+        "0-key",
+        Header.KEY_VALUE
+    );
+    ImmutableMap<String, Header> tailKeyHeaderMap = ImmutableMap.of(
+        "1-key",
+        Header.KEY_VALUE
+    );
+    doReturn(headKeyHeaderMap).when(headSegment).getSegmentKeyHeaderMap();
+    doReturn(tailKeyHeaderMap).when(tailSegment).getSegmentKeyHeaderMap();
     doReturn(Optional.of("0-value")).when(headSegment).read("0-key");
     doReturn(Optional.of("1-value")).when(tailSegment).read("1-key");
 

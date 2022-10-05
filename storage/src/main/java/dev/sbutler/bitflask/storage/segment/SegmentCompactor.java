@@ -7,12 +7,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
+import dev.sbutler.bitflask.storage.segment.Encoder.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -121,13 +123,30 @@ final class SegmentCompactor {
 
   /**
    * Creates a map of keys to the segment with the most up-to-date value for key.
+   *
+   * <p>The header of a key the first time it is encountered will determine if it is added to the
+   * map or skipped. If the key is still active a map entry will be created to the most recent
+   * containing it. If the key is deleted it will be marked and ignored even if encountered in older
+   * segments.
    */
   private ImmutableMap<String, Segment> createKeySegmentMap() {
     Map<String, Segment> keySegmentMap = new HashMap<>();
+    Set<String> deletedKeys = new HashSet<>();
+
     for (Segment segment : segmentsToBeCompacted) {
-      Set<String> segmentKeys = segment.getSegmentKeys();
-      for (String key : segmentKeys) {
-        if (!keySegmentMap.containsKey(key)) {
+      ImmutableMap<String, Header> segmentKeyHeaderMap =
+          segment.getSegmentKeyHeaderMap();
+      for (Map.Entry<String, Header> keyHeaderEntry : segmentKeyHeaderMap.entrySet()) {
+        String key = keyHeaderEntry.getKey();
+        Header header = keyHeaderEntry.getValue();
+        // skip keys already seen
+        if (keySegmentMap.containsKey(key) || deletedKeys.contains(key)) {
+          continue;
+        }
+        // Only add keys to map that are not deleted
+        if (header.equals(Header.DELETED)) {
+          deletedKeys.add(key);
+        } else {
           keySegmentMap.put(key, segment);
         }
       }

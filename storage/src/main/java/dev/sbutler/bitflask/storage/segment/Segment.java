@@ -1,10 +1,13 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import com.google.common.collect.ImmutableSet;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+
+import com.google.common.collect.ImmutableMap;
 import dev.sbutler.bitflask.storage.segment.Encoder.Header;
 import dev.sbutler.bitflask.storage.segment.Encoder.Offsets;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -138,12 +141,11 @@ public final class Segment {
   }
 
   /**
-   * Returns all keys stored by the segment
-   *
-   * @return a set of the keys stored by the segment
+   * Returns all keys mapped to their {@link Header}
    */
-  public ImmutableSet<String> getSegmentKeys() {
-    return ImmutableSet.copyOf(keyedEntryMap.keySet());
+  ImmutableMap<String, Header> getSegmentKeyHeaderMap() {
+    return keyedEntryMap.entrySet().stream()
+        .collect(toImmutableMap(Map.Entry::getKey, (e) -> e.getValue().header()));
   }
 
   /**
