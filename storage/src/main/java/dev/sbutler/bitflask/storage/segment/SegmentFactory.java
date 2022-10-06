@@ -24,7 +24,8 @@ final class SegmentFactory {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  static final String DEFAULT_SEGMENT_FILENAME = "%d_segment.txt";
+  private static final String SEGMENT_FILENAME_SUFFIX = "_segment.txt";
+  static final String DEFAULT_SEGMENT_FILENAME = "%d" + SEGMENT_FILENAME_SUFFIX;
   static final ImmutableSet<StandardOpenOption> fileChannelOptions = ImmutableSet.of(
       StandardOpenOption.CREATE,
       StandardOpenOption.READ,
@@ -43,6 +44,10 @@ final class SegmentFactory {
     this.segmentFileFactory = segmentFileFactory;
     this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
     this.segmentSizeLimit = storageConfiguration.getStorageSegmentSizeLimit();
+  }
+
+  public static boolean isValidSegmentFilePath(Path path) {
+    return path.getFileName().toString().contains(SEGMENT_FILENAME_SUFFIX);
   }
 
   /**

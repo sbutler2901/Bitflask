@@ -98,8 +98,10 @@ final class SegmentLoader {
   private ImmutableList<Path> getSegmentFilePaths() throws IOException {
     ImmutableList.Builder<Path> filePaths = new Builder<>();
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(storeDirectoryPath)) {
-      for (Path entry : stream) {
-        filePaths.add(entry);
+      for (Path path : stream) {
+        if (SegmentFactory.isValidSegmentFilePath(path)) {
+          filePaths.add(path);
+        }
       }
     } catch (DirectoryIteratorException ex) {
       // I/O error encountered during the iteration, the cause is an IOException

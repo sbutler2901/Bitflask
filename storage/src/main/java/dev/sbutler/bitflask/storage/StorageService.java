@@ -50,11 +50,17 @@ public final class StorageService extends AbstractService implements Runnable {
 
   @Override
   protected void doStart() {
-    addServiceManagerListener();
-    serviceManager.startAsync().awaitHealthy();
-    Futures.submit(this, executorService);
-    notifyStarted();
-    logger.atInfo().log("StorageService started");
+    try {
+      logger.atInfo().log("StorageService starting...");
+      addServiceManagerListener();
+      serviceManager.startAsync().awaitHealthy();
+      Futures.submit(this, executorService);
+      notifyStarted();
+      logger.atInfo().log("StorageService started!");
+    } catch (Exception e) {
+      // TODO: ensure server is shutdown if storage service fails.
+      notifyFailed(e);
+    }
   }
 
   @Override
@@ -69,7 +75,6 @@ public final class StorageService extends AbstractService implements Runnable {
         }
       }
     } catch (Exception e) {
-      logger.atSevere().withCause(e).log("Running failed, marking service as failed");
       notifyFailed(e);
     }
   }
