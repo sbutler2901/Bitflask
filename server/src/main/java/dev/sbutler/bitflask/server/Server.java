@@ -49,7 +49,7 @@ class Server {
     ExecutorService executorService = injector.getInstance(ExecutorService.class);
     addServiceManagerListener(serviceManager, executorService);
     registerShutdownHook(serviceManager, executorService);
-    serviceManager.startAsync();
+    serviceManager.startAsync().awaitHealthy();
   }
 
   private static void addServiceManagerListener(ServiceManager serviceManager,
@@ -99,6 +99,7 @@ class Server {
     JCommander.newBuilder()
         .addObject(serverConfiguration)
         .defaultProvider(serverConfigurationDefaultProvider)
+        .acceptUnknownOptions(true)
         .build()
         .parse(argv);
     ServerModule.setServerConfiguration(serverConfiguration);
@@ -111,6 +112,7 @@ class Server {
     JCommander.newBuilder()
         .addObject(storageConfiguration)
         .defaultProvider(storageConfigurationDefaultProvider)
+        .acceptUnknownOptions(true)
         .build()
         .parse(argv);
     StorageServiceModule.setStorageConfiguration(storageConfiguration);

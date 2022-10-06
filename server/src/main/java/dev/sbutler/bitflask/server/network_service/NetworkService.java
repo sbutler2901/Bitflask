@@ -42,12 +42,13 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   @Override
   protected void startUp() throws IOException {
+    logger.atInfo().log("Network service starting...");
     ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
     InetSocketAddress inetSocketAddress = new InetSocketAddress(serverConfiguration.getPort());
     serverSocketChannel.bind(inetSocketAddress);
     this.serverSocketChannel = serverSocketChannel;
     this.parentInjector = Guice.createInjector(new ClientHandlingServiceParentModule());
-    logger.atInfo().log("Prepared to accept incoming connections");
+    logger.atInfo().log("Network service started!");
   }
 
   @Override
