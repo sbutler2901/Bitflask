@@ -7,6 +7,15 @@
 - [Flogger](https://github.com/google/flogger)
 - [JCommander](https://jcommander.org/)
 
+## Tools
+
+### Docker
+
+- [Dockerfile Reference](https://docs.docker.com/engine/reference/builder/)
+- [Multi-stage Builds](https://docs.docker.com/build/building/multi-stage/)
+- [DockerHub - Eclipse Temurin](https://hub.docker.com/_/eclipse-temurin)
+- [IntelliJ Docker](https://www.jetbrains.com/help/idea/docker.html)
+
 ## Articles
 
 - [Java theory and practice: Thread pools and work queues, Brian Goetz](https://codeantenna.com/a/B2xXjD1Hql)
