@@ -14,3 +14,11 @@ application {
 
     applicationDefaultJvmArgs = ['--enable-preview']
 }
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'dev.sbutler.bitflask.server.Server'
+        )
+    }
+}
