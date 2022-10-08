@@ -1,5 +1,11 @@
 ## Features
 
+### Entry Querying / Modification
+
+- Get (read)
+- Set (write)
+- Del (delete)
+
 ### Multiple segments
 
 - A new segment file will be created once the current active file's size has reached a threshold
@@ -16,8 +22,9 @@
 ### Compaction
 
 - Removing duplicate keys only keeping most recent
+- Removing deleted keys
 - Merge multiple segments into a single, new segment
-- deleting old segments
+- Deleting old segments
 
 ### Configuration
 
@@ -25,22 +32,33 @@
 - Storage Configuration
 - Adjustable via cli flags & property file
 
-### Binary serialization
+### Containerization
 
-- length header
-    - key / value
+- Depends on gradle `build` and `distTar` executed on local machine
 
-## TODO:
+### Segment File Encoding
 
-### Commands
+#### Entries
 
-- del: delete key:value mapping
-    - tombstoning:
-        - Prevent mapping during startup loading
-        - Ignore key during compaction
-    - Pre-reload handling options:
-      a. Need to delete mapping from all segment's with key
-      b. Have active segment store key map as deleted
+- Main header:
+    - key value entry
+    - deleted entry
+- Length headers:
+    - key
+    - value
+
+## TODO / Ideas:
+
+### Containerization
+
+- Figure out how to build server within docker container
+    - Gradle docker image needed for JDK19?
+- Persistent volume for segment files
+
+### Files
+
+- Segment File header
+    - segment's key
 
 ### Caching
 
@@ -50,11 +68,7 @@
 ### Compaction / Deletion
 
 - Using [event bus](https://github.com/google/guava/wiki/EventBusExplained) for publishing
-- Tombstones for deleted segments (in case of failure)
-
-### Containerization
-
-- Docker / podman deployments
+    - still needed?
 
 ### Crash handling and recovery / Load Previous State
 
@@ -65,16 +79,25 @@
 
 - Persist logs to disk
 
-### Testing
+### Integration Tests
 
-- Integration tests
+- Test client container that executes commands
+- Evaluate final file results
+- Need to confirm compaction correct
+
+### Client
+
+- Executing commands from file
 
 ### Configuration
 
-- Client specific configurations
-
-#### Additions
+#### Server
 
 - overwrite pre-existing segment files
 - performance testing
 - logging level
+
+#### Client
+
+- server IP
+- server port
