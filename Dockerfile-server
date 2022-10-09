@@ -1,5 +1,6 @@
 FROM app-base:latest AS server-builder
 WORKDIR /home/gradle/app
+VOLUME ["/home/gradle/.gradle"]
 COPY server/ ./server/
 COPY storage/ ./storage/
 RUN ["chown", "--recursive", "gradle:gradle", "/home/gradle/"]

@@ -34,5 +34,10 @@ This image stores the common resources shared across the server and client
 
 1. Create an executable server image manually:
     - `docker image build -f Dockerfile-server -t server-test:latest .`
-2. Run the image with:
-    - `docker run server-test:latest`
+2. Two Docker Volumes should be created:
+    - `bitflask-db`
+        - This will be used to persist data between executions
+    - `gradle-cache`
+        - This will be used for gradle caching
+3. Run the image with:
+    - `docker run -p 9090:9090 --name bitflask-server -v bitflask-db:/app/.bitflask -v gradle-cache:/home/gradle/.gradle bitflask-server `
