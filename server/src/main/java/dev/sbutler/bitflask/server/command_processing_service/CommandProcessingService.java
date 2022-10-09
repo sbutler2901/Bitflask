@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
@@ -33,14 +32,18 @@ public class CommandProcessingService {
    */
   public ListenableFuture<String> processCommandMessage(ImmutableList<String> commandMessage) {
     checkNotNull(commandMessage);
-    checkArgument(commandMessage.size() >= 1, "Message must contain at least one argument");
-    CommandType commandType = CommandType.valueOf(commandMessage.get(0).trim().toUpperCase());
-    ImmutableList<String> args = commandMessage.subList(1, commandMessage.size());
+    if (commandMessage.size() < 1) {
+      SettableFuture<String> failureFuture = SettableFuture.create();
+      failureFuture.set("Message must contain at least one argument");
+      return failureFuture;
+    }
 
+    String messageCommand = commandMessage.get(0).trim();
+    CommandType commandType = CommandType.valueOf(messageCommand.toUpperCase());
+    ImmutableList<String> args = commandMessage.subList(1, commandMessage.size());
     if (!isValidCommandArgs(commandType, args)) {
       SettableFuture<String> failureFuture = SettableFuture.create();
-      failureFuture.setException(new IllegalArgumentException(
-          "Invalid arguments for the commandType: " + commandType + ", " + args));
+      failureFuture.set(String.format("Invalid arguments for [%s]: %s", messageCommand, args));
       return failureFuture;
     }
 

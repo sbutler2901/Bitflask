@@ -1,9 +1,8 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -11,7 +10,6 @@ import static org.mockito.Mockito.verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +29,24 @@ public class CommandProcessingServiceTest {
   StorageCommandDispatcher storageCommandDispatcher;
 
   @Test
+  void nullCommandMessage() {
+    assertThrows(RuntimeException.class,
+        () -> commandProcessingService.processCommandMessage(null));
+  }
+
+  @Test
+  void invalidSizeCommandMessage() throws Exception {
+    // Arrange
+    ImmutableList<String> message = ImmutableList.of();
+    // Act
+    ListenableFuture<String> responseFuture = commandProcessingService.processCommandMessage(
+        message);
+    // Assert
+    assertTrue(responseFuture.isDone());
+    assertTrue(responseFuture.get().toLowerCase().contains("at least one argument"));
+  }
+
+  @Test
   void ping() {
     try (MockedConstruction<PingCommand> pingMockedConstruction = mockConstruction(
         PingCommand.class)) {
@@ -46,7 +62,7 @@ public class CommandProcessingServiceTest {
   }
 
   @Test
-  void ping_invalid() {
+  void ping_invalid() throws Exception {
     // Arrange
     ImmutableList<String> message = ImmutableList.of("ping", "invalid");
     // Act
@@ -54,14 +70,7 @@ public class CommandProcessingServiceTest {
         message);
     // Assert
     assertTrue(responseFuture.isDone());
-    try {
-      responseFuture.get();
-      fail("ExecutionException should have been thrown");
-    } catch (ExecutionException e) {
-      assertInstanceOf(IllegalArgumentException.class, e.getCause());
-    } catch (InterruptedException e) {
-      fail("invalid exception");
-    }
+    assertTrue(responseFuture.get().toLowerCase().contains("invalid arguments"));
   }
 
   @Test
@@ -80,7 +89,7 @@ public class CommandProcessingServiceTest {
   }
 
   @Test
-  void get_invalid() {
+  void get_invalid() throws Exception {
     // Arrange
     ImmutableList<String> message = ImmutableList.of("get", "key", "invalid");
     // Act
@@ -88,14 +97,7 @@ public class CommandProcessingServiceTest {
         message);
     // Assert
     assertTrue(responseFuture.isDone());
-    try {
-      responseFuture.get();
-      fail("ExecutionException should have been thrown");
-    } catch (ExecutionException e) {
-      assertInstanceOf(IllegalArgumentException.class, e.getCause());
-    } catch (InterruptedException e) {
-      fail("invalid exception");
-    }
+    assertTrue(responseFuture.get().toLowerCase().contains("invalid arguments"));
   }
 
   @Test
@@ -114,7 +116,7 @@ public class CommandProcessingServiceTest {
   }
 
   @Test
-  void set_invalid() {
+  void set_invalid() throws Exception {
     // Arrange
     ImmutableList<String> message = ImmutableList.of("set", "key");
     // Act
@@ -122,14 +124,7 @@ public class CommandProcessingServiceTest {
         message);
     // Assert
     assertTrue(responseFuture.isDone());
-    try {
-      responseFuture.get();
-      fail("ExecutionException should have been thrown");
-    } catch (ExecutionException e) {
-      assertInstanceOf(IllegalArgumentException.class, e.getCause());
-    } catch (InterruptedException e) {
-      fail("invalid exception");
-    }
+    assertTrue(responseFuture.get().toLowerCase().contains("invalid arguments"));
   }
 
   @Test
@@ -148,7 +143,7 @@ public class CommandProcessingServiceTest {
   }
 
   @Test
-  void delete_invalid() {
+  void delete_invalid() throws Exception {
     // Arrange
     ImmutableList<String> message = ImmutableList.of("del", "key", "invalid");
     // Act
@@ -156,13 +151,6 @@ public class CommandProcessingServiceTest {
         message);
     // Assert
     assertTrue(responseFuture.isDone());
-    try {
-      responseFuture.get();
-      fail("ExecutionException should have been thrown");
-    } catch (ExecutionException e) {
-      assertInstanceOf(IllegalArgumentException.class, e.getCause());
-    } catch (InterruptedException e) {
-      fail("invalid exception");
-    }
+    assertTrue(responseFuture.get().toLowerCase().contains("invalid arguments"));
   }
 }

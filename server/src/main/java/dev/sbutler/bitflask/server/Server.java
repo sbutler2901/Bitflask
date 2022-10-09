@@ -49,7 +49,7 @@ class Server {
     ExecutorService executorService = injector.getInstance(ExecutorService.class);
     addServiceManagerListener(serviceManager, executorService);
     registerShutdownHook(serviceManager, executorService);
-    serviceManager.startAsync().awaitHealthy();
+    serviceManager.startAsync();
   }
 
   private static void addServiceManagerListener(ServiceManager serviceManager,
