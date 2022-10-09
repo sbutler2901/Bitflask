@@ -1,0 +1,19 @@
+FROM app-base:latest AS server-builder
+WORKDIR /home/gradle/app
+COPY server/ ./server/
+COPY storage/ ./storage/
+RUN ["chown", "--recursive", "gradle:gradle", "/home/gradle/"]
+USER gradle
+RUN ["gradle", ":server:build"]
+RUN ["gradle", "distTar"]
+RUN cp ./server/build/distributions/*.tar ./
+RUN ["mkdir", "./server-untar"]
+RUN tar -xf ./server-*.tar -C ./server-untar
+
+# Executable
+FROM eclipse-temurin:19_36-jre-jammy
+WORKDIR /app
+COPY --from=server-builder /home/gradle/app/server-untar/* ./
+VOLUME ["/app/.bitflask"]
+EXPOSE 9090
+CMD ["./bin/server", "--storageStoreDirectoryPath", "/app/.bitflask"]
