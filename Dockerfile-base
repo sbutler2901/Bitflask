@@ -1,8 +1,8 @@
 FROM gradle-jdk19:latest
-WORKDIR /home/gradle/app
+USER root
+WORKDIR /root/app
 COPY buildSrc/ ./buildSrc/
 COPY common/ ./common/
 COPY resp/ ./resp/
-COPY gradle/ ./gradle/
+COPY gradle.properties ./
 COPY settings.gradle ./
-RUN ["chown", "--recursive", "gradle:gradle", "/home/gradle/"]

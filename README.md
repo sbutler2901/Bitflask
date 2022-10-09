@@ -41,3 +41,4 @@ This image stores the common resources shared across the server and client
         - This will be used for gradle caching
 3. Run the image with:
     - `docker run -p 9090:9090 --name bitflask-server -v bitflask-db:/app/.bitflask -v gradle-cache:/home/gradle/.gradle bitflask-server `
+    - `docker run -p 9090:9090 --name bitflask-server -v bitflask-db:/root/app/.bitflask -v gradle-cache:/home/gradle/.gradle -v gradle-server-cache:/root/app/.gradle bitflask-server`
