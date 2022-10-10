@@ -14,7 +14,14 @@
 - [Dockerfile Reference](https://docs.docker.com/engine/reference/builder/)
 - [Multi-stage Builds](https://docs.docker.com/build/building/multi-stage/)
 - [DockerHub - Eclipse Temurin](https://hub.docker.com/_/eclipse-temurin)
+- [DockerHub - Gradle](https://hub.docker.com/_/gradle)
 - [IntelliJ Docker](https://www.jetbrains.com/help/idea/docker.html)
+
+### Gradle
+
+- [Dockerfile](https://github.com/keeganwitt/docker-gradle)
+- [CLI Interface](https://docs.gradle.org/current/userguide/command_line_interface.html)
+- [Build Cache](https://docs.gradle.org/current/userguide/build_cache.html)
 
 ## Articles
 
