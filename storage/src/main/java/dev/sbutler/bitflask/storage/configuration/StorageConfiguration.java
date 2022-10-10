@@ -5,6 +5,7 @@ import dev.sbutler.bitflask.common.configuration.validators.AbsolutePathValidato
 import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValidator;
 import dev.sbutler.bitflask.common.configuration.validators.PositiveLongValidator;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 /**
  * Provides access to the storage engine's runtime configurations.
@@ -44,6 +45,12 @@ public class StorageConfiguration {
       description = "The size limit of a segment before a new one will be created")
   private long storageSegmentSizeLimit;
 
+  @Parameter(names = StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG,
+      converter = SegmentOpenOptionsConverter.class,
+      description = "The method used for Segment creation. 'create' will reuse pre-existing segments, loading their content at start. 'truncate' will overwrite pre-exiting segments ignoring their contents."
+  )
+  private StandardOpenOption storageSegmentCreationMode;
+
   @Parameter(names = StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG,
       validateWith = PositiveIntegerValidator.class,
       description = "The number of new segments to be created before compaction is performed"
@@ -62,6 +69,10 @@ public class StorageConfiguration {
     return storageSegmentSizeLimit;
   }
 
+  public StandardOpenOption getStorageSegmentCreationMode() {
+    return storageSegmentCreationMode;
+  }
+
   public int getStorageCompactionThreshold() {
     return storageCompactionThreshold;
   }
@@ -72,6 +83,7 @@ public class StorageConfiguration {
         "storageDispatcherCapacity=" + storageDispatcherCapacity +
         ", storageStoreDirectoryPath=" + storageStoreDirectoryPath +
         ", storageSegmentSizeLimit=" + storageSegmentSizeLimit +
+        ", storageSegmentCreationMode=" + storageSegmentCreationMode +
         ", storageCompactionThreshold=" + storageCompactionThreshold +
         '}';
   }
