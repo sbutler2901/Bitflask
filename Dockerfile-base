@@ -4,5 +4,4 @@ WORKDIR /root/app
 COPY buildSrc/ ./buildSrc/
 COPY common/ ./common/
 COPY resp/ ./resp/
-COPY gradle.properties ./
 COPY settings.gradle ./
