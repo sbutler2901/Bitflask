@@ -34,7 +34,8 @@
 
 ### Containerization
 
-- Depends on gradle `build` and `distTar` executed on local machine
+- Build and execution within Docker
+- Depends on custom gradle Dockerfile fork to support JDK 19
 
 ### Segment File Encoding
 
@@ -48,12 +49,6 @@
     - value
 
 ## TODO / Ideas:
-
-### Containerization
-
-- Figure out how to build server within docker container
-    - Gradle docker image needed for JDK19?
-- Persistent volume for segment files
 
 ### Files
 
