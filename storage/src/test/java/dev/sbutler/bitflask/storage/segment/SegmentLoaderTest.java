@@ -75,6 +75,8 @@ class SegmentLoaderTest {
       when(pathIterator.hasNext()).thenReturn(true, true, false);
       Path firstPath = mock(Path.class);
       Path secondPath = mock(Path.class);
+      doReturn(Path.of("0_segment.txt")).when(firstPath).getFileName();
+      doReturn(Path.of("1_segment.txt")).when(secondPath).getFileName();
       when(pathIterator.next()).thenReturn(firstPath, secondPath);
       doReturn(pathIterator).when(directoryStream).iterator();
       /// File Paths sorting
@@ -175,6 +177,7 @@ class SegmentLoaderTest {
       Iterator<Path> pathIterator = mock(Iterator.class);
       when(pathIterator.hasNext()).thenReturn(true, false);
       Path firstPath = mock(Path.class);
+      doReturn(Path.of("0_segment.txt")).when(firstPath).getFileName();
       doReturn(firstPath).when(pathIterator).next();
       doReturn(pathIterator).when(directoryStream).iterator();
       /// File Paths sorting
@@ -203,6 +206,10 @@ class SegmentLoaderTest {
       Path secondPath = mock(Path.class);
       Path thirdPath = mock(Path.class);
       Path fourthPath = mock(Path.class);
+      doReturn(Path.of("0_segment.txt")).when(firstPath).getFileName();
+      doReturn(Path.of("1_segment.txt")).when(secondPath).getFileName();
+      doReturn(Path.of("2_segment.txt")).when(thirdPath).getFileName();
+      doReturn(Path.of("3_segment.txt")).when(fourthPath).getFileName();
       when(pathIterator.next()).thenReturn(firstPath, secondPath, thirdPath, fourthPath);
       doReturn(pathIterator).when(directoryStream).iterator();
       /// File Paths sorting
@@ -246,6 +253,8 @@ class SegmentLoaderTest {
       when(pathIterator.hasNext()).thenReturn(true, true, false);
       Path firstPath = mock(Path.class);
       Path secondPath = mock(Path.class);
+      doReturn(Path.of("0_segment.txt")).when(firstPath).getFileName();
+      doReturn(Path.of("1_segment.txt")).when(secondPath).getFileName();
       when(pathIterator.next()).thenReturn(firstPath, secondPath);
       doReturn(pathIterator).when(directoryStream).iterator();
       /// File Paths sorting
@@ -288,6 +297,8 @@ class SegmentLoaderTest {
       when(pathIterator.hasNext()).thenReturn(true, true, false);
       Path firstPath = mock(Path.class);
       Path secondPath = mock(Path.class);
+      doReturn(Path.of("0_segment.txt")).when(firstPath).getFileName();
+      doReturn(Path.of("1_segment.txt")).when(secondPath).getFileName();
       when(pathIterator.next()).thenReturn(firstPath, secondPath);
       doReturn(pathIterator).when(directoryStream).iterator();
       /// File Paths sorting
