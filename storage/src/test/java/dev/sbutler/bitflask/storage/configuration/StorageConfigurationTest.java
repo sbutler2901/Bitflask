@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.storage.configuration;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -10,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import com.beust.jcommander.JCommander;
 import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
 import dev.sbutler.bitflask.common.configuration.exceptions.IllegalConfigurationException;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurationConstants.StorageSegmentCreationModeArgs;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -59,6 +59,8 @@ public class StorageConfigurationTest {
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG);
     doReturn("100").when(defaultProvider)
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
+    doReturn(StorageSegmentCreationModeArgs.CREATE.getRawArg()).when(defaultProvider)
+        .getDefaultValueFor(StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG);
     doReturn("1").when(defaultProvider)
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG);
 
@@ -89,7 +91,7 @@ public class StorageConfigurationTest {
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG);
     doReturn("100").when(defaultProvider)
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
-    doReturn("create").when(defaultProvider)
+    doReturn(StorageSegmentCreationModeArgs.CREATE.getRawArg()).when(defaultProvider)
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG);
     doReturn("1").when(defaultProvider)
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG);
@@ -121,7 +123,7 @@ public class StorageConfigurationTest {
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG);
     doReturn("-1").when(defaultProvider)
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
-    doReturn("create").when(defaultProvider)
+    doReturn(StorageSegmentCreationModeArgs.CREATE.getRawArg()).when(defaultProvider)
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG);
     doReturn("1").when(defaultProvider)
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG);
@@ -171,7 +173,7 @@ public class StorageConfigurationTest {
     // Assert
     assertTrue(
         exception.getMessage()
-            .contains(StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG));
+            .contains(StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_NAME));
   }
 
   @Test
@@ -185,7 +187,8 @@ public class StorageConfigurationTest {
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG);
     doReturn("100").when(defaultProvider)
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG);
-    doReturn(SegmentOpenOptionsConverter.CREATE_ARG).when(defaultProvider)
+    doReturn(StorageSegmentCreationModeArgs.CREATE.getRawArg()).when(
+            defaultProvider)
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG);
     doReturn("-1").when(defaultProvider)
         .getDefaultValueFor(StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG);
@@ -221,7 +224,7 @@ public class StorageConfigurationTest {
         StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
         "200",
         StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG,
-        SegmentOpenOptionsConverter.TRUNCATE_ARG,
+        StorageSegmentCreationModeArgs.TRUNCATE.getRawArg(),
         StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG,
         "1",
     };
@@ -252,7 +255,7 @@ public class StorageConfigurationTest {
         StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
         "200",
         StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG,
-        SegmentOpenOptionsConverter.CREATE_ARG,
+        StorageSegmentCreationModeArgs.CREATE.getRawArg(),
         StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG,
         "1",
     };
@@ -284,7 +287,7 @@ public class StorageConfigurationTest {
         StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
         "200",
         StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG,
-        SegmentOpenOptionsConverter.CREATE_ARG,
+        StorageSegmentCreationModeArgs.CREATE.getRawArg(),
         StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG,
         "1",
     };
@@ -316,7 +319,7 @@ public class StorageConfigurationTest {
         StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
         "-1",
         StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG,
-        SegmentOpenOptionsConverter.CREATE_ARG,
+        StorageSegmentCreationModeArgs.CREATE.getRawArg(),
         StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG,
         "1",
     };
@@ -363,7 +366,7 @@ public class StorageConfigurationTest {
     // Assert
     assertTrue(
         exception.getMessage()
-            .contains(StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG));
+            .contains(StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_NAME));
   }
 
   @Test
@@ -380,7 +383,7 @@ public class StorageConfigurationTest {
         StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
         "200",
         StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG,
-        SegmentOpenOptionsConverter.CREATE_ARG,
+        StorageSegmentCreationModeArgs.CREATE.getRawArg(),
         StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG,
         "-1",
     };

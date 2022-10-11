@@ -38,6 +38,22 @@ public class StorageConfigurationConstants {
       STORAGE_SEGMENT_SIZE_LIMIT_DEFAULT);
 
   // Storage Segment Creation Mode
+  enum StorageSegmentCreationModeArgs {
+    CREATE("create"),
+    TRUNCATE("truncate");
+
+    private final String rawArg;
+
+    StorageSegmentCreationModeArgs(String rawArg) {
+      this.rawArg = rawArg;
+    }
+
+    String getRawArg() {
+      return rawArg;
+    }
+  }
+
+  static final String STORAGE_SEGMENT_CREATION_MODE_NAME = "StorageSegmentCreationMode";
   static final String STORAGE_SEGMENT_CREATION_MODE_FLAG = "--storageSegmentCreationMode";
   static final String STORAGE_SEGMENT_CREATION_MODE_PROPERTY_KEY = "storage.segmentCreationMode";
   static final StandardOpenOption STORAGE_SEGMENT_CREATION_MODE_DEFAULT = StandardOpenOption.CREATE;

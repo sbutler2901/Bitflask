@@ -2,26 +2,32 @@ package dev.sbutler.bitflask.storage.configuration;
 
 import com.beust.jcommander.IStringConverter;
 import dev.sbutler.bitflask.common.configuration.exceptions.IllegalConfigurationException;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurationConstants.StorageSegmentCreationModeArgs;
 import java.nio.file.StandardOpenOption;
 
+/**
+ * Handles converting the StorageSegmentCreationMode configuration string provided by the user into
+ * {@link java.nio.file.StandardOpenOption}.
+ *
+ * <p>An unsupported option will cause an {@link IllegalConfigurationException} to be thrown.
+ */
 class SegmentOpenOptionsConverter implements IStringConverter<StandardOpenOption> {
-
-  static final String CREATE_ARG = "create";
-  static final String TRUNCATE_ARG = "truncate";
-
-  private static final String ERROR_MESSAGE = "Parameter %s should be positive (found %s)";
 
   @Override
   public StandardOpenOption convert(String value) {
-    String normalizedValue = value.trim().toLowerCase();
-    if (normalizedValue.equals(CREATE_ARG)) {
-      return StandardOpenOption.CREATE;
-    } else if (normalizedValue.equals(TRUNCATE_ARG)) {
-      return StandardOpenOption.TRUNCATE_EXISTING;
-    } else {
+    String normalizedValue = value.trim().toUpperCase();
+    StorageSegmentCreationModeArgs mode;
+    try {
+      mode = StorageSegmentCreationModeArgs.valueOf(normalizedValue);
+    } catch (IllegalArgumentException e) {
       throw new IllegalConfigurationException(
-          String.format(ERROR_MESSAGE,
-              StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG, value));
+          String.format("Parameter %s was invalid (found %s)",
+              StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_NAME, value));
+    }
+    if (mode.equals(StorageSegmentCreationModeArgs.CREATE)) {
+      return StandardOpenOption.CREATE;
+    } else {
+      return StandardOpenOption.TRUNCATE_EXISTING;
     }
   }
 }
