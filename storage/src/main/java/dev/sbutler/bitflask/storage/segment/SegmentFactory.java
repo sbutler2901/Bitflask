@@ -26,13 +26,11 @@ final class SegmentFactory {
 
   private static final String SEGMENT_FILENAME_SUFFIX = "_segment.txt";
   static final String DEFAULT_SEGMENT_FILENAME = "%d" + SEGMENT_FILENAME_SUFFIX;
-  static final ImmutableSet<StandardOpenOption> fileChannelOptions = ImmutableSet.of(
-      StandardOpenOption.CREATE,
+  static final ImmutableSet<StandardOpenOption> BASE_FILE_CHANNEL_OPTIONS = ImmutableSet.of(
       StandardOpenOption.READ,
-      StandardOpenOption.WRITE
-//      StandardOpenOption.TRUNCATE_EXISTING
-  );
+      StandardOpenOption.WRITE);
 
+  private final ImmutableSet<StandardOpenOption> fileChannelOptions;
   private final SegmentFile.Factory segmentFileFactory;
   private final Path storeDirectoryPath;
   private final long segmentSizeLimit;
@@ -44,6 +42,15 @@ final class SegmentFactory {
     this.segmentFileFactory = segmentFileFactory;
     this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
     this.segmentSizeLimit = storageConfiguration.getStorageSegmentSizeLimit();
+    this.fileChannelOptions = determineFileChannelOptions(storageConfiguration);
+  }
+
+  private ImmutableSet<StandardOpenOption> determineFileChannelOptions(
+      StorageConfiguration storageConfiguration) {
+    return ImmutableSet.<StandardOpenOption>builder()
+        .addAll(BASE_FILE_CHANNEL_OPTIONS)
+        .add(storageConfiguration.getStorageSegmentCreationMode())
+        .build();
   }
 
   public static boolean isValidSegmentFilePath(Path path) {

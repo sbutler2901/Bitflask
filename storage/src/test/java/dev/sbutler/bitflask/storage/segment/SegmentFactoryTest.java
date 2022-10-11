@@ -17,6 +17,7 @@ import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,12 +38,13 @@ public class SegmentFactoryTest {
     storageConfiguration = mock(StorageConfiguration.class);
     doReturn(Path.of("/tmp/.bitflask")).when(storageConfiguration).getStorageStoreDirectoryPath();
     doReturn(100L).when(storageConfiguration).getStorageSegmentSizeLimit();
+    doReturn(StandardOpenOption.CREATE).when(storageConfiguration).getStorageSegmentCreationMode();
     segmentFactory = new SegmentFactory(segmentFileFactory, storageConfiguration);
   }
 
   @Test
   @SuppressWarnings({"unchecked"})
-  void createSegment() throws Exception {
+  void createSegment_createMode() throws Exception {
     try (MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(FileChannel.class)) {
       // Arrange
       FileChannel fileChannel = mock(FileChannel.class);
@@ -57,7 +59,44 @@ public class SegmentFactoryTest {
   }
 
   @Test
-  void createSegment_SegmentFileProvided_valuePresent() throws Exception {
+  @SuppressWarnings({"unchecked"})
+  void createSegment_truncateMode() throws Exception {
+    // TODO: implement with truncation
+    try (MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(FileChannel.class)) {
+      // Arrange
+      FileChannel fileChannel = mock(FileChannel.class);
+      fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
+          .thenReturn(fileChannel);
+      doReturn(mock(SegmentFile.class)).when(segmentFileFactory).create(any(), any(), anyInt());
+      // Act
+      Segment segment = segmentFactory.createSegment();
+      // Assert
+      assertFalse(segment.exceedsStorageThreshold());
+    }
+  }
+
+  @Test
+  void createSegment_createMode_SegmentFileProvided_valuePresent() throws Exception {
+    // Arrange
+    String key = "a";
+    SegmentFile segmentFile = mock(SegmentFile.class);
+    doReturn(5L).when(segmentFile).size();
+    when(segmentFile.readByte(anyLong()))
+        .thenReturn((byte) 1)
+        .thenReturn((byte) 0) // key_value header
+        .thenReturn((byte) 1);
+    doReturn(key).when(segmentFile).readAsString(anyInt(), anyLong());
+    // Act
+    Segment segment = segmentFactory.createSegmentFromFile(segmentFile);
+    // Assert
+    assertTrue(segment.containsKey(key));
+    verify(segmentFile, times(3)).readByte(anyLong());
+    verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
+  }
+
+  @Test
+  void createSegment_truncateMode_SegmentFileProvided_valuePresent() throws Exception {
+    // TODO: implement with truncation
     // Arrange
     String key = "a";
     SegmentFile segmentFile = mock(SegmentFile.class);
