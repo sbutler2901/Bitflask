@@ -13,15 +13,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableSet;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Set;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -32,72 +33,58 @@ public class SegmentFactoryTest {
   SegmentFile.Factory segmentFileFactory;
   StorageConfiguration storageConfiguration;
 
-  @BeforeEach
-  void beforeEach() {
-    segmentFileFactory = mock(SegmentFile.Factory.class);
-    storageConfiguration = mock(StorageConfiguration.class);
-    doReturn(Path.of("/tmp/.bitflask")).when(storageConfiguration).getStorageStoreDirectoryPath();
-    doReturn(100L).when(storageConfiguration).getStorageSegmentSizeLimit();
-    doReturn(StandardOpenOption.CREATE).when(storageConfiguration).getStorageSegmentCreationMode();
-    segmentFactory = new SegmentFactory(segmentFileFactory, storageConfiguration);
-  }
-
   @Test
   @SuppressWarnings({"unchecked"})
   void createSegment_createMode() throws Exception {
+    mockSegmentFactory(StandardOpenOption.CREATE);
     try (MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(FileChannel.class)) {
       // Arrange
       FileChannel fileChannel = mock(FileChannel.class);
-      fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
+      ArgumentCaptor<ImmutableSet<StandardOpenOption>> openOptionsCaptor = ArgumentCaptor.forClass(
+          ImmutableSet.class);
+      fileChannelMockedStatic.when(
+              () -> FileChannel.open(any(Path.class), openOptionsCaptor.capture()))
           .thenReturn(fileChannel);
       doReturn(mock(SegmentFile.class)).when(segmentFileFactory).create(any(), any(), anyInt());
       // Act
       Segment segment = segmentFactory.createSegment();
       // Assert
       assertFalse(segment.exceedsStorageThreshold());
+      ImmutableSet<StandardOpenOption> capturedOpenOptions = openOptionsCaptor.getValue();
+      assertTrue(capturedOpenOptions.contains(StandardOpenOption.READ));
+      assertTrue(capturedOpenOptions.contains(StandardOpenOption.WRITE));
+      assertTrue(capturedOpenOptions.contains(StandardOpenOption.CREATE));
     }
   }
 
   @Test
   @SuppressWarnings({"unchecked"})
   void createSegment_truncateMode() throws Exception {
-    // TODO: implement with truncation
+    mockSegmentFactory(StandardOpenOption.TRUNCATE_EXISTING);
     try (MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(FileChannel.class)) {
       // Arrange
       FileChannel fileChannel = mock(FileChannel.class);
-      fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
+      ArgumentCaptor<ImmutableSet<StandardOpenOption>> openOptionsCaptor = ArgumentCaptor.forClass(
+          ImmutableSet.class);
+      fileChannelMockedStatic.when(
+              () -> FileChannel.open(any(Path.class), openOptionsCaptor.capture()))
           .thenReturn(fileChannel);
       doReturn(mock(SegmentFile.class)).when(segmentFileFactory).create(any(), any(), anyInt());
       // Act
       Segment segment = segmentFactory.createSegment();
       // Assert
       assertFalse(segment.exceedsStorageThreshold());
+      ImmutableSet<StandardOpenOption> capturedOpenOptions = openOptionsCaptor.getValue();
+      assertTrue(capturedOpenOptions.contains(StandardOpenOption.READ));
+      assertTrue(capturedOpenOptions.contains(StandardOpenOption.WRITE));
+      assertTrue(capturedOpenOptions.contains(StandardOpenOption.TRUNCATE_EXISTING));
     }
   }
 
   @Test
-  void createSegment_createMode_SegmentFileProvided_valuePresent() throws Exception {
+  void createSegment_SegmentFileProvided_valuePresent() throws Exception {
     // Arrange
-    String key = "a";
-    SegmentFile segmentFile = mock(SegmentFile.class);
-    doReturn(5L).when(segmentFile).size();
-    when(segmentFile.readByte(anyLong()))
-        .thenReturn((byte) 1)
-        .thenReturn((byte) 0) // key_value header
-        .thenReturn((byte) 1);
-    doReturn(key).when(segmentFile).readAsString(anyInt(), anyLong());
-    // Act
-    Segment segment = segmentFactory.createSegmentFromFile(segmentFile);
-    // Assert
-    assertTrue(segment.containsKey(key));
-    verify(segmentFile, times(3)).readByte(anyLong());
-    verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
-  }
-
-  @Test
-  void createSegment_truncateMode_SegmentFileProvided_valuePresent() throws Exception {
-    // TODO: implement with truncation
-    // Arrange
+    mockSegmentFactory(StandardOpenOption.CREATE);
     String key = "a";
     SegmentFile segmentFile = mock(SegmentFile.class);
     doReturn(5L).when(segmentFile).size();
@@ -117,6 +104,7 @@ public class SegmentFactoryTest {
   @Test
   @SuppressWarnings({"unchecked"})
   void setSegmentStartIndex() throws Exception {
+    mockSegmentFactory(StandardOpenOption.CREATE);
     try (MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(FileChannel.class)) {
       // Arrange
       FileChannel fileChannel = mock(FileChannel.class);
@@ -136,6 +124,7 @@ public class SegmentFactoryTest {
 
   @Test
   void createSegmentStoreDir_CreateDirectory() throws Exception {
+    mockSegmentFactory(StandardOpenOption.CREATE);
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       // Arrange
       filesMockedStatic.when(() -> Files.isDirectory(any(Path.class))).thenReturn(false);
@@ -147,6 +136,7 @@ public class SegmentFactoryTest {
 
   @Test
   void createSegmentStoreDir_DirectoryExists() throws Exception {
+    mockSegmentFactory(StandardOpenOption.CREATE);
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       // Arrange
       filesMockedStatic.when(() -> Files.isDirectory(any(Path.class))).thenReturn(true);
@@ -158,6 +148,7 @@ public class SegmentFactoryTest {
 
   @Test
   void getSegmentKeyFromPath() {
+    mockSegmentFactory(StandardOpenOption.CREATE);
     Path path;
     // Arrange
     path = Path.of(String.format(SegmentFactory.DEFAULT_SEGMENT_FILENAME, 0));
@@ -167,5 +158,14 @@ public class SegmentFactoryTest {
     path = Path.of(String.format(SegmentFactory.DEFAULT_SEGMENT_FILENAME, 10));
     // Act / Assert
     assertEquals(10, segmentFactory.getSegmentKeyFromPath(path));
+  }
+
+  private void mockSegmentFactory(StandardOpenOption openOption) {
+    segmentFileFactory = mock(SegmentFile.Factory.class);
+    storageConfiguration = mock(StorageConfiguration.class);
+    doReturn(Path.of("/tmp/.bitflask")).when(storageConfiguration).getStorageStoreDirectoryPath();
+    doReturn(100L).when(storageConfiguration).getStorageSegmentSizeLimit();
+    doReturn(openOption).when(storageConfiguration).getStorageSegmentCreationMode();
+    segmentFactory = new SegmentFactory(segmentFileFactory, storageConfiguration);
   }
 }
