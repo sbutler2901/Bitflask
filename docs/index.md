@@ -88,7 +88,6 @@
 
 #### Server
 
-- overwrite pre-existing segment files
 - performance testing
 - logging level
 
