@@ -19,6 +19,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Handles the creation of new {@link Segment}s.
+ *
+ * <p>Supports creating a new Segment with a new {@link SegmentFile} or creating a new Segment from
+ * a pre-existing SegmentFile.
+ *
+ * <p>If a Segment is created from a pre-existing SegmentFile the Segment's entry map will be
+ * populated from the file.
+ */
 @Singleton
 final class SegmentFactory {
 
