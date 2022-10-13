@@ -101,9 +101,10 @@ final class SegmentFactory {
 
     Segment newSegment = new Segment(segmentFile, keyedEntryMap,
         currentFileWriteOffset, segmentSizeLimit);
-    logger.atInfo().log("Created new segment with fileKey [%s]", newSegment.getSegmentFileKey());
+    logger.atInfo().log("Created Segment with fileKey [%s]", newSegment.getSegmentFileKey());
     return newSegment;
   }
+
 
   /**
    * Populates the map of keys managed by the new segment and their corresponding offset within the
@@ -142,6 +143,7 @@ final class SegmentFactory {
     int segmentIndex = getNextSegmentKey();
     Path segmentPath = getNextSegmentFilePath(segmentIndex);
     FileChannel segmentFileChannel = getNextSegmentFileChannel(segmentPath);
+    logger.atInfo().log("Creating new SegmentFile at [%s]", segmentPath);
     return segmentFileFactory.create(segmentFileChannel, segmentPath, segmentIndex);
   }
 

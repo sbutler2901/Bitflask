@@ -52,6 +52,7 @@ final class SegmentLoader {
    * @throws IOException if an error occurs while loading the segments
    */
   public ManagedSegments loadExistingSegments() throws IOException {
+    logger.atInfo().log("Loading any pre-existing Segments");
     boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
     if (segmentStoreDirCreated) {
       logger.atInfo().log("Segment store directory created");
