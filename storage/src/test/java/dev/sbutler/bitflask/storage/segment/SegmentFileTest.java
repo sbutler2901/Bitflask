@@ -79,6 +79,12 @@ public class SegmentFileTest {
   }
 
   @Test
+  void truncate() throws Exception {
+    segmentFile.truncate(10);
+    verify(fileChannel, times(1)).truncate(10);
+  }
+
+  @Test
   void getSegmentFilePath() {
     assertEquals(path, segmentFile.getSegmentFilePath());
     assertEquals(segmentFileKey, segmentFile.getSegmentFileKey());

@@ -27,6 +27,11 @@ import javax.inject.Singleton;
  *
  * <p>If a Segment is created from a pre-existing SegmentFile the Segment's entry map will be
  * populated from the file.
+ *
+ * <p>The factory can be configured to load a SegmentFile's contents into the Segment's entry
+ * map, or truncate any contents. This applies to SegmentFiles provided when requesting Segment
+ * creation and when a SegmentFile is automatically created for a new Segment but a file already
+ * exists on the file system.
  */
 @Singleton
 final class SegmentFactory {
@@ -86,6 +91,10 @@ final class SegmentFactory {
    * @throws IOException if an error occurs while creating the segment
    */
   public Segment createSegmentFromFile(SegmentFile segmentFile) throws IOException {
+    if (shouldTruncateFile()) {
+      segmentFile.truncate(0);
+    }
+
     AtomicLong currentFileWriteOffset = new AtomicLong(segmentFile.size());
     ConcurrentMap<String, Entry> keyedEntryMap =
         generateKeyedEntryMap(segmentFile, currentFileWriteOffset);
@@ -185,5 +194,9 @@ final class SegmentFactory {
     String segmentFileName = path.getFileName().toString();
     int keyEndIndex = segmentFileName.indexOf('_');
     return Integer.parseInt(segmentFileName.substring(0, keyEndIndex));
+  }
+
+  private boolean shouldTruncateFile() {
+    return fileChannelOptions.contains(StandardOpenOption.TRUNCATE_EXISTING);
   }
 }

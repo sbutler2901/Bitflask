@@ -40,20 +40,15 @@ public class SegmentFactoryTest {
     try (MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(FileChannel.class)) {
       // Arrange
       FileChannel fileChannel = mock(FileChannel.class);
-      ArgumentCaptor<ImmutableSet<StandardOpenOption>> openOptionsCaptor = ArgumentCaptor.forClass(
-          ImmutableSet.class);
-      fileChannelMockedStatic.when(
-              () -> FileChannel.open(any(Path.class), openOptionsCaptor.capture()))
+      fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
           .thenReturn(fileChannel);
-      doReturn(mock(SegmentFile.class)).when(segmentFileFactory).create(any(), any(), anyInt());
+      SegmentFile segmentFile = mock(SegmentFile.class);
+      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), anyInt());
       // Act
       Segment segment = segmentFactory.createSegment();
       // Assert
       assertFalse(segment.exceedsStorageThreshold());
-      ImmutableSet<StandardOpenOption> capturedOpenOptions = openOptionsCaptor.getValue();
-      assertTrue(capturedOpenOptions.contains(StandardOpenOption.READ));
-      assertTrue(capturedOpenOptions.contains(StandardOpenOption.WRITE));
-      assertTrue(capturedOpenOptions.contains(StandardOpenOption.CREATE));
+      verify(segmentFile, times(0)).truncate(anyLong());
     }
   }
 
@@ -69,20 +64,18 @@ public class SegmentFactoryTest {
       fileChannelMockedStatic.when(
               () -> FileChannel.open(any(Path.class), openOptionsCaptor.capture()))
           .thenReturn(fileChannel);
-      doReturn(mock(SegmentFile.class)).when(segmentFileFactory).create(any(), any(), anyInt());
+      SegmentFile segmentFile = mock(SegmentFile.class);
+      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), anyInt());
       // Act
       Segment segment = segmentFactory.createSegment();
       // Assert
       assertFalse(segment.exceedsStorageThreshold());
-      ImmutableSet<StandardOpenOption> capturedOpenOptions = openOptionsCaptor.getValue();
-      assertTrue(capturedOpenOptions.contains(StandardOpenOption.READ));
-      assertTrue(capturedOpenOptions.contains(StandardOpenOption.WRITE));
-      assertTrue(capturedOpenOptions.contains(StandardOpenOption.TRUNCATE_EXISTING));
+      verify(segmentFile, times(1)).truncate(anyLong());
     }
   }
 
   @Test
-  void createSegment_SegmentFileProvided_valuePresent() throws Exception {
+  void createSegment_createMode_SegmentFileProvided_valuePresent() throws Exception {
     // Arrange
     mockSegmentFactory(StandardOpenOption.CREATE);
     String key = "a";
@@ -99,6 +92,28 @@ public class SegmentFactoryTest {
     assertTrue(segment.containsKey(key));
     verify(segmentFile, times(3)).readByte(anyLong());
     verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
+    verify(segmentFile, times(0)).truncate(anyLong());
+  }
+
+  @Test
+  void createSegment_truncateMode_SegmentFileProvided_valuePresent() throws Exception {
+    // Arrange
+    mockSegmentFactory(StandardOpenOption.TRUNCATE_EXISTING);
+    String key = "a";
+    SegmentFile segmentFile = mock(SegmentFile.class);
+    doReturn(5L).when(segmentFile).size();
+    when(segmentFile.readByte(anyLong()))
+        .thenReturn((byte) 1)
+        .thenReturn((byte) 0) // key_value header
+        .thenReturn((byte) 1);
+    doReturn(key).when(segmentFile).readAsString(anyInt(), anyLong());
+    // Act
+    Segment segment = segmentFactory.createSegmentFromFile(segmentFile);
+    // Assert
+    assertTrue(segment.containsKey(key));
+    verify(segmentFile, times(3)).readByte(anyLong());
+    verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
+    verify(segmentFile, times(1)).truncate(anyLong());
   }
 
   @Test

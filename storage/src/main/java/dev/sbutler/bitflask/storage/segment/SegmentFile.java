@@ -63,6 +63,10 @@ final class SegmentFile {
     return segmentFileChannel.size();
   }
 
+  public void truncate(long size) throws IOException {
+    segmentFileChannel.truncate(size);
+  }
+
   public Path getSegmentFilePath() {
     return segmentFilePath;
   }
