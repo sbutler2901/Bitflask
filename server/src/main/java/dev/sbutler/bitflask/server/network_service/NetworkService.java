@@ -42,13 +42,11 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   @Override
   protected void startUp() throws IOException {
-    logger.atInfo().log("Network service starting...");
     ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
     InetSocketAddress inetSocketAddress = new InetSocketAddress(serverConfiguration.getPort());
     serverSocketChannel.bind(inetSocketAddress);
     this.serverSocketChannel = serverSocketChannel;
     this.parentInjector = Guice.createInjector(new ClientHandlingServiceParentModule());
-    logger.atInfo().log("Network service started!");
   }
 
   @Override
@@ -85,7 +83,6 @@ public final class NetworkService extends AbstractExecutionThreadService {
   @SuppressWarnings("UnstableApiUsage")
   @Override
   protected void triggerShutdown() {
-    System.out.println("NetworkService shutdown triggered");
     isRunning = false;
     try {
       serverSocketChannel.close();
@@ -93,6 +90,5 @@ public final class NetworkService extends AbstractExecutionThreadService {
       System.err.println("Error closing NetworkService's ServerSocketChannel" + e);
     }
     runningClientHandlingServices.forEach(ClientHandlingService::close);
-    System.out.println("NetworkService completed shutdown");
   }
 }

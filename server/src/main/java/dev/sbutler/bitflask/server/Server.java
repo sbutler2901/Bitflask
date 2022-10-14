@@ -57,7 +57,7 @@ class Server {
     serviceManager.addListener(
         new Listener() {
           public void stopped() {
-            System.out.println("All services have stopped.");
+            System.out.println("Server: All services have stopped.");
           }
 
           public void healthy() {
@@ -65,7 +65,9 @@ class Server {
           }
 
           public void failure(@Nonnull Service service) {
-            System.err.printf("[%s] failed.", service.getClass());
+            logger.atSevere().withCause(service.failureCause())
+                .log("[%s] failed.", service.getClass());
+            serviceManager.stopAsync();
           }
         }, executorService);
   }

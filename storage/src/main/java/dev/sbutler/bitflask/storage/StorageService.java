@@ -58,7 +58,6 @@ public final class StorageService extends AbstractService implements Runnable {
       notifyStarted();
       logger.atInfo().log("StorageService started!");
     } catch (Exception e) {
-      // TODO: ensure server is shutdown if storage service fails.
       notifyFailed(e);
     }
   }
@@ -88,13 +87,11 @@ public final class StorageService extends AbstractService implements Runnable {
   @SuppressWarnings("UnstableApiUsage")
   @Override
   protected void doStop() {
-    logger.atInfo().log("Stopping triggered");
     isRunning = false;
     commandDispatcher.closeAndDrain();
     stopServices();
     shutdownAndAwaitTermination(executorService, Duration.ofSeconds(5));
     notifyStopped();
-    logger.atInfo().log("Completed shutdown");
   }
 
   private void stopServices() {
@@ -104,7 +101,7 @@ public final class StorageService extends AbstractService implements Runnable {
       serviceManager.stopAsync().awaitStopped(5, TimeUnit.SECONDS);
     } catch (TimeoutException timeout) {
       // stopping timed out
-      logger.atSevere().log("StorageService's ServiceManager timed out while stopping" + timeout);
+      System.err.println("StorageService: ServiceManager timed out while stopping");
     }
   }
 
