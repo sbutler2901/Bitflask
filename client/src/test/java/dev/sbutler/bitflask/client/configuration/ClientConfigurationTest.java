@@ -45,7 +45,24 @@ public class ClientConfigurationTest {
 
   @Test
   void propertyFile_illegalConfiguration_serverHost() {
-    // TODO: implement when validator added
+    // Arrange
+    ConfigurationDefaultProvider defaultProvider = mock(
+        ConfigurationDefaultProvider.class);
+    doReturn(" ").when(defaultProvider)
+        .getDefaultValueFor(ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT);
+    ClientConfiguration configuration = new ClientConfiguration();
+    String[] argv = new String[]{};
+    // Act
+    IllegalConfigurationException exception =
+        assertThrows(IllegalConfigurationException.class,
+            () -> JCommander.newBuilder()
+                .addObject(configuration)
+                .defaultProvider(defaultProvider)
+                .build()
+                .parse(argv));
+    // Assert
+    assertTrue(
+        exception.getMessage().contains(ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT));
   }
 
   @Test
@@ -94,7 +111,25 @@ public class ClientConfigurationTest {
 
   @Test
   void commandLineFlags_illegalConfiguration_serverHost() {
-    // TODO: implement when validator added
+    // Arrange
+    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
+        ClientConfigurationConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
+    ClientConfiguration configuration = new ClientConfiguration();
+    String[] argv = new String[]{
+        ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT,
+        " "};
+    // Act
+    IllegalConfigurationException exception =
+        assertThrows(IllegalConfigurationException.class,
+            () -> JCommander.newBuilder()
+                .addObject(configuration)
+                .defaultProvider(defaultProvider)
+                .build()
+                .parse(argv)
+        );
+    // Assert
+    assertTrue(
+        exception.getMessage().contains(ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT));
   }
 
   @Test

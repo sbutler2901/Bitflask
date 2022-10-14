@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.client.configuration;
 
 import com.beust.jcommander.Parameter;
+import dev.sbutler.bitflask.common.configuration.validators.NonBlankStringValidator;
 import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValidator;
 
 public class ClientConfiguration {
@@ -8,7 +9,7 @@ public class ClientConfiguration {
   @Parameter(names = {
       ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT,
       ClientConfigurationConstants.SERVER_HOST_FLAG_LONG},
-      // TODO: add validator
+      validateWith = NonBlankStringValidator.class,
       description = "The host running the Bitflask server"
   )
   private String host;
