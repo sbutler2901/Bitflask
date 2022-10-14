@@ -51,7 +51,7 @@ public final class Segment {
       return Optional.empty();
     }
     if (!isOpen()) {
-      throw new RuntimeException("This segment has been closed and cannot be read from");
+      throw new IllegalStateException("This segment has been closed and cannot be read from");
     }
 
     Entry entry = keyedEntryMap.get(key);
@@ -78,8 +78,7 @@ public final class Segment {
    */
   public void write(String key, String value) throws IOException {
     if (!isOpen()) {
-      // TODO: adjust for consumers to try again
-      throw new RuntimeException("This segment has been closed and cannot be written to");
+      throw new IllegalStateException("This segment has been closed and cannot be written to");
     }
 
     byte[] encodedBytes = Encoder.encode(Header.KEY_VALUE, key, value);
@@ -95,8 +94,7 @@ public final class Segment {
       return;
     }
     if (!isOpen()) {
-      // TODO: adjust for consumers to try again
-      throw new RuntimeException("This segment has been closed and cannot be written to");
+      throw new IllegalStateException("This segment has been closed and cannot be written to");
     }
 
     byte[] encodedBytes = Encoder.encodeNoValue(Header.DELETED, key);
@@ -185,9 +183,8 @@ public final class Segment {
    */
   public void deleteSegment() throws IOException {
     if (isOpen()) {
-      throw new RuntimeException("Segment should be closed before deleting");
+      throw new IllegalStateException("Segment should be closed before deleting");
     }
-    // todo: tombstone segment's file in case of failure
     try {
       readWriteLock.writeLock().lock();
       Files.delete(segmentFile.getSegmentFilePath());
