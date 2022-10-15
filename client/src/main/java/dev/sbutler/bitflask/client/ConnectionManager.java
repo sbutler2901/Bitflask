@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -13,23 +14,23 @@ import javax.inject.Singleton;
 @Singleton
 class ConnectionManager implements AutoCloseable {
 
-  private final Socket socket;
+  private final SocketChannel socketChannel;
 
   @Inject
-  public ConnectionManager(Socket socket) {
-    this.socket = socket;
+  public ConnectionManager(SocketChannel socketChannel) {
+    this.socketChannel = socketChannel;
   }
 
   @Override
   public void close() throws IOException {
-    socket.close();
+    socketChannel.close();
   }
 
   public InputStream getInputStream() throws IOException {
-    return socket.getInputStream();
+    return socketChannel.socket().getInputStream();
   }
 
   public OutputStream getOutputStream() throws IOException {
-    return socket.getOutputStream();
+    return socketChannel.socket().getOutputStream();
   }
 }

@@ -9,18 +9,22 @@ import static org.mockito.Mockito.verify;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ConnectionManagerTest {
 
   ConnectionManager connectionManager;
+  SocketChannel socketChannel;
   Socket socket;
 
   @BeforeEach
-  void beforeEach() throws Exception {
+  void beforeEach() {
+    socketChannel = mock(SocketChannel.class);
     socket = mock(Socket.class);
-    connectionManager = new ConnectionManager(socket);
+    doReturn(socket).when(socketChannel).socket();
+    connectionManager = new ConnectionManager(socketChannel);
   }
 
   @Test
@@ -28,7 +32,7 @@ public class ConnectionManagerTest {
     // Act
     connectionManager.close();
     // Asset
-    verify(socket, times(1)).close();
+    verify(socketChannel, times(1)).close();
   }
 
   @Test

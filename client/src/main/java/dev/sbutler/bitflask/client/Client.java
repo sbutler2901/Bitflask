@@ -10,7 +10,9 @@ import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
 import dev.sbutler.bitflask.client.configuration.ClientConfigurationConstants;
 import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
 import java.io.IOException;
-import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.channels.SocketChannel;
 import java.util.ResourceBundle;
 
 public class Client implements Runnable {
@@ -18,7 +20,7 @@ public class Client implements Runnable {
   private final ClientConfiguration configuration;
   private final ConnectionManager connectionManager;
 
-  private Client(ClientConfiguration configuration, ConnectionManager connectionManager) {
+  Client(ClientConfiguration configuration, ConnectionManager connectionManager) {
     this.configuration = configuration;
     this.connectionManager = connectionManager;
   }
@@ -31,7 +33,6 @@ public class Client implements Runnable {
       client.run();
     } catch (IOException e) {
       System.err.println("Failed to initialize connection to the server" + e);
-      System.exit(1);
     }
   }
 
@@ -52,8 +53,10 @@ public class Client implements Runnable {
 
   private static ConnectionManager createConnectionManager(ClientConfiguration configuration)
       throws IOException {
-    Socket serverSocket = new Socket(configuration.getHost(), configuration.getPort());
-    return new ConnectionManager(serverSocket);
+    SocketAddress socketAddress = new InetSocketAddress(configuration.getHost(),
+        configuration.getPort());
+    SocketChannel socketChannel = SocketChannel.open(socketAddress);
+    return new ConnectionManager(socketChannel);
   }
 
   @Override
