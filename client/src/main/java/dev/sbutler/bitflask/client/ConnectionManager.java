@@ -8,7 +8,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class ConnectionManager implements AutoCloseable {
+class ConnectionManager implements AutoCloseable {
 
   private final Socket socket;
 
