@@ -33,18 +33,22 @@ public class CommandProcessingService {
   public ListenableFuture<String> processCommandMessage(ImmutableList<String> commandMessage) {
     checkNotNull(commandMessage);
     if (commandMessage.size() < 1) {
-      SettableFuture<String> failureFuture = SettableFuture.create();
-      failureFuture.set("Message must contain at least one argument");
-      return failureFuture;
+      return createFailureFuture("Message must contain at least one argument");
     }
 
     String messageCommand = commandMessage.get(0).trim();
-    CommandType commandType = CommandType.valueOf(messageCommand.toUpperCase());
+    CommandType commandType;
+    try {
+      commandType = CommandType.valueOf(messageCommand.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      return createFailureFuture(
+          String.format("Invalid command [%s]", messageCommand));
+    }
+
     ImmutableList<String> args = commandMessage.subList(1, commandMessage.size());
     if (!isValidCommandArgs(commandType, args)) {
-      SettableFuture<String> failureFuture = SettableFuture.create();
-      failureFuture.set(String.format("Invalid arguments for [%s]: %s", messageCommand, args));
-      return failureFuture;
+      return createFailureFuture(
+          String.format("Invalid arguments for command [%s]: %s", messageCommand, args));
     }
 
     ServerCommand command = createCommand(commandType, args);
@@ -67,5 +71,11 @@ public class CommandProcessingService {
       case GET, DEL -> args.size() == 1;
       case SET -> args.size() == 2;
     };
+  }
+
+  private static ListenableFuture<String> createFailureFuture(String responseMessage) {
+    SettableFuture<String> failureFuture = SettableFuture.create();
+    failureFuture.set(responseMessage);
+    return failureFuture;
   }
 }

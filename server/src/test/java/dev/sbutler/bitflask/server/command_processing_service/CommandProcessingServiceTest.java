@@ -47,6 +47,18 @@ public class CommandProcessingServiceTest {
   }
 
   @Test
+  void invalidCommand() throws Exception {
+    // Arrange
+    ImmutableList<String> message = ImmutableList.of("invalidCommand");
+    // Act
+    ListenableFuture<String> responseFuture =
+        commandProcessingService.processCommandMessage(message);
+    // Assert
+    assertTrue(responseFuture.isDone());
+    assertTrue(responseFuture.get().toLowerCase().contains("invalid command"));
+  }
+
+  @Test
   void ping() {
     try (MockedConstruction<PingCommand> pingMockedConstruction = mockConstruction(
         PingCommand.class)) {
