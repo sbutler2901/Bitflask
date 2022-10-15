@@ -5,7 +5,6 @@ import com.google.inject.Provides;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessingModule;
 import dev.sbutler.bitflask.client.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
-import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import dev.sbutler.bitflask.resp.network.RespNetworkModule;
 import java.io.IOException;
 import java.io.InputStream;

@@ -17,7 +17,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessor;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
-import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.TimeoutException;

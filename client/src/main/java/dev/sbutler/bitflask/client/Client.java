@@ -13,7 +13,6 @@ import dev.sbutler.bitflask.client.client_processing.ClientProcessor;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
 import dev.sbutler.bitflask.client.configuration.ClientConfigurationConstants;
-import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
 import java.io.IOException;
 import java.net.Socket;
