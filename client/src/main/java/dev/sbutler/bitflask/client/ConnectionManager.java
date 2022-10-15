@@ -7,6 +7,9 @@ import java.net.Socket;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Manages the {@link Socket} connected to the server
+ */
 @Singleton
 class ConnectionManager implements AutoCloseable {
 

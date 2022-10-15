@@ -5,6 +5,9 @@ import dev.sbutler.bitflask.resp.network.RespWriter;
 import java.io.IOException;
 import javax.inject.Inject;
 
+/**
+ * Handles processing commands via communication with a remote server.
+ */
 public class RespCommandProcessor implements RemoteCommandProcessor {
 
   private final RespReader respReader;

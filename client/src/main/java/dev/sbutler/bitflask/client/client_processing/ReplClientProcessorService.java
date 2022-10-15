@@ -6,6 +6,9 @@ import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import javax.inject.Inject;
 
+/**
+ * Provides a REPL shell for a client to interactively execute commands.
+ */
 public class ReplClientProcessorService extends AbstractExecutionThreadService {
 
   private static final String SHELL_PREFIX = "> ";

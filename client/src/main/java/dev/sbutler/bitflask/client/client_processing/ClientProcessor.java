@@ -11,6 +11,13 @@ import dev.sbutler.bitflask.client.command_processing.RemoteCommand;
 import dev.sbutler.bitflask.client.command_processing.RemoteCommandProcessor;
 import javax.inject.Inject;
 
+/**
+ * Handles accepting client input, submitting it for processing, and writing a response to the
+ * client.
+ *
+ * <p>This class discerns between local, client-specific commands and remote commands. Processing
+ * accordingly.
+ */
 public class ClientProcessor {
 
   private final RemoteCommandProcessor remoteCommandProcessor;
