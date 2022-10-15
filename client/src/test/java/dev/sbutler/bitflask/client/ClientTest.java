@@ -19,6 +19,7 @@ import dev.sbutler.bitflask.client.client_processing.ClientProcessor;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import java.io.IOException;
+import java.net.Socket;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,8 @@ public class ClientTest {
 
   @Test
   void main_inline() {
-    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
+    try (MockedConstruction<Socket> socketMockedConstruction = mockConstruction(Socket.class);
+        MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       // Arrange
       Injector injector = mock(Injector.class);
       guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
@@ -47,7 +49,8 @@ public class ClientTest {
 
   @Test
   void main_service() {
-    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
+    try (MockedConstruction<Socket> socketMockedConstruction = mockConstruction(Socket.class);
+        MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       try (MockedConstruction<ServiceManager> serviceManagerMockedConstruction = mockConstruction(
           ServiceManager.class)) {
         // Arrange
@@ -71,7 +74,8 @@ public class ClientTest {
 
   @Test
   void main_service_failure() throws Exception {
-    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
+    try (MockedConstruction<Socket> socketMockedConstruction = mockConstruction(Socket.class);
+        MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       AtomicReference<ServiceManager> serviceManagerAtomicReference = new AtomicReference<>();
       ArgumentCaptor<Listener> listenerArgumentCaptor = ArgumentCaptor.forClass(Listener.class);
       try (MockedConstruction<ServiceManager> serviceManagerMockedConstruction = mockConstruction(

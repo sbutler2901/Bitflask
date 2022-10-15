@@ -16,6 +16,7 @@ import dev.sbutler.bitflask.client.configuration.ClientConfigurationConstants;
 import dev.sbutler.bitflask.client.connection.ConnectionManager;
 import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
 import java.io.IOException;
+import java.net.Socket;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -28,11 +29,15 @@ public class Client {
 
   public static void main(String[] args) {
     ClientConfiguration configuration = initializeConfiguration(args);
-    Injector injector = Guice.createInjector(new ClientModule(configuration));
-    if (shouldExecuteWithRepl(args)) {
-      executeWithRepl(injector);
-    } else {
-      executeInline(injector, args);
+    try (ConnectionManager connectionManager = createConnectionManager(configuration)) {
+      Injector injector = Guice.createInjector(new ClientModule(configuration, connectionManager));
+      if (shouldExecuteWithRepl(args)) {
+        executeWithRepl(injector);
+      } else {
+        executeInline(injector, args);
+      }
+    } catch (IOException e) {
+      System.err.println("Failed to initialize connection to the server" + e);
     }
   }
 
@@ -52,18 +57,23 @@ public class Client {
     return configuration;
   }
 
+  private static ConnectionManager createConnectionManager(ClientConfiguration configuration)
+      throws IOException {
+    Socket serverSocket = new Socket(configuration.getHost(), configuration.getPort());
+    return new ConnectionManager(serverSocket);
+  }
+
   private static void executeWithRepl(Injector injector) {
     ImmutableSet<Service> services = ImmutableSet.of(
         injector.getInstance(ReplClientProcessorService.class)
     );
     ServiceManager serviceManager = new ServiceManager(services);
     addServiceManagerListener(serviceManager);
-    registerShutdownHook(injector.getInstance(ConnectionManager.class), serviceManager);
+    registerShutdownHook(serviceManager);
     serviceManager.startAsync();
   }
 
   private static void executeInline(Injector injector, String[] args) {
-    registerShutdownHook(injector.getInstance(ConnectionManager.class));
     ClientProcessor clientProcessor = injector.getInstance(ClientProcessor.class);
     ImmutableList<String> clientInput = ImmutableList.copyOf(args);
     clientProcessor.processClientInput(clientInput);
@@ -83,26 +93,11 @@ public class Client {
         }, MoreExecutors.directExecutor());
   }
 
-  private static void registerShutdownHook(ConnectionManager connectionManager) {
-    Runtime.getRuntime()
-        .addShutdownHook(new Thread(() -> shutdownConnectionManager(connectionManager)));
-  }
-
-  private static void registerShutdownHook(ConnectionManager connectionManager,
-      ServiceManager serviceManager) {
+  private static void registerShutdownHook(ServiceManager serviceManager) {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       System.out.println("Exiting...");
       shutdownServiceManager(serviceManager);
-      shutdownConnectionManager(connectionManager);
     }));
-  }
-
-  private static void shutdownConnectionManager(ConnectionManager connectionManager) {
-    try {
-      connectionManager.close();
-    } catch (IOException e) {
-      System.err.println("Failure to close connection: " + e);
-    }
   }
 
   private static void shutdownServiceManager(ServiceManager serviceManager) {
