@@ -28,7 +28,7 @@ public class Client {
 
   public static void main(String[] args) {
     ClientConfiguration configuration = initializeConfiguration(args);
-    Injector injector = Guice.createInjector(new ClientModule());
+    Injector injector = Guice.createInjector(new ClientModule(configuration));
     if (shouldExecuteWithRepl(args)) {
       executeWithRepl(injector);
     } else {
