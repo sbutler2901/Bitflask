@@ -30,10 +30,10 @@ public class Client {
     ClientConfiguration configuration = initializeConfiguration(args);
     try (ConnectionManager connectionManager = createConnectionManager(configuration)) {
       Injector injector = Guice.createInjector(new ClientModule(configuration, connectionManager));
-      if (shouldExecuteWithRepl(args)) {
+      if (shouldExecuteWithRepl(configuration)) {
         executeWithRepl(injector);
       } else {
-        executeInline(injector, args);
+        executeInline(injector, configuration);
       }
     } catch (IOException e) {
       System.err.println("Failed to initialize connection to the server" + e);
@@ -50,7 +50,6 @@ public class Client {
     JCommander.newBuilder()
         .addObject(configuration)
         .defaultProvider(defaultProvider)
-        .acceptUnknownOptions(true)
         .build()
         .parse(args);
     return configuration;
@@ -72,14 +71,14 @@ public class Client {
     serviceManager.startAsync().awaitStopped();
   }
 
-  private static void executeInline(Injector injector, String[] args) {
+  private static void executeInline(Injector injector, ClientConfiguration configuration) {
     ClientProcessor clientProcessor = injector.getInstance(ClientProcessor.class);
-    ImmutableList<String> clientInput = ImmutableList.copyOf(args);
+    ImmutableList<String> clientInput = ImmutableList.copyOf(configuration.getInlineCmd());
     clientProcessor.processClientInput(clientInput);
   }
 
-  private static boolean shouldExecuteWithRepl(String[] args) {
-    return args.length == 0;
+  private static boolean shouldExecuteWithRepl(ClientConfiguration configuration) {
+    return configuration.getInlineCmd().size() == 0;
   }
 
   private static void addServiceManagerListener(ServiceManager serviceManager) {

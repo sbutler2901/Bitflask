@@ -3,8 +3,13 @@ package dev.sbutler.bitflask.client.configuration;
 import com.beust.jcommander.Parameter;
 import dev.sbutler.bitflask.common.configuration.validators.NonBlankStringValidator;
 import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValidator;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClientConfiguration {
+
+  @Parameter(description = "inline command")
+  private List<String> inlineCommand = new ArrayList<>();
 
   @Parameter(names = {
       ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT,
@@ -21,6 +26,10 @@ public class ClientConfiguration {
       description = "The port that the Bitflask server is listening on"
   )
   private int port;
+
+  public List<String> getInlineCmd() {
+    return inlineCommand;
+  }
 
   public String getHost() {
     return host;
