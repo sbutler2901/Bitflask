@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.client.client_processing;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import javax.inject.Inject;
@@ -9,7 +8,7 @@ import javax.inject.Inject;
 /**
  * Provides a REPL shell for a client to interactively execute commands.
  */
-public class ReplClientProcessorService extends AbstractExecutionThreadService {
+public class ReplClientProcessorService implements Runnable {
 
   private static final String SHELL_PREFIX = "> ";
 
@@ -29,7 +28,7 @@ public class ReplClientProcessorService extends AbstractExecutionThreadService {
   }
 
   @Override
-  protected void run() {
+  public void run() {
     while (continueProcessingClientInput) {
       outputWriter.write(SHELL_PREFIX);
       ImmutableList<String> clientInput = inputParser.getClientNextInput();
@@ -40,9 +39,7 @@ public class ReplClientProcessorService extends AbstractExecutionThreadService {
     }
   }
 
-  @SuppressWarnings("UnstableApiUsage")
-  @Override
-  protected void triggerShutdown() {
+  public void triggerShutdown() {
     stopProcessingClientInput();
   }
 
