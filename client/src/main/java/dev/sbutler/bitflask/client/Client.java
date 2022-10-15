@@ -79,6 +79,7 @@ public class Client implements Runnable {
   private void executeInline(Injector injector) {
     registerShutdownHook();
     ClientProcessor clientProcessor = injector.getInstance(ClientProcessor.class);
+    // Convert to use InputToArgsConverter
     ImmutableList<String> clientInput = ImmutableList.copyOf(configuration.getInlineCmd());
     clientProcessor.processClientInput(clientInput);
   }
