@@ -26,7 +26,7 @@ public class StdinInputParserTest {
   }
 
   @Test
-  void getNextCommand_withArgs() {
+  void getNextCommand_withArgs() throws Exception {
     // Arrange
     String nextLine = "get test-key";
     ImmutableList<String> expected = ImmutableList.of("get", "test-key");
@@ -37,7 +37,7 @@ public class StdinInputParserTest {
   }
 
   @Test
-  void getNextCommand_withoutArgs() {
+  void getNextCommand_withoutArgs() throws Exception {
     // Arrange
     String nextLine = "get";
     ImmutableList<String> expected = ImmutableList.of("get");
@@ -48,7 +48,7 @@ public class StdinInputParserTest {
   }
 
   @Test
-  void getNextCommand_emptyString() {
+  void getNextCommand_emptyString() throws Exception {
     // Arrange
     String nextLine = "\n";
     ImmutableList<String> expected = ImmutableList.of();
@@ -59,7 +59,7 @@ public class StdinInputParserTest {
   }
 
   @Test
-  void getNextCommand_whitespaceOnly() {
+  void getNextCommand_whitespaceOnly() throws Exception {
     // Arrange
     String nextLine = " ";
     ImmutableList<String> expected = ImmutableList.of();

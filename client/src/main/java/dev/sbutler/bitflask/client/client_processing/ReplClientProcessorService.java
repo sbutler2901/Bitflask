@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.client.client_processing;
 import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
+import java.text.ParseException;
 import javax.inject.Inject;
 
 /**
@@ -31,7 +32,13 @@ public class ReplClientProcessorService implements Runnable {
   public void run() {
     while (continueProcessingClientInput) {
       outputWriter.write(SHELL_PREFIX);
-      ImmutableList<String> clientInput = inputParser.getClientNextInput();
+      ImmutableList<String> clientInput;
+      try {
+        clientInput = inputParser.getClientNextInput();
+      } catch (ParseException e) {
+        outputWriter.writeWithNewLine("ERROR: the provided command could not be parsed");
+        continue;
+      }
       boolean shouldContinueProcessing = clientProcessor.processClientInput(clientInput);
       if (!shouldContinueProcessing) {
         stopProcessingClientInput();
