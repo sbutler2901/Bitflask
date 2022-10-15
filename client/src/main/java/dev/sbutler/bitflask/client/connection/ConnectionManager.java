@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.client.connection;
 
+import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,9 +15,8 @@ public class ConnectionManager implements Closeable {
   private final Socket socket;
 
   @Inject
-  public ConnectionManager(@ServerHost String serverHost, @ServerPort int serverPort)
-      throws IOException {
-    this.socket = new Socket(serverHost, serverPort);
+  public ConnectionManager(ClientConfiguration configuration) throws IOException {
+    this.socket = new Socket(configuration.getHost(), configuration.getPort());
   }
 
   @Override

@@ -14,18 +14,6 @@ public class ConnectionModuleTest {
   private final ConnectionModule connectionModule = new ConnectionModule();
 
   @Test
-  void provideServerHost() {
-    String serverHost = ConnectionModule.provideServerHost();
-    assertEquals("localhost", serverHost);
-  }
-
-  @Test
-  void provideServerPort() {
-    int serverPort = ConnectionModule.provideServerPort();
-    assertEquals(9090, serverPort);
-  }
-
-  @Test
   void provideInputStream() throws IOException {
     ConnectionManager connectionManager = mock(ConnectionManager.class);
     InputStream mockInputStream = mock(InputStream.class);

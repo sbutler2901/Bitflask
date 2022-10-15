@@ -9,18 +9,6 @@ import java.io.OutputStream;
 public class ConnectionModule extends AbstractModule {
 
   @Provides
-  @ServerHost
-  static String provideServerHost() {
-    return "localhost";
-  }
-
-  @Provides
-  @ServerPort
-  static int provideServerPort() {
-    return 9090;
-  }
-
-  @Provides
   InputStream provideInputStream(ConnectionManager connectionManager) throws IOException {
     return connectionManager.getInputStream();
   }

@@ -7,7 +7,7 @@ import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import java.io.IOException;
+import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -17,9 +17,9 @@ import org.mockito.MockedConstruction;
 public class ConnectionManagerTest {
 
   @Test
-  void close() throws IOException {
+  void close() throws Exception {
     try (MockedConstruction<Socket> socketMockedConstruction = mockConstruction(Socket.class)) {
-      ConnectionManager connectionManager = new ConnectionManager("host", 9090);
+      ConnectionManager connectionManager = new ConnectionManager(new ClientConfiguration());
       Socket mockSocket = socketMockedConstruction.constructed().get(0);
       connectionManager.close();
       verify(mockSocket, times(1)).close();
@@ -27,9 +27,9 @@ public class ConnectionManagerTest {
   }
 
   @Test
-  void getInputStream() throws IOException {
+  void getInputStream() throws Exception {
     try (MockedConstruction<Socket> socketMockedConstruction = mockConstruction(Socket.class)) {
-      ConnectionManager connectionManager = new ConnectionManager("host", 9090);
+      ConnectionManager connectionManager = new ConnectionManager(new ClientConfiguration());
       Socket mockSocket = socketMockedConstruction.constructed().get(0);
       InputStream mockInputStream = mock(InputStream.class);
       doReturn(mockInputStream).when(mockSocket).getInputStream();
@@ -40,9 +40,9 @@ public class ConnectionManagerTest {
   }
 
   @Test
-  void getOutputStream() throws IOException {
+  void getOutputStream() throws Exception {
     try (MockedConstruction<Socket> socketMockedConstruction = mockConstruction(Socket.class)) {
-      ConnectionManager connectionManager = new ConnectionManager("host", 9090);
+      ConnectionManager connectionManager = new ConnectionManager(new ClientConfiguration());
       Socket mockSocket = socketMockedConstruction.constructed().get(0);
       OutputStream mockOutputStream = mock(OutputStream.class);
       doReturn(mockOutputStream).when(mockSocket).getOutputStream();
