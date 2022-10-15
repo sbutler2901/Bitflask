@@ -67,7 +67,7 @@ public class Client {
     );
     ServiceManager serviceManager = new ServiceManager(services);
     addServiceManagerListener(serviceManager);
-    registerShutdownHook(serviceManager);
+    registerShutdownHookForReplExecution(serviceManager);
     serviceManager.startAsync().awaitStopped();
   }
 
@@ -91,21 +91,17 @@ public class Client {
         }, MoreExecutors.directExecutor());
   }
 
-  private static void registerShutdownHook(ServiceManager serviceManager) {
+  private static void registerShutdownHookForReplExecution(ServiceManager serviceManager) {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       System.out.println("Exiting...");
-      shutdownServiceManager(serviceManager);
+      // Give the services 5 seconds to stop to ensure that we are responsive to shut down
+      // requests.
+      try {
+        serviceManager.stopAsync().awaitStopped(500, TimeUnit.MILLISECONDS);
+      } catch (TimeoutException timeout) {
+        // stopping timed out
+        System.err.println("ServiceManager timed out while stopping" + timeout);
+      }
     }));
-  }
-
-  private static void shutdownServiceManager(ServiceManager serviceManager) {
-    // Give the services 5 seconds to stop to ensure that we are responsive to shut down
-    // requests.
-    try {
-      serviceManager.stopAsync().awaitStopped(500, TimeUnit.MILLISECONDS);
-    } catch (TimeoutException timeout) {
-      // stopping timed out
-      System.err.println("ServiceManager timed out while stopping" + timeout);
-    }
   }
 }
