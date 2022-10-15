@@ -69,7 +69,7 @@ public class Client {
     ServiceManager serviceManager = new ServiceManager(services);
     addServiceManagerListener(serviceManager);
     registerShutdownHook(serviceManager);
-    serviceManager.startAsync();
+    serviceManager.startAsync().awaitStopped();
   }
 
   private static void executeInline(Injector injector, String[] args) {
