@@ -53,17 +53,17 @@ public class RespReader {
 
   private RespSimpleString readRespSimpleString()
       throws IOException {
-    String value = bufferedReader.readLine();
+    String value = readLine();
     return new RespSimpleString(value);
   }
 
   private RespBulkString readRespBulkString()
       throws IOException {
-    int length = Integer.parseInt(bufferedReader.readLine());
+    int length = Integer.parseInt(readLine());
     if (length == RespBulkString.NULL_STRING_LENGTH) {
       return new RespBulkString(null);
     }
-    String readValue = bufferedReader.readLine();
+    String readValue = readLine();
     if (readValue.length() != length) {
       throw new ProtocolException("RespBulkString value length didn't match provided length");
     }
@@ -71,17 +71,17 @@ public class RespReader {
   }
 
   private RespInteger readRespInteger() throws IOException {
-    int value = Integer.parseInt(bufferedReader.readLine());
+    int value = Integer.parseInt(readLine());
     return new RespInteger(value);
   }
 
   private RespError readRespError() throws IOException {
-    String value = bufferedReader.readLine();
+    String value = readLine();
     return new RespError(value);
   }
 
   private RespArray readRespArray() throws IOException {
-    int numItems = Integer.parseInt(bufferedReader.readLine());
+    int numItems = Integer.parseInt(readLine());
     if (numItems == RespArray.NULL_ARRAY_LENGTH) {
       return new RespArray(null);
     }
@@ -92,4 +92,36 @@ public class RespReader {
     return new RespArray(respArrayValues);
   }
 
+  /**
+   * Reads a line terminated with CRLF.
+   *
+   * <p>Other line terminators will be read like normal. Reaching EOF will also be considered
+   * terminating the read line
+   */
+  private String readLine() throws IOException {
+    StringBuilder builder = new StringBuilder();
+    int read;
+    boolean crLastRead = false;
+    while ((read = bufferedReader.read()) != -1) {
+      char c = (char) read;
+      if (crLastRead) {
+        if (c == '\n') {
+          // EOL
+          break;
+        }
+        // Add skipped CR since not EOL
+        builder.append('\r');
+        // Another CR NOT found, can add like normal
+        if (c != '\r') {
+          builder.append(c);
+          crLastRead = false;
+        }
+      } else if (c == '\r') {
+        crLastRead = true;
+      } else {
+        builder.append(c);
+      }
+    }
+    return builder.toString();
+  }
 }

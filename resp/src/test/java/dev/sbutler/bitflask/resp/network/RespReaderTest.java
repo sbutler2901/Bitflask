@@ -106,15 +106,46 @@ public class RespReaderTest {
   }
 
   @Test
+  void respBulkString_carriageReturnWithoutLineFeed() throws Exception {
+    // Arrange
+    String expected = "simple\rstring";
+    RespBulkString respType = new RespBulkString(expected);
+    RespReader respReader =
+        createRespReaderWithRespTypeSeeded(respType);
+    // Act
+    RespType<?> res = respReader.readNextRespType();
+    // Assert
+    assertTrue(res instanceof RespBulkString);
+    assertEquals(expected, res.getValue());
+  }
+
+  @Test
+  void respBulkString_carriageReturnTwice() throws Exception {
+    // Arrange
+    String expected = "simple\r\rstring";
+    RespBulkString respType = new RespBulkString(expected);
+    RespReader respReader =
+        createRespReaderWithRespTypeSeeded(respType);
+    // Act
+    RespType<?> res = respReader.readNextRespType();
+    // Assert
+    assertTrue(res instanceof RespBulkString);
+    assertEquals(expected, res.getValue());
+  }
+
+  @Test
   void respBulkString_ProtocolException() throws Exception {
     // Arrange
-    String expected = "simple-string";
     BufferedReader bufferedReader = mock(BufferedReader.class);
     RespReader respReader = new RespReader(bufferedReader);
-    when(bufferedReader.read()).thenReturn(Integer.valueOf(RespBulkString.TYPE_PREFIX));
-    when(bufferedReader.readLine())
-        .thenReturn(String.valueOf(0))
-        .thenReturn(expected);
+    when(bufferedReader.read())
+        .thenReturn(Integer.valueOf(RespBulkString.TYPE_PREFIX))
+        .thenReturn(Integer.valueOf('0'))
+        .thenReturn(Integer.valueOf('\r'))
+        .thenReturn(Integer.valueOf('\n'))
+        .thenReturn(Integer.valueOf('s'))
+        .thenReturn(Integer.valueOf('\r'))
+        .thenReturn(Integer.valueOf('\n'));
     // Act
     ProtocolException e =
         assertThrows(ProtocolException.class, respReader::readNextRespType);
