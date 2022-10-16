@@ -61,16 +61,23 @@ public class InputToArgsConverter {
     for (i = startIndex + 1; i < chars.length; i++) {
       char current = chars[i];
       if (escapeActive) {
-        if (current == 'n') {
-          builder.append('\n');
-        } else {
-          builder.append(current);
+        // Check for supported escapes
+        switch (current) {
+          case '\\', '"' -> builder.append(current);
+          case 'n' -> builder.append('\n');
+          default -> {
+            // Unsupported escape, include backslash
+            builder.append('\\');
+            builder.append(current);
+          }
         }
         escapeActive = false;
       } else if (current == '"') {
+        // quote complete
         i++;
         break;
       } else if (current == '\\') {
+        // start escape for next char
         escapeActive = true;
       } else {
         builder.append(current);
@@ -90,12 +97,22 @@ public class InputToArgsConverter {
     for (i = startIndex + 1; i < chars.length; i++) {
       char current = chars[i];
       if (escapeActive) {
-        builder.append(current);
+        // Check for supported escapes
+        switch (current) {
+          case '\\', '\'' -> builder.append(current);
+          default -> {
+            // Unsupported escape, include backslash
+            builder.append('\\');
+            builder.append(current);
+          }
+        }
         escapeActive = false;
       } else if (current == '\'') {
+        // quote complete
         i++;
         break;
       } else if (current == '\\') {
+        // start escape for next char
         escapeActive = true;
       } else {
         builder.append(current);

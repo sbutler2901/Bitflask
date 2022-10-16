@@ -92,6 +92,19 @@ public class InputToArgsConverterTest {
   }
 
   @Test
+  void doubleQuote_withEscape_doubleQuote() throws Exception {
+    // Arrange
+    String value = "set test \"value \\\"other\"";
+    // Act
+    ImmutableList<String> args = converter.convert(value);
+    // Assert
+    assertEquals(3, args.size());
+    assertEquals("set", args.get(0));
+    assertEquals("test", args.get(1));
+    assertEquals("value \"other", args.get(2));
+  }
+
+  @Test
   void singleQuote_withEscape_backslash() throws Exception {
     // Arrange
     String value = "set test 'value \\\\other'";
@@ -105,32 +118,6 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void singleQuote_withNewline() throws Exception {
-    // Arrange
-    String value = "set test 'value\nother'";
-    // Act
-    ImmutableList<String> args = converter.convert(value);
-    // Assert
-    assertEquals(3, args.size());
-    assertEquals("set", args.get(0));
-    assertEquals("test", args.get(1));
-    assertEquals("value\nother", args.get(2));
-  }
-
-  @Test
-  void doubleQuote_withEscape_singleQuote() throws Exception {
-    // Arrange
-    String value = "set test \"value \\\"other\"";
-    // Act
-    ImmutableList<String> args = converter.convert(value);
-    // Assert
-    assertEquals(3, args.size());
-    assertEquals("set", args.get(0));
-    assertEquals("test", args.get(1));
-    assertEquals("value \"other", args.get(2));
-  }
-
-  @Test
   void doubleQuote_withEscape_backslash() throws Exception {
     // Arrange
     String value = "set test \"value \\\\other\"";
@@ -141,6 +128,32 @@ public class InputToArgsConverterTest {
     assertEquals("set", args.get(0));
     assertEquals("test", args.get(1));
     assertEquals("value \\other", args.get(2));
+  }
+
+  @Test
+  void singleQuote_unsupportedEscape() throws Exception {
+    // Arrange
+    String value = "set test 'value\\nother'";
+    // Act
+    ImmutableList<String> args = converter.convert(value);
+    // Assert
+    assertEquals(3, args.size());
+    assertEquals("set", args.get(0));
+    assertEquals("test", args.get(1));
+    assertEquals("value\\nother", args.get(2));
+  }
+
+  @Test
+  void doubleQuote_unsupportedEscape() throws Exception {
+    // Arrange
+    String value = "set test \"value\\rother\"";
+    // Act
+    ImmutableList<String> args = converter.convert(value);
+    // Assert
+    assertEquals(3, args.size());
+    assertEquals("set", args.get(0));
+    assertEquals("test", args.get(1));
+    assertEquals("value\\rother", args.get(2));
   }
 
   @Test
