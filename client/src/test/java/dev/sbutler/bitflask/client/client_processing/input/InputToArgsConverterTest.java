@@ -105,6 +105,19 @@ public class InputToArgsConverterTest {
   }
 
   @Test
+  void singleQuote_withNewline() throws Exception {
+    // Arrange
+    String value = "set test 'value\nother'";
+    // Act
+    ImmutableList<String> args = converter.convert(value);
+    // Assert
+    assertEquals(3, args.size());
+    assertEquals("set", args.get(0));
+    assertEquals("test", args.get(1));
+    assertEquals("value\nother", args.get(2));
+  }
+
+  @Test
   void doubleQuote_withEscape_singleQuote() throws Exception {
     // Arrange
     String value = "set test \"value \\\"other\"";

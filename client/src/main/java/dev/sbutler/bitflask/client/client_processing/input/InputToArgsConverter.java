@@ -3,6 +3,11 @@ package dev.sbutler.bitflask.client.client_processing.input;
 import com.google.common.collect.ImmutableList;
 import java.text.ParseException;
 
+/**
+ * Handles converting client input into discrete arguments.
+ *
+ * <p>This includes double and single quoted strings with character escaping.
+ */
 public class InputToArgsConverter {
 
   public ImmutableList<String> convert(String value) throws ParseException {
