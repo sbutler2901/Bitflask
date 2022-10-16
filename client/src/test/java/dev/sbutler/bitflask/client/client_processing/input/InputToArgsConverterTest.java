@@ -151,7 +151,7 @@ public class InputToArgsConverterTest {
     ParseException e =
         assertThrows(ParseException.class, () -> converter.convert(value));
     // Assert
-    assertTrue(e.getMessage().toLowerCase().contains("stringbuilder"));
+    assertTrue(e.getMessage().toLowerCase().contains("quoted string"));
   }
 
   @Test
@@ -162,6 +162,6 @@ public class InputToArgsConverterTest {
     ParseException e =
         assertThrows(ParseException.class, () -> converter.convert(value));
     // Assert
-    assertTrue(e.getMessage().toLowerCase().contains("stringbuilder"));
+    assertTrue(e.getMessage().toLowerCase().contains("quoted string"));
   }
 }

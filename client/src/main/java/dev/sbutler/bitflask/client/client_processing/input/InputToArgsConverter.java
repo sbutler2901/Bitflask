@@ -37,16 +37,65 @@ public class InputToArgsConverter {
         i++;
       }
     }
+    // Handle reaching end of string
+    if (!builder.isEmpty()) {
+      args.add(builder.toString());
+    }
 
     return args.build();
   }
 
+  /**
+   * Parses a double-quoted string. The provided {@code startIndex} should be the index of the
+   * first, starting double quote.
+   */
   private ParsedQuotedString parseDoubleQuotedString(char[] chars, int startIndex) {
-    return new ParsedQuotedString("", 0);
+    StringBuilder builder = new StringBuilder();
+    int i;
+    boolean escapeActive = false;
+    for (i = startIndex + 1; i < chars.length; i++) {
+      char current = chars[i];
+      if (escapeActive) {
+        if (current == 'n') {
+          builder.append("\\");
+        }
+        builder.append(current);
+        escapeActive = false;
+      } else if (current == '"') {
+        i++;
+        break;
+      } else if (current == '\\') {
+        escapeActive = true;
+      } else {
+        builder.append(current);
+      }
+    }
+    return new ParsedQuotedString(builder.toString(), i);
   }
 
+  /**
+   * Parses a single-quoted string. The provided {@code startIndex} should be the index of the
+   * first, starting double quote.
+   */
   private ParsedQuotedString parseSingleQuotedString(char[] chars, int startIndex) {
-    return new ParsedQuotedString("", 0);
+    StringBuilder builder = new StringBuilder();
+    int i;
+    boolean escapeActive = false;
+    for (i = startIndex + 1; i < chars.length; i++) {
+      char current = chars[i];
+      if (escapeActive) {
+        builder.append(current);
+        escapeActive = false;
+      } else if (current == '\'') {
+        i++;
+        break;
+      } else if (current == '\\') {
+        escapeActive = true;
+      } else {
+        builder.append(current);
+      }
+    }
+    return new ParsedQuotedString(builder.toString(), i);
   }
 
   private void verifyValidToParseQuotedString(StringBuilder builder, int index)
