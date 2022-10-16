@@ -140,7 +140,7 @@ public class InputToArgsConverterTest {
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
     assertEquals("test", args.get(1));
-    assertEquals("value\\nother", args.get(2));
+    assertEquals("value\nother", args.get(2));
   }
 
   @Test

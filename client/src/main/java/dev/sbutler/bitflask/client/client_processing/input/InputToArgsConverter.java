@@ -57,9 +57,10 @@ public class InputToArgsConverter {
       char current = chars[i];
       if (escapeActive) {
         if (current == 'n') {
-          builder.append("\\");
+          builder.append('\n');
+        } else {
+          builder.append(current);
         }
-        builder.append(current);
         escapeActive = false;
       } else if (current == '"') {
         i++;
