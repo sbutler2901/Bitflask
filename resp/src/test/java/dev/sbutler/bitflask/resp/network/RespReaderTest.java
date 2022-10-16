@@ -79,6 +79,20 @@ public class RespReaderTest {
   }
 
   @Test
+  void respBulkString_newline() throws Exception {
+    // Arrange
+    String expected = "simple\nstring";
+    RespBulkString respType = new RespBulkString(expected);
+    RespReader respReader =
+        createRespReaderWithRespTypeSeeded(respType);
+    // Act
+    RespType<?> res = respReader.readNextRespType();
+    // Assert
+    assertTrue(res instanceof RespBulkString);
+    assertEquals(expected, res.getValue());
+  }
+
+  @Test
   void respBulkString_null() throws Exception {
     // Arrange
     RespBulkString respType = new RespBulkString(null);
