@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.client.client_processing.input;
 
 import com.google.common.collect.ImmutableList;
 import java.text.ParseException;
+import java.util.function.BiConsumer;
 
 /**
  * Handles converting client input into discrete arguments.
@@ -22,12 +23,14 @@ public class InputToArgsConverter {
       char current = chars[i];
       if (current == '"') {
         verifyValidToParseQuotedString(builder, i);
-        ParsedQuotedString parsed = parseDoubleQuotedString(chars, i);
+        ParsedQuotedString parsed =
+            parsedQuotedString(chars, i, '"', this::doubleQuoteHandleEscape);
         args.add(parsed.arg());
         i = parsed.nextIndex();
       } else if (current == '\'') {
         verifyValidToParseQuotedString(builder, i);
-        ParsedQuotedString parsed = parseSingleQuotedString(chars, i);
+        ParsedQuotedString parsed =
+            parsedQuotedString(chars, i, '\'', this::singleQuoteHandleEscape);
         args.add(parsed.arg());
         i = parsed.nextIndex();
       } else {
@@ -51,28 +54,26 @@ public class InputToArgsConverter {
   }
 
   /**
-   * Parses a double-quoted string. The provided {@code startIndex} should be the index of the
-   * first, starting double quote.
+   * Parses a quoted string.
+   *
+   * @param chars          the array of chars from which the quoted string should be parsed
+   * @param startIndex     the index of the first, starting quote character
+   * @param quote          the quoting character starting and terminating the string being parsed
+   * @param handleEscaping a function specific to a quote type for handling the current character
+   *                       after an escape has been found
+   * @return the quoted string parsed
    */
-  private ParsedQuotedString parseDoubleQuotedString(char[] chars, int startIndex) {
+  private ParsedQuotedString parsedQuotedString(char[] chars, int startIndex, char quote,
+      BiConsumer<StringBuilder, Character> handleEscaping) {
     StringBuilder builder = new StringBuilder();
     int i;
     boolean escapeActive = false;
     for (i = startIndex + 1; i < chars.length; i++) {
       char current = chars[i];
       if (escapeActive) {
-        // Check for supported escapes
-        switch (current) {
-          case '\\', '"' -> builder.append(current);
-          case 'n' -> builder.append('\n');
-          default -> {
-            // Unsupported escape, include backslash
-            builder.append('\\');
-            builder.append(current);
-          }
-        }
+        handleEscaping.accept(builder, current);
         escapeActive = false;
-      } else if (current == '"') {
+      } else if (current == quote) {
         // quote complete
         i++;
         break;
@@ -86,39 +87,27 @@ public class InputToArgsConverter {
     return new ParsedQuotedString(builder.toString(), i);
   }
 
-  /**
-   * Parses a single-quoted string. The provided {@code startIndex} should be the index of the
-   * first, starting double quote.
-   */
-  private ParsedQuotedString parseSingleQuotedString(char[] chars, int startIndex) {
-    StringBuilder builder = new StringBuilder();
-    int i;
-    boolean escapeActive = false;
-    for (i = startIndex + 1; i < chars.length; i++) {
-      char current = chars[i];
-      if (escapeActive) {
-        // Check for supported escapes
-        switch (current) {
-          case '\\', '\'' -> builder.append(current);
-          default -> {
-            // Unsupported escape, include backslash
-            builder.append('\\');
-            builder.append(current);
-          }
-        }
-        escapeActive = false;
-      } else if (current == '\'') {
-        // quote complete
-        i++;
-        break;
-      } else if (current == '\\') {
-        // start escape for next char
-        escapeActive = true;
-      } else {
+  private void doubleQuoteHandleEscape(StringBuilder builder, char current) {
+    switch (current) {
+      case '\\', '"' -> builder.append(current);
+      case 'n' -> builder.append('\n');
+      default -> {
+        // Unsupported escape, include backslash
+        builder.append('\\');
         builder.append(current);
       }
     }
-    return new ParsedQuotedString(builder.toString(), i);
+  }
+
+  private void singleQuoteHandleEscape(StringBuilder builder, char current) {
+    switch (current) {
+      case '\\', '\'' -> builder.append(current);
+      default -> {
+        // Unsupported escape, include backslash
+        builder.append('\\');
+        builder.append(current);
+      }
+    }
   }
 
   private void verifyValidToParseQuotedString(StringBuilder builder, int index)
