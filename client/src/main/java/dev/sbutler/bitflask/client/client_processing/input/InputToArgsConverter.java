@@ -26,24 +26,18 @@ public class InputToArgsConverter {
     StringBuilder builder = new StringBuilder();
     for (int i = 0; i < input.length; i++) {
       char current = input[i];
-      if (current == '"' || current == '\'') {
-        if (isValidToParseQuotedString(i)) {
-          // Parse quoted string
-          ParsedQuotedString parsed = parseQuotedString(i);
-          args.add(parsed.arg());
-          i = parsed.lastIndex();
-        } else {
-          builder.append(current);
-        }
+      if ((current == '"' || current == '\'') && isValidToParseQuotedString(i)) {
+        // Parse quoted string
+        ParsedQuotedString parsed = parseQuotedString(i);
+        args.add(parsed.arg());
+        i = parsed.lastIndex();
+      } else if (current == ' ') {
+        // Start next arg
+        args.add(builder.toString());
+        builder.setLength(0);
       } else {
-        if (current == ' ') {
-          // Start next arg
-          args.add(builder.toString());
-          builder.setLength(0);
-        } else {
-          // add to current arg
-          builder.append(current);
-        }
+        // add to current arg
+        builder.append(current);
       }
     }
     // Handle reaching end of string
