@@ -92,6 +92,3 @@
 - logging level
 
 #### Client
-
-- server IP
-- server port
