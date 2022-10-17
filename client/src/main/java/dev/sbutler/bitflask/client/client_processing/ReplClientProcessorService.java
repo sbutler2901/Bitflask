@@ -31,6 +31,8 @@ public class ReplClientProcessorService implements Runnable {
 
   @Override
   public void run() {
+    // Doesn't work when running from IDE (https://youtrack.jetbrains.com/issue/IDEA-18814)
+    // boolean hasConsole = System.console() != null;
     while (continueProcessingClientInput) {
       outputWriter.write(SHELL_PREFIX);
       ImmutableList<String> clientInput;
