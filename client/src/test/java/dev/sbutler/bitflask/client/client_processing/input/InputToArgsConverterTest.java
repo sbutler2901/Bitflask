@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 public class InputToArgsConverterTest {
 
   @Test
-  void spaceSeparatedStrings() {
+  void spaceSeparatedStrings() throws Exception {
     // Arrange
     String value = "set test value";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -22,7 +22,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void inlineSingleQuote() {
+  void inlineSingleQuote() throws Exception {
     // Arrange
     String value = "set test val'ue";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -36,7 +36,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void inlineDoubleQuote() {
+  void inlineDoubleQuote() throws Exception {
     // Arrange
     String value = "set test val\"ue";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -50,7 +50,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void singleQuote_withoutBreaks() {
+  void singleQuote_withoutBreaks() throws Exception {
     // Arrange
     String value = "set test 'value'";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -64,7 +64,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void doubleQuote_withoutBreaks() {
+  void doubleQuote_withoutBreaks() throws Exception {
     // Arrange
     String value = "set test \"value\"";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -78,7 +78,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void singleQuote_withSpaces() {
+  void singleQuote_withSpaces() throws Exception {
     // Arrange
     String value = "set test 'value other'";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -92,7 +92,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void doubleQuote_withSpaces() {
+  void doubleQuote_withSpaces() throws Exception {
     // Arrange
     String value = "set test \"value other\"";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -106,7 +106,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void singleQuote_withEscape_singleQuote() {
+  void singleQuote_withEscape_singleQuote() throws Exception {
     // Arrange
     String value = "set test 'value \\'other'";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -120,7 +120,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void doubleQuote_withEscape_doubleQuote() {
+  void doubleQuote_withEscape_doubleQuote() throws Exception {
     // Arrange
     String value = "set test \"value \\\"other\"";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -134,7 +134,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void singleQuote_withEscape_backslash() {
+  void singleQuote_withEscape_backslash() throws Exception {
     // Arrange
     String value = "set test 'value \\\\other'";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -148,7 +148,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void doubleQuote_withEscape_backslash() {
+  void doubleQuote_withEscape_backslash() throws Exception {
     // Arrange
     String value = "set test \"value \\\\other\"";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -162,7 +162,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void singleQuote_unsupportedEscape() {
+  void singleQuote_unsupportedEscape() throws Exception {
     // Arrange
     String value = "set test 'value\\nother'";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -176,7 +176,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void doubleQuote_unsupportedEscape() {
+  void doubleQuote_unsupportedEscape() throws Exception {
     // Arrange
     String value = "set test \"value\\rother\"";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -190,7 +190,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void doubleQuote_withEscape_newline() {
+  void doubleQuote_withEscape_newline() throws Exception {
     // Arrange
     String value = "set test \"value\\nother\"";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -202,4 +202,28 @@ public class InputToArgsConverterTest {
     assertEquals("test", args.get(1));
     assertEquals("value\nother", args.get(2));
   }
+/*
+  @Test
+  void singleQuote_parseException_builderNotEmpty() {
+    // Arrange
+    String value = "set test a'value other'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ParseException e =
+        assertThrows(ParseException.class, converter::convert);
+    // Assert
+    assertTrue(e.getMessage().toLowerCase().contains("quoted string"));
+  }
+
+  @Test
+  void doubleQuote_parseException_builderNotEmpty() {
+    // Arrange
+    String value = "set test a\"value other\"";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ParseException e =
+        assertThrows(ParseException.class, converter::convert);
+    // Assert
+    assertTrue(e.getMessage().toLowerCase().contains("quoted string"));
+  }*/
 }

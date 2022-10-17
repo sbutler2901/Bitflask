@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.client.client_processing.input;
 
 import com.google.common.collect.ImmutableList;
+import java.text.ParseException;
 import java.util.function.Function;
 
 /**
@@ -24,7 +25,7 @@ class InputToArgsConverter {
   /**
    * Convert the input provided by the client into discrete arguments
    */
-  public ImmutableList<String> convert() {
+  public ImmutableList<String> convert() throws ParseException {
     ImmutableList.Builder<String> args = ImmutableList.builder();
 
     StringBuilder builder = new StringBuilder();
