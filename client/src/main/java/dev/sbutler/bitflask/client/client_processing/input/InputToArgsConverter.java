@@ -54,10 +54,20 @@ class InputToArgsConverter {
   }
 
   /**
+   * Used to ensure in a valid state for parsing a quoted string.
+   */
+  private boolean isValidToParseQuotedString(int currentIndex) {
+    if (currentIndex == 0) {
+      return true;
+    }
+    return input[currentIndex - 1] == SINGLE_SPACE;
+  }
+
+  /**
    * Parses a quoted string. The provided {@code startIndex} should be the quote character that
    * starts the quoted String.
    */
-  private ParsedQuotedString parseQuotedString(int startIndex) {
+  private ParsedQuotedString parseQuotedString(int startIndex) throws ParseException {
     char quote = input[startIndex];
     Function<Character, String> escapeHandler = quote == DOUBLE_QUOTE
         ? InputToArgsConverter::doubleQuoteEscapeHandler
@@ -81,6 +91,9 @@ class InputToArgsConverter {
       } else {
         builder.append(current);
       }
+    }
+    if (i == input.length) {
+      throw new ParseException("A quoted input was not properly terminated", i);
     }
     return new ParsedQuotedString(builder.toString(), i);
   }
@@ -106,16 +119,6 @@ class InputToArgsConverter {
       // Unsupported escape, include backslash
       default -> String.valueOf(BACKSLASH) + current;
     };
-  }
-
-  /**
-   * Used to ensure in a valid state for parsing a quoted string.
-   */
-  private boolean isValidToParseQuotedString(int currentIndex) {
-    if (currentIndex == 0) {
-      return true;
-    }
-    return input[currentIndex - 1] == SINGLE_SPACE;
   }
 
   private record ParsedQuotedString(String arg, int lastIndex) {

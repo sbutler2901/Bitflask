@@ -1,8 +1,11 @@
 package dev.sbutler.bitflask.client.client_processing.input;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
+import java.text.ParseException;
 import org.junit.jupiter.api.Test;
 
 public class InputToArgsConverterTest {
@@ -190,6 +193,30 @@ public class InputToArgsConverterTest {
   }
 
   @Test
+  void singleQuote_unterminated() {
+    // Arrange
+    String value = "set test 'value\"";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ParseException e =
+        assertThrows(ParseException.class, converter::convert);
+    // Assert
+    assertTrue(e.getMessage().toLowerCase().contains("not properly terminated"));
+  }
+
+  @Test
+  void doubleQuote_unterminated() {
+    // Arrange
+    String value = "set test \"value'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ParseException e =
+        assertThrows(ParseException.class, converter::convert);
+    // Assert
+    assertTrue(e.getMessage().toLowerCase().contains("not properly terminated"));
+  }
+
+  @Test
   void doubleQuote_withEscape_newline() throws Exception {
     // Arrange
     String value = "set test \"value\\nother\"";
@@ -202,28 +229,4 @@ public class InputToArgsConverterTest {
     assertEquals("test", args.get(1));
     assertEquals("value\nother", args.get(2));
   }
-/*
-  @Test
-  void singleQuote_parseException_builderNotEmpty() {
-    // Arrange
-    String value = "set test a'value other'";
-    InputToArgsConverter converter = new InputToArgsConverter(value);
-    // Act
-    ParseException e =
-        assertThrows(ParseException.class, converter::convert);
-    // Assert
-    assertTrue(e.getMessage().toLowerCase().contains("quoted string"));
-  }
-
-  @Test
-  void doubleQuote_parseException_builderNotEmpty() {
-    // Arrange
-    String value = "set test a\"value other\"";
-    InputToArgsConverter converter = new InputToArgsConverter(value);
-    // Act
-    ParseException e =
-        assertThrows(ParseException.class, converter::convert);
-    // Assert
-    assertTrue(e.getMessage().toLowerCase().contains("quoted string"));
-  }*/
 }
