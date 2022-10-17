@@ -34,8 +34,16 @@
 
 ### Containerization
 
+#### Server
+
 - Build and execution within Docker
 - Depends on custom gradle Dockerfile fork to support JDK 19
+
+### Client
+
+- REPL (interactive) command execution
+- inline command execution
+- file piping execution
 
 ### Segment File Encoding
 
@@ -81,8 +89,6 @@
 - Need to confirm compaction correct
 
 ### Client
-
-- Executing commands from file
 
 ### Configuration
 
