@@ -15,7 +15,7 @@ public class StdinInputParser implements InputParser {
 
   public ImmutableList<String> getClientNextInput() throws ParseException {
     String line = inputScanner.nextLine();
-    InputToArgsConverter argsConverter = new InputToArgsConverter();
-    return argsConverter.convert(line);
+    InputToArgsConverter argsConverter = new InputToArgsConverter(line);
+    return argsConverter.convert();
   }
 }

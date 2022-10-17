@@ -10,14 +10,13 @@ import org.junit.jupiter.api.Test;
 
 public class InputToArgsConverterTest {
 
-  InputToArgsConverter converter = new InputToArgsConverter();
-
   @Test
   void spaceSeparatedStrings() throws Exception {
     // Arrange
     String value = "set test value";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -29,8 +28,9 @@ public class InputToArgsConverterTest {
   void singleQuote_withoutBreaks() throws Exception {
     // Arrange
     String value = "set test 'value'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -40,11 +40,11 @@ public class InputToArgsConverterTest {
 
   @Test
   void doubleQuote_withoutBreaks() throws Exception {
-
     // Arrange
     String value = "set test \"value\"";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -56,8 +56,9 @@ public class InputToArgsConverterTest {
   void singleQuote_withSpaces() throws Exception {
     // Arrange
     String value = "set test 'value other'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -69,8 +70,9 @@ public class InputToArgsConverterTest {
   void doubleQuote_withSpaces() throws Exception {
     // Arrange
     String value = "set test \"value other\"";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -82,8 +84,9 @@ public class InputToArgsConverterTest {
   void singleQuote_withEscape_singleQuote() throws Exception {
     // Arrange
     String value = "set test 'value \\'other'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -95,8 +98,9 @@ public class InputToArgsConverterTest {
   void doubleQuote_withEscape_doubleQuote() throws Exception {
     // Arrange
     String value = "set test \"value \\\"other\"";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -108,8 +112,9 @@ public class InputToArgsConverterTest {
   void singleQuote_withEscape_backslash() throws Exception {
     // Arrange
     String value = "set test 'value \\\\other'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -121,8 +126,9 @@ public class InputToArgsConverterTest {
   void doubleQuote_withEscape_backslash() throws Exception {
     // Arrange
     String value = "set test \"value \\\\other\"";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -134,8 +140,9 @@ public class InputToArgsConverterTest {
   void singleQuote_unsupportedEscape() throws Exception {
     // Arrange
     String value = "set test 'value\\nother'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -147,8 +154,9 @@ public class InputToArgsConverterTest {
   void doubleQuote_unsupportedEscape() throws Exception {
     // Arrange
     String value = "set test \"value\\rother\"";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -160,8 +168,9 @@ public class InputToArgsConverterTest {
   void doubleQuote_withEscape_newline() throws Exception {
     // Arrange
     String value = "set test \"value\\nother\"";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
-    ImmutableList<String> args = converter.convert(value);
+    ImmutableList<String> args = converter.convert();
     // Assert
     assertEquals(3, args.size());
     assertEquals("set", args.get(0));
@@ -173,9 +182,10 @@ public class InputToArgsConverterTest {
   void singleQuote_parseException_builderNotEmpty() {
     // Arrange
     String value = "set test a'value other'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
     ParseException e =
-        assertThrows(ParseException.class, () -> converter.convert(value));
+        assertThrows(ParseException.class, converter::convert);
     // Assert
     assertTrue(e.getMessage().toLowerCase().contains("quoted string"));
   }
@@ -184,9 +194,10 @@ public class InputToArgsConverterTest {
   void doubleQuote_parseException_builderNotEmpty() {
     // Arrange
     String value = "set test a\"value other\"";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
     ParseException e =
-        assertThrows(ParseException.class, () -> converter.convert(value));
+        assertThrows(ParseException.class, converter::convert);
     // Assert
     assertTrue(e.getMessage().toLowerCase().contains("quoted string"));
   }

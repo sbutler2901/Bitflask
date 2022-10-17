@@ -11,26 +11,25 @@ import java.util.function.Function;
  */
 public class InputToArgsConverter {
 
-  public ImmutableList<String> convert(String value) throws ParseException {
-    return parseIntoArgs(value.trim().toCharArray());
+  private final char[] input;
+
+  InputToArgsConverter(String input) {
+    this.input = input.trim().toCharArray();
   }
 
-  private ImmutableList<String> parseIntoArgs(char[] chars) throws ParseException {
+  /**
+   * Convert the input provided by the client into discrete arguments
+   */
+  public ImmutableList<String> convert() throws ParseException {
     ImmutableList.Builder<String> args = ImmutableList.builder();
 
     StringBuilder builder = new StringBuilder();
-    for (int i = 0; i < chars.length; ) {
-      char current = chars[i];
-      if (current == '"') {
+    for (int i = 0; i < input.length; ) {
+      char current = input[i];
+      if (current == '"' || current == '\'') {
+        // Parse quoted string
         verifyValidToParseQuotedString(builder, i);
-        ParsedQuotedString parsed =
-            parsedQuotedString(chars, i, '"', this::doubleQuoteHandleEscape);
-        args.add(parsed.arg());
-        i = parsed.nextIndex();
-      } else if (current == '\'') {
-        verifyValidToParseQuotedString(builder, i);
-        ParsedQuotedString parsed =
-            parsedQuotedString(chars, i, '\'', this::singleQuoteHandleEscape);
+        ParsedQuotedString parsed = parseQuotedString(i);
         args.add(parsed.arg());
         i = parsed.nextIndex();
       } else {
@@ -54,24 +53,22 @@ public class InputToArgsConverter {
   }
 
   /**
-   * Parses a quoted string.
-   *
-   * @param chars          the array of chars from which the quoted string should be parsed
-   * @param startIndex     the index of the first, starting quote character
-   * @param quote          the quoting character starting and terminating the string being parsed
-   * @param handleEscaping a function specific to a quote type for handling the current character
-   *                       after an escape has been found
-   * @return the quoted string parsed
+   * Parses a quoted string. The provided {@code startIndex} should be the quote character that
+   * starts the quoted String.
    */
-  private ParsedQuotedString parsedQuotedString(char[] chars, int startIndex, char quote,
-      Function<Character, String> handleEscaping) {
+  private ParsedQuotedString parseQuotedString(int startIndex) {
+    char quote = input[startIndex];
+    Function<Character, String> escapeHandler = quote == '"'
+        ? InputToArgsConverter::doubleQuoteEscapeHandler
+        : InputToArgsConverter::singleQuoteEscapeHandler;
+
     StringBuilder builder = new StringBuilder();
     int i;
     boolean escapeActive = false;
-    for (i = startIndex + 1; i < chars.length; i++) {
-      char current = chars[i];
+    for (i = startIndex + 1; i < input.length; i++) {
+      char current = input[i];
       if (escapeActive) {
-        String result = handleEscaping.apply(current);
+        String result = escapeHandler.apply(current);
         builder.append(result);
         escapeActive = false;
       } else if (current == quote) {
@@ -88,7 +85,10 @@ public class InputToArgsConverter {
     return new ParsedQuotedString(builder.toString(), i);
   }
 
-  private String doubleQuoteHandleEscape(char current) {
+  /**
+   * Used to determine the result of escaping the current character in a double-quoted string.
+   */
+  private static String doubleQuoteEscapeHandler(char current) {
     return switch (current) {
       case '\\', '"' -> String.valueOf(current);
       case 'n' -> "\n";
@@ -97,7 +97,10 @@ public class InputToArgsConverter {
     };
   }
 
-  private String singleQuoteHandleEscape(char current) {
+  /**
+   * Used to determine the result of escaping the current character in a single-quoted string.
+   */
+  private static String singleQuoteEscapeHandler(char current) {
     return switch (current) {
       case '\\', '\'' -> String.valueOf(current);
       // Unsupported escape, include backslash
@@ -105,7 +108,10 @@ public class InputToArgsConverter {
     };
   }
 
-  private void verifyValidToParseQuotedString(StringBuilder builder, int index)
+  /**
+   * Used to ensure in a valid state for parsing a quoted string.
+   */
+  private static void verifyValidToParseQuotedString(StringBuilder builder, int index)
       throws ParseException {
     if (!builder.isEmpty()) {
       throw new ParseException("A quoted string can only be parsed when preceded with a space",
