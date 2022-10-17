@@ -38,8 +38,11 @@ class InputToArgsConverter {
         i = parsed.lastIndex();
       } else if (current == SINGLE_SPACE) {
         // Start next arg
-        args.add(builder.toString());
-        builder.setLength(0);
+        if (!builder.isEmpty()) {
+          // builder has contents to add
+          args.add(builder.toString());
+          builder.setLength(0);
+        }
       } else {
         // add to current arg
         builder.append(current);

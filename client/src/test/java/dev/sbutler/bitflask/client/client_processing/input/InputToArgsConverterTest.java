@@ -109,6 +109,34 @@ public class InputToArgsConverterTest {
   }
 
   @Test
+  void singleQuote_spaceAfter() throws Exception {
+    // Arrange
+    String value = "'set' 'test' 'value'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ImmutableList<String> args = converter.convert();
+    // Assert
+    assertEquals(3, args.size());
+    assertEquals("set", args.get(0));
+    assertEquals("test", args.get(1));
+    assertEquals("value", args.get(2));
+  }
+
+  @Test
+  void doubleQuote_spaceAfter() throws Exception {
+    // Arrange
+    String value = "'set' 'test' 'value'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ImmutableList<String> args = converter.convert();
+    // Assert
+    assertEquals(3, args.size());
+    assertEquals("set", args.get(0));
+    assertEquals("test", args.get(1));
+    assertEquals("value", args.get(2));
+  }
+
+  @Test
   void singleQuote_startOfInput() throws Exception {
     // Arrange
     String value = "'test'";
@@ -243,7 +271,7 @@ public class InputToArgsConverterTest {
   @Test
   void singleQuote_unterminated_spaceNotFollowing() {
     // Arrange
-    String value = "set test 'value\"a";
+    String value = "set test 'value'a";
     InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
     ParseException e =
@@ -255,7 +283,7 @@ public class InputToArgsConverterTest {
   @Test
   void doubleQuote_unterminated_spaceNotFollowing() {
     // Arrange
-    String value = "set test \"value'a";
+    String value = "set test \"value\"a";
     InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
     ParseException e =
