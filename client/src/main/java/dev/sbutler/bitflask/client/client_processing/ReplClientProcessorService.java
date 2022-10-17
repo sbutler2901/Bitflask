@@ -36,7 +36,7 @@ public class ReplClientProcessorService implements Runnable {
       try {
         clientInput = inputParser.getClientNextInput();
       } catch (ParseException e) {
-        outputWriter.writeWithNewLine("ERROR: the provided command could not be parsed");
+        outputWriter.writeWithNewLine(e.getMessage());
         continue;
       }
       boolean shouldContinueProcessing = clientProcessor.processClientInput(clientInput);

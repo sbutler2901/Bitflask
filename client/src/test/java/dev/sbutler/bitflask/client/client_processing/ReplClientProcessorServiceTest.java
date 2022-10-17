@@ -6,9 +6,12 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
+import java.text.ParseException;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +38,18 @@ public class ReplClientProcessorServiceTest {
     // Act
     assertTimeoutPreemptively(Duration.ofMillis(100), () -> replClientProcessorService.run());
     // Assert
+    verify(outputWriter, times(2)).write(anyString());
+  }
+
+  @Test
+  void parseException() throws Exception {
+    // Arrange
+    when(inputParser.getClientNextInput())
+        .thenThrow(new ParseException("message", 0))
+        .thenReturn(ImmutableList.of());
+    doReturn(false).when(clientProcessor).processClientInput(any());
+    // Act
+    assertTimeoutPreemptively(Duration.ofMillis(100), () -> replClientProcessorService.run());
     verify(outputWriter, times(2)).write(anyString());
   }
 

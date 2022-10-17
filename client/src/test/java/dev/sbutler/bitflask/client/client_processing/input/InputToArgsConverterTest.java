@@ -109,6 +109,30 @@ public class InputToArgsConverterTest {
   }
 
   @Test
+  void singleQuote_startOfInput() throws Exception {
+    // Arrange
+    String value = "'test'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ImmutableList<String> args = converter.convert();
+    // Assert
+    assertEquals(1, args.size());
+    assertEquals("test", args.get(0));
+  }
+
+  @Test
+  void doubleQuote_startOfInput() throws Exception {
+    // Arrange
+    String value = "\"test\"";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ImmutableList<String> args = converter.convert();
+    // Assert
+    assertEquals(1, args.size());
+    assertEquals("test", args.get(0));
+  }
+
+  @Test
   void singleQuote_withEscape_singleQuote() throws Exception {
     // Arrange
     String value = "set test 'value \\'other'";
