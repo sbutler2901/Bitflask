@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.client.client_processing.input;
 
 import com.google.common.collect.ImmutableList;
-import java.text.ParseException;
 import java.util.function.Function;
 
 /**
@@ -20,7 +19,7 @@ public class InputToArgsConverter {
   /**
    * Convert the input provided by the client into discrete arguments
    */
-  public ImmutableList<String> convert() throws ParseException {
+  public ImmutableList<String> convert() {
     ImmutableList.Builder<String> args = ImmutableList.builder();
 
     StringBuilder builder = new StringBuilder();
@@ -110,8 +109,7 @@ public class InputToArgsConverter {
     if (currentIndex == 0) {
       return true;
     }
-    char prev = input[currentIndex - 1];
-    return prev == ' ';
+    return input[currentIndex - 1] == ' ';
   }
 
   private record ParsedQuotedString(String arg, int lastIndex) {
