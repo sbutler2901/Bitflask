@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.client.client_processing.input;
 
 import com.google.common.collect.ImmutableList;
 import java.text.ParseException;
-import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * Handles converting client input into discrete arguments.
@@ -64,14 +64,15 @@ public class InputToArgsConverter {
    * @return the quoted string parsed
    */
   private ParsedQuotedString parsedQuotedString(char[] chars, int startIndex, char quote,
-      BiConsumer<StringBuilder, Character> handleEscaping) {
+      Function<Character, String> handleEscaping) {
     StringBuilder builder = new StringBuilder();
     int i;
     boolean escapeActive = false;
     for (i = startIndex + 1; i < chars.length; i++) {
       char current = chars[i];
       if (escapeActive) {
-        handleEscaping.accept(builder, current);
+        String result = handleEscaping.apply(current);
+        builder.append(result);
         escapeActive = false;
       } else if (current == quote) {
         // quote complete
@@ -87,27 +88,21 @@ public class InputToArgsConverter {
     return new ParsedQuotedString(builder.toString(), i);
   }
 
-  private void doubleQuoteHandleEscape(StringBuilder builder, char current) {
-    switch (current) {
-      case '\\', '"' -> builder.append(current);
-      case 'n' -> builder.append('\n');
-      default -> {
-        // Unsupported escape, include backslash
-        builder.append('\\');
-        builder.append(current);
-      }
-    }
+  private String doubleQuoteHandleEscape(char current) {
+    return switch (current) {
+      case '\\', '"' -> String.valueOf(current);
+      case 'n' -> "\n";
+      // Unsupported escape, include backslash
+      default -> "\\" + current;
+    };
   }
 
-  private void singleQuoteHandleEscape(StringBuilder builder, char current) {
-    switch (current) {
-      case '\\', '\'' -> builder.append(current);
-      default -> {
-        // Unsupported escape, include backslash
-        builder.append('\\');
-        builder.append(current);
-      }
-    }
+  private String singleQuoteHandleEscape(char current) {
+    return switch (current) {
+      case '\\', '\'' -> String.valueOf(current);
+      // Unsupported escape, include backslash
+      default -> "\\" + current;
+    };
   }
 
   private void verifyValidToParseQuotedString(StringBuilder builder, int index)
