@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.client.client_processing.input;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayInputStream;
@@ -26,47 +27,61 @@ public class StdinInputParserTest {
   }
 
   @Test
-  void getNextCommand_withArgs() throws Exception {
+  void getClientNextInput_EOF() throws Exception {
+    // Arrange
+    System.setIn(new ByteArrayInputStream(new byte[0]));
+    stdinInputParser = new StdinInputParser();
+    // Act
+    ImmutableList<String> args = stdinInputParser.getClientNextInput();
+    // Assert
+    assertNull(args);
+  }
+
+  @Test
+  void getClientNextInput_withArgs() throws Exception {
     // Arrange
     String nextLine = "get test-key";
     ImmutableList<String> expected = ImmutableList.of("get", "test-key");
-    // Act
     initParser(nextLine);
+    // Act
+    ImmutableList<String> args = stdinInputParser.getClientNextInput();
     // Assert
-    assertEquals(expected, stdinInputParser.getClientNextInput());
+    assertEquals(expected, args);
   }
 
   @Test
-  void getNextCommand_withoutArgs() throws Exception {
+  void getClientNextInput_withoutArgs() throws Exception {
     // Arrange
     String nextLine = "get";
     ImmutableList<String> expected = ImmutableList.of("get");
-    // Act
     initParser(nextLine);
+    // Act
+    ImmutableList<String> args = stdinInputParser.getClientNextInput();
     // Assert
-    assertEquals(expected, stdinInputParser.getClientNextInput());
+    assertEquals(expected, args);
   }
 
   @Test
-  void getNextCommand_emptyString() throws Exception {
+  void getClientNextInput_emptyString() throws Exception {
     // Arrange
     String nextLine = "\n";
     ImmutableList<String> expected = ImmutableList.of();
-    // Act
     initParser(nextLine);
+    // Act
+    ImmutableList<String> args = stdinInputParser.getClientNextInput();
     // Assert
-    assertEquals(expected, stdinInputParser.getClientNextInput());
+    assertEquals(expected, args);
   }
 
   @Test
-  void getNextCommand_whitespaceOnly() throws Exception {
+  void getClientNextInput_whitespaceOnly() throws Exception {
     // Arrange
     String nextLine = " ";
     ImmutableList<String> expected = ImmutableList.of();
-    // Act
     initParser(nextLine);
+    // Act
+    ImmutableList<String> args = stdinInputParser.getClientNextInput();
     // Assert
-    assertEquals(expected, stdinInputParser.getClientNextInput());
+    assertEquals(expected, args);
   }
-
 }

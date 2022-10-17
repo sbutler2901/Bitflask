@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.client.client_processing;
 import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.client.client_processing.input.InputParser;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
+import java.io.IOException;
 import java.text.ParseException;
 import javax.inject.Inject;
 
@@ -35,22 +36,24 @@ public class ReplClientProcessorService implements Runnable {
       ImmutableList<String> clientInput;
       try {
         clientInput = inputParser.getClientNextInput();
+        if (clientInput == null) {
+          triggerShutdown();
+          break;
+        }
+        boolean shouldContinueProcessing = clientProcessor.processClientInput(clientInput);
+        if (!shouldContinueProcessing) {
+          triggerShutdown();
+        }
       } catch (ParseException e) {
         outputWriter.writeWithNewLine(e.getMessage());
-        continue;
-      }
-      boolean shouldContinueProcessing = clientProcessor.processClientInput(clientInput);
-      if (!shouldContinueProcessing) {
-        stopProcessingClientInput();
+      } catch (IOException e) {
+        outputWriter.writeWithNewLine(e.getMessage());
+        triggerShutdown();
       }
     }
   }
 
   public void triggerShutdown() {
-    stopProcessingClientInput();
-  }
-
-  private void stopProcessingClientInput() {
     continueProcessingClientInput = false;
   }
 }
