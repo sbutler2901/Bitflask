@@ -92,10 +92,24 @@ class InputToArgsConverter {
         builder.append(current);
       }
     }
-    if (i == input.length) {
+    if (!isQuotedStringPropertyTerminated(i)) {
       throw new ParseException("A quoted input was not properly terminated", i);
     }
+
     return new ParsedQuotedString(builder.toString(), i);
+  }
+
+  private boolean isQuotedStringPropertyTerminated(int currentIndex) {
+    if (currentIndex == input.length) {
+      // closing quote not reached before end of input
+      return false;
+    }
+    if (currentIndex + 1 == input.length) {
+      // closing quote last character of input
+      return true;
+    }
+    // space must follow quoted string
+    return input[currentIndex + 1] == SINGLE_SPACE;
   }
 
   /**

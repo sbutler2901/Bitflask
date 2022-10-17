@@ -217,7 +217,7 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void singleQuote_unterminated() {
+  void singleQuote_unterminated_endOfInput() {
     // Arrange
     String value = "set test 'value\"";
     InputToArgsConverter converter = new InputToArgsConverter(value);
@@ -229,9 +229,33 @@ public class InputToArgsConverterTest {
   }
 
   @Test
-  void doubleQuote_unterminated() {
+  void doubleQuote_unterminated_endOfInput() {
     // Arrange
     String value = "set test \"value'";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ParseException e =
+        assertThrows(ParseException.class, converter::convert);
+    // Assert
+    assertTrue(e.getMessage().toLowerCase().contains("not properly terminated"));
+  }
+
+  @Test
+  void singleQuote_unterminated_spaceNotFollowing() {
+    // Arrange
+    String value = "set test 'value\"a";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ParseException e =
+        assertThrows(ParseException.class, converter::convert);
+    // Assert
+    assertTrue(e.getMessage().toLowerCase().contains("not properly terminated"));
+  }
+
+  @Test
+  void doubleQuote_unterminated_spaceNotFollowing() {
+    // Arrange
+    String value = "set test \"value'a";
     InputToArgsConverter converter = new InputToArgsConverter(value);
     // Act
     ParseException e =
