@@ -8,7 +8,12 @@ import java.util.function.Function;
  *
  * <p>This includes double and single quoted strings with character escaping.
  */
-public class InputToArgsConverter {
+class InputToArgsConverter {
+
+  private static final char SINGLE_QUOTE = '\'';
+  private static final char DOUBLE_QUOTE = '"';
+  private static final char SINGLE_SPACE = ' ';
+  private static final char BACKSLASH = '\\';
 
   private final char[] input;
 
@@ -25,12 +30,12 @@ public class InputToArgsConverter {
     StringBuilder builder = new StringBuilder();
     for (int i = 0; i < input.length; i++) {
       char current = input[i];
-      if ((current == '"' || current == '\'') && isValidToParseQuotedString(i)) {
+      if ((current == DOUBLE_QUOTE || current == SINGLE_QUOTE) && isValidToParseQuotedString(i)) {
         // Parse quoted string
         ParsedQuotedString parsed = parseQuotedString(i);
         args.add(parsed.arg());
         i = parsed.lastIndex();
-      } else if (current == ' ') {
+      } else if (current == SINGLE_SPACE) {
         // Start next arg
         args.add(builder.toString());
         builder.setLength(0);
@@ -53,7 +58,7 @@ public class InputToArgsConverter {
    */
   private ParsedQuotedString parseQuotedString(int startIndex) {
     char quote = input[startIndex];
-    Function<Character, String> escapeHandler = quote == '"'
+    Function<Character, String> escapeHandler = quote == DOUBLE_QUOTE
         ? InputToArgsConverter::doubleQuoteEscapeHandler
         : InputToArgsConverter::singleQuoteEscapeHandler;
 
@@ -69,7 +74,7 @@ public class InputToArgsConverter {
       } else if (current == quote) {
         // quote complete
         break;
-      } else if (current == '\\') {
+      } else if (current == BACKSLASH) {
         // start escape for next char
         escapeActive = true;
       } else {
@@ -84,10 +89,10 @@ public class InputToArgsConverter {
    */
   private static String doubleQuoteEscapeHandler(char current) {
     return switch (current) {
-      case '\\', '"' -> String.valueOf(current);
+      case BACKSLASH, DOUBLE_QUOTE -> String.valueOf(current);
       case 'n' -> "\n";
       // Unsupported escape, include backslash
-      default -> "\\" + current;
+      default -> String.valueOf(BACKSLASH) + current;
     };
   }
 
@@ -96,9 +101,9 @@ public class InputToArgsConverter {
    */
   private static String singleQuoteEscapeHandler(char current) {
     return switch (current) {
-      case '\\', '\'' -> String.valueOf(current);
+      case BACKSLASH, SINGLE_QUOTE -> String.valueOf(current);
       // Unsupported escape, include backslash
-      default -> "\\" + current;
+      default -> String.valueOf(BACKSLASH) + current;
     };
   }
 
@@ -109,7 +114,7 @@ public class InputToArgsConverter {
     if (currentIndex == 0) {
       return true;
     }
-    return input[currentIndex - 1] == ' ';
+    return input[currentIndex - 1] == SINGLE_SPACE;
   }
 
   private record ParsedQuotedString(String arg, int lastIndex) {
