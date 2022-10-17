@@ -1,11 +1,8 @@
 package dev.sbutler.bitflask.client.client_processing.input;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
-import java.text.ParseException;
 import org.junit.jupiter.api.Test;
 
 public class InputToArgsConverterTest {
@@ -22,6 +19,34 @@ public class InputToArgsConverterTest {
     assertEquals("set", args.get(0));
     assertEquals("test", args.get(1));
     assertEquals("value", args.get(2));
+  }
+
+  @Test
+  void inlineSingleQuote() throws Exception {
+    // Arrange
+    String value = "set test val'ue";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ImmutableList<String> args = converter.convert();
+    // Assert
+    assertEquals(3, args.size());
+    assertEquals("set", args.get(0));
+    assertEquals("test", args.get(1));
+    assertEquals("val'ue", args.get(2));
+  }
+
+  @Test
+  void inlineDoubleQuote() throws Exception {
+    // Arrange
+    String value = "set test val\"ue";
+    InputToArgsConverter converter = new InputToArgsConverter(value);
+    // Act
+    ImmutableList<String> args = converter.convert();
+    // Assert
+    assertEquals(3, args.size());
+    assertEquals("set", args.get(0));
+    assertEquals("test", args.get(1));
+    assertEquals("val\"ue", args.get(2));
   }
 
   @Test
@@ -177,7 +202,7 @@ public class InputToArgsConverterTest {
     assertEquals("test", args.get(1));
     assertEquals("value\nother", args.get(2));
   }
-
+/*
   @Test
   void singleQuote_parseException_builderNotEmpty() {
     // Arrange
@@ -200,5 +225,5 @@ public class InputToArgsConverterTest {
         assertThrows(ParseException.class, converter::convert);
     // Assert
     assertTrue(e.getMessage().toLowerCase().contains("quoted string"));
-  }
+  }*/
 }

@@ -27,11 +27,15 @@ public class InputToArgsConverter {
     for (int i = 0; i < input.length; ) {
       char current = input[i];
       if (current == '"' || current == '\'') {
-        // Parse quoted string
-        verifyValidToParseQuotedString(builder, i);
-        ParsedQuotedString parsed = parseQuotedString(i);
-        args.add(parsed.arg());
-        i = parsed.nextIndex();
+        if (isValidToParseQuotedString(i)) {
+          // Parse quoted string
+          ParsedQuotedString parsed = parseQuotedString(i);
+          args.add(parsed.arg());
+          i = parsed.nextIndex();
+        } else {
+          builder.append(current);
+          i++;
+        }
       } else {
         if (current == ' ') {
           // Start next arg
@@ -111,12 +115,12 @@ public class InputToArgsConverter {
   /**
    * Used to ensure in a valid state for parsing a quoted string.
    */
-  private static void verifyValidToParseQuotedString(StringBuilder builder, int index)
-      throws ParseException {
-    if (!builder.isEmpty()) {
-      throw new ParseException("A quoted string can only be parsed when preceded with a space",
-          index);
+  private boolean isValidToParseQuotedString(int currentIndex) {
+    if (currentIndex == 0) {
+      return true;
     }
+    char prev = input[currentIndex - 1];
+    return prev == ' ';
   }
 
   private record ParsedQuotedString(String arg, int nextIndex) {
