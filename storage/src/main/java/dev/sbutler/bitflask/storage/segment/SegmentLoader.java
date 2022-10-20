@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.storage.segment;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
@@ -14,8 +15,11 @@ import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -63,21 +67,28 @@ final class SegmentLoader {
       return createManagedSegments(ImmutableList.of());
     }
 
-    ImmutableList<FileChannel> segmentFileChannels = openSegmentFileChannels(segmentFilePaths);
-    ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(segmentFileChannels,
+    ImmutableList<Path> sortedSegmentFilePaths = sortFilePathsByLatestModifiedDatesFirst(
         segmentFilePaths);
+    ImmutableList<FileChannel> segmentFileChannels = openSegmentFileChannels(
+        sortedSegmentFilePaths);
+    ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(segmentFileChannels,
+        sortedSegmentFilePaths);
     ImmutableList<Segment> loadedSegments = loadSegments(segmentFiles);
     logger.atInfo().log("Loaded [%d] preexisting segments", loadedSegments.size());
     return createManagedSegments(loadedSegments);
   }
 
-  private ManagedSegments createManagedSegments(ImmutableList<Segment> segments)
+  private ManagedSegments createManagedSegments(ImmutableList<Segment> loadedSegments)
       throws IOException {
-    if (segments.isEmpty()) {
-      return ManagedSegments.createFromSegmentList(
-          ImmutableList.of(segmentFactory.createSegment()));
+    Segment writableSegment;
+    if (loadedSegments.isEmpty()) {
+      writableSegment = segmentFactory.createSegment();
+    } else {
+      writableSegment = loadedSegments.get(0);
+      loadedSegments = loadedSegments.subList(1, loadedSegments.size());
     }
-    return ManagedSegments.createFromSegmentList(segments);
+
+    return new ManagedSegments(writableSegment, loadedSegments);
   }
 
   /**
@@ -99,6 +110,19 @@ final class SegmentLoader {
       throw ex.getCause();
     }
     return filePaths.build();
+  }
+
+  private ImmutableList<Path> sortFilePathsByLatestModifiedDatesFirst(
+      ImmutableList<Path> segmentFilePaths)
+      throws IOException {
+    // More recent modified first
+    ImmutableSortedMap.Builder<FileTime, Path> pathFileTimeMapBuilder =
+        new ImmutableSortedMap.Builder<>(Comparator.reverseOrder());
+    for (Path path : segmentFilePaths) {
+      FileTime pathFileTime = Files.getLastModifiedTime(path, LinkOption.NOFOLLOW_LINKS);
+      pathFileTimeMapBuilder.put(pathFileTime, path);
+    }
+    return pathFileTimeMapBuilder.build().values().asList();
   }
 
   private ImmutableList<FileChannel> openSegmentFileChannels(ImmutableList<Path> filePaths)
