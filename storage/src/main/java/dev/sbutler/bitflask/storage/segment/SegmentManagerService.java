@@ -40,6 +40,7 @@ import javax.inject.Singleton;
 @Singleton
 public final class SegmentManagerService extends AbstractService {
 
+  // TODO: consider converting to sortedset, Segment & SegmentFile will need comparable.
   public record ManagedSegments(Segment writableSegment,
                                 ImmutableList<Segment> frozenSegments) {
 

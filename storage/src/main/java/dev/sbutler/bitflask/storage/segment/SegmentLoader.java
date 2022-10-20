@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSet;
@@ -67,7 +69,6 @@ final class SegmentLoader {
       return createManagedSegments(ImmutableList.of());
     }
 
-    // TODO: sort via file key
     ImmutableList<Path> sortedSegmentFilePaths = sortFilePathsByLatestModifiedDatesFirst(
         segmentFilePaths);
     ImmutableList<FileChannel> segmentFileChannels = openSegmentFileChannels(
@@ -75,9 +76,9 @@ final class SegmentLoader {
     ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(segmentFileChannels,
         sortedSegmentFilePaths);
     ImmutableList<Segment> loadedSegments = loadSegments(segmentFiles);
-    updateSegmentFactorySegmentStartIndex(loadedSegments);
-    logger.atInfo().log("Loaded [%d] preexisting segments", loadedSegments.size());
-    return createManagedSegments(loadedSegments);
+    ImmutableList<Segment> sortedSegments = sortSegments(loadedSegments);
+    logger.atInfo().log("Loaded [%d] preexisting segments", sortedSegments.size());
+    return createManagedSegments(sortedSegments);
   }
 
   private ManagedSegments createManagedSegments(ImmutableList<Segment> loadedSegments)
@@ -223,6 +224,15 @@ final class SegmentLoader {
     return createdSegments.build();
   }
 
+  /**
+   * Sorts the segments via their file key in descending order.
+   */
+  private ImmutableList<Segment> sortSegments(ImmutableList<Segment> segments) {
+    return segments.stream()
+        .sorted((s0, s1) -> Integer.compare(s1.getSegmentFileKey(), s0.getSegmentFileKey()))
+        .collect(toImmutableList());
+  }
+
   private void closeFileChannels(ImmutableList<FileChannel> fileChannels) {
     fileChannels.forEach(fileChannel -> {
       try {
@@ -235,10 +245,5 @@ final class SegmentLoader {
 
   private void closeSegmentFiles(ImmutableList<SegmentFile> segmentFiles) {
     segmentFiles.forEach(SegmentFile::close);
-  }
-
-  private void updateSegmentFactorySegmentStartIndex(ImmutableList<Segment> segments) {
-    int latestSegmentKey = segments.get(0).getSegmentFileKey();
-    segmentFactory.setSegmentStartKey(++latestSegmentKey);
   }
 }

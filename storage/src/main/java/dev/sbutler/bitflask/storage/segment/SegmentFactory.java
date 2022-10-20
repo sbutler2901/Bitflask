@@ -84,8 +84,7 @@ final class SegmentFactory {
   }
 
   /**
-   * Creates a segment from a preexisting SegmentFile. This does not increment the key used for
-   * creating new Segments.
+   * Creates a segment from a preexisting SegmentFile.
    *
    * @param segmentFile the associated SegmentFile for the Segment being created
    * @return the created segment
@@ -96,6 +95,14 @@ final class SegmentFactory {
     if (shouldTruncateFile()) {
       segmentFile.truncate(0);
     }
+    // Update next segment key, if needed.
+    nextSegmentKey.getAndUpdate(current -> {
+      int fileKey = segmentFile.getSegmentFileKey();
+      if (fileKey >= current) {
+        return fileKey + 1;
+      }
+      return current;
+    });
 
     AtomicLong currentFileWriteOffset = new AtomicLong(segmentFile.size());
     ConcurrentMap<String, Entry> keyedEntryMap =
@@ -158,16 +165,6 @@ final class SegmentFactory {
   private Path getNextSegmentFilePath(int segmentKey) {
     String segmentFilename = String.format(DEFAULT_SEGMENT_FILENAME, segmentKey);
     return storeDirectoryPath.resolve(segmentFilename);
-  }
-
-  /**
-   * Sets the key that is used as the file key when creating new Segments. This is incremented with
-   * each new Segment while a SegmentFile is created.
-   *
-   * @param segmentStartKey the key to be used on next segment creation
-   */
-  public void setSegmentStartKey(int segmentStartKey) {
-    nextSegmentKey.set(segmentStartKey);
   }
 
   /**

@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -114,27 +113,6 @@ public class SegmentFactoryTest {
     verify(segmentFile, times(3)).readByte(anyLong());
     verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
     verify(segmentFile, times(1)).truncate(anyLong());
-  }
-
-  @Test
-  @SuppressWarnings({"unchecked"})
-  void setSegmentStartIndex() throws Exception {
-    mockSegmentFactory(StandardOpenOption.CREATE);
-    try (MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(FileChannel.class)) {
-      // Arrange
-      FileChannel fileChannel = mock(FileChannel.class);
-      fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
-          .thenReturn(fileChannel);
-      SegmentFile segmentFile = mock(SegmentFile.class);
-      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), any());
-      int segmentStartKey = 10;
-      doReturn(segmentStartKey).when(segmentFile).getSegmentFileKey();
-      segmentFactory.setSegmentStartKey(segmentStartKey);
-      // Act
-      Segment segment = segmentFactory.createSegment();
-      // Assert
-      assertEquals(segmentStartKey, segment.getSegmentFileKey());
-    }
   }
 
   @Test
