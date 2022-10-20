@@ -8,6 +8,7 @@ import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
+import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -52,6 +53,7 @@ final class SegmentLoader {
    * @throws IOException if an error occurs while loading the segments
    */
   public ManagedSegments loadExistingSegments() throws IOException {
+    // TODO: use virtual threads
     logger.atInfo().log("Loading any pre-existing Segments");
     boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
     if (segmentStoreDirCreated) {
@@ -65,6 +67,7 @@ final class SegmentLoader {
       return createManagedSegments(ImmutableList.of());
     }
 
+    // TODO: sort via file key
     ImmutableList<Path> sortedSegmentFilePaths = sortFilePathsByLatestModifiedDatesFirst(
         segmentFilePaths);
     ImmutableList<FileChannel> segmentFileChannels = openSegmentFileChannels(
@@ -166,14 +169,15 @@ final class SegmentLoader {
   }
 
   private ImmutableList<SegmentFile> loadSegmentFiles(
-      ImmutableList<FileChannel> openSegmentFileChannels, ImmutableList<Path> segmentFilePaths) {
+      ImmutableList<FileChannel> openSegmentFileChannels, ImmutableList<Path> segmentFilePaths)
+      throws IOException {
     ImmutableList.Builder<SegmentFile> segmentFiles = new ImmutableList.Builder<>();
     for (int i = 0; i < openSegmentFileChannels.size(); i++) {
       FileChannel segmentFileChannel = openSegmentFileChannels.get(i);
       Path segmentFilePath = segmentFilePaths.get(i);
-      int segmentKey = segmentFactory.getSegmentKeyFromPath(segmentFilePath);
+      Header header = segmentFactory.readSegmentFileHeader(segmentFileChannel);
       SegmentFile segmentFile = segmentFileFactory.create(segmentFileChannel, segmentFilePath,
-          segmentKey);
+          header);
       segmentFiles.add(segmentFile);
     }
     return segmentFiles.build();

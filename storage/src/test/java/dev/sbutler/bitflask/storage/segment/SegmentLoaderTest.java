@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.storage.segment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
@@ -93,7 +92,7 @@ class SegmentLoaderTest {
       /// SegmentFiles
       SegmentFile firstSegmentFile = mock(SegmentFile.class);
       SegmentFile secondSegmentFile = mock(SegmentFile.class);
-      when(segmentFileFactory.create(any(), any(), anyInt()))
+      when(segmentFileFactory.create(any(), any(), any()))
           .thenReturn(firstSegmentFile, secondSegmentFile);
       /// Segments
       Segment firstSegment = mock(Segment.class);
@@ -270,7 +269,7 @@ class SegmentLoaderTest {
       /// SegmentFiles
       SegmentFile firstSegmentFile = mock(SegmentFile.class);
       SegmentFile secondSegmentFile = mock(SegmentFile.class);
-      when(segmentFileFactory.create(any(), any(), anyInt()))
+      when(segmentFileFactory.create(any(), any(), any()))
           .thenReturn(firstSegmentFile, secondSegmentFile);
       /// Segments
       when(executorService.invokeAll(anyList()))
@@ -314,7 +313,7 @@ class SegmentLoaderTest {
       /// SegmentFiles
       SegmentFile firstSegmentFile = mock(SegmentFile.class);
       SegmentFile secondSegmentFile = mock(SegmentFile.class);
-      when(segmentFileFactory.create(any(), any(), anyInt()))
+      when(segmentFileFactory.create(any(), any(), any()))
           .thenReturn(firstSegmentFile, secondSegmentFile);
       /// Segments
       Future<Segment> firstFuture = mock(Future.class);

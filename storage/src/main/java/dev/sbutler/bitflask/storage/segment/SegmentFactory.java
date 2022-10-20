@@ -8,6 +8,7 @@ import dev.sbutler.bitflask.storage.segment.Encoder.Offsets;
 import dev.sbutler.bitflask.storage.segment.Encoder.PartialOffsets;
 import dev.sbutler.bitflask.storage.segment.Segment.Entry;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -91,6 +92,7 @@ final class SegmentFactory {
    * @throws IOException if an error occurs while creating the segment
    */
   public Segment createSegmentFromFile(SegmentFile segmentFile) throws IOException {
+    // TODO: handle file key
     if (shouldTruncateFile()) {
       segmentFile.truncate(0);
     }
@@ -140,24 +142,22 @@ final class SegmentFactory {
   }
 
   private SegmentFile createSegmentFile() throws IOException {
-    int segmentIndex = getNextSegmentKey();
+    // Get SegmentFile's properties and create dependencies
+    int segmentIndex = nextSegmentKey.getAndIncrement();
     Path segmentPath = getNextSegmentFilePath(segmentIndex);
-    FileChannel segmentFileChannel = getNextSegmentFileChannel(segmentPath);
-    logger.atInfo().log("Creating new SegmentFile at [%s]", segmentPath);
-    return segmentFileFactory.create(segmentFileChannel, segmentPath, segmentIndex);
-  }
+    FileChannel segmentFileChannel = FileChannel.open(segmentPath, fileChannelOptions);
 
-  private int getNextSegmentKey() {
-    return nextSegmentKey.getAndIncrement();
+    // Write SegmentFile's header
+    SegmentFile.Header header = new SegmentFile.Header((char) segmentIndex);
+    segmentFileChannel.write(header.getHeaderAsByteBuffer());
+
+    logger.atInfo().log("Creating new SegmentFile at [%s]", segmentPath);
+    return segmentFileFactory.create(segmentFileChannel, segmentPath, header);
   }
 
   private Path getNextSegmentFilePath(int segmentKey) {
     String segmentFilename = String.format(DEFAULT_SEGMENT_FILENAME, segmentKey);
     return storeDirectoryPath.resolve(segmentFilename);
-  }
-
-  private FileChannel getNextSegmentFileChannel(Path nextSegmentFilePath) throws IOException {
-    return FileChannel.open(nextSegmentFilePath, fileChannelOptions);
   }
 
   /**
@@ -187,15 +187,13 @@ final class SegmentFactory {
   }
 
   /**
-   * Retrieves the key for a segment from its file path.
-   *
-   * @param path the path to retrieve the segment key from
-   * @return the Segment's Key.
+   * Reads a SegmentFile's Header from its FileChannel
    */
-  public int getSegmentKeyFromPath(Path path) {
-    String segmentFileName = path.getFileName().toString();
-    int keyEndIndex = segmentFileName.indexOf('_');
-    return Integer.parseInt(segmentFileName.substring(0, keyEndIndex));
+  public SegmentFile.Header readSegmentFileHeader(FileChannel fileChannel)
+      throws IOException {
+    ByteBuffer byteBuffer = ByteBuffer.allocate(SegmentFile.Header.NUM_BYTES);
+    fileChannel.read(byteBuffer, 0);
+    return SegmentFile.Header.createFromByteBuffer(byteBuffer);
   }
 
   private boolean shouldTruncateFile() {

@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import dev.sbutler.bitflask.storage.segment.SegmentFile.Factory;
+import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -25,13 +26,14 @@ public class SegmentFileTest {
   SegmentFile segmentFile;
   FileChannel fileChannel;
   Path path = Path.of("test-path");
-  int segmentFileKey = 0;
+  Header header;
 
   @BeforeEach
   void beforeEach() {
     fileChannel = mock(FileChannel.class);
     SegmentFile.Factory segmentFileFactory = new Factory();
-    segmentFile = segmentFileFactory.create(fileChannel, path, segmentFileKey);
+    header = new Header((char) 0);
+    segmentFile = segmentFileFactory.create(fileChannel, path, header);
   }
 
   @Test
@@ -87,12 +89,11 @@ public class SegmentFileTest {
   @Test
   void getSegmentFilePath() {
     assertEquals(path, segmentFile.getSegmentFilePath());
-    assertEquals(segmentFileKey, segmentFile.getSegmentFileKey());
   }
 
   @Test
   void getSegmentFileKey() {
-    assertEquals(segmentFileKey, segmentFile.getSegmentFileKey());
+    assertEquals(header.key(), segmentFile.getSegmentFileKey());
   }
 
   @Test

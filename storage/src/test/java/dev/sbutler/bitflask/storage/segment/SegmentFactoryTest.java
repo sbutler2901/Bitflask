@@ -43,7 +43,7 @@ public class SegmentFactoryTest {
       fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
           .thenReturn(fileChannel);
       SegmentFile segmentFile = mock(SegmentFile.class);
-      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), anyInt());
+      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), any());
       // Act
       Segment segment = segmentFactory.createSegment();
       // Assert
@@ -65,7 +65,7 @@ public class SegmentFactoryTest {
               () -> FileChannel.open(any(Path.class), openOptionsCaptor.capture()))
           .thenReturn(fileChannel);
       SegmentFile segmentFile = mock(SegmentFile.class);
-      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), anyInt());
+      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), any());
       // Act
       Segment segment = segmentFactory.createSegment();
       // Assert
@@ -126,7 +126,7 @@ public class SegmentFactoryTest {
       fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
           .thenReturn(fileChannel);
       SegmentFile segmentFile = mock(SegmentFile.class);
-      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), anyInt());
+      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), any());
       int segmentStartKey = 10;
       doReturn(segmentStartKey).when(segmentFile).getSegmentFileKey();
       segmentFactory.setSegmentStartKey(segmentStartKey);
@@ -159,20 +159,6 @@ public class SegmentFactoryTest {
       assertFalse(segmentFactory.createSegmentStoreDir());
       filesMockedStatic.verify(() -> Files.createDirectories(any(Path.class)), times(0));
     }
-  }
-
-  @Test
-  void getSegmentKeyFromPath() {
-    mockSegmentFactory(StandardOpenOption.CREATE);
-    Path path;
-    // Arrange
-    path = Path.of(String.format(SegmentFactory.DEFAULT_SEGMENT_FILENAME, 0));
-    // Act / Assert
-    assertEquals(0, segmentFactory.getSegmentKeyFromPath(path));
-    // Arrange
-    path = Path.of(String.format(SegmentFactory.DEFAULT_SEGMENT_FILENAME, 10));
-    // Act / Assert
-    assertEquals(10, segmentFactory.getSegmentKeyFromPath(path));
   }
 
   private void mockSegmentFactory(StandardOpenOption openOption) {

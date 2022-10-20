@@ -87,7 +87,40 @@ final class SegmentFile {
   }
 
 
+  /**
+   * The header at the start of every SegmentFile defining the file's attributes.
+   *
+   * @param key the Segment's key, represented as a 16-bit char, allowing 2^16 unique segments
+   */
   record Header(char key) {
 
+    /**
+     * The number of bytes required to represent a Header
+     */
+    static final int NUM_BYTES = Character.BYTES;
+
+    /**
+     * Converts the header into a {@link ByteBuffer}
+     */
+    ByteBuffer getHeaderAsByteBuffer() {
+      ByteBuffer byteBuffer = ByteBuffer.allocate(NUM_BYTES);
+      byteBuffer.putChar(key);
+      return byteBuffer;
+    }
+
+    /**
+     * Reads the provided {@link ByteBuffer} and converts its contents into a Header.
+     *
+     * <p>Note this method affects the buffer's current position.
+     */
+    static Header createFromByteBuffer(ByteBuffer byteBuffer) {
+      if (byteBuffer.capacity() < NUM_BYTES) {
+        throw new IllegalArgumentException(
+            "The provided ByteBuffer does not have adequate capacity to represent a Header");
+      }
+      byteBuffer.rewind();
+      char key = byteBuffer.getChar();
+      return new Header(key);
+    }
   }
 }
