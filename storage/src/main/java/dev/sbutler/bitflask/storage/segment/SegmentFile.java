@@ -22,22 +22,22 @@ final class SegmentFile {
      *
      * @param segmentFileChannel File channel for storing segment data
      * @param segmentFilePath    path of the segment file
-     * @param segmentFileKey     key of the segment file
+     * @param header             The segment files' header defining its file specific attributes
      * @return the created SegmentFile
      */
-    SegmentFile create(FileChannel segmentFileChannel, Path segmentFilePath, int segmentFileKey) {
-      return new SegmentFile(segmentFileChannel, segmentFilePath, segmentFileKey);
+    SegmentFile create(FileChannel segmentFileChannel, Path segmentFilePath, Header header) {
+      return new SegmentFile(segmentFileChannel, segmentFilePath, header);
     }
   }
 
   private final FileChannel segmentFileChannel;
   private final Path segmentFilePath;
-  private final int segmentFileKey;
+  private final Header header;
 
-  private SegmentFile(FileChannel segmentFileChannel, Path segmentFilePath, int segmentFileKey) {
+  private SegmentFile(FileChannel segmentFileChannel, Path segmentFilePath, Header header) {
     this.segmentFileChannel = segmentFileChannel;
     this.segmentFilePath = segmentFilePath;
-    this.segmentFileKey = segmentFileKey;
+    this.header = header;
   }
 
   public void write(byte[] data, long fileOffset) throws IOException {
@@ -72,7 +72,7 @@ final class SegmentFile {
   }
 
   public int getSegmentFileKey() {
-    return segmentFileKey;
+    return header.key();
   }
 
   public void close() {
@@ -86,4 +86,8 @@ final class SegmentFile {
     return segmentFileChannel.isOpen();
   }
 
+
+  record Header(char key) {
+
+  }
 }
