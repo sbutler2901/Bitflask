@@ -8,7 +8,6 @@ import dev.sbutler.bitflask.storage.segment.Encoder.Offsets;
 import dev.sbutler.bitflask.storage.segment.Encoder.PartialOffsets;
 import dev.sbutler.bitflask.storage.segment.Segment.Entry;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -91,7 +90,6 @@ final class SegmentFactory {
    * @throws IOException if an error occurs while creating the segment
    */
   public Segment createSegmentFromFile(SegmentFile segmentFile) throws IOException {
-    // TODO: handle file key
     if (shouldTruncateFile()) {
       segmentFile.truncate(0);
     }
@@ -155,8 +153,8 @@ final class SegmentFactory {
     FileChannel segmentFileChannel = FileChannel.open(segmentPath, fileChannelOptions);
 
     // Write SegmentFile's header
-    SegmentFile.Header header = new SegmentFile.Header((char) segmentIndex);
-    segmentFileChannel.write(header.getHeaderAsByteBuffer());
+    SegmentFile.Header header = new SegmentFile.Header(segmentIndex);
+    header.writeToFileChannel(segmentFileChannel);
 
     logger.atInfo().log("Creating new SegmentFile at [%s]", segmentPath);
     return segmentFileFactory.create(segmentFileChannel, segmentPath, header);
@@ -181,16 +179,6 @@ final class SegmentFactory {
     }
     logger.atInfo().log("Segment store directory already existed at [%s]", storeDirectoryPath);
     return false;
-  }
-
-  /**
-   * Reads a SegmentFile's Header from its FileChannel
-   */
-  public SegmentFile.Header readSegmentFileHeader(FileChannel fileChannel)
-      throws IOException {
-    ByteBuffer byteBuffer = ByteBuffer.allocate(SegmentFile.Header.NUM_BYTES);
-    fileChannel.read(byteBuffer, 0);
-    return SegmentFile.Header.createFromByteBuffer(byteBuffer);
   }
 
   private boolean shouldTruncateFile() {

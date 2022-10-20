@@ -97,28 +97,35 @@ final class SegmentFile {
     /**
      * The number of bytes required to represent a Header
      */
-    static final int NUM_BYTES = Character.BYTES;
+    private static final int NUM_BYTES = Character.BYTES;
+
+    Header(int key) {
+      this((char) key);
+    }
+
+    /**
+     * Writes the header to the start of the provided FileChannel.
+     */
+    void writeToFileChannel(FileChannel fileChannel) throws IOException {
+      ByteBuffer headerByteBuffer = getHeaderAsByteBuffer();
+      fileChannel.write(headerByteBuffer, 0);
+    }
 
     /**
      * Converts the header into a {@link ByteBuffer}
      */
-    ByteBuffer getHeaderAsByteBuffer() {
+    private ByteBuffer getHeaderAsByteBuffer() {
       ByteBuffer byteBuffer = ByteBuffer.allocate(NUM_BYTES);
       byteBuffer.putChar(key);
       return byteBuffer;
     }
 
     /**
-     * Reads the provided {@link ByteBuffer} and converts its contents into a Header.
-     *
-     * <p>Note this method affects the buffer's current position.
+     * Reads and creates a Header from the provided FileChannel.
      */
-    static Header createFromByteBuffer(ByteBuffer byteBuffer) {
-      if (byteBuffer.capacity() < NUM_BYTES) {
-        throw new IllegalArgumentException(
-            "The provided ByteBuffer does not have adequate capacity to represent a Header");
-      }
-      byteBuffer.rewind();
+    static Header readHeaderFromFileChannel(FileChannel fileChannel) throws IOException {
+      ByteBuffer byteBuffer = ByteBuffer.allocate(NUM_BYTES);
+      fileChannel.read(byteBuffer, 0);
       char key = byteBuffer.getChar();
       return new Header(key);
     }

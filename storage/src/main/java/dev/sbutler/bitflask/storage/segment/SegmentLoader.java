@@ -149,7 +149,7 @@ final class SegmentLoader {
     for (int i = 0; i < openSegmentFileChannels.size(); i++) {
       FileChannel segmentFileChannel = openSegmentFileChannels.get(i);
       Path segmentFilePath = segmentFilePaths.get(i);
-      Header header = segmentFactory.readSegmentFileHeader(segmentFileChannel);
+      Header header = Header.readHeaderFromFileChannel(segmentFileChannel);
       SegmentFile segmentFile = segmentFileFactory.create(segmentFileChannel, segmentFilePath,
           header);
       segmentFiles.add(segmentFile);
