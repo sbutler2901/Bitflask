@@ -86,6 +86,9 @@ final class SegmentFile {
     return segmentFileChannel.isOpen();
   }
 
+  static long getFirstEntryOffset() {
+    return Header.NUM_BYTES;
+  }
 
   /**
    * The header at the start of every SegmentFile defining the file's attributes.
@@ -93,6 +96,8 @@ final class SegmentFile {
    * @param key the Segment's key, represented as a 16-bit char, allowing 2^16 unique segments
    */
   record Header(char key) {
+
+    private static final int KEY_INDEX = 0;
 
     /**
      * The number of bytes required to represent a Header
@@ -116,7 +121,7 @@ final class SegmentFile {
      */
     private ByteBuffer getHeaderAsByteBuffer() {
       ByteBuffer byteBuffer = ByteBuffer.allocate(NUM_BYTES);
-      byteBuffer.putChar(key);
+      byteBuffer.putChar(KEY_INDEX, key);
       return byteBuffer;
     }
 
@@ -126,7 +131,7 @@ final class SegmentFile {
     static Header readHeaderFromFileChannel(FileChannel fileChannel) throws IOException {
       ByteBuffer byteBuffer = ByteBuffer.allocate(NUM_BYTES);
       fileChannel.read(byteBuffer, 0);
-      char key = byteBuffer.getChar();
+      char key = byteBuffer.getChar(KEY_INDEX);
       return new Header(key);
     }
   }

@@ -121,9 +121,9 @@ final class SegmentFactory {
    */
   private ConcurrentMap<String, Entry> generateKeyedEntryMap(SegmentFile segmentFile,
       AtomicLong currentFileWriteOffset) throws IOException {
-    // todo: handle empty spaces that occur because of failed writes
+    // TODO: handle empty spaces that occur because of failed writes
     ConcurrentMap<String, Entry> keyedEntryMap = new ConcurrentHashMap<>();
-    long nextEntryOffset = 0;
+    long nextEntryOffset = SegmentFile.getFirstEntryOffset();
     while (nextEntryOffset < currentFileWriteOffset.get()) {
       long currentEntryOffset = nextEntryOffset;
       PartialOffsets partialOffsets = Encoder.decodePartial(currentEntryOffset);
