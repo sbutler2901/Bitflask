@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.storage.segment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -364,6 +365,32 @@ public class SegmentManagerServiceTest {
     limitConsumer.accept(writableSegment);
     // Assert
     verify(segmentDeleterFactory, times(1)).create(segmentsForCompaction);
+  }
+
+  @Test
+  void managedSegments_createFromSegmentList() {
+    // Arrange
+    Segment segment0 = mock(Segment.class);
+    doReturn(0).when(segment0).getSegmentFileKey();
+    Segment segment1 = mock(Segment.class);
+    doReturn(1).when(segment1).getSegmentFileKey();
+    ImmutableList<Segment> providedSegments = ImmutableList.of(segment0, segment1);
+    // Act
+    ManagedSegments managedSegments = ManagedSegments.createFromSegmentList(providedSegments);
+    // Assert
+    assertEquals(segment1, managedSegments.writableSegment());
+    assertEquals(1, managedSegments.frozenSegments().size());
+    assertEquals(segment0, managedSegments.frozenSegments().get(0));
+  }
+
+  @Test
+  void managedSegments_createFromSegmentList_empty() {
+    // Act
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class,
+            () -> ManagedSegments.createFromSegmentList(ImmutableList.of()));
+    // Assert
+    assertTrue(e.getMessage().toLowerCase().contains("empty"));
   }
 
   private void setupForCompaction() {
