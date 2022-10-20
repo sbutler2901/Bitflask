@@ -47,6 +47,10 @@
 
 ### Segment File Encoding
 
+#### Header
+
+- Segment Key
+
 #### Entries
 
 - Main header:
@@ -57,11 +61,6 @@
     - value
 
 ## TODO / Ideas:
-
-### Files
-
-- Segment File header
-    - segment's key
 
 ### Caching
 
