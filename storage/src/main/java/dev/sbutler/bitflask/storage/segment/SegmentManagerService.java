@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -44,6 +46,21 @@ public final class SegmentManagerService extends AbstractService {
   public record ManagedSegments(Segment writableSegment,
                                 ImmutableList<Segment> frozenSegments) {
 
+    static ManagedSegments createFromSegmentList(ImmutableList<Segment> segments) {
+      if (segments.isEmpty()) {
+        throw new IllegalArgumentException("Provided list of Segments was empty");
+      }
+      ImmutableList<Segment> sortedSegments = sortSegmentsDescending(segments);
+      Segment writableSegment = sortedSegments.get(0);
+      ImmutableList<Segment> frozenSegments = sortedSegments.subList(1, sortedSegments.size());
+      return new ManagedSegments(writableSegment, frozenSegments);
+    }
+
+    private static ImmutableList<Segment> sortSegmentsDescending(ImmutableList<Segment> segments) {
+      return segments.stream()
+          .sorted((s0, s1) -> Integer.compare(s1.getSegmentFileKey(), s0.getSegmentFileKey()))
+          .collect(toImmutableList());
+    }
   }
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();

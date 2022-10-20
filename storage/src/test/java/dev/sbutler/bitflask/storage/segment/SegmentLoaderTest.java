@@ -5,10 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -26,17 +24,14 @@ import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -78,17 +73,11 @@ class SegmentLoaderTest {
       doReturn(Path.of("1_segment.txt")).when(secondPath).getFileName();
       when(pathIterator.next()).thenReturn(firstPath, secondPath);
       doReturn(pathIterator).when(directoryStream).iterator();
-      /// File Paths sorting
-      FileTime firstFileTime = FileTime.from(0L, TimeUnit.SECONDS);
-      FileTime secondFileTime = FileTime.from(10L, TimeUnit.SECONDS);
-      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
-          .thenReturn(firstFileTime, secondFileTime);
       /// FileChannels
       FileChannel firstFileChannel = mock(FileChannel.class);
       FileChannel secondFileChannel = mock(FileChannel.class);
       fileChannelMockedStatic.when(() -> FileChannel.open(any(), anySet()))
           .thenReturn(firstFileChannel, secondFileChannel);
-      InOrder fileChannelOrder = inOrder(FileChannel.class);
       /// SegmentFiles
       SegmentFile firstSegmentFile = mock(SegmentFile.class);
       SegmentFile secondSegmentFile = mock(SegmentFile.class);
@@ -107,11 +96,6 @@ class SegmentLoaderTest {
       assertEquals(firstSegment, managedSegments.writableSegment());
       assertEquals(1, managedSegments.frozenSegments().size());
       assertEquals(secondSegment, managedSegments.frozenSegments().get(0));
-      // Verify path sorted order maintained
-      fileChannelOrder.verify(fileChannelMockedStatic,
-          () -> FileChannel.open(eq(secondPath), anySet()));
-      fileChannelOrder.verify(fileChannelMockedStatic,
-          () -> FileChannel.open(eq(firstPath), anySet()));
     }
   }
 
@@ -179,10 +163,6 @@ class SegmentLoaderTest {
       doReturn(Path.of("0_segment.txt")).when(firstPath).getFileName();
       doReturn(firstPath).when(pathIterator).next();
       doReturn(pathIterator).when(directoryStream).iterator();
-      /// File Paths sorting
-      FileTime firstFileTime = FileTime.from(0L, TimeUnit.SECONDS);
-      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
-          .thenReturn(firstFileTime);
       /// FileChannels
       doThrow(InterruptedException.class).when(executorService)
           .invokeAll(ArgumentMatchers.<ImmutableList<Callable<FileChannel>>>any());
@@ -211,13 +191,6 @@ class SegmentLoaderTest {
       doReturn(Path.of("3_segment.txt")).when(fourthPath).getFileName();
       when(pathIterator.next()).thenReturn(firstPath, secondPath, thirdPath, fourthPath);
       doReturn(pathIterator).when(directoryStream).iterator();
-      /// File Paths sorting
-      FileTime firstFileTime = FileTime.from(0L, TimeUnit.SECONDS);
-      FileTime secondFileTime = FileTime.from(5L, TimeUnit.SECONDS);
-      FileTime thirdFileTime = FileTime.from(10L, TimeUnit.SECONDS);
-      FileTime fourthFileTime = FileTime.from(15L, TimeUnit.SECONDS);
-      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
-          .thenReturn(firstFileTime, secondFileTime, thirdFileTime, fourthFileTime);
       /// FileChannels
       Future<FileChannel> firstFuture = mock(Future.class);
       doThrow(InterruptedException.class).when(firstFuture).get();
@@ -256,11 +229,6 @@ class SegmentLoaderTest {
       doReturn(Path.of("1_segment.txt")).when(secondPath).getFileName();
       when(pathIterator.next()).thenReturn(firstPath, secondPath);
       doReturn(pathIterator).when(directoryStream).iterator();
-      /// File Paths sorting
-      FileTime firstFileTime = FileTime.from(0L, TimeUnit.SECONDS);
-      FileTime secondFileTime = FileTime.from(10L, TimeUnit.SECONDS);
-      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
-          .thenReturn(firstFileTime, secondFileTime);
       /// FileChannels
       FileChannel firstFileChannel = mock(FileChannel.class);
       FileChannel secondFileChannel = mock(FileChannel.class);
@@ -300,11 +268,6 @@ class SegmentLoaderTest {
       doReturn(Path.of("1_segment.txt")).when(secondPath).getFileName();
       when(pathIterator.next()).thenReturn(firstPath, secondPath);
       doReturn(pathIterator).when(directoryStream).iterator();
-      /// File Paths sorting
-      FileTime firstFileTime = FileTime.from(0L, TimeUnit.SECONDS);
-      FileTime secondFileTime = FileTime.from(10L, TimeUnit.SECONDS);
-      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
-          .thenReturn(firstFileTime, secondFileTime);
       /// FileChannels
       FileChannel firstFileChannel = mock(FileChannel.class);
       FileChannel secondFileChannel = mock(FileChannel.class);
