@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.storage.segment;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
@@ -15,11 +14,8 @@ import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -34,14 +30,16 @@ final class SegmentLoader {
   private final SegmentFile.Factory segmentFileFactory;
   private final SegmentFactory segmentFactory;
   private final Path storeDirectoryPath;
+  private final SegmentLoaderHelper segmentLoaderHelper;
 
   @Inject
   SegmentLoader(@StorageExecutorService ListeningExecutorService executorService,
       SegmentFile.Factory segmentFileFactory, SegmentFactory segmentFactory,
-      StorageConfiguration storageConfiguration) {
+      SegmentLoaderHelper segmentLoaderHelper, StorageConfiguration storageConfiguration) {
     this.executorService = executorService;
     this.segmentFileFactory = segmentFileFactory;
     this.segmentFactory = segmentFactory;
+    this.segmentLoaderHelper = segmentLoaderHelper;
     this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
   }
 
@@ -69,8 +67,8 @@ final class SegmentLoader {
         return createManagedSegments(ImmutableList.of());
       }
 
-      ImmutableList<Path> sortedSegmentFilePaths = sortFilePathsByLatestModifiedDatesFirst(
-          segmentFilePaths);
+      ImmutableList<Path> sortedSegmentFilePaths =
+          segmentLoaderHelper.sortFilePathsByLatestModifiedDatesFirst(segmentFilePaths);
       ImmutableList<FileChannel> segmentFileChannels = openSegmentFileChannels(
           sortedSegmentFilePaths);
       ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(segmentFileChannels,
@@ -117,19 +115,6 @@ final class SegmentLoader {
     return filePaths.build();
   }
 
-  private ImmutableList<Path> sortFilePathsByLatestModifiedDatesFirst(
-      ImmutableList<Path> segmentFilePaths)
-      throws IOException {
-    // More recent modified first
-    ImmutableSortedMap.Builder<FileTime, Path> pathFileTimeMapBuilder =
-        new ImmutableSortedMap.Builder<>(Comparator.reverseOrder());
-    for (Path path : segmentFilePaths) {
-      FileTime pathFileTime = Files.getLastModifiedTime(path, LinkOption.NOFOLLOW_LINKS);
-      pathFileTimeMapBuilder.put(pathFileTime, path);
-    }
-    return pathFileTimeMapBuilder.build().values().asList();
-  }
-
   private ImmutableList<FileChannel> openSegmentFileChannels(ImmutableList<Path> filePaths)
       throws IOException {
     ImmutableList.Builder<Callable<FileChannel>> openFileChannelsCallables = ImmutableList.builder();
@@ -164,7 +149,7 @@ final class SegmentLoader {
       }
     }
     if (fileChannelThrownException != null) {
-      closeFileChannels(openFileChannels.build());
+      segmentLoaderHelper.closeFileChannels(openFileChannels.build());
       throw fileChannelThrownException;
     }
 
@@ -197,7 +182,7 @@ final class SegmentLoader {
     try {
       segmentFutures = executorService.invokeAll(segmentCallables.build());
     } catch (InterruptedException e) {
-      closeSegmentFiles(segmentFiles);
+      segmentLoaderHelper.closeSegmentFiles(segmentFiles);
       throw new IOException("Creation of Segments interrupted", e);
     }
 
@@ -219,24 +204,10 @@ final class SegmentLoader {
       }
     }
     if (segmentThrownException != null) {
-      closeSegmentFiles(segmentFiles);
+      segmentLoaderHelper.closeSegmentFiles(segmentFiles);
       throw segmentThrownException;
     }
 
     return createdSegments.build();
-  }
-
-  private void closeFileChannels(ImmutableList<FileChannel> fileChannels) {
-    fileChannels.forEach(fileChannel -> {
-      try {
-        fileChannel.close();
-      } catch (IOException ignored) {
-        // Best effort to close opened channels
-      }
-    });
-  }
-
-  private void closeSegmentFiles(ImmutableList<SegmentFile> segmentFiles) {
-    segmentFiles.forEach(SegmentFile::close);
   }
 }
