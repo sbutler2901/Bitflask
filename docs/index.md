@@ -62,6 +62,15 @@
 
 ## TODO / Ideas:
 
+### Segment
+
+#### Ordering
+
+- By Segment key
+    - update segment keys after compaction
+- Frozen header in segment file
+    - Time segment was frozen
+
 ### Caching
 
 - Cache read values (write-through cache?)
