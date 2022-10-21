@@ -50,32 +50,37 @@ final class SegmentLoader {
    * directory for storing segments exists.
    *
    * @return the loaded segments
-   * @throws IOException if an error occurs while loading the segments
+   * @throws SegmentLoaderException if an error occurs while loading the segments
    */
-  public ManagedSegments loadExistingSegments() throws IOException {
+  public ManagedSegments loadExistingSegments() throws SegmentLoaderException {
     // TODO: use virtual threads
     logger.atInfo().log("Loading any pre-existing Segments");
-    boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
-    if (segmentStoreDirCreated) {
-      logger.atInfo().log("Segment store directory created");
-      return createManagedSegments(ImmutableList.of());
-    }
 
-    ImmutableList<Path> segmentFilePaths = getSegmentFilePaths();
-    if (segmentFilePaths.isEmpty()) {
-      logger.atInfo().log("No existing files found in segment store directory");
-      return createManagedSegments(ImmutableList.of());
-    }
+    try {
+      boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
+      if (segmentStoreDirCreated) {
+        logger.atInfo().log("Segment store directory created");
+        return createManagedSegments(ImmutableList.of());
+      }
 
-    ImmutableList<Path> sortedSegmentFilePaths = sortFilePathsByLatestModifiedDatesFirst(
-        segmentFilePaths);
-    ImmutableList<FileChannel> segmentFileChannels = openSegmentFileChannels(
-        sortedSegmentFilePaths);
-    ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(segmentFileChannels,
-        sortedSegmentFilePaths);
-    ImmutableList<Segment> loadedSegments = loadSegments(segmentFiles);
-    logger.atInfo().log("Loaded [%d] preexisting segments", loadedSegments.size());
-    return createManagedSegments(loadedSegments);
+      ImmutableList<Path> segmentFilePaths = getSegmentFilePaths();
+      if (segmentFilePaths.isEmpty()) {
+        logger.atInfo().log("No existing files found in segment store directory");
+        return createManagedSegments(ImmutableList.of());
+      }
+
+      ImmutableList<Path> sortedSegmentFilePaths = sortFilePathsByLatestModifiedDatesFirst(
+          segmentFilePaths);
+      ImmutableList<FileChannel> segmentFileChannels = openSegmentFileChannels(
+          sortedSegmentFilePaths);
+      ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(segmentFileChannels,
+          sortedSegmentFilePaths);
+      ImmutableList<Segment> loadedSegments = loadSegments(segmentFiles);
+      logger.atInfo().log("Loaded [%d] preexisting segments", loadedSegments.size());
+      return createManagedSegments(loadedSegments);
+    } catch (Exception e) {
+      throw new SegmentLoaderException("Failed to load existing segments", e);
+    }
   }
 
   private ManagedSegments createManagedSegments(ImmutableList<Segment> loadedSegments)

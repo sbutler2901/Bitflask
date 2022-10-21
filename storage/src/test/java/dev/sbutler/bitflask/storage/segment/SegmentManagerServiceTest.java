@@ -80,7 +80,7 @@ public class SegmentManagerServiceTest {
   @Test
   void doStart_exception() throws Exception {
     // Arrange
-    doThrow(IOException.class).when(segmentLoader).loadExistingSegments();
+    doThrow(SegmentLoaderException.class).when(segmentLoader).loadExistingSegments();
     // Act / Assert
     assertThrows(IllegalStateException.class,
         () -> segmentManagerService.startAsync().awaitRunning());

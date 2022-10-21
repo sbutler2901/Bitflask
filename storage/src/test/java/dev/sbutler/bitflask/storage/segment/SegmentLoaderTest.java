@@ -161,7 +161,7 @@ class SegmentLoaderTest {
       filesMockedStatic.when(() -> Files.newDirectoryStream(any()))
           .thenThrow(directoryIteratorException);
       // Act / Assert
-      assertThrows(IOException.class, () -> segmentLoader.loadExistingSegments());
+      assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
     }
   }
 
@@ -187,7 +187,7 @@ class SegmentLoaderTest {
       doThrow(InterruptedException.class).when(executorService)
           .invokeAll(ArgumentMatchers.<ImmutableList<Callable<FileChannel>>>any());
       // Act / Assert
-      assertThrows(IOException.class, () -> segmentLoader.loadExistingSegments());
+      assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
     }
   }
 
@@ -233,7 +233,7 @@ class SegmentLoaderTest {
       doReturn(ImmutableList.of(firstFuture, secondFuture, thirdFuture, fourthFuture))
           .when(executorService).invokeAll(any());
       // Act / Assert
-      assertThrows(IOException.class, () -> segmentLoader.loadExistingSegments());
+      assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
       verify(thirdFileChannel, times(1)).close();
     }
   }
@@ -276,7 +276,7 @@ class SegmentLoaderTest {
           .thenCallRealMethod()
           .thenThrow(InterruptedException.class);
       // Act / Assert
-      assertThrows(IOException.class, () -> segmentLoader.loadExistingSegments());
+      assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
       verify(firstSegmentFile, times(1)).close();
       verify(secondSegmentFile, times(1)).close();
     }
@@ -325,7 +325,7 @@ class SegmentLoaderTest {
       executorStub.thenCallRealMethod().thenReturn(ImmutableList.of(firstFuture, secondFuture));
 
       // Act / Assert
-      assertThrows(IOException.class, () -> segmentLoader.loadExistingSegments());
+      assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
       verify(firstSegmentFile, times(1)).close();
       verify(secondSegmentFile, times(1)).close();
     }

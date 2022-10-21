@@ -88,7 +88,7 @@ public final class SegmentManagerService extends AbstractService {
           .registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
       managedSegmentsAtomicReference.set(managedSegments);
       nextCompactionThreshold.set(compactionThreshold + managedSegments.frozenSegments().size());
-    } catch (IOException e) {
+    } catch (SegmentLoaderException e) {
       notifyFailed(e);
     }
     notifyStarted();
