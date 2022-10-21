@@ -75,9 +75,9 @@ final class SegmentLoader {
           sortedSegmentFilePaths);
       ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(segmentFileChannels,
           sortedSegmentFilePaths);
-      ImmutableList<Segment> loadedSegments = loadSegments(segmentFiles);
-      logger.atInfo().log("Loaded [%d] preexisting segments", loadedSegments.size());
-      return createManagedSegments(loadedSegments);
+      ImmutableList<Segment> createdSegments = createSegments(segmentFiles);
+      logger.atInfo().log("Loaded [%d] preexisting segments", createdSegments.size());
+      return createManagedSegments(createdSegments);
     } catch (Exception e) {
       throw new SegmentLoaderException("Failed to load existing segments", e);
     }
@@ -186,7 +186,7 @@ final class SegmentLoader {
     return segmentFiles.build();
   }
 
-  private ImmutableList<Segment> loadSegments(ImmutableList<SegmentFile> segmentFiles)
+  private ImmutableList<Segment> createSegments(ImmutableList<SegmentFile> segmentFiles)
       throws IOException {
     ImmutableList.Builder<Callable<Segment>> segmentCallables = ImmutableList.builder();
     for (SegmentFile segmentFile : segmentFiles) {
