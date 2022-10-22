@@ -1,12 +1,9 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import static com.google.mu.util.stream.GuavaCollectors.toImmutableMap;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.mu.util.stream.BiStream;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -18,7 +15,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
 import jdk.incubator.concurrent.StructuredTaskScope;
@@ -52,26 +48,25 @@ final class SegmentLoaderHelper {
 
   /**
    * Concurrently retrieves the last modified time of each file provided.
+   *
+   * <p>The futures in the returned map are guaranteed to be done, i.e., {@link Future#isDone()}
+   * will return {@code true}. Handling the state of the future ({@link Future#state()}) is the
+   * responsibility of the caller.
    */
-  ImmutableMap<Path, FileTime> getLastModifiedTimeOfFiles(ImmutableList<Path> filePaths)
-      throws InterruptedException, ExecutionException {
-    ImmutableMap<Path, Future<FileTime>> pathFileTimeFutures;
+  ImmutableMap<Path, Future<FileTime>> getLastModifiedTimeOfFiles(ImmutableList<Path> filePaths)
+      throws InterruptedException {
+    ImmutableMap.Builder<Path, Future<FileTime>> pathFileTimeFutures = new ImmutableMap.Builder<>();
     try (var scope = new StructuredTaskScope.ShutdownOnFailure("get-files-modified-time",
         storageThreadFactory)) {
-      ImmutableMap.Builder<Path, Future<FileTime>> builder = new ImmutableMap.Builder<>();
       for (Path path : filePaths) {
         Callable<FileTime> fileTimeCallable = () ->
             Files.getLastModifiedTime(path, LinkOption.NOFOLLOW_LINKS);
-        builder.put(path, scope.fork(fileTimeCallable));
+        pathFileTimeFutures.put(path, scope.fork(fileTimeCallable));
       }
-      pathFileTimeFutures = builder.build();
       scope.join();
-      scope.throwIfFailed();
     }
+    return pathFileTimeFutures.build();
 
-    return BiStream.from(pathFileTimeFutures)
-        .mapValues(Future::resultNow)
-        .collect(toImmutableMap());
   }
 
   /**

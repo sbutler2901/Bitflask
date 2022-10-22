@@ -100,19 +100,30 @@ final class SegmentLoader {
 
   ImmutableList<Path> sortFilePathsByLatestModifiedDatesFirst(
       ImmutableList<Path> segmentFilePaths) {
+    ImmutableMap<Path, Future<FileTime>> pathFileTimeFutures;
     try {
-      ImmutableMap<Path, FileTime> fileLastModifiedMap =
-          segmentLoaderHelper.getLastModifiedTimeOfFiles(segmentFilePaths);
-      // More recent modified first
-      return BiStream.from(fileLastModifiedMap)
-          .sortedByValues(Comparator.reverseOrder())
-          .keys()
-          .collect(toImmutableList());
-    } catch (ExecutionException e) {
-      throw new SegmentLoaderException("Sorting file paths failed", e.getCause());
+      pathFileTimeFutures = segmentLoaderHelper.getLastModifiedTimeOfFiles(segmentFilePaths);
     } catch (InterruptedException e) {
-      throw new SegmentLoaderException("Sorting file paths interrupted", e);
+      throw new SegmentLoaderException("Interrupted while get file modified times", e);
     }
+
+    ImmutableMap<Path, Throwable> failedFileTimePaths = BiStream.from(pathFileTimeFutures)
+        .filterValues(f -> f.state() != State.SUCCESS)
+        .mapValues(Future::exceptionNow)
+        .collect(toImmutableMap());
+    if (!failedFileTimePaths.isEmpty()) {
+      failedFileTimePaths.forEach((key, value) ->
+          logger.atSevere().withCause(value)
+              .log("Getting last modified time for file at path [%s] failed.", key));
+      throw new SegmentLoaderException("File last modified times had failures");
+    }
+
+    // More recent modified first
+    return BiStream.from(pathFileTimeFutures)
+        .mapValues(Future::resultNow)
+        .sortedByValues(Comparator.reverseOrder())
+        .keys()
+        .collect(toImmutableList());
   }
 
   private ImmutableMap<Path, FileChannel> openSegmentFileChannels(ImmutableList<Path> filePaths) {
