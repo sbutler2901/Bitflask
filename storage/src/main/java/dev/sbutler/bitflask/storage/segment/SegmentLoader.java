@@ -107,10 +107,9 @@ final class SegmentLoader {
       throw new SegmentLoaderException("Interrupted while get file modified times", e);
     }
 
-    ImmutableMap<Path, Throwable> failedFileTimePaths = BiStream.from(pathFileTimeFutures)
-        .filterValues(f -> f.state() != State.SUCCESS)
-        .mapValues(Future::exceptionNow)
-        .collect(toImmutableMap());
+    ImmutableMap<Path, Throwable> failedFileTimePaths =
+        getFailedFutureThrowablesFromMap(pathFileTimeFutures);
+
     if (!failedFileTimePaths.isEmpty()) {
       failedFileTimePaths.forEach((key, value) ->
           logger.atSevere().withCause(value)
@@ -118,9 +117,11 @@ final class SegmentLoader {
       throw new SegmentLoaderException("File last modified times had failures");
     }
 
+    ImmutableMap<Path, FileTime> successFileTimePaths =
+        getSuccessfulFutureValuesFromMap(pathFileTimeFutures);
+
     // More recent modified first
-    return BiStream.from(pathFileTimeFutures)
-        .mapValues(Future::resultNow)
+    return BiStream.from(successFileTimePaths)
         .sortedByValues(Comparator.reverseOrder())
         .keys()
         .collect(toImmutableList());
@@ -136,15 +137,10 @@ final class SegmentLoader {
     }
 
     ImmutableMap<Path, FileChannel> openFileChannels =
-        BiStream.from(pathFutureFileChannelMap)
-            .filterValues(f -> f.state() == State.SUCCESS)
-            .mapValues(Future::resultNow)
-            .collect(toImmutableMap());
+        getSuccessfulFutureValuesFromMap(pathFutureFileChannelMap);
 
     ImmutableMap<Path, Throwable> failedFileChannels =
-        BiStream.from(pathFutureFileChannelMap)
-            .mapValues(Future::exceptionNow)
-            .collect(toImmutableMap());
+        getFailedFutureThrowablesFromMap(pathFutureFileChannelMap);
 
     failedFileChannels.forEach((key, value) -> logger.atSevere().withCause(value)
         .log("Opening FileChannel for [%s] failed", key));
@@ -209,6 +205,22 @@ final class SegmentLoader {
     }
 
     return createdSegments.build();
+  }
+
+  private static <K, V> ImmutableMap<K, V> getSuccessfulFutureValuesFromMap(
+      ImmutableMap<K, Future<V>> futureMap) {
+    return BiStream.from(futureMap)
+        .filterValues(f -> f.state() == State.SUCCESS)
+        .mapValues(Future::resultNow)
+        .collect(toImmutableMap());
+  }
+
+  private static <K, V> ImmutableMap<K, Throwable> getFailedFutureThrowablesFromMap(
+      ImmutableMap<K, Future<V>> futureMap) {
+    return BiStream.from(futureMap)
+        .filterValues(f -> f.state() != State.SUCCESS)
+        .mapValues(Future::exceptionNow)
+        .collect(toImmutableMap());
   }
 
   private static Header getHeaderFromFileChannel(FileChannel fileChannel) {
