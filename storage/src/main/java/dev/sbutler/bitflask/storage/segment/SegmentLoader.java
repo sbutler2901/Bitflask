@@ -5,13 +5,11 @@ import static com.google.mu.util.stream.GuavaCollectors.toImmutableMap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.mu.util.stream.BiStream;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
@@ -26,7 +24,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Future.State;
 import javax.inject.Inject;
-import jdk.incubator.concurrent.StructuredTaskScope;
 
 final class SegmentLoader {
 
@@ -34,19 +31,16 @@ final class SegmentLoader {
 
   private final ListeningExecutorService executorService;
   private final SegmentFile.Factory segmentFileFactory;
-  private final StorageThreadFactory storageThreadFactory;
   private final SegmentFactory segmentFactory;
   private final Path storeDirectoryPath;
   private final SegmentLoaderHelper segmentLoaderHelper;
 
   @Inject
   SegmentLoader(@StorageExecutorService ListeningExecutorService executorService,
-      StorageThreadFactory storageThreadFactory,
       SegmentFile.Factory segmentFileFactory, SegmentFactory segmentFactory,
       SegmentLoaderHelper segmentLoaderHelper, StorageConfiguration storageConfiguration) {
     this.executorService = executorService;
     this.segmentFileFactory = segmentFileFactory;
-    this.storageThreadFactory = storageThreadFactory;
     this.segmentFactory = segmentFactory;
     this.segmentLoaderHelper = segmentLoaderHelper;
     this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
@@ -84,6 +78,8 @@ final class SegmentLoader {
       ImmutableList<Segment> createdSegments = createSegments(segmentFiles);
       logger.atInfo().log("Loaded [%d] preexisting segments", createdSegments.size());
       return createManagedSegments(createdSegments);
+    } catch (SegmentLoaderException e) {
+      throw e;
     } catch (Exception e) {
       throw new SegmentLoaderException("Failed to load existing segments", e);
     }
@@ -119,20 +115,13 @@ final class SegmentLoader {
     }
   }
 
-  private ImmutableMap<Path, FileChannel> openSegmentFileChannels(ImmutableList<Path> filePaths)
-      throws InterruptedException {
-    // TODO: move to helper
+  private ImmutableMap<Path, FileChannel> openSegmentFileChannels(ImmutableList<Path> filePaths) {
     ImmutableMap<Path, Future<FileChannel>> pathFutureFileChannelMap;
-    try (var scope = new StructuredTaskScope.ShutdownOnFailure("loader-open-segment-file-channel",
-        storageThreadFactory)) {
-      ImmutableMap.Builder<Path, Future<FileChannel>> builder = new Builder<>();
-      for (Path path : filePaths) {
-        Callable<FileChannel> pathCallable = () ->
-            FileChannel.open(path, segmentFactory.getFileChannelOptions());
-        builder.put(path, scope.fork(pathCallable));
-      }
-      pathFutureFileChannelMap = builder.build();
-      scope.join();
+    try {
+      pathFutureFileChannelMap = segmentLoaderHelper.openFileChannels(filePaths,
+          segmentFactory.getFileChannelOptions());
+    } catch (InterruptedException e) {
+      throw new SegmentLoaderException("Interrupted while opening segment file channels", e);
     }
 
     ImmutableMap<Path, FileChannel> openFileChannels =

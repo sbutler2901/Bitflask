@@ -5,6 +5,7 @@ import static com.google.mu.util.stream.GuavaCollectors.toImmutableMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.mu.util.stream.BiStream;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -54,7 +56,7 @@ final class SegmentLoaderHelper {
   ImmutableMap<Path, FileTime> getLastModifiedTimeOfFiles(ImmutableList<Path> filePaths)
       throws InterruptedException, ExecutionException {
     ImmutableMap<Path, Future<FileTime>> pathFileTimeFutures;
-    try (var scope = new StructuredTaskScope.ShutdownOnFailure("loader-sort-modified-time",
+    try (var scope = new StructuredTaskScope.ShutdownOnFailure("get-files-modified-time",
         storageThreadFactory)) {
       ImmutableMap.Builder<Path, Future<FileTime>> builder = new ImmutableMap.Builder<>();
       for (Path path : filePaths) {
@@ -70,6 +72,31 @@ final class SegmentLoaderHelper {
     return BiStream.from(pathFileTimeFutures)
         .mapValues(Future::resultNow)
         .collect(toImmutableMap());
+  }
+
+  /**
+   * Opens {@link FileChannel}s for the provided file {@link Path}s with the provided
+   * {@link StandardOpenOption}s.
+   *
+   * <p>The futures in the returned map are guaranteed to be done, i.e., {@link Future#isDone()}
+   * will return {@code true}. Handling the state of the future ({@link Future#state()}) is the
+   * responsibility of the caller.
+   */
+  ImmutableMap<Path, Future<FileChannel>> openFileChannels(
+      ImmutableList<Path> filePaths,
+      ImmutableSet<StandardOpenOption> fileChannelOptions) throws InterruptedException {
+    ImmutableMap.Builder<Path, Future<FileChannel>> pathFutureFileChannelMap =
+        new ImmutableMap.Builder<>();
+    try (var scope = new StructuredTaskScope.ShutdownOnFailure("open-segment-file-channel",
+        storageThreadFactory)) {
+      for (Path path : filePaths) {
+        Callable<FileChannel> pathCallable = () ->
+            FileChannel.open(path, fileChannelOptions);
+        pathFutureFileChannelMap.put(path, scope.fork(pathCallable));
+      }
+      scope.join();
+    }
+    return pathFutureFileChannelMap.build();
   }
 
   /**
