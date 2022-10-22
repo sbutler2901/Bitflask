@@ -6,10 +6,9 @@ import static com.google.mu.util.stream.GuavaCollectors.toImmutableMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.mu.util.stream.BiStream;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
@@ -17,32 +16,32 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Future.State;
 import javax.inject.Inject;
+import jdk.incubator.concurrent.StructuredTaskScope;
 
 final class SegmentLoader {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ListeningExecutorService executorService;
+  private final StorageThreadFactory storageThreadFactory;
   private final SegmentFile.Factory segmentFileFactory;
   private final SegmentFactory segmentFactory;
   private final Path storeDirectoryPath;
   private final SegmentLoaderHelper segmentLoaderHelper;
 
   @Inject
-  SegmentLoader(@StorageExecutorService ListeningExecutorService executorService,
-      SegmentFile.Factory segmentFileFactory, SegmentFactory segmentFactory,
-      SegmentLoaderHelper segmentLoaderHelper, StorageConfiguration storageConfiguration) {
-    this.executorService = executorService;
-    this.segmentFileFactory = segmentFileFactory;
-    this.segmentFactory = segmentFactory;
+  SegmentLoader(
+      StorageThreadFactory storageThreadFactory, SegmentLoaderHelper segmentLoaderHelper,
+      SegmentFactory segmentFactory, SegmentFile.Factory segmentFileFactory,
+      StorageConfiguration storageConfiguration) {
+    this.storageThreadFactory = storageThreadFactory;
     this.segmentLoaderHelper = segmentLoaderHelper;
+    this.segmentFactory = segmentFactory;
+    this.segmentFileFactory = segmentFileFactory;
     this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
   }
 
@@ -75,7 +74,7 @@ final class SegmentLoader {
       ImmutableMap<Path, FileChannel> pathFileChannelMap = openSegmentFileChannels(
           sortedSegmentFilePaths);
       ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(pathFileChannelMap);
-      ImmutableList<Segment> createdSegments = createSegments(segmentFiles);
+      ImmutableList<Segment> createdSegments = createSegmentsFromSegmentFiles(segmentFiles);
       logger.atInfo().log("Loaded [%d] preexisting segments", createdSegments.size());
       return createManagedSegments(createdSegments);
     } catch (SegmentLoaderException e) {
@@ -142,10 +141,9 @@ final class SegmentLoader {
     ImmutableMap<Path, Throwable> failedFileChannels =
         getFailedFutureThrowablesFromMap(pathFutureFileChannelMap);
 
-    failedFileChannels.forEach((key, value) -> logger.atSevere().withCause(value)
-        .log("Opening FileChannel for [%s] failed", key));
-
     if (!failedFileChannels.isEmpty()) {
+      failedFileChannels.forEach((key, value) -> logger.atSevere().withCause(value)
+          .log("Opening FileChannel for [%s] failed", key));
       segmentLoaderHelper.closeFileChannelsBestEffort(openFileChannels.values().asList());
       throw new SegmentLoaderException("Failed opening segment file channels");
     }
@@ -167,44 +165,53 @@ final class SegmentLoader {
     return segmentFiles.build();
   }
 
-  private ImmutableList<Segment> createSegments(ImmutableList<SegmentFile> segmentFiles)
-      throws IOException {
-    ImmutableList.Builder<Callable<Segment>> segmentCallables = ImmutableList.builder();
-    for (SegmentFile segmentFile : segmentFiles) {
-      segmentCallables.add(() -> segmentFactory.createSegmentFromFile(segmentFile));
-    }
-
-    List<Future<Segment>> segmentFutures;
+  private ImmutableList<Segment> createSegmentsFromSegmentFiles(
+      ImmutableList<SegmentFile> segmentFiles) {
+    ImmutableMap<SegmentFile, Future<Segment>> segmentFileFutureSegmentMap;
     try {
-      segmentFutures = executorService.invokeAll(segmentCallables.build());
+      segmentFileFutureSegmentMap = createSegmentFutures(segmentFiles);
     } catch (InterruptedException e) {
-      closeSegmentFiles(segmentFiles);
-      throw new IOException("Creation of Segments interrupted", e);
+      throw new SegmentLoaderException("Interrupted will creating segments from segment files", e);
     }
 
-    ImmutableList.Builder<Segment> createdSegments = ImmutableList.builder();
-    IOException segmentThrownException = null;
-    for (int i = 0; i < segmentFutures.size(); i++) {
-      try {
-        createdSegments.add(segmentFutures.get(i).get());
-      } catch (InterruptedException e) {
-        segmentThrownException = new IOException(
-            "At least one Segment failed to be opened");
-        logger.atSevere().withCause(e)
-            .log("Opening Segment for [%s] failed", segmentFiles.get(i).getSegmentFilePath());
-      } catch (ExecutionException e) {
-        segmentThrownException = new IOException(
-            "At least one Segment failed to be opened");
-        logger.atSevere().withCause(e.getCause())
-            .log("Opening Segment for [%s] failed", segmentFiles.get(i).getSegmentFilePath());
+    ImmutableMap<SegmentFile, Throwable> failedSegments =
+        getFailedFutureThrowablesFromMap(segmentFileFutureSegmentMap);
+
+    if (!failedSegments.isEmpty()) {
+      failedSegments.forEach((key, value) -> logger.atSevere().withCause(value)
+          .log("Creating segment from segment file with key [%d] failed", key.getSegmentFileKey()));
+      segmentFiles.forEach(SegmentFile::close);
+      throw new SegmentLoaderException("Failed creating segments from segment files");
+    }
+
+    ImmutableMap<SegmentFile, Segment> createdSegments =
+        getSuccessfulFutureValuesFromMap(segmentFileFutureSegmentMap);
+
+    return BiStream.from(createdSegments)
+        .values()
+        .collect(toImmutableList());
+  }
+
+  /**
+   * Creates {@link Segment}s from the provided {@link SegmentFile}s.
+   *
+   * <p>The futures in the returned map are guaranteed to be done, i.e., {@link Future#isDone()}
+   * will return {@code true}. Handling the state of the future ({@link Future#state()}) is the
+   * responsibility of the caller.
+   */
+  private ImmutableMap<SegmentFile, Future<Segment>> createSegmentFutures(
+      ImmutableList<SegmentFile> segmentFiles) throws InterruptedException {
+    ImmutableMap.Builder<SegmentFile, Future<Segment>> segmentFileFutureSegmentMap = new ImmutableMap.Builder<>();
+    try (var scope = new StructuredTaskScope.ShutdownOnFailure("create-segments",
+        storageThreadFactory)) {
+      ImmutableMap.Builder<SegmentFile, Future<Segment>> builder = new ImmutableMap.Builder<>();
+      for (SegmentFile segmentFile : segmentFiles) {
+        Callable<Segment> segmentCallable = () -> segmentFactory.createSegmentFromFile(segmentFile);
+        builder.put(segmentFile, scope.fork(segmentCallable));
       }
+      scope.join();
     }
-    if (segmentThrownException != null) {
-      closeSegmentFiles(segmentFiles);
-      throw segmentThrownException;
-    }
-
-    return createdSegments.build();
+    return segmentFileFutureSegmentMap.build();
   }
 
   private static <K, V> ImmutableMap<K, V> getSuccessfulFutureValuesFromMap(
@@ -229,9 +236,5 @@ final class SegmentLoader {
     } catch (IOException e) {
       throw new SegmentLoaderException("Failed getting SegmentFile.Header from the FileChannel", e);
     }
-  }
-
-  private static void closeSegmentFiles(ImmutableList<SegmentFile> segmentFiles) {
-    segmentFiles.forEach(SegmentFile::close);
   }
 }

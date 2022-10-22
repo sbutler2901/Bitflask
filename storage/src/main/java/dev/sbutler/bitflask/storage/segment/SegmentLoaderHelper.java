@@ -82,7 +82,7 @@ final class SegmentLoaderHelper {
       ImmutableSet<StandardOpenOption> fileChannelOptions) throws InterruptedException {
     ImmutableMap.Builder<Path, Future<FileChannel>> pathFutureFileChannelMap =
         new ImmutableMap.Builder<>();
-    try (var scope = new StructuredTaskScope.ShutdownOnFailure("open-segment-file-channel",
+    try (var scope = new StructuredTaskScope.ShutdownOnFailure("open-file-channels",
         storageThreadFactory)) {
       for (Path path : filePaths) {
         Callable<FileChannel> pathCallable = () ->

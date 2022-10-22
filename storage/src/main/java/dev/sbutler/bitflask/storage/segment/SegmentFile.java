@@ -75,6 +75,9 @@ final class SegmentFile {
     return header.key();
   }
 
+  /**
+   * Best effort closing. {@link IOException} will be caught and ignored.
+   */
   public void close() {
     try {
       segmentFileChannel.close();
