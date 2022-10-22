@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -55,6 +56,8 @@ class SegmentLoaderTest {
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
   @Mock
   SegmentFile.Factory segmentFileFactory;
+  @Spy
+  StorageThreadFactory storageThreadFactory = new StorageThreadFactory();
   @Mock
   SegmentFactory segmentFactory;
   @Mock

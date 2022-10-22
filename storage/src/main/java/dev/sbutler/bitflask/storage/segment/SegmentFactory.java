@@ -165,6 +165,10 @@ final class SegmentFactory {
     return storeDirectoryPath.resolve(segmentFilename);
   }
 
+  public ImmutableSet<StandardOpenOption> getFileChannelOptions() {
+    return fileChannelOptions;
+  }
+
   /**
    * Creates the segment store directory if it doesn't exist.
    *
