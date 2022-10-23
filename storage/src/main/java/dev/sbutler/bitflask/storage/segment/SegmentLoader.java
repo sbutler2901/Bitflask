@@ -71,7 +71,7 @@ final class SegmentLoader {
           sortFilePathsByLatestModifiedDatesFirst(segmentFilePaths);
       ImmutableMap<Path, FileChannel> pathFileChannelMap =
           openSegmentFileChannels(sortedSegmentFilePaths);
-      ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(pathFileChannelMap);
+      ImmutableList<SegmentFile> segmentFiles = createSegmentFiles(pathFileChannelMap);
       ImmutableList<Segment> createdSegments = createSegmentsFromSegmentFiles(segmentFiles);
 
       logger.atInfo().log("Loaded [%d] preexisting segments", createdSegments.size());
@@ -83,23 +83,10 @@ final class SegmentLoader {
     }
   }
 
-  private ManagedSegments createManagedSegments(ImmutableList<Segment> loadedSegments) {
-    Segment writableSegment;
-    if (loadedSegments.isEmpty()) {
-      try {
-        writableSegment = segmentFactory.createSegment();
-      } catch (IOException e) {
-        throw new SegmentLoaderException("Failed creating a new segment for ManagedSegments", e);
-      }
-    } else {
-      writableSegment = loadedSegments.get(0);
-      loadedSegments = loadedSegments.subList(1, loadedSegments.size());
-    }
-
-    return new ManagedSegments(writableSegment, loadedSegments);
-  }
-
-  ImmutableList<Path> getSegmentFilePaths() {
+  /**
+   * Gets the file paths of any segments present in the segment store directory
+   */
+  private ImmutableList<Path> getSegmentFilePaths() {
     ImmutableList<Path> filePathsInDirectory;
     try {
       filePathsInDirectory = filesHelper.getFilePathsInDirectory(storeDirectoryPath);
@@ -111,7 +98,7 @@ final class SegmentLoader {
         .collect(toImmutableList());
   }
 
-  ImmutableList<Path> sortFilePathsByLatestModifiedDatesFirst(
+  private ImmutableList<Path> sortFilePathsByLatestModifiedDatesFirst(
       ImmutableList<Path> segmentFilePaths) {
     ImmutableMap<Path, Future<FileTime>> pathFileTimeFutures;
     try {
@@ -165,7 +152,10 @@ final class SegmentLoader {
     return openFileChannels;
   }
 
-  private ImmutableList<SegmentFile> loadSegmentFiles(
+  /**
+   * Creates corresponding SegmentFiles for all segments found in the segment store directory.
+   */
+  private ImmutableList<SegmentFile> createSegmentFiles(
       ImmutableMap<Path, FileChannel> pathFileChannelMap) {
     ImmutableList.Builder<SegmentFile> segmentFiles = new ImmutableList.Builder<>();
     for (Entry<Path, FileChannel> entry : pathFileChannelMap.entrySet()) {
@@ -177,6 +167,14 @@ final class SegmentLoader {
       segmentFiles.add(segmentFile);
     }
     return segmentFiles.build();
+  }
+
+  private static Header getHeaderFromFileChannel(FileChannel fileChannel) {
+    try {
+      return Header.readHeaderFromFileChannel(fileChannel);
+    } catch (IOException e) {
+      throw new SegmentLoaderException("Failed getting SegmentFile.Header from the FileChannel", e);
+    }
   }
 
   private ImmutableList<Segment> createSegmentsFromSegmentFiles(
@@ -227,11 +225,26 @@ final class SegmentLoader {
     return segmentFileFutureSegmentMap.build();
   }
 
-  private static Header getHeaderFromFileChannel(FileChannel fileChannel) {
-    try {
-      return Header.readHeaderFromFileChannel(fileChannel);
-    } catch (IOException e) {
-      throw new SegmentLoaderException("Failed getting SegmentFile.Header from the FileChannel", e);
+  /**
+   * Creates the final
+   * {@link dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments} after
+   * loading any segments.
+   *
+   * <p>If the provided list of loaded segments is empty a segment will be created to populated the
+   * created ManagedSegments.
+   */
+  private ManagedSegments createManagedSegments(ImmutableList<Segment> loadedSegments) {
+    Segment writableSegment;
+    if (loadedSegments.isEmpty()) {
+      try {
+        writableSegment = segmentFactory.createSegment();
+      } catch (IOException e) {
+        throw new SegmentLoaderException("Failed creating a new segment for ManagedSegments", e);
+      }
+    } else {
+      writableSegment = loadedSegments.get(0);
+      loadedSegments = loadedSegments.subList(1, loadedSegments.size());
     }
+    return new ManagedSegments(writableSegment, loadedSegments);
   }
 }
