@@ -36,6 +36,8 @@ dependencies {
     // Testing
     testImplementation 'com.google.guava:guava-testlib:31.1-jre'
 
+    testImplementation "com.google.truth:truth:1.1.3"
+
     testImplementation 'org.junit.jupiter:junit-jupiter-api:+'
     testImplementation 'org.mockito:mockito-inline:+'
     testImplementation 'org.mockito:mockito-junit-jupiter:+'

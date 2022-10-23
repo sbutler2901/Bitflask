@@ -5,6 +5,7 @@
 - [Guice](https://github.com/google/guice)
 - [Guava](https://github.com/google/guava)
 - [Mug](https://github.com/google/mug)
+- [Truth](https://github.com/google/truth)
 - [Flogger](https://github.com/google/flogger)
 - [JCommander](https://jcommander.org/)
 
