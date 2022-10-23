@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.common.concurrency;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
@@ -23,8 +23,8 @@ public class StructuredTaskScopeUtilsTest {
     ImmutableMap<String, String> successfulMap =
         StructuredTaskScopeUtils.getSuccessfulFutureValuesFromMap(futureMap);
     // Assert
-    assertEquals(1, successfulMap.size());
-    assertEquals("successFuture", successfulMap.get("success"));
+    assertThat(successfulMap).hasSize(1);
+    assertThat(successfulMap).containsEntry("success", "successFuture");
   }
 
   @Test
@@ -41,7 +41,7 @@ public class StructuredTaskScopeUtilsTest {
     ImmutableMap<String, Throwable> failedMap =
         StructuredTaskScopeUtils.getFailedFutureThrowablesFromMap(futureMap);
     // Assert
-    assertEquals(1, failedMap.size());
-    assertEquals(exception, failedMap.get("failed"));
+    assertThat(failedMap).hasSize(1);
+    assertThat(failedMap).containsEntry("failed", exception);
   }
 }
