@@ -1,12 +1,12 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.mu.util.stream.GuavaCollectors.toImmutableMap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.mu.util.stream.BiStream;
+import dev.sbutler.bitflask.common.concurrency.StructuredTaskScopeUtils;
 import dev.sbutler.bitflask.common.utils.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
@@ -20,7 +20,6 @@ import java.util.Comparator;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import java.util.concurrent.Future.State;
 import javax.inject.Inject;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
@@ -122,7 +121,7 @@ final class SegmentLoader {
     }
 
     ImmutableMap<Path, Throwable> failedFileTimePaths =
-        getFailedFutureThrowablesFromMap(pathFileTimeFutures);
+        StructuredTaskScopeUtils.getFailedFutureThrowablesFromMap(pathFileTimeFutures);
 
     if (!failedFileTimePaths.isEmpty()) {
       failedFileTimePaths.forEach((key, value) ->
@@ -132,7 +131,7 @@ final class SegmentLoader {
     }
 
     ImmutableMap<Path, FileTime> successFileTimePaths =
-        getSuccessfulFutureValuesFromMap(pathFileTimeFutures);
+        StructuredTaskScopeUtils.getSuccessfulFutureValuesFromMap(pathFileTimeFutures);
 
     // More recent modified first
     return BiStream.from(successFileTimePaths)
@@ -151,10 +150,10 @@ final class SegmentLoader {
     }
 
     ImmutableMap<Path, FileChannel> openFileChannels =
-        getSuccessfulFutureValuesFromMap(pathFutureFileChannelMap);
+        StructuredTaskScopeUtils.getSuccessfulFutureValuesFromMap(pathFutureFileChannelMap);
 
     ImmutableMap<Path, Throwable> failedFileChannels =
-        getFailedFutureThrowablesFromMap(pathFutureFileChannelMap);
+        StructuredTaskScopeUtils.getFailedFutureThrowablesFromMap(pathFutureFileChannelMap);
 
     if (!failedFileChannels.isEmpty()) {
       failedFileChannels.forEach((key, value) -> logger.atSevere().withCause(value)
@@ -190,7 +189,7 @@ final class SegmentLoader {
     }
 
     ImmutableMap<SegmentFile, Throwable> failedSegments =
-        getFailedFutureThrowablesFromMap(segmentFileFutureSegmentMap);
+        StructuredTaskScopeUtils.getFailedFutureThrowablesFromMap(segmentFileFutureSegmentMap);
 
     if (!failedSegments.isEmpty()) {
       failedSegments.forEach((key, value) -> logger.atSevere().withCause(value)
@@ -200,7 +199,7 @@ final class SegmentLoader {
     }
 
     ImmutableMap<SegmentFile, Segment> createdSegments =
-        getSuccessfulFutureValuesFromMap(segmentFileFutureSegmentMap);
+        StructuredTaskScopeUtils.getSuccessfulFutureValuesFromMap(segmentFileFutureSegmentMap);
 
     return BiStream.from(createdSegments)
         .values()
@@ -226,22 +225,6 @@ final class SegmentLoader {
       scope.join();
     }
     return segmentFileFutureSegmentMap.build();
-  }
-
-  private static <K, V> ImmutableMap<K, V> getSuccessfulFutureValuesFromMap(
-      ImmutableMap<K, Future<V>> futureMap) {
-    return BiStream.from(futureMap)
-        .filterValues(f -> f.state() == State.SUCCESS)
-        .mapValues(Future::resultNow)
-        .collect(toImmutableMap());
-  }
-
-  private static <K, V> ImmutableMap<K, Throwable> getFailedFutureThrowablesFromMap(
-      ImmutableMap<K, Future<V>> futureMap) {
-    return BiStream.from(futureMap)
-        .filterValues(f -> f.state() != State.SUCCESS)
-        .mapValues(Future::exceptionNow)
-        .collect(toImmutableMap());
   }
 
   private static Header getHeaderFromFileChannel(FileChannel fileChannel) {
