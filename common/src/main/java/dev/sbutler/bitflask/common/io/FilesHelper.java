@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.common.utils;
+package dev.sbutler.bitflask.common.io;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;

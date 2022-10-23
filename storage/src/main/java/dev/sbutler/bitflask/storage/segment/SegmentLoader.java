@@ -7,7 +7,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.mu.util.stream.BiStream;
 import dev.sbutler.bitflask.common.concurrency.StructuredTaskScopeUtils;
-import dev.sbutler.bitflask.common.utils.FilesHelper;
+import dev.sbutler.bitflask.common.io.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;

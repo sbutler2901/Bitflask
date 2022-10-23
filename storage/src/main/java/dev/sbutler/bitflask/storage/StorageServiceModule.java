@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.storage;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import dev.sbutler.bitflask.common.utils.FilesHelper;
+import dev.sbutler.bitflask.common.io.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.ConcurrencyModule;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
