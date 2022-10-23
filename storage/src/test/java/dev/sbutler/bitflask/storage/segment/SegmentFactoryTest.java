@@ -1,11 +1,9 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -20,17 +18,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 public class SegmentFactoryTest {
 
-  SegmentFactory segmentFactory;
-  SegmentFile.Factory segmentFileFactory;
-  StorageConfiguration storageConfiguration;
+  private SegmentFactory segmentFactory;
+  private SegmentFile.Factory segmentFileFactory;
 
   @Test
   @SuppressWarnings({"unchecked"})
@@ -42,11 +36,11 @@ public class SegmentFactoryTest {
       fileChannelMockedStatic.when(() -> FileChannel.open(any(Path.class), any(Set.class)))
           .thenReturn(fileChannel);
       SegmentFile segmentFile = mock(SegmentFile.class);
-      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), any());
+      when(segmentFileFactory.create(any(), any(), any())).thenReturn(segmentFile);
       // Act
       Segment segment = segmentFactory.createSegment();
       // Assert
-      assertFalse(segment.exceedsStorageThreshold());
+      assertThat(segment.exceedsStorageThreshold()).isFalse();
       verify(segmentFile, times(0)).truncate(anyLong());
     }
   }
@@ -64,11 +58,11 @@ public class SegmentFactoryTest {
               () -> FileChannel.open(any(Path.class), openOptionsCaptor.capture()))
           .thenReturn(fileChannel);
       SegmentFile segmentFile = mock(SegmentFile.class);
-      doReturn(segmentFile).when(segmentFileFactory).create(any(), any(), any());
+      when(segmentFileFactory.create(any(), any(), any())).thenReturn(segmentFile);
       // Act
       Segment segment = segmentFactory.createSegment();
       // Assert
-      assertFalse(segment.exceedsStorageThreshold());
+      assertThat(segment.exceedsStorageThreshold()).isFalse();
       verify(segmentFile, times(1)).truncate(anyLong());
     }
   }
@@ -79,16 +73,16 @@ public class SegmentFactoryTest {
     mockSegmentFactory(StandardOpenOption.CREATE);
     String key = "a";
     SegmentFile segmentFile = mock(SegmentFile.class);
-    doReturn(5L).when(segmentFile).size();
+    when(segmentFile.size()).thenReturn(5L);
     when(segmentFile.readByte(anyLong()))
         .thenReturn((byte) 1)
         .thenReturn((byte) 0) // key_value header
         .thenReturn((byte) 1);
-    doReturn(key).when(segmentFile).readAsString(anyInt(), anyLong());
+    when(segmentFile.readAsString(anyInt(), anyLong())).thenReturn(key);
     // Act
     Segment segment = segmentFactory.createSegmentFromFile(segmentFile);
     // Assert
-    assertTrue(segment.containsKey(key));
+    assertThat(segment.containsKey(key)).isTrue();
     verify(segmentFile, times(3)).readByte(anyLong());
     verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
     verify(segmentFile, times(0)).truncate(anyLong());
@@ -100,19 +94,30 @@ public class SegmentFactoryTest {
     mockSegmentFactory(StandardOpenOption.TRUNCATE_EXISTING);
     String key = "a";
     SegmentFile segmentFile = mock(SegmentFile.class);
-    doReturn(5L).when(segmentFile).size();
+    when(segmentFile.size()).thenReturn(5L);
     when(segmentFile.readByte(anyLong()))
         .thenReturn((byte) 1)
         .thenReturn((byte) 0) // key_value header
         .thenReturn((byte) 1);
-    doReturn(key).when(segmentFile).readAsString(anyInt(), anyLong());
+    when(segmentFile.readAsString(anyInt(), anyLong())).thenReturn(key);
     // Act
     Segment segment = segmentFactory.createSegmentFromFile(segmentFile);
     // Assert
-    assertTrue(segment.containsKey(key));
+    assertThat(segment.containsKey(key)).isTrue();
     verify(segmentFile, times(3)).readByte(anyLong());
     verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
     verify(segmentFile, times(1)).truncate(anyLong());
+  }
+
+  @Test
+  void getFileChannelOptions() {
+    // Arrange
+    mockSegmentFactory(StandardOpenOption.CREATE);
+    // Act
+    ImmutableSet<StandardOpenOption> openOptions = segmentFactory.getFileChannelOptions();
+    // Assert
+    assertThat(openOptions).containsExactly(StandardOpenOption.READ, StandardOpenOption.WRITE,
+        StandardOpenOption.CREATE);
   }
 
   @Test
@@ -122,7 +127,7 @@ public class SegmentFactoryTest {
       // Arrange
       filesMockedStatic.when(() -> Files.isDirectory(any(Path.class))).thenReturn(false);
       // Act / Assert
-      assertTrue(segmentFactory.createSegmentStoreDir());
+      assertThat(segmentFactory.createSegmentStoreDir()).isTrue();
       filesMockedStatic.verify(() -> Files.createDirectories(any(Path.class)), times(1));
     }
   }
@@ -134,17 +139,18 @@ public class SegmentFactoryTest {
       // Arrange
       filesMockedStatic.when(() -> Files.isDirectory(any(Path.class))).thenReturn(true);
       // Act / Assert
-      assertFalse(segmentFactory.createSegmentStoreDir());
+      assertThat(segmentFactory.createSegmentStoreDir()).isFalse();
       filesMockedStatic.verify(() -> Files.createDirectories(any(Path.class)), times(0));
     }
   }
 
   private void mockSegmentFactory(StandardOpenOption openOption) {
     segmentFileFactory = mock(SegmentFile.Factory.class);
-    storageConfiguration = mock(StorageConfiguration.class);
-    doReturn(Path.of("/tmp/.bitflask")).when(storageConfiguration).getStorageStoreDirectoryPath();
-    doReturn(100L).when(storageConfiguration).getStorageSegmentSizeLimit();
-    doReturn(openOption).when(storageConfiguration).getStorageSegmentCreationMode();
+    StorageConfiguration storageConfiguration = mock(StorageConfiguration.class);
+    when(storageConfiguration.getStorageStoreDirectoryPath())
+        .thenReturn(Path.of("/tmp/.bitflask"));
+    when(storageConfiguration.getStorageSegmentSizeLimit()).thenReturn(100L);
+    when(storageConfiguration.getStorageSegmentCreationMode()).thenReturn(openOption);
     segmentFactory = new SegmentFactory(segmentFileFactory, storageConfiguration);
   }
 }

@@ -1,16 +1,13 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import dev.sbutler.bitflask.storage.segment.SegmentFile.Factory;
 import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
@@ -23,10 +20,10 @@ import org.junit.jupiter.api.Test;
 
 public class SegmentFileTest {
 
-  SegmentFile segmentFile;
-  FileChannel fileChannel;
-  Path path = Path.of("test-path");
-  Header header;
+  private SegmentFile segmentFile;
+  private FileChannel fileChannel;
+  private Header header;
+  private final Path path = Path.of("test-path");
 
   @BeforeEach
   void beforeEach() {
@@ -37,86 +34,109 @@ public class SegmentFileTest {
   }
 
   @Test
-  void write() throws IOException {
+  void write() throws Exception {
+    // Act
     segmentFile.write(new byte[]{'a'}, 0L);
+    // Assert
     verify(fileChannel, times(1)).write(any(ByteBuffer.class), anyLong());
   }
 
   @Test
-  void write_exception() throws IOException {
-    doThrow(IOException.class).when(fileChannel).write(any(ByteBuffer.class), anyLong());
-    assertThrows(IOException.class, () -> segmentFile.write(new byte[]{'a'}, 0L));
-  }
-
-  @Test
-  void read() throws IOException {
+  void read() throws Exception {
+    // Act
     segmentFile.read(0, 0L);
+    // Assert
     verify(fileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
   }
 
   @Test
-  void read_exception() throws IOException {
-    doThrow(IOException.class).when(fileChannel).read(any(ByteBuffer.class), anyLong());
-
-    assertThrows(IOException.class, () -> segmentFile.read(0, 0L));
-  }
-
-  @Test
-  void readAsString() throws IOException {
+  void readAsString() throws Exception {
+    // Act
     String result = segmentFile.readAsString(0, 0L);
-    assertEquals(0, result.length());
+    // Assert
+    assertThat(result).hasLength(0);
     verify(fileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
   }
 
   @Test
-  void readByte() throws IOException {
+  void readByte() throws Exception {
+    // Act
     segmentFile.readByte(0L);
+    // Assert
     verify(fileChannel, times(1)).read(any(ByteBuffer.class), anyLong());
   }
 
   @Test
-  void size() throws IOException {
-    doReturn(0L).when(fileChannel).size();
-    assertEquals(0L, segmentFile.size());
+  void size() throws Exception {
+    // Arrange
+    when(fileChannel.size()).thenReturn(0L);
+    // Act
+    long size = segmentFile.size();
+    // Assert
+    assertThat(size).isEqualTo(0L);
   }
 
   @Test
   void truncate() throws Exception {
+    // Act
     segmentFile.truncate(10);
+    // Assert
     verify(fileChannel, times(1)).truncate(10);
   }
 
   @Test
   void getSegmentFilePath() {
-    assertEquals(path, segmentFile.getSegmentFilePath());
+    // Act
+    Path segmentFilePath = segmentFile.getSegmentFilePath();
+    // Assert
+    assertThat(segmentFilePath.equals(path)).isTrue();
   }
 
   @Test
   void getSegmentFileKey() {
-    assertEquals(header.key(), segmentFile.getSegmentFileKey());
+    // Act
+    int key = segmentFile.getSegmentFileKey();
+    // Assert
+    assertThat(key).isEqualTo(header.key());
   }
 
   @Test
-  void close() throws IOException {
+  void close() throws Exception {
+    // Act
     segmentFile.close();
+    // Assert
     verify(fileChannel, times(1)).close();
   }
 
   @Test
-  void close_IOException() throws IOException {
+  void close_IOException() throws Exception {
+    // Arrange
     doThrow(IOException.class).when(fileChannel).close();
+    // Act
     segmentFile.close();
+    // Assert
     verify(fileChannel, times(1)).close();
   }
 
   @Test
   void isOpen() {
-    // open
-    doReturn(true).when(fileChannel).isOpen();
-    assertTrue(segmentFile.isOpen());
+    // Arrange
+    when(fileChannel.isOpen()).thenReturn(true).thenReturn(false);
+    // Act / Assert
+    /// open
+    assertThat(segmentFile.isOpen()).isTrue();
+    /// closed
+    assertThat(segmentFile.isOpen()).isFalse();
+  }
 
-    // closed
-    doReturn(false).when(fileChannel).isOpen();
-    assertFalse(segmentFile.isOpen());
+  @Test
+  void header_readFromFileChannel() throws Exception {
+    // Note: can't mock ByteBuffer: must rely on fact initialized with values set to 0
+    // Arrange
+    FileChannel fileChannel = mock(FileChannel.class);
+    // Act
+    Header header = Header.readHeaderFromFileChannel(fileChannel);
+    // Assert
+    assertThat(header.key()).isEqualTo(0);
   }
 }
