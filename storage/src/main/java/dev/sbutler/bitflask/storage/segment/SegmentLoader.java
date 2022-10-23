@@ -28,20 +28,20 @@ final class SegmentLoader {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final StorageThreadFactory storageThreadFactory;
-  private final SegmentLoaderHelper segmentLoaderHelper;
   private final SegmentFile.Factory segmentFileFactory;
   private final SegmentFactory segmentFactory;
+  private final FilesHelper filesHelper;
   private final Path storeDirectoryPath;
 
   @Inject
   SegmentLoader(
-      StorageThreadFactory storageThreadFactory, SegmentLoaderHelper segmentLoaderHelper,
-      SegmentFactory segmentFactory, SegmentFile.Factory segmentFileFactory,
+      StorageThreadFactory storageThreadFactory, SegmentFactory segmentFactory,
+      SegmentFile.Factory segmentFileFactory, FilesHelper filesHelper,
       StorageConfiguration storageConfiguration) {
     this.storageThreadFactory = storageThreadFactory;
-    this.segmentLoaderHelper = segmentLoaderHelper;
     this.segmentFactory = segmentFactory;
     this.segmentFileFactory = segmentFileFactory;
+    this.filesHelper = filesHelper;
     this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
   }
 
@@ -62,7 +62,7 @@ final class SegmentLoader {
       }
 
       ImmutableList<Path> segmentFilePaths =
-          segmentLoaderHelper.getFilePathsInDirectory(storeDirectoryPath);
+          filesHelper.getFilePathsInDirectory(storeDirectoryPath);
       if (segmentFilePaths.isEmpty()) {
         logger.atInfo().log("No existing files found in segment store directory");
         return createManagedSegments(ImmutableList.of());
@@ -104,7 +104,7 @@ final class SegmentLoader {
       ImmutableList<Path> segmentFilePaths) {
     ImmutableMap<Path, Future<FileTime>> pathFileTimeFutures;
     try {
-      pathFileTimeFutures = segmentLoaderHelper.getLastModifiedTimeOfFiles(segmentFilePaths);
+      pathFileTimeFutures = filesHelper.getLastModifiedTimeOfFiles(segmentFilePaths);
     } catch (InterruptedException e) {
       throw new SegmentLoaderException("Interrupted while get file modified times", e);
     }
@@ -132,8 +132,8 @@ final class SegmentLoader {
   private ImmutableMap<Path, FileChannel> openSegmentFileChannels(ImmutableList<Path> filePaths) {
     ImmutableMap<Path, Future<FileChannel>> pathFutureFileChannelMap;
     try {
-      pathFutureFileChannelMap = segmentLoaderHelper.openFileChannels(filePaths,
-          segmentFactory.getFileChannelOptions());
+      pathFutureFileChannelMap =
+          filesHelper.openFileChannels(filePaths, segmentFactory.getFileChannelOptions());
     } catch (InterruptedException e) {
       throw new SegmentLoaderException("Interrupted while opening segment file channels", e);
     }
@@ -147,7 +147,7 @@ final class SegmentLoader {
     if (!failedFileChannels.isEmpty()) {
       failedFileChannels.forEach((key, value) -> logger.atSevere().withCause(value)
           .log("Opening FileChannel for [%s] failed", key));
-      segmentLoaderHelper.closeFileChannelsBestEffort(openFileChannels.values().asList());
+      filesHelper.closeFileChannelsBestEffort(openFileChannels.values().asList());
       throw new SegmentLoaderException("Failed opening segment file channels");
     }
 

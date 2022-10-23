@@ -19,12 +19,12 @@ import java.util.concurrent.Future;
 import javax.inject.Inject;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
-final class SegmentLoaderHelper {
+final class FilesHelper {
 
   private final StorageThreadFactory storageThreadFactory;
 
   @Inject
-  SegmentLoaderHelper(StorageThreadFactory storageThreadFactory) {
+  FilesHelper(StorageThreadFactory storageThreadFactory) {
     this.storageThreadFactory = storageThreadFactory;
   }
 
