@@ -27,13 +27,14 @@ import java.time.Instant;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@SuppressWarnings({"UnstableApiUsage"})
+@SuppressWarnings({"UnstableApiUsage", "unchecked"})
 @ExtendWith(MockitoExtension.class)
 class SegmentLoaderTest {
 
@@ -77,7 +78,10 @@ class SegmentLoaderTest {
       fcFuture1.set(mock(FileChannel.class));
       ImmutableMap<Path, Future<FileChannel>> fileChannelFutures =
           ImmutableMap.of(path1, fcFuture1, path0, fcFuture0);
-      when(filesHelper.openFileChannels(any(), any())).thenReturn(fileChannelFutures);
+      ArgumentCaptor<ImmutableList<Path>> sortedFilePathsCaptor = ArgumentCaptor.forClass(
+          ImmutableList.class);
+      when(filesHelper.openFileChannels(sortedFilePathsCaptor.capture(), any()))
+          .thenReturn(fileChannelFutures);
       /// SegmentFiles
       headerMockedStatic.when(() -> Header.readHeaderFromFileChannel(any()))
           .thenReturn(new Header(1))
@@ -97,6 +101,10 @@ class SegmentLoaderTest {
       assertThat(managedSegments.writableSegment()).isEqualTo(segment1);
       assertThat(managedSegments.frozenSegments()).hasSize(1);
       assertThat(managedSegments.frozenSegments().get(0)).isEqualTo(segment0);
+      /// modified time path sorting
+      ImmutableList<Path> pathsSorted = sortedFilePathsCaptor.getValue();
+      assertThat(pathsSorted).hasSize(2);
+      assertThat(pathsSorted).containsExactly(path1, path0).inOrder();
     }
   }
 
@@ -116,7 +124,7 @@ class SegmentLoaderTest {
   }
 
   @Test
-  void loadExistingSegments_noFilesFound() throws Exception {
+  void loadExistingSegments_filePaths_noFilesFound() throws Exception {
     try (MockedStatic<MoreFiles> filesMockedStatic = mockStatic(MoreFiles.class)) {
       // Arrange
       /// Store dir
@@ -124,6 +132,27 @@ class SegmentLoaderTest {
       /// File Paths
       filesMockedStatic.when(() -> MoreFiles.listFiles(any()))
           .thenReturn(ImmutableList.of());
+      /// Segments
+      Segment writableSegment = mock(Segment.class);
+      doReturn(writableSegment).when(segmentFactory).createSegment();
+      // Act
+      ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
+      // Assert
+      assertThat(managedSegments.writableSegment()).isEqualTo(writableSegment);
+      assertThat(managedSegments.frozenSegments()).hasSize(0);
+    }
+  }
+
+  @Test
+  void loadExistingSegments_filePaths_invalidSegmentFilePath() throws Exception {
+    try (MockedStatic<MoreFiles> filesMockedStatic = mockStatic(MoreFiles.class)) {
+      // Arrange
+      /// Store dir
+      when(segmentFactory.createSegmentStoreDir()).thenReturn(false);
+      /// File Paths
+      Path path = Path.of("invalid.txt");
+      filesMockedStatic.when(() -> MoreFiles.listFiles(any()))
+          .thenReturn(ImmutableList.of(path));
       /// Segments
       Segment writableSegment = mock(Segment.class);
       doReturn(writableSegment).when(segmentFactory).createSegment();
@@ -254,6 +283,7 @@ class SegmentLoaderTest {
           assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
       // Assert
       assertThat(exception).hasMessageThat().ignoringCase().contains("failed opening file channel");
+      verify(filesHelper, times(1)).closeFileChannelsBestEffort(any());
     }
   }
 
