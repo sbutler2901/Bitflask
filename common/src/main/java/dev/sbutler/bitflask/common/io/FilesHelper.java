@@ -35,7 +35,9 @@ public final class FilesHelper {
   public ImmutableList<Path> getFilePathsInDirectory(Path directoryPath) throws IOException {
     ImmutableList.Builder<Path> filePaths = new Builder<>();
     try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(directoryPath)) {
-      dirStream.forEach(filePaths::add);
+      for (Path path : dirStream) {
+        filePaths.add(path);
+      }
     } catch (DirectoryIteratorException ex) {
       // I/O error encountered during the iteration, the cause is an IOException
       throw ex.getCause();
