@@ -1,10 +1,9 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.common.utils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryIteratorException;
@@ -16,29 +15,27 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import javax.inject.Inject;
+import java.util.concurrent.ThreadFactory;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
-final class FilesHelper {
+/**
+ * Provides utility functions dealing with files.
+ */
+public final class FilesHelper {
 
-  private final StorageThreadFactory storageThreadFactory;
+  private final ThreadFactory threadFactory;
 
-  @Inject
-  FilesHelper(StorageThreadFactory storageThreadFactory) {
-    this.storageThreadFactory = storageThreadFactory;
+  public FilesHelper(ThreadFactory threadFactory) {
+    this.threadFactory = threadFactory;
   }
 
   /**
    * Read the directory at the provided path and collect the paths of all files within it.
    */
-  ImmutableList<Path> getFilePathsInDirectory(Path directoryPath) throws IOException {
+  public ImmutableList<Path> getFilePathsInDirectory(Path directoryPath) throws IOException {
     ImmutableList.Builder<Path> filePaths = new Builder<>();
     try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(directoryPath)) {
-      dirStream.forEach(path -> {
-        if (SegmentFactory.isValidSegmentFilePath(path)) {
-          filePaths.add(path);
-        }
-      });
+      dirStream.forEach(filePaths::add);
     } catch (DirectoryIteratorException ex) {
       // I/O error encountered during the iteration, the cause is an IOException
       throw ex.getCause();
@@ -53,11 +50,11 @@ final class FilesHelper {
    * will return {@code true}. Handling the state of the future ({@link Future#state()}) is the
    * responsibility of the caller.
    */
-  ImmutableMap<Path, Future<FileTime>> getLastModifiedTimeOfFiles(ImmutableList<Path> filePaths)
-      throws InterruptedException {
+  public ImmutableMap<Path, Future<FileTime>> getLastModifiedTimeOfFiles(
+      ImmutableList<Path> filePaths) throws InterruptedException {
     ImmutableMap.Builder<Path, Future<FileTime>> pathFileTimeFutures = new ImmutableMap.Builder<>();
-    try (var scope = new StructuredTaskScope.ShutdownOnFailure("get-files-modified-time",
-        storageThreadFactory)) {
+    try (var scope =
+        new StructuredTaskScope.ShutdownOnFailure("get-files-modified-time", threadFactory)) {
       for (Path path : filePaths) {
         Callable<FileTime> fileTimeCallable = () ->
             Files.getLastModifiedTime(path, LinkOption.NOFOLLOW_LINKS);
@@ -77,13 +74,13 @@ final class FilesHelper {
    * will return {@code true}. Handling the state of the future ({@link Future#state()}) is the
    * responsibility of the caller.
    */
-  ImmutableMap<Path, Future<FileChannel>> openFileChannels(
-      ImmutableList<Path> filePaths,
-      ImmutableSet<StandardOpenOption> fileChannelOptions) throws InterruptedException {
+  public ImmutableMap<Path, Future<FileChannel>> openFileChannels(
+      ImmutableList<Path> filePaths, ImmutableSet<StandardOpenOption> fileChannelOptions)
+      throws InterruptedException {
     ImmutableMap.Builder<Path, Future<FileChannel>> pathFutureFileChannelMap =
         new ImmutableMap.Builder<>();
-    try (var scope = new StructuredTaskScope.ShutdownOnFailure("open-file-channels",
-        storageThreadFactory)) {
+    try (var scope =
+        new StructuredTaskScope.ShutdownOnFailure("open-file-channels", threadFactory)) {
       for (Path path : filePaths) {
         Callable<FileChannel> pathCallable = () ->
             FileChannel.open(path, fileChannelOptions);
@@ -98,7 +95,7 @@ final class FilesHelper {
    * Close the provided FileChannels while catching and ignoring {@link java.io.IOException}s and
    * proceeding to close the next.
    */
-  void closeFileChannelsBestEffort(ImmutableList<FileChannel> fileChannels) {
+  public void closeFileChannelsBestEffort(ImmutableList<FileChannel> fileChannels) {
     fileChannels.forEach(fileChannel -> {
       try {
         fileChannel.close();

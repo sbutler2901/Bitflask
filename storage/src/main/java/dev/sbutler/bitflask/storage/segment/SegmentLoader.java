@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.mu.util.stream.BiStream;
+import dev.sbutler.bitflask.common.utils.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
@@ -61,8 +62,7 @@ final class SegmentLoader {
         return createManagedSegments(ImmutableList.of());
       }
 
-      ImmutableList<Path> segmentFilePaths =
-          filesHelper.getFilePathsInDirectory(storeDirectoryPath);
+      ImmutableList<Path> segmentFilePaths = getSegmentFilePaths();
       if (segmentFilePaths.isEmpty()) {
         logger.atInfo().log("No existing files found in segment store directory");
         return createManagedSegments(ImmutableList.of());
@@ -98,6 +98,18 @@ final class SegmentLoader {
     }
 
     return new ManagedSegments(writableSegment, loadedSegments);
+  }
+
+  ImmutableList<Path> getSegmentFilePaths() {
+    ImmutableList<Path> filePathsInDirectory;
+    try {
+      filePathsInDirectory = filesHelper.getFilePathsInDirectory(storeDirectoryPath);
+    } catch (IOException e) {
+      throw new SegmentLoaderException("Failed getting file paths in segment store directory", e);
+    }
+    return filePathsInDirectory.stream()
+        .filter(SegmentFactory::isValidSegmentFilePath)
+        .collect(toImmutableList());
   }
 
   ImmutableList<Path> sortFilePathsByLatestModifiedDatesFirst(

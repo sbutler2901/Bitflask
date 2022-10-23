@@ -2,8 +2,10 @@ package dev.sbutler.bitflask.storage;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import dev.sbutler.bitflask.common.utils.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.ConcurrencyModule;
+import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import javax.inject.Singleton;
 
@@ -49,5 +51,10 @@ public class StorageServiceModule extends AbstractModule {
           storageConfiguration.getStorageDispatcherCapacity());
     }
     return storageCommandDispatcher;
+  }
+
+  @Provides
+  FilesHelper provideFilesHelper(StorageThreadFactory storageThreadFactory) {
+    return new FilesHelper(storageThreadFactory);
   }
 }
