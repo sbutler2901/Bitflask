@@ -28,16 +28,15 @@ final class SegmentLoader {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final StorageThreadFactory storageThreadFactory;
-  private final SegmentFile.Factory segmentFileFactory;
   private final SegmentFactory segmentFactory;
+  private final SegmentFile.Factory segmentFileFactory;
+  private final StorageThreadFactory storageThreadFactory;
   private final FilesHelper filesHelper;
   private final Path storeDirectoryPath;
 
   @Inject
-  SegmentLoader(
-      StorageThreadFactory storageThreadFactory, SegmentFactory segmentFactory,
-      SegmentFile.Factory segmentFileFactory, FilesHelper filesHelper,
+  SegmentLoader(SegmentFactory segmentFactory, SegmentFile.Factory segmentFileFactory,
+      StorageThreadFactory storageThreadFactory, FilesHelper filesHelper,
       StorageConfiguration storageConfiguration) {
     this.storageThreadFactory = storageThreadFactory;
     this.segmentFactory = segmentFactory;
@@ -69,7 +68,7 @@ final class SegmentLoader {
       }
 
       ImmutableList<Path> sortedSegmentFilePaths =
-          sortFilePathsByLatestModifiedDatesFirst(segmentFilePaths);
+          sortFilePathsByLatestModifiedTimeFirst(segmentFilePaths);
       ImmutableMap<Path, FileChannel> pathFileChannelMap =
           openSegmentFileChannels(sortedSegmentFilePaths);
       ImmutableList<SegmentFile> segmentFiles = createSegmentFiles(pathFileChannelMap);
@@ -100,7 +99,7 @@ final class SegmentLoader {
         .collect(toImmutableList());
   }
 
-  private ImmutableList<Path> sortFilePathsByLatestModifiedDatesFirst(
+  private ImmutableList<Path> sortFilePathsByLatestModifiedTimeFirst(
       ImmutableList<Path> segmentFilePaths) {
     ImmutableMap<Path, Future<FileTime>> pathFileTimeFutures;
     try {
@@ -135,7 +134,7 @@ final class SegmentLoader {
       pathFutureFileChannelMap =
           filesHelper.openFileChannels(filePaths, segmentFactory.getFileChannelOptions());
     } catch (InterruptedException e) {
-      throw new SegmentLoaderException("Interrupted while opening segment file channels", e);
+      throw new SegmentLoaderException("Interrupted while opening file channels", e);
     }
 
     ImmutableMap<Path, FileChannel> openFileChannels =
@@ -146,9 +145,9 @@ final class SegmentLoader {
 
     if (!failedFileChannels.isEmpty()) {
       failedFileChannels.forEach((key, value) -> logger.atSevere().withCause(value)
-          .log("Opening FileChannel for [%s] failed", key));
+          .log("Opening file channel for [%s] failed", key));
       filesHelper.closeFileChannelsBestEffort(openFileChannels.values().asList());
-      throw new SegmentLoaderException("Failed opening segment file channels");
+      throw new SegmentLoaderException("Failed opening file channels");
     }
 
     return openFileChannels;
@@ -185,7 +184,7 @@ final class SegmentLoader {
     try {
       segmentFileFutureSegmentMap = createSegmentFutures(segmentFiles);
     } catch (InterruptedException e) {
-      throw new SegmentLoaderException("Interrupted will creating segments from segment files", e);
+      throw new SegmentLoaderException("Interrupted while creating segments from segment files", e);
     }
 
     ImmutableMap<SegmentFile, Throwable> failedSegments =

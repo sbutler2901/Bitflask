@@ -1,14 +1,9 @@
 package dev.sbutler.bitflask.storage.segment;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -16,322 +11,355 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.testing.TestingExecutors;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.MoreFiles;
+import com.google.common.util.concurrent.SettableFuture;
+import dev.sbutler.bitflask.common.io.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
+import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.nio.file.DirectoryIteratorException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
+import java.time.Instant;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.OngoingStubbing;
 
-@SuppressWarnings("resource")
+@SuppressWarnings({"UnstableApiUsage"})
 @ExtendWith(MockitoExtension.class)
 class SegmentLoaderTest {
 
   @InjectMocks
-  SegmentLoader segmentLoader;
+  private SegmentLoader segmentLoader;
   @Spy
-  @SuppressWarnings("UnstableApiUsage")
-  ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
+  private StorageThreadFactory storageThreadFactory = new StorageThreadFactory();
   @Mock
-  SegmentFile.Factory segmentFileFactory;
-  @Spy
-  StorageThreadFactory storageThreadFactory = new StorageThreadFactory();
+  private SegmentFactory segmentFactory;
   @Mock
-  SegmentFactory segmentFactory;
+  private SegmentFile.Factory segmentFileFactory;
   @Mock
-  StorageConfiguration storageConfiguration;
+  private FilesHelper filesHelper;
+  @Mock
+  private StorageConfiguration storageConfiguration;
 
   @Test
-  @SuppressWarnings("unchecked")
   void loadExistingSegments() throws Exception {
-    try (MockedStatic<Files> filesMockedStatic = mockStatic(
-        Files.class); MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(
-        FileChannel.class)) {
+    try (MockedStatic<MoreFiles> filesMockedStatic = mockStatic(MoreFiles.class);
+        MockedStatic<Header> headerMockedStatic = mockStatic(Header.class)) {
       // Arrange
+      /// Store dir
+      when(segmentFactory.createSegmentStoreDir()).thenReturn(false);
       /// File Paths
-      DirectoryStream<Path> directoryStream = mock(DirectoryStream.class);
-      filesMockedStatic.when(() -> Files.newDirectoryStream(any())).thenReturn(directoryStream);
-      Iterator<Path> pathIterator = mock(Iterator.class);
-      when(pathIterator.hasNext()).thenReturn(true, true, false);
-      Path firstPath = mock(Path.class);
-      Path secondPath = mock(Path.class);
-      doReturn(Path.of("0_segment.txt")).when(firstPath).getFileName();
-      doReturn(Path.of("1_segment.txt")).when(secondPath).getFileName();
-      when(pathIterator.next()).thenReturn(firstPath, secondPath);
-      doReturn(pathIterator).when(directoryStream).iterator();
-      /// File Paths sorting
-      FileTime firstFileTime = FileTime.from(0L, TimeUnit.SECONDS);
-      FileTime secondFileTime = FileTime.from(10L, TimeUnit.SECONDS);
-      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
-          .thenReturn(firstFileTime, secondFileTime);
-      /// FileChannels
-      FileChannel firstFileChannel = mock(FileChannel.class);
-      FileChannel secondFileChannel = mock(FileChannel.class);
-      fileChannelMockedStatic.when(() -> FileChannel.open(any(), anySet()))
-          .thenReturn(firstFileChannel, secondFileChannel);
-      InOrder fileChannelOrder = inOrder(FileChannel.class);
+      Path path0 = Path.of("0_segment.txt");
+      Path path1 = Path.of("1_segment.txt");
+      filesMockedStatic.when(() -> MoreFiles.listFiles(any()))
+          .thenReturn(ImmutableList.of(path0, path1));
+      /// modified time
+      SettableFuture<FileTime> timeFuture0 = SettableFuture.create();
+      timeFuture0.set(FileTime.from(Instant.now()));
+      SettableFuture<FileTime> timeFuture1 = SettableFuture.create();
+      timeFuture1.set(FileTime.from(Instant.now()));
+      ImmutableMap<Path, Future<FileTime>> fileTimeFutures =
+          ImmutableMap.of(path0, timeFuture0, path1, timeFuture1);
+      when(filesHelper.getLastModifiedTimeOfFiles(any())).thenReturn(fileTimeFutures);
+      /// FileChannel
+      SettableFuture<FileChannel> fcFuture0 = SettableFuture.create();
+      fcFuture0.set(mock(FileChannel.class));
+      SettableFuture<FileChannel> fcFuture1 = SettableFuture.create();
+      fcFuture1.set(mock(FileChannel.class));
+      ImmutableMap<Path, Future<FileChannel>> fileChannelFutures =
+          ImmutableMap.of(path1, fcFuture1, path0, fcFuture0);
+      when(filesHelper.openFileChannels(any(), any())).thenReturn(fileChannelFutures);
       /// SegmentFiles
-      SegmentFile firstSegmentFile = mock(SegmentFile.class);
-      SegmentFile secondSegmentFile = mock(SegmentFile.class);
-      when(segmentFileFactory.create(any(), any(), any()))
-          .thenReturn(firstSegmentFile, secondSegmentFile);
+      headerMockedStatic.when(() -> Header.readHeaderFromFileChannel(any()))
+          .thenReturn(new Header(1))
+          .thenReturn(new Header(0));
       /// Segments
-      Segment firstSegment = mock(Segment.class);
-      Segment secondSegment = mock(Segment.class);
-      doReturn(firstSegment).when(segmentFactory).createSegmentFromFile(firstSegmentFile);
-      doReturn(secondSegment).when(segmentFactory).createSegmentFromFile(secondSegmentFile);
-
+      Segment segment0 = mock(Segment.class);
+      Segment segment1 = mock(Segment.class);
+      when(segmentFactory.createSegmentFromFile(any()))
+          .thenReturn(segment1)
+          .thenReturn(segment0);
+      when(segmentFileFactory.create(any(), any(), any()))
+          .thenReturn(mock(SegmentFile.class))
+          .thenReturn(mock(SegmentFile.class));
       // Act
       ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
-
       // Assert
-      assertEquals(firstSegment, managedSegments.writableSegment());
-      assertEquals(1, managedSegments.frozenSegments().size());
-      assertEquals(secondSegment, managedSegments.frozenSegments().get(0));
-      // Verify path sorted order maintained
-      fileChannelOrder.verify(fileChannelMockedStatic,
-          () -> FileChannel.open(eq(secondPath), anySet()));
-      fileChannelOrder.verify(fileChannelMockedStatic,
-          () -> FileChannel.open(eq(firstPath), anySet()));
+      assertThat(managedSegments.writableSegment()).isEqualTo(segment1);
+      assertThat(managedSegments.frozenSegments()).hasSize(1);
+      assertThat(managedSegments.frozenSegments().get(0)).isEqualTo(segment0);
     }
   }
 
   @Test
   void loadExistingSegments_directoryCreated() throws Exception {
     // Arrange
-    doReturn(true).when(segmentFactory).createSegmentStoreDir();
+    /// Store dir
+    when(segmentFactory.createSegmentStoreDir()).thenReturn(true);
+    /// Segments
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(segmentFactory).createSegment();
+    when(segmentFactory.createSegment()).thenReturn(writableSegment);
     // Act
     ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
     // Assert
-    assertEquals(writableSegment, managedSegments.writableSegment());
-    assertEquals(0, managedSegments.frozenSegments().size());
+    assertThat(managedSegments.writableSegment()).isEqualTo(writableSegment);
+    assertThat(managedSegments.frozenSegments()).hasSize(0);
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void loadExistingSegments_noFilesFound() throws Exception {
-    try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+    try (MockedStatic<MoreFiles> filesMockedStatic = mockStatic(MoreFiles.class)) {
       // Arrange
+      /// Store dir
+      when(segmentFactory.createSegmentStoreDir()).thenReturn(false);
       /// File Paths
-      DirectoryStream<Path> directoryStream = mock(DirectoryStream.class);
-      filesMockedStatic.when(() -> Files.newDirectoryStream(any())).thenReturn(directoryStream);
-      Iterator<Path> pathIterator = mock(Iterator.class);
-      doReturn(false).when(pathIterator).hasNext();
-      doReturn(pathIterator).when(directoryStream).iterator();
+      filesMockedStatic.when(() -> MoreFiles.listFiles(any()))
+          .thenReturn(ImmutableList.of());
       /// Segments
-      doReturn(false).when(segmentFactory).createSegmentStoreDir();
       Segment writableSegment = mock(Segment.class);
       doReturn(writableSegment).when(segmentFactory).createSegment();
       // Act
       ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
       // Assert
-      assertEquals(writableSegment, managedSegments.writableSegment());
-      assertEquals(0, managedSegments.frozenSegments().size());
+      assertThat(managedSegments.writableSegment()).isEqualTo(writableSegment);
+      assertThat(managedSegments.frozenSegments()).hasSize(0);
     }
   }
 
   @Test
-  void loadExistingSegments_filePaths_directoryIteratorException() {
-    try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+  void loadExistingSegments_filePaths_ioException() throws Exception {
+    try (MockedStatic<MoreFiles> filesMockedStatic = mockStatic(MoreFiles.class)) {
       // Arrange
-      DirectoryIteratorException directoryIteratorException = mock(
-          DirectoryIteratorException.class);
-      doReturn(new IOException("directory stream")).when(directoryIteratorException).getCause();
-      filesMockedStatic.when(() -> Files.newDirectoryStream(any()))
-          .thenThrow(directoryIteratorException);
-      // Act / Assert
-      assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
-    }
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  void loadExistingSegments_fileChannels_executorServiceInterruptedException() throws Exception {
-    try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-      // Arrange
+      /// Store dir
+      when(segmentFactory.createSegmentStoreDir()).thenReturn(false);
       /// File Paths
-      DirectoryStream<Path> directoryStream = mock(DirectoryStream.class);
-      filesMockedStatic.when(() -> Files.newDirectoryStream(any())).thenReturn(directoryStream);
-      Iterator<Path> pathIterator = mock(Iterator.class);
-      when(pathIterator.hasNext()).thenReturn(true, false);
-      Path firstPath = mock(Path.class);
-      doReturn(Path.of("0_segment.txt")).when(firstPath).getFileName();
-      doReturn(firstPath).when(pathIterator).next();
-      doReturn(pathIterator).when(directoryStream).iterator();
-      /// File Paths sorting
-      FileTime firstFileTime = FileTime.from(0L, TimeUnit.SECONDS);
-      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
-          .thenReturn(firstFileTime);
-      /// FileChannels
-      doThrow(InterruptedException.class).when(executorService)
-          .invokeAll(ArgumentMatchers.<ImmutableList<Callable<FileChannel>>>any());
-      // Act / Assert
-      assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
+      IOException ioException = new IOException("test");
+      filesMockedStatic.when(() -> MoreFiles.listFiles(any())).thenThrow(ioException);
+      // Act
+      SegmentLoaderException exception =
+          assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
+      // Assert
+      assertThat(exception).hasCauseThat().isEqualTo(ioException);
+      assertThat(exception).hasMessageThat().ignoringCase().contains("store directory");
     }
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  void loadExistingSegments_fileChannels_futureFailure() throws Exception {
-    try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+  void loadExistingSegments_sortModifiedFirst_interrupted() throws Exception {
+    try (MockedStatic<MoreFiles> filesMockedStatic = mockStatic(MoreFiles.class)) {
       // Arrange
+      /// Store dir
+      when(segmentFactory.createSegmentStoreDir()).thenReturn(false);
       /// File Paths
-      DirectoryStream<Path> directoryStream = mock(DirectoryStream.class);
-      filesMockedStatic.when(() -> Files.newDirectoryStream(any())).thenReturn(directoryStream);
-      Iterator<Path> pathIterator = mock(Iterator.class);
-      when(pathIterator.hasNext()).thenReturn(true, true, true, true, false);
-      Path firstPath = mock(Path.class);
-      Path secondPath = mock(Path.class);
-      Path thirdPath = mock(Path.class);
-      Path fourthPath = mock(Path.class);
-      doReturn(Path.of("0_segment.txt")).when(firstPath).getFileName();
-      doReturn(Path.of("1_segment.txt")).when(secondPath).getFileName();
-      doReturn(Path.of("2_segment.txt")).when(thirdPath).getFileName();
-      doReturn(Path.of("3_segment.txt")).when(fourthPath).getFileName();
-      when(pathIterator.next()).thenReturn(firstPath, secondPath, thirdPath, fourthPath);
-      doReturn(pathIterator).when(directoryStream).iterator();
-      /// File Paths sorting
-      FileTime firstFileTime = FileTime.from(0L, TimeUnit.SECONDS);
-      FileTime secondFileTime = FileTime.from(5L, TimeUnit.SECONDS);
-      FileTime thirdFileTime = FileTime.from(10L, TimeUnit.SECONDS);
-      FileTime fourthFileTime = FileTime.from(15L, TimeUnit.SECONDS);
-      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
-          .thenReturn(firstFileTime, secondFileTime, thirdFileTime, fourthFileTime);
-      /// FileChannels
-      Future<FileChannel> firstFuture = mock(Future.class);
-      doThrow(InterruptedException.class).when(firstFuture).get();
-      Future<FileChannel> secondFuture = mock(Future.class);
-      doThrow(new ExecutionException(new IOException("test"))).when(secondFuture).get();
-      Future<FileChannel> thirdFuture = mock(Future.class);
-      FileChannel thirdFileChannel = mock(FileChannel.class);
-      doReturn(thirdFileChannel).when(thirdFuture).get();
-      Future<FileChannel> fourthFuture = mock(Future.class);
-      FileChannel fourthFileChannel = mock(FileChannel.class);
-      doThrow(IOException.class).when(fourthFileChannel).close();
-      doReturn(fourthFileChannel).when(fourthFuture).get();
-      doReturn(ImmutableList.of(firstFuture, secondFuture, thirdFuture, fourthFuture))
-          .when(executorService).invokeAll(any());
-      // Act / Assert
-      assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
-      verify(thirdFileChannel, times(1)).close();
+      filesMockedStatic.when(() -> MoreFiles.listFiles(any()))
+          .thenReturn(ImmutableList.of(Path.of("0_segment.txt")));
+      /// modified time
+      InterruptedException interruptedException = new InterruptedException("test");
+      when(filesHelper.getLastModifiedTimeOfFiles(any())).thenThrow(interruptedException);
+      // Act
+      SegmentLoaderException exception =
+          assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
+      // Assert
+      assertThat(exception).hasCauseThat().isEqualTo(interruptedException);
+      assertThat(exception).hasMessageThat().ignoringCase().contains("modified time");
+      assertThat(exception).hasMessageThat().ignoringCase().contains("interrupted");
     }
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  void loadExistingSegments_segments_executorServiceInterruptedException() throws Exception {
-    try (MockedStatic<Files> filesMockedStatic = mockStatic(
-        Files.class); MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(
-        FileChannel.class)) {
+  void loadExistingSegments_sortModifiedFirst_failedFutures() throws Exception {
+    try (MockedStatic<MoreFiles> filesMockedStatic = mockStatic(MoreFiles.class)) {
       // Arrange
+      /// Store dir
+      when(segmentFactory.createSegmentStoreDir()).thenReturn(false);
       /// File Paths
-      DirectoryStream<Path> directoryStream = mock(DirectoryStream.class);
-      filesMockedStatic.when(() -> Files.newDirectoryStream(any())).thenReturn(directoryStream);
-      Iterator<Path> pathIterator = mock(Iterator.class);
-      when(pathIterator.hasNext()).thenReturn(true, true, false);
-      Path firstPath = mock(Path.class);
-      Path secondPath = mock(Path.class);
-      doReturn(Path.of("0_segment.txt")).when(firstPath).getFileName();
-      doReturn(Path.of("1_segment.txt")).when(secondPath).getFileName();
-      when(pathIterator.next()).thenReturn(firstPath, secondPath);
-      doReturn(pathIterator).when(directoryStream).iterator();
-      /// File Paths sorting
-      FileTime firstFileTime = FileTime.from(0L, TimeUnit.SECONDS);
-      FileTime secondFileTime = FileTime.from(10L, TimeUnit.SECONDS);
-      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
-          .thenReturn(firstFileTime, secondFileTime);
-      /// FileChannels
-      FileChannel firstFileChannel = mock(FileChannel.class);
-      FileChannel secondFileChannel = mock(FileChannel.class);
-      fileChannelMockedStatic.when(() -> FileChannel.open(any(), anySet()))
-          .thenReturn(firstFileChannel, secondFileChannel);
+      Path path = Path.of("0_segment.txt");
+      filesMockedStatic.when(() -> MoreFiles.listFiles(any()))
+          .thenReturn(ImmutableList.of(path));
+      /// modified time
+      SettableFuture<FileTime> timeFuture = SettableFuture.create();
+      IOException ioException = new IOException("test");
+      timeFuture.setException(ioException);
+      ImmutableMap<Path, Future<FileTime>> fileTimeFutures = ImmutableMap.of(path, timeFuture);
+      when(filesHelper.getLastModifiedTimeOfFiles(any())).thenReturn(fileTimeFutures);
+      // Act
+      SegmentLoaderException exception =
+          assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
+      // Assert
+      assertThat(exception).hasMessageThat().ignoringCase().contains("modified time");
+      assertThat(exception).hasMessageThat().ignoringCase().contains("failures");
+    }
+  }
+
+  @Test
+  void loadExistingSegments_fileChannels_interrupted() throws Exception {
+    try (MockedStatic<MoreFiles> filesMockedStatic = mockStatic(MoreFiles.class)) {
+      // Arrange
+      /// Store dir
+      when(segmentFactory.createSegmentStoreDir()).thenReturn(false);
+      /// File Paths
+      Path path = Path.of("0_segment.txt");
+      filesMockedStatic.when(() -> MoreFiles.listFiles(any()))
+          .thenReturn(ImmutableList.of(path));
+      /// modified time
+      SettableFuture<FileTime> timeFuture = SettableFuture.create();
+      timeFuture.set(FileTime.from(Instant.now()));
+      ImmutableMap<Path, Future<FileTime>> fileTimeFutures = ImmutableMap.of(path, timeFuture);
+      when(filesHelper.getLastModifiedTimeOfFiles(any())).thenReturn(fileTimeFutures);
+      /// FileChannel
+      InterruptedException interruptedException = new InterruptedException("test");
+      when(filesHelper.openFileChannels(any(), any())).thenThrow(interruptedException);
+      // Act
+      SegmentLoaderException exception =
+          assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
+      // Assert
+      assertThat(exception).hasCauseThat().isEqualTo(interruptedException);
+      assertThat(exception).hasMessageThat().ignoringCase().contains("opening file channel");
+      assertThat(exception).hasMessageThat().ignoringCase().contains("interrupted");
+    }
+  }
+
+  @Test
+  void loadExistingSegments_fileChannels_failedFutures() throws Exception {
+    try (MockedStatic<MoreFiles> filesMockedStatic = mockStatic(MoreFiles.class)) {
+      // Arrange
+      /// Store dir
+      when(segmentFactory.createSegmentStoreDir()).thenReturn(false);
+      /// File Paths
+      Path path = Path.of("0_segment.txt");
+      filesMockedStatic.when(() -> MoreFiles.listFiles(any()))
+          .thenReturn(ImmutableList.of(path));
+      /// modified time
+      SettableFuture<FileTime> timeFuture = SettableFuture.create();
+      timeFuture.set(FileTime.from(Instant.now()));
+      ImmutableMap<Path, Future<FileTime>> fileTimeFutures = ImmutableMap.of(path, timeFuture);
+      when(filesHelper.getLastModifiedTimeOfFiles(any())).thenReturn(fileTimeFutures);
+      /// FileChannel
+      SettableFuture<FileChannel> fcFuture = SettableFuture.create();
+      IOException ioException = new IOException("test");
+      fcFuture.setException(ioException);
+      when(filesHelper.openFileChannels(any(), any()))
+          .thenReturn(ImmutableMap.of(path, fcFuture));
+      // Act
+      SegmentLoaderException exception =
+          assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
+      // Assert
+      assertThat(exception).hasMessageThat().ignoringCase().contains("failed opening file channel");
+    }
+  }
+
+  @Test
+  void loadExistingSegments_segmentFiles_header_ioException() throws Exception {
+    try (MockedStatic<MoreFiles> filesMockedStatic = mockStatic(MoreFiles.class);
+        MockedStatic<Header> headerMockedStatic = mockStatic(Header.class)) {
+      // Arrange
+      /// Store dir
+      when(segmentFactory.createSegmentStoreDir()).thenReturn(false);
+      /// File Paths
+      Path path = Path.of("0_segment.txt");
+      filesMockedStatic.when(() -> MoreFiles.listFiles(any()))
+          .thenReturn(ImmutableList.of(path));
+      /// modified time
+      SettableFuture<FileTime> timeFuture = SettableFuture.create();
+      timeFuture.set(FileTime.from(Instant.now()));
+      ImmutableMap<Path, Future<FileTime>> fileTimeFutures = ImmutableMap.of(path, timeFuture);
+      when(filesHelper.getLastModifiedTimeOfFiles(any())).thenReturn(fileTimeFutures);
+      /// FileChannel
+      SettableFuture<FileChannel> fcFuture = SettableFuture.create();
+      fcFuture.set(mock(FileChannel.class));
+      ImmutableMap<Path, Future<FileChannel>> fileChannelFutures = ImmutableMap.of(path, fcFuture);
+      when(filesHelper.openFileChannels(any(), any())).thenReturn(fileChannelFutures);
       /// SegmentFiles
-      SegmentFile firstSegmentFile = mock(SegmentFile.class);
-      SegmentFile secondSegmentFile = mock(SegmentFile.class);
-      when(segmentFileFactory.create(any(), any(), any()))
-          .thenReturn(firstSegmentFile, secondSegmentFile);
-      /// Segments
-      when(executorService.invokeAll(anyList()))
-          .thenCallRealMethod()
-          .thenThrow(InterruptedException.class);
-      // Act / Assert
-      assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
-      verify(firstSegmentFile, times(1)).close();
-      verify(secondSegmentFile, times(1)).close();
+      IOException ioException = new IOException("test");
+      headerMockedStatic.when(() -> Header.readHeaderFromFileChannel(any()))
+          .thenThrow(ioException);
+      // Act
+      SegmentLoaderException exception =
+          assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
+      // Assert
+      assertThat(exception).hasCauseThat().isEqualTo(ioException);
+      assertThat(exception).hasMessageThat().ignoringCase().contains("SegmentFile.Header");
     }
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  void loadExistingSegments_segments_futureFailure() throws Exception {
-    try (MockedStatic<Files> filesMockedStatic = mockStatic(
-        Files.class); MockedStatic<FileChannel> fileChannelMockedStatic = mockStatic(
-        FileChannel.class)) {
+  void loadExistingSegments_segments_failedFutures() throws Exception {
+    try (MockedStatic<MoreFiles> filesMockedStatic = mockStatic(MoreFiles.class);
+        MockedStatic<Header> headerMockedStatic = mockStatic(Header.class)) {
       // Arrange
+      /// Store dir
+      when(segmentFactory.createSegmentStoreDir()).thenReturn(false);
       /// File Paths
-      DirectoryStream<Path> directoryStream = mock(DirectoryStream.class);
-      filesMockedStatic.when(() -> Files.newDirectoryStream(any())).thenReturn(directoryStream);
-      Iterator<Path> pathIterator = mock(Iterator.class);
-      when(pathIterator.hasNext()).thenReturn(true, true, false);
-      Path firstPath = mock(Path.class);
-      Path secondPath = mock(Path.class);
-      doReturn(Path.of("0_segment.txt")).when(firstPath).getFileName();
-      doReturn(Path.of("1_segment.txt")).when(secondPath).getFileName();
-      when(pathIterator.next()).thenReturn(firstPath, secondPath);
-      doReturn(pathIterator).when(directoryStream).iterator();
-      /// File Paths sorting
-      FileTime firstFileTime = FileTime.from(0L, TimeUnit.SECONDS);
-      FileTime secondFileTime = FileTime.from(10L, TimeUnit.SECONDS);
-      filesMockedStatic.when(() -> Files.getLastModifiedTime(any(), any()))
-          .thenReturn(firstFileTime, secondFileTime);
-      /// FileChannels
-      FileChannel firstFileChannel = mock(FileChannel.class);
-      FileChannel secondFileChannel = mock(FileChannel.class);
-      fileChannelMockedStatic.when(() -> FileChannel.open(any(), anySet()))
-          .thenReturn(firstFileChannel, secondFileChannel);
+      Path path = Path.of("0_segment.txt");
+      filesMockedStatic.when(() -> MoreFiles.listFiles(any()))
+          .thenReturn(ImmutableList.of(path));
+      /// modified time
+      SettableFuture<FileTime> timeFuture = SettableFuture.create();
+      timeFuture.set(FileTime.from(Instant.now()));
+      ImmutableMap<Path, Future<FileTime>> fileTimeFutures = ImmutableMap.of(path, timeFuture);
+      when(filesHelper.getLastModifiedTimeOfFiles(any())).thenReturn(fileTimeFutures);
+      /// FileChannel
+      SettableFuture<FileChannel> fcFuture = SettableFuture.create();
+      fcFuture.set(mock(FileChannel.class));
+      ImmutableMap<Path, Future<FileChannel>> fileChannelFutures = ImmutableMap.of(path, fcFuture);
+      when(filesHelper.openFileChannels(any(), any())).thenReturn(fileChannelFutures);
       /// SegmentFiles
-      SegmentFile firstSegmentFile = mock(SegmentFile.class);
-      SegmentFile secondSegmentFile = mock(SegmentFile.class);
+      headerMockedStatic.when(() -> Header.readHeaderFromFileChannel(any()))
+          .thenReturn(new Header(0));
+      SegmentFile segmentFile = mock(SegmentFile.class);
       when(segmentFileFactory.create(any(), any(), any()))
-          .thenReturn(firstSegmentFile, secondSegmentFile);
+          .thenReturn(segmentFile);
       /// Segments
-      Future<Segment> firstFuture = mock(Future.class);
-      doThrow(InterruptedException.class).when(firstFuture).get();
-      Future<Segment> secondFuture = mock(Future.class);
-      doThrow(new ExecutionException(new IOException("test"))).when(secondFuture).get();
-      OngoingStubbing<List<Future<Segment>>> executorStub = when(
-          executorService.invokeAll(anyList()));
-      executorStub.thenCallRealMethod().thenReturn(ImmutableList.of(firstFuture, secondFuture));
-
-      // Act / Assert
-      assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
-      verify(firstSegmentFile, times(1)).close();
-      verify(secondSegmentFile, times(1)).close();
+      IOException ioException = new IOException("test");
+      when(segmentFactory.createSegmentFromFile(any()))
+          .thenThrow(ioException);
+      // Act
+      SegmentLoaderException exception =
+          assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
+      // Assert
+      assertThat(exception).hasMessageThat().ignoringCase().contains("creating segments");
+      verify(segmentFile, times(1)).close();
     }
   }
 
+  @Test
+  void loadExistingSegments_managedSegments_ioException() throws Exception {
+    // Arrange
+    /// Store dir
+    when(segmentFactory.createSegmentStoreDir()).thenReturn(true);
+    /// Segments
+    IOException ioException = new IOException("test");
+    when(segmentFactory.createSegment()).thenThrow(ioException);
+    // Act
+    SegmentLoaderException exception =
+        assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
+    // Assert
+    assertThat(exception).hasCauseThat().isEqualTo(ioException);
+    assertThat(exception).hasMessageThat().ignoringCase().contains("ManagedSegments");
+    assertThat(exception).hasMessageThat().ignoringCase().contains("new segment");
+  }
+
+  @Test
+  void loadExistingSegments_uncaughtExceptionWrapping() throws Exception {
+    // Arrange
+    IOException ioException = new IOException("test");
+    when(segmentFactory.createSegmentStoreDir())
+        .thenThrow(ioException);
+    // Act
+    SegmentLoaderException exception =
+        assertThrows(SegmentLoaderException.class, () -> segmentLoader.loadExistingSegments());
+    // Assert
+    assertThat(exception).hasCauseThat().isEqualTo(ioException);
+    assertThat(exception).hasMessageThat().ignoringCase()
+        .contains("failed to load existing segments");
+  }
 }
