@@ -28,10 +28,10 @@ final class SegmentLoader {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final StorageThreadFactory storageThreadFactory;
+  private final SegmentLoaderHelper segmentLoaderHelper;
   private final SegmentFile.Factory segmentFileFactory;
   private final SegmentFactory segmentFactory;
   private final Path storeDirectoryPath;
-  private final SegmentLoaderHelper segmentLoaderHelper;
 
   @Inject
   SegmentLoader(
@@ -54,7 +54,6 @@ final class SegmentLoader {
    */
   public ManagedSegments loadExistingSegments() throws SegmentLoaderException {
     logger.atInfo().log("Loading any pre-existing Segments");
-
     try {
       boolean segmentStoreDirCreated = segmentFactory.createSegmentStoreDir();
       if (segmentStoreDirCreated) {
@@ -69,12 +68,13 @@ final class SegmentLoader {
         return createManagedSegments(ImmutableList.of());
       }
 
-      ImmutableList<Path> sortedSegmentFilePaths = sortFilePathsByLatestModifiedDatesFirst(
-          segmentFilePaths);
-      ImmutableMap<Path, FileChannel> pathFileChannelMap = openSegmentFileChannels(
-          sortedSegmentFilePaths);
+      ImmutableList<Path> sortedSegmentFilePaths =
+          sortFilePathsByLatestModifiedDatesFirst(segmentFilePaths);
+      ImmutableMap<Path, FileChannel> pathFileChannelMap =
+          openSegmentFileChannels(sortedSegmentFilePaths);
       ImmutableList<SegmentFile> segmentFiles = loadSegmentFiles(pathFileChannelMap);
       ImmutableList<Segment> createdSegments = createSegmentsFromSegmentFiles(segmentFiles);
+
       logger.atInfo().log("Loaded [%d] preexisting segments", createdSegments.size());
       return createManagedSegments(createdSegments);
     } catch (SegmentLoaderException e) {
@@ -84,11 +84,14 @@ final class SegmentLoader {
     }
   }
 
-  private ManagedSegments createManagedSegments(
-      ImmutableList<Segment> loadedSegments) throws IOException {
+  private ManagedSegments createManagedSegments(ImmutableList<Segment> loadedSegments) {
     Segment writableSegment;
     if (loadedSegments.isEmpty()) {
-      writableSegment = segmentFactory.createSegment();
+      try {
+        writableSegment = segmentFactory.createSegment();
+      } catch (IOException e) {
+        throw new SegmentLoaderException("Failed creating a new segment for ManagedSegments", e);
+      }
     } else {
       writableSegment = loadedSegments.get(0);
       loadedSegments = loadedSegments.subList(1, loadedSegments.size());
@@ -204,10 +207,9 @@ final class SegmentLoader {
     ImmutableMap.Builder<SegmentFile, Future<Segment>> segmentFileFutureSegmentMap = new ImmutableMap.Builder<>();
     try (var scope = new StructuredTaskScope.ShutdownOnFailure("create-segments",
         storageThreadFactory)) {
-      ImmutableMap.Builder<SegmentFile, Future<Segment>> builder = new ImmutableMap.Builder<>();
       for (SegmentFile segmentFile : segmentFiles) {
         Callable<Segment> segmentCallable = () -> segmentFactory.createSegmentFromFile(segmentFile);
-        builder.put(segmentFile, scope.fork(segmentCallable));
+        segmentFileFutureSegmentMap.put(segmentFile, scope.fork(segmentCallable));
       }
       scope.join();
     }
