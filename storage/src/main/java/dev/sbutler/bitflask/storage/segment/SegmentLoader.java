@@ -5,6 +5,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
+import com.google.common.io.MoreFiles;
 import com.google.mu.util.stream.BiStream;
 import dev.sbutler.bitflask.common.concurrency.StructuredTaskScopeUtils;
 import dev.sbutler.bitflask.common.io.FilesHelper;
@@ -86,10 +87,11 @@ final class SegmentLoader {
   /**
    * Gets the file paths of any segments present in the segment store directory
    */
+  @SuppressWarnings("UnstableApiUsage")
   private ImmutableList<Path> getSegmentFilePaths() {
     ImmutableList<Path> filePathsInDirectory;
     try {
-      filePathsInDirectory = filesHelper.getFilePathsInDirectory(storeDirectoryPath);
+      filePathsInDirectory = MoreFiles.listFiles(storeDirectoryPath);
     } catch (IOException e) {
       throw new SegmentLoaderException("Failed getting file paths in segment store directory", e);
     }
