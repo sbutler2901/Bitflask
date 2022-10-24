@@ -78,8 +78,12 @@
 
 ### Compaction / Deletion
 
-- Using [event bus](https://github.com/google/guava/wiki/EventBusExplained) for publishing
-    - still needed?
+- Using [event bus](https://github.com/google/guava/wiki/EventBusExplained)
+  - Still needed?
+  - current writable segment publish that its size limit has been exceeded
+  - compaction indicates it has completed
+    - SegmentManager update with results
+    - SegmentDeleter activated
 
 ### Crash handling and recovery / Load Previous State
 
