@@ -20,6 +20,7 @@ import dev.sbutler.bitflask.storage.StorageServiceModule;
 import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurationConstants;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,10 +35,13 @@ class Server {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private static Instant executionStarted;
+
   private Server() {
   }
 
   public static void main(String[] argv) {
+    executionStarted = Instant.now();
     printConfigInfo();
     initializeConfigurations(argv);
     Injector injector = Guice.createInjector(ServerModule.getInstance());
@@ -62,6 +66,7 @@ class Server {
 
           public void healthy() {
             logger.atInfo().log("All services have been initialized and are healthy");
+            logTimeFromStart();
           }
 
           public void failure(@Nonnull Service service) {
@@ -127,5 +132,11 @@ class Server {
     logger.atInfo().log("Using java version [%s]", System.getProperty("java.version"));
     logger.atInfo()
         .log("Runtime processors available [%d]", Runtime.getRuntime().availableProcessors());
+  }
+
+  private static void logTimeFromStart() {
+    Instant now = Instant.now();
+    Duration startupTime = Duration.between(executionStarted, now);
+    logger.atInfo().log("Time to startup: [%d]millis", startupTime.toMillis());
   }
 }
