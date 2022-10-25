@@ -1,9 +1,9 @@
-package dev.sbutler.bitflask.client.client_processing.input.repl;
+package dev.sbutler.bitflask.client.client_processing.input.repl.types;
 
 /**
  * Represents a Repl Integer that is guaranteed to support 64-bit integers.
  */
-public class ReplInteger extends ReplElement {
+public final class ReplInteger extends ReplElement {
 
   private final Number value;
 

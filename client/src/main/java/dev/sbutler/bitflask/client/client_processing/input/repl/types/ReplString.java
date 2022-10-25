@@ -1,5 +1,8 @@
-package dev.sbutler.bitflask.client.client_processing.input.repl;
+package dev.sbutler.bitflask.client.client_processing.input.repl.types;
 
+/**
+ * Represents an unquoted Repl String. No parsing was performed.
+ */
 public final class ReplString extends ReplElement {
 
   private final String value;
