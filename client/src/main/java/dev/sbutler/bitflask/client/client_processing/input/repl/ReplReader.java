@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.client.client_processing.input.repl;
 
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplElement;
+import java.io.IOException;
 import java.io.Reader;
 
 public final class ReplReader implements AutoCloseable {
@@ -17,7 +18,7 @@ public final class ReplReader implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
-
+  public void close() throws IOException {
+    reader.close();
   }
 }
