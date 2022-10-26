@@ -53,7 +53,6 @@ public final class ReplReader implements AutoCloseable {
     return new ReplString(builder.toString());
   }
 
-  @SuppressWarnings("UnstableApiUsage")
   ReplInteger readInteger() throws IOException {
     ReplElement readElement = attemptReadingInteger();
     if (readElement instanceof ReplString replString) {
@@ -89,6 +88,16 @@ public final class ReplReader implements AutoCloseable {
     readAllWhiteSpaceBeforeNextElement();
     String quotedString = parseQuotedString();
     return new ReplDoubleQuotedString(quotedString);
+  }
+
+  private void readAllWhiteSpaceBeforeNextElement() throws IOException {
+    // Ensure there is at least a single whitespace
+    if (!isPeekedSpace() && peekedIsNotEnd()) {
+      throw new ReplSyntaxException("Whitespace expected before parsing next element");
+    }
+    while (isPeekedSpace() && peekedIsNotEnd()) {
+      peek();
+    }
   }
 
   ImmutableList<ReplElement> readToEndLine() throws IOException {
@@ -157,15 +166,30 @@ public final class ReplReader implements AutoCloseable {
     return SpecialChars.BACK_SLASH + peeked;
   }
 
-  private void readAllWhiteSpaceBeforeNextElement() throws IOException {
-    // Ensure there is at least a single whitespace
-    if (!isPeekedSpace() && peekedIsNotEnd()) {
-      throw new ReplSyntaxException("Whitespace expected before parsing next element");
+  private static ReplToken mapToToken(int read) {
+    if (read == -1) {
+      return ReplToken.END_DOCUMENT;
     }
-    while (isPeekedSpace() && peekedIsNotEnd()) {
-      peek();
+    if (Character.isAlphabetic(read)) {
+      return ReplToken.CHARACTER;
     }
+    if (Character.isDigit(read)) {
+      return ReplToken.NUMBER;
+    }
+    if (Character.isSpaceChar(read)) {
+      return ReplToken.SPACE;
+    }
+    String asString = Character.toString(read);
+    return switch (asString) {
+      case SpecialChars.SINGLE_QUOTE -> ReplToken.SINGLE_QUOTE;
+      case SpecialChars.DOUBLE_QUOTE -> ReplToken.DOUBLE_QUOTE;
+      case SpecialChars.BACK_SLASH -> ReplToken.BACK_SLASH;
+      case SpecialChars.NEW_LINE -> ReplToken.END_LINE;
+      default -> throw new ReplSyntaxException(
+          String.format("Could not map to ReplToken: int [%d], string [%s]", read, asString));
+    };
   }
+
 
   private boolean shouldContinueParsingElement() {
     return !isPeekedSpace() || peekedIsNotEnd();
@@ -173,14 +197,6 @@ public final class ReplReader implements AutoCloseable {
 
   private boolean peekedIsNotEnd() {
     return !isPeekedEndLine() && !isPeekedEndDocument();
-  }
-
-  private boolean isPeekedCharacter() {
-    return peekedAsToken == ReplToken.CHARACTER;
-  }
-
-  private boolean isPeekedNumber() {
-    return peekedAsToken == ReplToken.NUMBER;
   }
 
   private boolean isPeekedSingleQuote() {
@@ -205,30 +221,6 @@ public final class ReplReader implements AutoCloseable {
 
   private boolean isPeekedEndDocument() {
     return peekedAsToken == ReplToken.END_DOCUMENT;
-  }
-
-  private static ReplToken mapToToken(int read) {
-    if (read == -1) {
-      return ReplToken.END_DOCUMENT;
-    }
-    if (Character.isAlphabetic(read)) {
-      return ReplToken.CHARACTER;
-    }
-    if (Character.isDigit(read)) {
-      return ReplToken.NUMBER;
-    }
-    if (Character.isSpaceChar(read)) {
-      return ReplToken.SPACE;
-    }
-    String asString = Character.toString(read);
-    return switch (asString) {
-      case SpecialChars.SINGLE_QUOTE -> ReplToken.SINGLE_QUOTE;
-      case SpecialChars.DOUBLE_QUOTE -> ReplToken.DOUBLE_QUOTE;
-      case SpecialChars.BACK_SLASH -> ReplToken.BACK_SLASH;
-      case SpecialChars.NEW_LINE -> ReplToken.END_LINE;
-      default -> throw new ReplSyntaxException(
-          String.format("Could not map to ReplToken: int [%d], string [%s]", read, asString));
-    };
   }
 
   @Override
