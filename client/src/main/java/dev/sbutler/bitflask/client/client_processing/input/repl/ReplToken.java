@@ -7,6 +7,7 @@ public enum ReplToken {
   DOUBLE_QUOTE,
   BACK_SLASH,
   SPACE,
+  START_DOCUMENT,
+  END_DOCUMENT,
   END_LINE,
-  END_DOCUMENT
 }
