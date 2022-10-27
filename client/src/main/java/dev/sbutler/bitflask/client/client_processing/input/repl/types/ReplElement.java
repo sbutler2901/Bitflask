@@ -1,5 +1,11 @@
 package dev.sbutler.bitflask.client.client_processing.input.repl.types;
 
+/**
+ * The parent class of all element types that can be interpreted from client input.
+ *
+ * <p>Provides various utility methods for determining which subclass a ReplElement is and
+ * conversion methods.
+ */
 public abstract class ReplElement {
 
   public boolean isReplString() {
@@ -43,6 +49,6 @@ public abstract class ReplElement {
     if (isReplInteger()) {
       return (ReplInteger) this;
     }
-    throw new IllegalStateException("Not a ReplNumber: " + this);
+    throw new IllegalStateException("Not a ReplInteger: " + this);
   }
 }
