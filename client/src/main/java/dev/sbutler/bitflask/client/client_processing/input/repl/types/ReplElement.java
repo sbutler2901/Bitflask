@@ -14,7 +14,7 @@ public abstract class ReplElement {
     return this instanceof ReplDoubleQuotedString;
   }
 
-  public boolean isReplNumber() {
+  public boolean isReplInteger() {
     return this instanceof ReplInteger;
   }
 
@@ -22,27 +22,27 @@ public abstract class ReplElement {
     if (isReplString()) {
       return (ReplString) this;
     }
-    throw new IllegalStateException("Not a Repl String: " + this);
+    throw new IllegalStateException("Not a ReplString: " + this);
   }
 
   public ReplSingleQuotedString getAsReplSingleQuotedString() {
     if (isReplSingleQuotedString()) {
       return (ReplSingleQuotedString) this;
     }
-    throw new IllegalStateException("Not a Repl SingleQuotedString: " + this);
+    throw new IllegalStateException("Not a ReplSingleQuotedString: " + this);
   }
 
   public ReplDoubleQuotedString getAsReplDoubleQuotedString() {
     if (isReplDoubleQuotedString()) {
       return (ReplDoubleQuotedString) this;
     }
-    throw new IllegalStateException("Not a Repl DoubleQuotedString: " + this);
+    throw new IllegalStateException("Not a ReplDoubleQuotedString: " + this);
   }
 
-  public ReplInteger getAsReplNumber() {
-    if (isReplNumber()) {
+  public ReplInteger getAsReplInteger() {
+    if (isReplInteger()) {
       return (ReplInteger) this;
     }
-    throw new IllegalStateException("Not a Repl Number: " + this);
+    throw new IllegalStateException("Not a ReplNumber: " + this);
   }
 }
