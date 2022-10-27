@@ -27,25 +27,29 @@ public final class ReplReader implements AutoCloseable {
 
   private final Reader reader;
 
-  private String peeked;
-  private ReplToken peekedAsToken = null;
+  private String peeked = "";
+  private ReplToken peekedAsToken = ReplToken.START_DOCUMENT;
 
   public ReplReader(Reader reader) {
     this.reader = reader;
   }
 
   private void peek() throws IOException {
-    if (peekedAsToken == ReplToken.END_DOCUMENT) {
+    if (isPeekedEndDocument()) {
       return;
     }
     int read = reader.read();
     peekedAsToken = mapToToken(read);
+    if (isPeekedEndDocument()) {
+      peeked = "";
+      return;
+    }
     peeked = Character.toString(read);
   }
 
-  ReplString readString() throws IOException {
+  ReplString readReplString() throws IOException {
+    readAllWhiteSpace();
     StringBuilder builder = new StringBuilder();
-    readAllWhiteSpaceBeforeNextElement();
     while (shouldContinueParsingElement()) {
       builder.append(peeked);
       peek();
@@ -53,8 +57,8 @@ public final class ReplReader implements AutoCloseable {
     return new ReplString(builder.toString());
   }
 
-  ReplInteger readInteger() throws IOException {
-    ReplElement readElement = attemptReadingInteger();
+  ReplInteger readReplInteger() throws IOException {
+    ReplElement readElement = attemptReadingReplInteger();
     if (readElement instanceof ReplString replString) {
       throw new ReplSyntaxException(
           String.format("A Repl Integer could not be read: [%s]", replString.getAsString()));
@@ -67,9 +71,10 @@ public final class ReplReader implements AutoCloseable {
    * not.
    */
   @SuppressWarnings("UnstableApiUsage")
-  private ReplElement attemptReadingInteger() throws IOException {
+  private ReplElement attemptReadingReplInteger() throws IOException {
+    readAllWhiteSpace();
     // Try to read as number
-    ReplString replString = readString();
+    ReplString replString = readReplString();
     Long parsed = Longs.tryParse(replString.getAsString());
     if (parsed == null) {
       // was not a number
@@ -79,41 +84,40 @@ public final class ReplReader implements AutoCloseable {
   }
 
   ReplSingleQuotedString readReplSingleQuotedString() throws IOException {
-    readAllWhiteSpaceBeforeNextElement();
+    readAllWhiteSpace();
     String quotedString = parseQuotedString();
     return new ReplSingleQuotedString(quotedString);
   }
 
   ReplDoubleQuotedString readReplDoubleQuotedString() throws IOException {
-    readAllWhiteSpaceBeforeNextElement();
+    readAllWhiteSpace();
     String quotedString = parseQuotedString();
     return new ReplDoubleQuotedString(quotedString);
   }
 
-  private void readAllWhiteSpaceBeforeNextElement() throws IOException {
-    // Ensure there is at least a single whitespace
-    if (!isPeekedSpace() && peekedIsNotEnd()) {
-      throw new ReplSyntaxException("Whitespace expected before parsing next element");
-    }
-    while (isPeekedSpace() && peekedIsNotEnd()) {
-      peek();
-    }
+  ReplElement readNextElement() throws IOException {
+    readAllWhiteSpace();
+    return switch (peekedAsToken) {
+      case CHARACTER -> readReplString();
+      case NUMBER -> attemptReadingReplInteger();
+      case SINGLE_QUOTE -> readReplSingleQuotedString();
+      case DOUBLE_QUOTE -> readReplDoubleQuotedString();
+      default -> throw new ReplSyntaxException(String.format("Invalid token found: [%s]", peeked));
+    };
   }
 
   ImmutableList<ReplElement> readToEndLine() throws IOException {
     ImmutableList.Builder<ReplElement> builder = new Builder<>();
     while (peekedIsNotEnd()) {
-      ReplElement element =
-          switch (peekedAsToken) {
-            case SINGLE_QUOTE -> readReplSingleQuotedString();
-            case DOUBLE_QUOTE -> readReplDoubleQuotedString();
-            case CHARACTER -> readString();
-            case NUMBER -> attemptReadingInteger();
-            default -> throw new IllegalStateException("Invalid token found: " + peekedAsToken);
-          };
-      builder.add(element);
+      builder.add(readNextElement());
     }
     return builder.build();
+  }
+
+  private void readAllWhiteSpace() throws IOException {
+    while ((isPeekedStartDocument() || isPeekedSpace()) && peekedIsNotEnd()) {
+      peek();
+    }
   }
 
   private String parseQuotedString() throws IOException {
@@ -190,9 +194,8 @@ public final class ReplReader implements AutoCloseable {
     };
   }
 
-
   private boolean shouldContinueParsingElement() {
-    return !isPeekedSpace() || peekedIsNotEnd();
+    return !isPeekedSpace() && peekedIsNotEnd();
   }
 
   private boolean peekedIsNotEnd() {
@@ -215,12 +218,16 @@ public final class ReplReader implements AutoCloseable {
     return peekedAsToken == ReplToken.SPACE;
   }
 
-  private boolean isPeekedEndLine() {
-    return peekedAsToken == ReplToken.END_LINE;
+  private boolean isPeekedStartDocument() {
+    return peekedAsToken == ReplToken.START_DOCUMENT;
   }
 
   private boolean isPeekedEndDocument() {
     return peekedAsToken == ReplToken.END_DOCUMENT;
+  }
+
+  private boolean isPeekedEndLine() {
+    return peekedAsToken == ReplToken.END_LINE;
   }
 
   @Override

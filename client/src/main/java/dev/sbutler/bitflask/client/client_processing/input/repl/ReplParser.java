@@ -10,7 +10,7 @@ public final class ReplParser {
   public static ImmutableList<ReplElement> readNextLine(ReplReader reader) {
     try {
       ImmutableList.Builder<ReplElement> input = new Builder<>();
-      input.add(reader.readString());
+      input.add(reader.readReplString());
       input.addAll(reader.readToEndLine());
       return input.build();
     } catch (IOException e) {
