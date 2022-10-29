@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplDoubleQuotedString;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplElement;
+import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplInteger;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplSingleQuotedString;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplString;
 import java.io.Reader;
@@ -76,6 +77,32 @@ public class ReplReaderTest {
   }
 
   @Test
+  void readReplInteger() throws Exception {
+    // Arrange
+    Long value = 100L;
+    Reader reader = new StringReader(value.toString());
+    ReplReader replReader = new ReplReader(reader);
+    // Act
+    ReplInteger replInteger = replReader.readReplInteger();
+    // Assert
+    assertThat(replInteger.getAsLong()).isEqualTo(value);
+  }
+
+  @Test
+  void readReplInteger_invalid_throwsReplSyntaxException() {
+    // Arrange
+    String value = "90a9";
+    Reader reader = new StringReader(value);
+    ReplReader replReader = new ReplReader(reader);
+    // Act
+    ReplSyntaxException exception =
+        assertThrows(ReplSyntaxException.class, replReader::readReplInteger);
+    // Assert
+    assertTrue(exception.getMessage().toLowerCase().contains("could not be read"));
+    assertTrue(exception.getMessage().toLowerCase().contains(value));
+  }
+
+  @Test
   void readReplSingleQuotedString() throws Exception {
     // Arrange
     String value = "'test'";
@@ -136,7 +163,7 @@ public class ReplReaderTest {
   }
 
   @Test
-  void readReplSingleQuotedString_unterminated_endOfInput() {
+  void readReplSingleQuotedString_unterminated_endOfInput_throwsReplSyntaxException() {
     // Arrange
     String value = "'value\"";
     Reader reader = new StringReader(value);
@@ -149,7 +176,7 @@ public class ReplReaderTest {
   }
 
   @Test
-  void replSingleQuotedString_spaceNotFollowing() {
+  void replSingleQuotedString_spaceNotFollowing_throwsReplSyntaxException() {
     // Arrange
     String value = "'value'a";
     Reader reader = new StringReader(value);
@@ -222,7 +249,7 @@ public class ReplReaderTest {
   }
 
   @Test
-  void readReplDoubleQuotedString_unterminated_endOfInput() {
+  void readReplDoubleQuotedString_unterminated_endOfInput_throwsReplSyntaxException() {
     // Arrange
     String value = "\"value'";
     Reader reader = new StringReader(value);
@@ -235,7 +262,7 @@ public class ReplReaderTest {
   }
 
   @Test
-  void replDoubleQuotedString_spaceNotFollowing() {
+  void replDoubleQuotedString_spaceNotFollowing_throwsReplSyntaxException() {
     // Arrange
     String value = "\"value\"a";
     Reader reader = new StringReader(value);
@@ -260,7 +287,7 @@ public class ReplReaderTest {
   }
 
   @Test
-  void readToEndLine_spaceSeparatedStrings() throws Exception {
+  void readToEndLine_spaceSeparated_allStrings() throws Exception {
     // Arrange
     String value = "set test value";
     Reader reader = new StringReader(value);
@@ -273,6 +300,24 @@ public class ReplReaderTest {
         new ReplString("set"),
         new ReplString("test"),
         new ReplString("value")
+    );
+    assertThat(elements).containsExactlyElementsIn(expected).inOrder();
+  }
+
+  @Test
+  void readToEndLine_spaceSeparated_withNumber() throws Exception {
+    // Arrange
+    String value = "set test 1234";
+    Reader reader = new StringReader(value);
+    ReplReader replReader = new ReplReader(reader);
+    // Act
+    ImmutableList<ReplElement> elements = replReader.readToEndLine();
+    // Assert
+    assertThat(elements).hasSize(3);
+    ImmutableList<ReplElement> expected = ImmutableList.of(
+        new ReplString("set"),
+        new ReplString("test"),
+        new ReplInteger(1234L)
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -494,6 +539,24 @@ public class ReplReaderTest {
   }
 
   @Test
+  void readToEndLine_replDoubleQuotedString_withEscape_newline() throws Exception {
+    // Arrange
+    String value = "set test \"value\\nother\"";
+    Reader reader = new StringReader(value);
+    ReplReader replReader = new ReplReader(reader);
+    // Act
+    ImmutableList<ReplElement> elements = replReader.readToEndLine();
+    // Assert
+    assertThat(elements).hasSize(3);
+    ImmutableList<ReplElement> expected = ImmutableList.of(
+        new ReplString("set"),
+        new ReplString("test"),
+        new ReplDoubleQuotedString("value\nother")
+    );
+    assertThat(elements).containsExactlyElementsIn(expected).inOrder();
+  }
+
+  @Test
   void readToEndLine_replSingleQuotedString_unsupportedEscape() throws Exception {
     // Arrange
     String value = "set test 'value\\nother'";
@@ -530,7 +593,7 @@ public class ReplReaderTest {
   }
 
   @Test
-  void readToEndLine_replSingleQuotedString_spaceNotFollowing() {
+  void readToEndLine_replSingleQuotedString_spaceNotFollowing_throwsReplSyntaxException() {
     // Arrange
     String value = "set test 'value'a";
     Reader reader = new StringReader(value);
@@ -543,7 +606,7 @@ public class ReplReaderTest {
   }
 
   @Test
-  void readToEndLine_replDoubleQuotedString_spaceNotFollowing() {
+  void readToEndLine_replDoubleQuotedString_spaceNotFollowing_throwsReplSyntaxException() {
     // Arrange
     String value = "set test \"value\"a";
     Reader reader = new StringReader(value);
@@ -553,23 +616,5 @@ public class ReplReaderTest {
         assertThrows(ReplSyntaxException.class, replReader::readToEndLine);
     // Assert
     assertTrue(exception.getMessage().toLowerCase().contains("followed with a space"));
-  }
-
-  @Test
-  void readToEndLine_replDoubleQuotedString_withEscape_newline() throws Exception {
-    // Arrange
-    String value = "set test \"value\\nother\"";
-    Reader reader = new StringReader(value);
-    ReplReader replReader = new ReplReader(reader);
-    // Act
-    ImmutableList<ReplElement> elements = replReader.readToEndLine();
-    // Assert
-    assertThat(elements).hasSize(3);
-    ImmutableList<ReplElement> expected = ImmutableList.of(
-        new ReplString("set"),
-        new ReplString("test"),
-        new ReplDoubleQuotedString("value\nother")
-    );
-    assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
 }

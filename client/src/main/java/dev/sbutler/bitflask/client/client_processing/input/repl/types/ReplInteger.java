@@ -20,12 +20,12 @@ public final class ReplInteger extends ReplElement {
 
   public ReplInteger(Integer value) {
     checkNotNull(value, "A ReplInteger cannot have a null value");
-    this.value = value;
+    this.value = value.longValue();
   }
 
   public ReplInteger(Short value) {
     checkNotNull(value, "A ReplInteger cannot have a null value");
-    this.value = value;
+    this.value = value.longValue();
   }
 
   public Number getAsNumber() {

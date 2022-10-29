@@ -61,7 +61,7 @@ public final class ReplReader implements AutoCloseable {
     ReplElement readElement = attemptReadingReplInteger();
     if (readElement instanceof ReplString replString) {
       throw new ReplSyntaxException(
-          String.format("A Repl Integer could not be read: [%s]", replString.getAsString()));
+          String.format("A ReplInteger could not be read: [%s]", replString.getAsString()));
     }
     return (ReplInteger) readElement;
   }
