@@ -50,7 +50,7 @@ public final class ReplReader implements AutoCloseable {
   ReplString readReplString() throws IOException {
     readAllWhiteSpace();
     StringBuilder builder = new StringBuilder();
-    while (shouldContinueParsingElement()) {
+    while (peekedIsNotSpace() && peekedIsNotEndLine() && peekedIsNotEndDocument()) {
       builder.append(peeked);
       peek();
     }
@@ -107,15 +107,17 @@ public final class ReplReader implements AutoCloseable {
   }
 
   ImmutableList<ReplElement> readToEndLine() throws IOException {
+    readAllWhiteSpace();
     ImmutableList.Builder<ReplElement> builder = new Builder<>();
-    while (peekedIsNotEnd()) {
-      builder.add(readNextElement());
+    while (peekedIsNotEndLine() && peekedIsNotEndDocument()) {
+      ReplElement readReplElement = readNextElement();
+      builder.add(readReplElement);
     }
     return builder.build();
   }
 
   private void readAllWhiteSpace() throws IOException {
-    while ((isPeekedStartDocument() || isPeekedSpace()) && peekedIsNotEnd()) {
+    while (isPeekedStartDocument() || isPeekedEndLine() || isPeekedWhitespace()) {
       peek();
     }
   }
@@ -131,7 +133,7 @@ public final class ReplReader implements AutoCloseable {
 
     StringBuilder builder = new StringBuilder();
     boolean escapeActive = false;
-    for (; peekedIsNotEnd(); peek()) {
+    for (; peekedIsNotEndLine() && peekedIsNotEndDocument(); peek()) {
       if (escapeActive) {
         String result = escapeHandler.get();
         builder.append(result);
@@ -152,7 +154,7 @@ public final class ReplReader implements AutoCloseable {
 
     // Consume end quote
     peek();
-    if (peekedIsNotEnd() && !isPeekedSpace()) {
+    if (peekedIsNotEndDocument() && peekedIsNotSpace()) {
       throw new ReplSyntaxException("Quoted elements must be followed with a space");
     }
     return builder.toString();
@@ -201,14 +203,6 @@ public final class ReplReader implements AutoCloseable {
     };
   }
 
-  private boolean shouldContinueParsingElement() {
-    return !isPeekedSpace() && peekedIsNotEnd();
-  }
-
-  private boolean peekedIsNotEnd() {
-    return !isPeekedEndLine() && !isPeekedEndDocument();
-  }
-
   private boolean isPeekedSingleQuote() {
     return peekedAsToken == ReplToken.SINGLE_QUOTE;
   }
@@ -225,6 +219,10 @@ public final class ReplReader implements AutoCloseable {
     return peekedAsToken == ReplToken.SPACE;
   }
 
+  private boolean peekedIsNotSpace() {
+    return !isPeekedSpace();
+  }
+
   private boolean isPeekedStartDocument() {
     return peekedAsToken == ReplToken.START_DOCUMENT;
   }
@@ -233,8 +231,20 @@ public final class ReplReader implements AutoCloseable {
     return peekedAsToken == ReplToken.END_DOCUMENT;
   }
 
+  private boolean peekedIsNotEndDocument() {
+    return !isPeekedEndDocument();
+  }
+
   private boolean isPeekedEndLine() {
     return peekedAsToken == ReplToken.END_LINE;
+  }
+
+  private boolean peekedIsNotEndLine() {
+    return !isPeekedEndLine();
+  }
+
+  private boolean isPeekedWhitespace() {
+    return peeked.trim().length() == 0;
   }
 
   @Override

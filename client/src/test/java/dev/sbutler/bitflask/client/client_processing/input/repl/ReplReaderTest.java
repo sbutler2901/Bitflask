@@ -3,6 +3,9 @@ package dev.sbutler.bitflask.client.client_processing.input.repl;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplDoubleQuotedString;
@@ -10,6 +13,7 @@ import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplElemen
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplInteger;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplSingleQuotedString;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplString;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import org.junit.jupiter.api.Test;
@@ -359,6 +363,28 @@ public class ReplReaderTest {
   }
 
   @Test
+  void readToEndLine_newline() throws Exception {
+    // Arrange
+    String value = "test\nvalue";
+    Reader reader = new StringReader(value);
+    ReplReader replReader = new ReplReader(reader);
+    // Act
+    ImmutableList<ReplElement> elements0 = replReader.readToEndLine();
+    ImmutableList<ReplElement> elements1 = replReader.readToEndLine();
+    // Assert
+    assertThat(elements0).hasSize(1);
+    assertThat(elements1).hasSize(1);
+    ImmutableList<ReplElement> expected0 = ImmutableList.of(
+        new ReplString("test")
+    );
+    ImmutableList<ReplElement> expected1 = ImmutableList.of(
+        new ReplString("value")
+    );
+    assertThat(elements0).containsExactlyElementsIn(expected0);
+    assertThat(elements1).containsExactlyElementsIn(expected1);
+  }
+
+  @Test
   void readToEndLine_replSingleQuotedString_withoutBreaks() throws Exception {
     // Arrange
     String value = "set test 'value'";
@@ -616,5 +642,16 @@ public class ReplReaderTest {
         assertThrows(ReplSyntaxException.class, replReader::readToEndLine);
     // Assert
     assertTrue(exception.getMessage().toLowerCase().contains("followed with a space"));
+  }
+
+  @Test
+  void close() throws IOException {
+    // Arrange
+    Reader reader = mock(Reader.class);
+    ReplReader replReader = new ReplReader(reader);
+    // Act
+    replReader.close();
+    // Assert
+    verify(reader, times(1)).close();
   }
 }
