@@ -25,4 +25,30 @@ public class ReplSingleQuotedStringTest {
     // Assert
     assertThat(exception).hasMessageThat().contains("ReplSingleQuotedString");
   }
+
+
+  @Test
+  void equals_differentObject() {
+    // Arrange
+    ReplSingleQuotedString replSingleQuotedString0 = new ReplSingleQuotedString("value");
+    ReplSingleQuotedString replSingleQuotedString1 = new ReplSingleQuotedString("value");
+    // Act / Assert
+    assertThat(replSingleQuotedString0).isEqualTo(replSingleQuotedString1);
+  }
+
+  @Test
+  void equals_sameObject() {
+    // Arrange
+    ReplSingleQuotedString replSingleQuotedString = new ReplSingleQuotedString("value");
+    // Act / Assert
+    assertThat(replSingleQuotedString.equals(replSingleQuotedString)).isTrue();
+  }
+
+  @Test
+  void equals_null() {
+    // Arrange
+    ReplSingleQuotedString replSingleQuotedString = new ReplSingleQuotedString("value");
+    // Act / Assert
+    assertThat(replSingleQuotedString.equals(null)).isFalse();
+  }
 }

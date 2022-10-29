@@ -33,4 +33,29 @@ public class ReplIntegerTest {
     // Assert
     assertThat(exception).hasMessageThat().contains("ReplInteger");
   }
+
+  @Test
+  void equals_differentObject() {
+    // Arrange
+    ReplInteger replInteger0 = new ReplInteger(0L);
+    ReplInteger replInteger1 = new ReplInteger(0L);
+    // Act / Assert
+    assertThat(replInteger0).isEqualTo(replInteger1);
+  }
+
+  @Test
+  void equals_sameObject() {
+    // Arrange
+    ReplInteger replInteger = new ReplInteger(0L);
+    // Act / Assert
+    assertThat(replInteger.equals(replInteger)).isTrue();
+  }
+
+  @Test
+  void equals_null() {
+    // Arrange
+    ReplInteger replInteger = new ReplInteger(0L);
+    // Act / Assert
+    assertThat(replInteger.equals(null)).isFalse();
+  }
 }

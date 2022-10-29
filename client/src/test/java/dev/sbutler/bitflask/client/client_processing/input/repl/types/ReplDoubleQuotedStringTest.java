@@ -25,4 +25,29 @@ public class ReplDoubleQuotedStringTest {
     // Assert
     assertThat(exception).hasMessageThat().contains("ReplDoubleQuotedString");
   }
+
+  @Test
+  void equals_differentObject() {
+    // Arrange
+    ReplDoubleQuotedString replDoubleQuotedString0 = new ReplDoubleQuotedString("value");
+    ReplDoubleQuotedString replDoubleQuotedString1 = new ReplDoubleQuotedString("value");
+    // Act / Assert
+    assertThat(replDoubleQuotedString0).isEqualTo(replDoubleQuotedString1);
+  }
+
+  @Test
+  void equals_sameObject() {
+    // Arrange
+    ReplDoubleQuotedString replDoubleQuotedString = new ReplDoubleQuotedString("value");
+    // Act / Assert
+    assertThat(replDoubleQuotedString.equals(replDoubleQuotedString)).isTrue();
+  }
+
+  @Test
+  void equals_null() {
+    // Arrange
+    ReplDoubleQuotedString replDoubleQuotedString = new ReplDoubleQuotedString("value");
+    // Act / Assert
+    assertThat(replDoubleQuotedString.equals(null)).isFalse();
+  }
 }

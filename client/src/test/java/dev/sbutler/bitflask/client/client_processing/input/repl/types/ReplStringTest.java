@@ -25,4 +25,29 @@ public class ReplStringTest {
     // Assert
     assertThat(exception).hasMessageThat().contains("ReplString");
   }
+
+  @Test
+  void equals_differentObject() {
+    // Arrange
+    ReplString ReplString0 = new ReplString("value");
+    ReplString ReplString1 = new ReplString("value");
+    // Act / Assert
+    assertThat(ReplString0).isEqualTo(ReplString1);
+  }
+
+  @Test
+  void equals_sameObject() {
+    // Arrange
+    ReplString replString = new ReplString("value");
+    // Act / Assert
+    assertThat(replString.equals(replString)).isTrue();
+  }
+
+  @Test
+  void equals_null() {
+    // Arrange
+    ReplString replString = new ReplString("value");
+    // Act / Assert
+    assertThat(replString.equals(null)).isFalse();
+  }
 }

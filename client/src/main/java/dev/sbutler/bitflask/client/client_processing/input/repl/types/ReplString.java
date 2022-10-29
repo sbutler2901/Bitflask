@@ -2,6 +2,8 @@ package dev.sbutler.bitflask.client.client_processing.input.repl.types;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Objects;
+
 /**
  * Represents an unquoted Repl String. No parsing was performed.
  *
@@ -18,5 +20,22 @@ public final class ReplString extends ReplElement {
 
   public String getAsString() {
     return value;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ReplString that = (ReplString) o;
+    return value.equals(that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
   }
 }
