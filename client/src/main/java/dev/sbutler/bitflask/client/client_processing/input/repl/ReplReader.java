@@ -126,11 +126,12 @@ public final class ReplReader implements AutoCloseable {
         ? this::doubleQuoteEscapeHandler
         : this::singleQuoteEscapeHandler;
 
-    peek(); // consume start quote
+    // consume start quote
+    peek();
 
     StringBuilder builder = new StringBuilder();
     boolean escapeActive = false;
-    while (shouldContinueParsingElement()) {
+    for (; peekedIsNotEnd(); peek()) {
       if (escapeActive) {
         String result = escapeHandler.get();
         builder.append(result);
@@ -147,6 +148,12 @@ public final class ReplReader implements AutoCloseable {
     }
     if (peekedAsToken != startQuote) {
       throw new ReplSyntaxException("Quoted element was not properly terminated");
+    }
+
+    // Consume end quote
+    peek();
+    if (peekedIsNotEnd() && !isPeekedSpace()) {
+      throw new ReplSyntaxException("Quoted elements must be followed with a space");
     }
     return builder.toString();
   }
