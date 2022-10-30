@@ -21,6 +21,19 @@ import org.junit.jupiter.api.Test;
 public class ReplReaderTest {
 
   @Test
+  void mapToToken_unsupportedCharacter_throwsReplSyntaxException() {
+    // Arrange
+    String value = "¶";
+    Reader reader = new StringReader(value);
+    ReplReader replReader = new ReplReader(reader);
+    // Act
+    ReplSyntaxException exception =
+        assertThrows(ReplSyntaxException.class, replReader::readReplString);
+    // Assert
+    assertTrue(exception.getMessage().contains("Could not map to ReplToken"));
+  }
+
+  @Test
   void readReplString() throws Exception {
     // Arrange
     String value = "test";
@@ -642,6 +655,19 @@ public class ReplReaderTest {
         assertThrows(ReplSyntaxException.class, replReader::readToEndLine);
     // Assert
     assertTrue(exception.getMessage().toLowerCase().contains("followed with a space"));
+  }
+
+  @Test
+  void readToEndLine_invalidTokenPeeked_throwsReplSyntaxException() {
+    // Arrange
+    String value = "\\";
+    Reader reader = new StringReader(value);
+    ReplReader replReader = new ReplReader(reader);
+    // Act
+    ReplSyntaxException exception =
+        assertThrows(ReplSyntaxException.class, replReader::readToEndLine);
+    // Assert
+    assertTrue(exception.getMessage().toLowerCase().contains("invalid token found"));
   }
 
   @Test
