@@ -48,6 +48,9 @@ public final class ReplReader implements AutoCloseable {
   }
 
   ReplString readReplString() throws IOException {
+    if (isPeekedEndDocument()) {
+      return null;
+    }
     readAllWhiteSpace();
     StringBuilder builder = new StringBuilder();
     while (peekedIsNotSpace() && peekedIsNotEndLine() && peekedIsNotEndDocument()) {
@@ -57,7 +60,8 @@ public final class ReplReader implements AutoCloseable {
     return new ReplString(builder.toString());
   }
 
-  ReplInteger readReplInteger() throws IOException {
+  ReplInteger readReplInteger() throws IOException, ReplSyntaxException {
+    // pre-parse responsibilities delegated to attemptReadingReplInteger()
     ReplElement readElement = attemptReadingReplInteger();
     if (readElement instanceof ReplString replString) {
       throw new ReplSyntaxException(
@@ -72,9 +76,15 @@ public final class ReplReader implements AutoCloseable {
    */
   @SuppressWarnings("UnstableApiUsage")
   private ReplElement attemptReadingReplInteger() throws IOException {
+    if (isPeekedEndDocument()) {
+      return null;
+    }
     readAllWhiteSpace();
     // Try to read as number
     ReplString replString = readReplString();
+    if (replString == null) {
+      throw new ReplParseException("Read ReplString was null");
+    }
     Long parsed = Longs.tryParse(replString.getAsString());
     if (parsed == null) {
       // was not a number
@@ -83,34 +93,49 @@ public final class ReplReader implements AutoCloseable {
     return new ReplInteger(parsed);
   }
 
-  ReplSingleQuotedString readReplSingleQuotedString() throws IOException {
+  ReplSingleQuotedString readReplSingleQuotedString() throws IOException, ReplSyntaxException {
+    if (isPeekedEndDocument()) {
+      return null;
+    }
     readAllWhiteSpace();
     String quotedString = parseQuotedString();
     return new ReplSingleQuotedString(quotedString);
   }
 
-  ReplDoubleQuotedString readReplDoubleQuotedString() throws IOException {
+  ReplDoubleQuotedString readReplDoubleQuotedString() throws IOException, ReplSyntaxException {
+    if (isPeekedEndDocument()) {
+      return null;
+    }
     readAllWhiteSpace();
     String quotedString = parseQuotedString();
     return new ReplDoubleQuotedString(quotedString);
   }
 
-  ReplElement readNextElement() throws IOException {
+  ReplElement readNextElement() throws IOException, ReplSyntaxException {
+    if (isPeekedEndDocument()) {
+      return null;
+    }
     readAllWhiteSpace();
     return switch (peekedAsToken) {
       case CHARACTER -> readReplString();
       case NUMBER -> attemptReadingReplInteger();
       case SINGLE_QUOTE -> readReplSingleQuotedString();
       case DOUBLE_QUOTE -> readReplDoubleQuotedString();
-      default -> throw new ReplSyntaxException(String.format("Invalid token found: [%s]", peeked));
+      default -> throw new ReplParseException(String.format("Invalid token found: [%s]", peeked));
     };
   }
 
-  ImmutableList<ReplElement> readToEndLine() throws IOException {
+  ImmutableList<ReplElement> readToEndLine() throws IOException, ReplSyntaxException {
+    if (isPeekedEndDocument()) {
+      return null;
+    }
     readAllWhiteSpace();
     ImmutableList.Builder<ReplElement> builder = new Builder<>();
     while (peekedIsNotEndLine() && peekedIsNotEndDocument()) {
       ReplElement readReplElement = readNextElement();
+      if (readReplElement == null) {
+        break;
+      }
       builder.add(readReplElement);
     }
     return builder.build();
@@ -122,7 +147,7 @@ public final class ReplReader implements AutoCloseable {
     }
   }
 
-  private String parseQuotedString() throws IOException {
+  private String parseQuotedString() throws IOException, ReplSyntaxException {
     ReplToken startQuote = peekedAsToken;
     Supplier<String> escapeHandler = startQuote == ReplToken.DOUBLE_QUOTE
         ? this::doubleQuoteEscapeHandler
@@ -198,7 +223,8 @@ public final class ReplReader implements AutoCloseable {
       case SpecialChars.DOUBLE_QUOTE -> ReplToken.DOUBLE_QUOTE;
       case SpecialChars.BACK_SLASH -> ReplToken.BACK_SLASH;
       case SpecialChars.NEW_LINE -> ReplToken.END_LINE;
-      default -> throw new ReplSyntaxException(
+      // TODO: improve handling of unexpected values
+      default -> throw new ReplParseException(
           String.format("Could not map to ReplToken: int [%d], string [%s]", read, asString));
     };
   }
