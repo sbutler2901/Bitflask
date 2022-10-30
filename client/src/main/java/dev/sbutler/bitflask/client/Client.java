@@ -1,15 +1,19 @@
 package dev.sbutler.bitflask.client;
 
 import com.beust.jcommander.JCommander;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.client.client_processing.ClientProcessor;
+import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
+import dev.sbutler.bitflask.client.client_processing.InlineClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
+import dev.sbutler.bitflask.client.client_processing.input.repl.ReplReader;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
 import dev.sbutler.bitflask.client.configuration.ClientConfigurationConstants;
 import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
@@ -70,32 +74,42 @@ public class Client implements Runnable {
   }
 
   private void executeWithRepl(Injector injector) {
-    ReplClientProcessorService replClientProcessorService =
-        injector.getInstance(ReplClientProcessorService.class);
-    registerShutdownHook(replClientProcessorService);
-    replClientProcessorService.run();
+    Reader reader = new InputStreamReader(System.in);
+    ReplReader replReader = new ReplReader(reader);
+
+    ReplClientProcessorService.Factory replFactory =
+        injector.getInstance(ReplClientProcessorService.Factory.class);
+    ClientProcessorService clientProcessorService =
+        replFactory.create(replReader);
+
+    startClientProcessing(clientProcessorService);
   }
 
   private void executeInline(Injector injector) {
-    registerShutdownHook();
-    ClientProcessor clientProcessor = injector.getInstance(ClientProcessor.class);
-    // Convert to use InputToArgsConverter
-    ImmutableList<String> clientInput = ImmutableList.copyOf(configuration.getInlineCmd());
-    clientProcessor.processClientInput(clientInput);
+    Reader reader = new StringReader(configuration.getInlineCmd());
+    ReplReader replReader = new ReplReader(reader);
+
+    InlineClientProcessorService.Factory inlineFactory =
+        injector.getInstance(InlineClientProcessorService.Factory.class);
+    ClientProcessorService clientProcessorService =
+        inlineFactory.create(replReader);
+
+    startClientProcessing(clientProcessorService);
+  }
+
+  private void startClientProcessing(ClientProcessorService clientProcessorService) {
+    registerShutdownHook(clientProcessorService);
+    clientProcessorService.run();
   }
 
   private boolean shouldExecuteWithRepl() {
-    return configuration.getInlineCmd().size() == 0;
+    return configuration.getInlineCmd().length() == 0;
   }
 
-  private void registerShutdownHook() {
-    Runtime.getRuntime().addShutdownHook(new Thread(this::closeConnectionManager));
-  }
-
-  private void registerShutdownHook(ReplClientProcessorService replClientProcessorService) {
+  private void registerShutdownHook(ClientProcessorService clientProcessorService) {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       System.out.println("Exiting...");
-      replClientProcessorService.triggerShutdown();
+      clientProcessorService.triggerShutdown();
       closeConnectionManager();
     }));
   }
