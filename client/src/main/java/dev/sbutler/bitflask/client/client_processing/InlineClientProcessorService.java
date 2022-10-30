@@ -10,12 +10,7 @@ import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import java.io.IOException;
 import javax.inject.Inject;
 
-/**
- * Provides a REPL shell for a client to interactively execute commands.
- */
-public class ReplClientProcessorService implements ClientProcessorService {
-
-  private static final String SHELL_PREFIX = "> ";
+public class InlineClientProcessorService implements ClientProcessorService {
 
   public static class Factory {
 
@@ -28,8 +23,8 @@ public class ReplClientProcessorService implements ClientProcessorService {
       this.outputWriter = outputWriter;
     }
 
-    public ReplClientProcessorService create(ReplReader replReader) {
-      return new ReplClientProcessorService(clientProcessor, replReader, outputWriter);
+    public InlineClientProcessorService create(ReplReader replReader) {
+      return new InlineClientProcessorService(clientProcessor, replReader, outputWriter);
     }
   }
 
@@ -37,10 +32,7 @@ public class ReplClientProcessorService implements ClientProcessorService {
   private final ReplReader replReader;
   private final OutputWriter outputWriter;
 
-  private boolean continueProcessingClientInput = true;
-
-  private ReplClientProcessorService(ClientProcessor clientProcessor,
-      ReplReader replReader,
+  private InlineClientProcessorService(ClientProcessor clientProcessor, ReplReader replReader,
       OutputWriter outputWriter) {
     this.clientProcessor = clientProcessor;
     this.replReader = replReader;
@@ -49,25 +41,17 @@ public class ReplClientProcessorService implements ClientProcessorService {
 
   @Override
   public void run() {
-    // Doesn't work when running from IDE (https://youtrack.jetbrains.com/issue/IDEA-18814)
-    // boolean hasConsole = System.console() != null;
-    while (continueProcessingClientInput) {
-      outputWriter.write(SHELL_PREFIX);
-      try {
-        ImmutableList<ReplElement> clientInput = ReplParser.readNextLine(replReader);
-        if (clientInput == null) {
-          triggerShutdown();
-          return;
-        }
-        if (!clientInput.isEmpty()) {
-          processClientInput(clientInput);
-        }
-      } catch (ReplSyntaxException e) {
-        outputWriter.writeWithNewLine(e.getMessage());
-      } catch (ReplIOException e) {
-        outputWriter.writeWithNewLine(e.getMessage());
+    try {
+      ImmutableList<ReplElement> clientInput = ReplParser.readNextLine(replReader);
+      if (clientInput == null) {
         triggerShutdown();
+        return;
       }
+      if (!clientInput.isEmpty()) {
+        processClientInput(clientInput);
+      }
+    } catch (ReplSyntaxException | ReplIOException e) {
+      outputWriter.writeWithNewLine(e.getMessage());
     }
   }
 
@@ -82,8 +66,8 @@ public class ReplClientProcessorService implements ClientProcessorService {
     }
   }
 
+  @Override
   public void triggerShutdown() {
-    continueProcessingClientInput = false;
     try {
       replReader.close();
     } catch (IOException e) {
