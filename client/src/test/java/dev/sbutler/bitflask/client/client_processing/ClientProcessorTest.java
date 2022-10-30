@@ -8,9 +8,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplElement;
-import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplString;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
+import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
+import dev.sbutler.bitflask.client.client_processing.repl.types.ReplString;
 import dev.sbutler.bitflask.client.command_processing.ProcessingException;
 import dev.sbutler.bitflask.client.command_processing.RemoteCommandProcessor;
 import org.junit.jupiter.api.Test;

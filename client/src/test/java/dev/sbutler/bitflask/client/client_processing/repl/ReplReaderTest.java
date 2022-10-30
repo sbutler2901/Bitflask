@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client.client_processing.input.repl;
+package dev.sbutler.bitflask.client.client_processing.repl;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -8,9 +8,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplElement;
-import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplInteger;
-import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplString;
+import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
+import dev.sbutler.bitflask.client.client_processing.repl.types.ReplInteger;
+import dev.sbutler.bitflask.client.client_processing.repl.types.ReplString;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;

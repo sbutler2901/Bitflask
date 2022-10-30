@@ -7,7 +7,7 @@ import com.google.inject.Injector;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.InlineClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
-import dev.sbutler.bitflask.client.client_processing.input.repl.ReplReader;
+import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
 import dev.sbutler.bitflask.client.configuration.ClientConfigurationConstants;
 import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;

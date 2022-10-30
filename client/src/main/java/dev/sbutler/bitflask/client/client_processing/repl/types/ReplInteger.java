@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client.client_processing.input.repl.types;
+package dev.sbutler.bitflask.client.client_processing.repl.types;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

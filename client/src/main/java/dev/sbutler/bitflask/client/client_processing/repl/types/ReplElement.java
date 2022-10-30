@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client.client_processing.input.repl.types;
+package dev.sbutler.bitflask.client.client_processing.repl.types;
 
 /**
  * The parent class of all element types that can be interpreted from client input.

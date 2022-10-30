@@ -1,7 +1,7 @@
-package dev.sbutler.bitflask.client.client_processing.input.repl;
+package dev.sbutler.bitflask.client.client_processing.repl;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplElement;
+import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
 import java.io.IOException;
 
 public final class ReplParser {

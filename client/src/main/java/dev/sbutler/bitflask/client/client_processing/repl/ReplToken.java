@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client.client_processing.input.repl;
+package dev.sbutler.bitflask.client.client_processing.repl;
 
 public enum ReplToken {
   CHARACTER,

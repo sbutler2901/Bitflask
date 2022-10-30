@@ -3,8 +3,8 @@ package dev.sbutler.bitflask.client.client_processing;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplElement;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
+import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
 import dev.sbutler.bitflask.client.command_processing.ClientCommand;
 import dev.sbutler.bitflask.client.command_processing.LocalCommand;
 import dev.sbutler.bitflask.client.command_processing.LocalCommand.Exit;

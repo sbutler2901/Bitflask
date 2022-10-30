@@ -8,11 +8,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.client.client_processing.input.repl.ReplIOException;
-import dev.sbutler.bitflask.client.client_processing.input.repl.ReplParser;
-import dev.sbutler.bitflask.client.client_processing.input.repl.ReplReader;
-import dev.sbutler.bitflask.client.client_processing.input.repl.ReplSyntaxException;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
+import dev.sbutler.bitflask.client.client_processing.repl.ReplIOException;
+import dev.sbutler.bitflask.client.client_processing.repl.ReplParser;
+import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
+import dev.sbutler.bitflask.client.client_processing.repl.ReplSyntaxException;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

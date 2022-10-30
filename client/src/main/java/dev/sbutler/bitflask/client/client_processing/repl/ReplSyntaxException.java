@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.client.client_processing.input.repl;
+package dev.sbutler.bitflask.client.client_processing.repl;
 
 /**
  * Used to indicate Repl syntax related issues with the input data.
