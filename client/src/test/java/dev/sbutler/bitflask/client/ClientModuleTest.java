@@ -6,9 +6,10 @@ import static org.mockito.Mockito.mock;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.client.client_processing.ClientProcessor;
-import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
+import dev.sbutler.bitflask.client.command_processing.RemoteCommandProcessor;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
+import dev.sbutler.bitflask.resp.network.RespReader;
+import dev.sbutler.bitflask.resp.network.RespWriter;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,8 +32,9 @@ public class ClientModuleTest {
   void configure() {
     Injector injector = Guice.createInjector(clientModule);
     // Act / Assert
-    injector.getBinding(ReplClientProcessorService.class);
-    injector.getBinding(ClientProcessor.class);
+    injector.getBinding(RespReader.class);
+    injector.getBinding(RespWriter.class);
+    injector.getBinding(RemoteCommandProcessor.class);
   }
 
   @Test

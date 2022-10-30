@@ -63,6 +63,7 @@ public class ReplClientProcessorService implements ClientProcessorService {
           processClientInput(clientInput);
         }
       } catch (ReplSyntaxException e) {
+        // TODO: handle cleanup of repl reader
         outputWriter.writeWithNewLine(e.getMessage());
       } catch (ReplIOException e) {
         outputWriter.writeWithNewLine(e.getMessage());
@@ -78,6 +79,7 @@ public class ReplClientProcessorService implements ClientProcessorService {
         triggerShutdown();
       }
     } catch (ClientProcessingException e) {
+      // TODO: handle cleanup of repl reader
       outputWriter.writeWithNewLine(e.getMessage());
     }
   }

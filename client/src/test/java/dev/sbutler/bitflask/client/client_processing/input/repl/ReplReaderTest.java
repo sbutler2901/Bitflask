@@ -8,10 +8,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplDoubleQuotedString;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplElement;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplInteger;
-import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplSingleQuotedString;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplString;
 import java.io.IOException;
 import java.io.Reader;
@@ -27,11 +25,38 @@ public class ReplReaderTest {
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplSyntaxException exception =
-        assertThrows(ReplSyntaxException.class, replReader::readReplString);
+    ReplParseException exception =
+        assertThrows(ReplParseException.class, replReader::readReplString);
     // Assert
     assertTrue(exception.getMessage().contains("Could not map to ReplToken"));
   }
+
+  @Test
+  void readReplInteger() throws Exception {
+    // Arrange
+    Long value = 100L;
+    Reader reader = new StringReader(value.toString());
+    ReplReader replReader = new ReplReader(reader);
+    // Act
+    ReplInteger replInteger = replReader.readReplInteger();
+    // Assert
+    assertThat(replInteger.getAsLong()).isEqualTo(value);
+  }
+
+  @Test
+  void readReplInteger_invalid_throwsReplSyntaxException() {
+    // Arrange
+    String value = "90a9";
+    Reader reader = new StringReader(value);
+    ReplReader replReader = new ReplReader(reader);
+    // Act
+    ReplSyntaxException exception =
+        assertThrows(ReplSyntaxException.class, replReader::readReplInteger);
+    // Assert
+    assertTrue(exception.getMessage().toLowerCase().contains("could not be read"));
+    assertTrue(exception.getMessage().toLowerCase().contains(value));
+  }
+
 
   @Test
   void readReplString() throws Exception {
@@ -67,56 +92,6 @@ public class ReplReaderTest {
     ReplString replString = replReader.readReplString();
     // Assert
     assertThat(replString.getAsString()).isEqualTo(value);
-  }
-
-  @Test
-  void readReplString_enclosedWithSingleQuotes() throws Exception {
-    // Arrange
-    String value = "'test'";
-    Reader reader = new StringReader(value);
-    ReplReader replReader = new ReplReader(reader);
-    // Act
-    ReplString replString = replReader.readReplString();
-    // Assert
-    assertThat(replString.getAsString()).isEqualTo(value);
-  }
-
-  @Test
-  void readReplString_enclosedWithDoubleQuotes() throws Exception {
-    // Arrange
-    String value = "\"test\"";
-    Reader reader = new StringReader(value);
-    ReplReader replReader = new ReplReader(reader);
-    // Act
-    ReplString replString = replReader.readReplString();
-    // Assert
-    assertThat(replString.getAsString()).isEqualTo(value);
-  }
-
-  @Test
-  void readReplInteger() throws Exception {
-    // Arrange
-    Long value = 100L;
-    Reader reader = new StringReader(value.toString());
-    ReplReader replReader = new ReplReader(reader);
-    // Act
-    ReplInteger replInteger = replReader.readReplInteger();
-    // Assert
-    assertThat(replInteger.getAsLong()).isEqualTo(value);
-  }
-
-  @Test
-  void readReplInteger_invalid_throwsReplSyntaxException() {
-    // Arrange
-    String value = "90a9";
-    Reader reader = new StringReader(value);
-    ReplReader replReader = new ReplReader(reader);
-    // Act
-    ReplSyntaxException exception =
-        assertThrows(ReplSyntaxException.class, replReader::readReplInteger);
-    // Assert
-    assertTrue(exception.getMessage().toLowerCase().contains("could not be read"));
-    assertTrue(exception.getMessage().toLowerCase().contains(value));
   }
 
   @Test
@@ -410,7 +385,7 @@ public class ReplReaderTest {
     ImmutableList<ReplElement> expected = ImmutableList.of(
         new ReplString("set"),
         new ReplString("test"),
-        new ReplSingleQuotedString("value")
+        new ReplString("value")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -428,7 +403,7 @@ public class ReplReaderTest {
     ImmutableList<ReplElement> expected = ImmutableList.of(
         new ReplString("set"),
         new ReplString("test"),
-        new ReplDoubleQuotedString("value")
+        new ReplString("value")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -446,7 +421,7 @@ public class ReplReaderTest {
     ImmutableList<ReplElement> expected = ImmutableList.of(
         new ReplString("set"),
         new ReplString("test"),
-        new ReplSingleQuotedString("value other")
+        new ReplString("value other")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -464,7 +439,7 @@ public class ReplReaderTest {
     ImmutableList<ReplElement> expected = ImmutableList.of(
         new ReplString("set"),
         new ReplString("test"),
-        new ReplDoubleQuotedString("value other")
+        new ReplString("value other")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -480,9 +455,9 @@ public class ReplReaderTest {
     // Assert
     assertThat(elements).hasSize(3);
     ImmutableList<ReplElement> expected = ImmutableList.of(
-        new ReplSingleQuotedString("set"),
-        new ReplSingleQuotedString("test"),
-        new ReplSingleQuotedString("value")
+        new ReplString("set"),
+        new ReplString("test"),
+        new ReplString("value")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -498,9 +473,9 @@ public class ReplReaderTest {
     // Assert
     assertThat(elements).hasSize(3);
     ImmutableList<ReplElement> expected = ImmutableList.of(
-        new ReplDoubleQuotedString("set"),
-        new ReplDoubleQuotedString("test"),
-        new ReplDoubleQuotedString("value")
+        new ReplString("set"),
+        new ReplString("test"),
+        new ReplString("value")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -518,7 +493,7 @@ public class ReplReaderTest {
     ImmutableList<ReplElement> expected = ImmutableList.of(
         new ReplString("set"),
         new ReplString("test"),
-        new ReplSingleQuotedString("value 'other")
+        new ReplString("value 'other")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -536,7 +511,7 @@ public class ReplReaderTest {
     ImmutableList<ReplElement> expected = ImmutableList.of(
         new ReplString("set"),
         new ReplString("test"),
-        new ReplDoubleQuotedString("value \"other")
+        new ReplString("value \"other")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -554,7 +529,7 @@ public class ReplReaderTest {
     ImmutableList<ReplElement> expected = ImmutableList.of(
         new ReplString("set"),
         new ReplString("test"),
-        new ReplSingleQuotedString("value \\other")
+        new ReplString("value \\other")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -572,7 +547,7 @@ public class ReplReaderTest {
     ImmutableList<ReplElement> expected = ImmutableList.of(
         new ReplString("set"),
         new ReplString("test"),
-        new ReplDoubleQuotedString("value \\other")
+        new ReplString("value \\other")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -590,7 +565,7 @@ public class ReplReaderTest {
     ImmutableList<ReplElement> expected = ImmutableList.of(
         new ReplString("set"),
         new ReplString("test"),
-        new ReplDoubleQuotedString("value\nother")
+        new ReplString("value\nother")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -608,7 +583,7 @@ public class ReplReaderTest {
     ImmutableList<ReplElement> expected = ImmutableList.of(
         new ReplString("set"),
         new ReplString("test"),
-        new ReplSingleQuotedString("value\\nother")
+        new ReplString("value\\nother")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -626,7 +601,7 @@ public class ReplReaderTest {
     ImmutableList<ReplElement> expected = ImmutableList.of(
         new ReplString("set"),
         new ReplString("test"),
-        new ReplDoubleQuotedString("value\\rother")
+        new ReplString("value\\rother")
     );
     assertThat(elements).containsExactlyElementsIn(expected).inOrder();
   }
@@ -664,8 +639,8 @@ public class ReplReaderTest {
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplSyntaxException exception =
-        assertThrows(ReplSyntaxException.class, replReader::readToEndLine);
+    ReplParseException exception =
+        assertThrows(ReplParseException.class, replReader::readToEndLine);
     // Assert
     assertTrue(exception.getMessage().toLowerCase().contains("invalid token found"));
   }

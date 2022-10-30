@@ -36,7 +36,7 @@ public class ReplParserTest {
     // Arrange
     ReplReader replReader = mock(ReplReader.class);
     IOException ioException = new IOException("test");
-    when(replReader.readReplString()).thenThrow(ioException);
+    when(replReader.readToEndLine()).thenThrow(ioException);
     // Act
     ReplIOException exception =
         assertThrows(ReplIOException.class, () -> ReplParser.readNextLine(replReader));

@@ -1,8 +1,7 @@
 package dev.sbutler.bitflask.client.client_processing;
 
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -12,9 +11,9 @@ import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.client.client_processing.input.repl.ReplIOException;
 import dev.sbutler.bitflask.client.client_processing.input.repl.ReplParser;
 import dev.sbutler.bitflask.client.client_processing.input.repl.ReplReader;
+import dev.sbutler.bitflask.client.client_processing.input.repl.ReplSyntaxException;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import java.io.IOException;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,62 +34,83 @@ public class ReplClientProcessorServiceTest {
   OutputWriter outputWriter;
 
   @Test
-  void inputParser_nullClientInput() throws Exception {
+  void replParser_nullClientInput() throws Exception {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
       replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
           .thenReturn(null);
       // Act
-      assertTimeoutPreemptively(Duration.ofMillis(100), () -> replClientProcessorService.run());
+      replClientProcessorService.run();
       // Assert
-      verify(outputWriter, times(1)).write(anyString());
+      verify(outputWriter, times(1)).write(any());
       verify(replReader, times(1)).close();
     }
   }
 
   @Test
-  void clientProcessor_emptyInput() throws Exception {
+  void replParser_emptyInput() throws Exception {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
-      replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
+      replParserMockedStatic.when(() -> ReplParser.readNextLine(replReader))
           .thenReturn(ImmutableList.of())
-          .thenReturn(ImmutableList.of());
+          .thenReturn(ImmutableList.of("test"));
       when(clientProcessor.processClientInput(any()))
           .thenReturn(true)
+          // artificially terminate
           .thenReturn(false);
       // Act
-      assertTimeoutPreemptively(Duration.ofMillis(100), () -> replClientProcessorService.run());
+      replClientProcessorService.run();
       // Assert
-      verify(outputWriter, times(2)).write(anyString());
+      verify(outputWriter, times(3)).write(any());
     }
   }
 
   @Test
-  void inputParser_throwsReplSyntaxException() throws Exception {
+  void replParser_throwsReplSyntaxException() {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
       replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
-          .thenThrow(IOException.class)
-          .thenReturn(ImmutableList.of());
-      when(clientProcessor.processClientInput(any()))
-          .thenReturn(false);
+          .thenThrow(ReplSyntaxException.class)
+          // artificially terminate
+          .thenReturn(null);
       // Act
-      assertTimeoutPreemptively(Duration.ofMillis(100), () -> replClientProcessorService.run());
-      verify(outputWriter, times(2)).write(anyString());
+      replClientProcessorService.run();
+      // Assert
+      verify(outputWriter, times(2)).write(any());
+      verify(outputWriter, times(1)).writeWithNewLine(any());
     }
   }
 
   @Test
-  void inputParser_throwsReplIOException() throws Exception {
+  void replParser_throwsReplIOException() throws Exception {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
       replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
           .thenThrow(ReplIOException.class);
       // Act
-      assertTimeoutPreemptively(Duration.ofMillis(100), () -> replClientProcessorService.run());
+      replClientProcessorService.run();
       // Assert
-      verify(outputWriter, times(1)).write(anyString());
+      verify(outputWriter, times(1)).write(any());
+      verify(outputWriter, times(1)).writeWithNewLine(any());
       verify(replReader, times(1)).close();
+    }
+  }
+
+  @Test
+  void processClientInput_throwsClientProcessingException() throws Exception {
+    try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
+      // Arrange
+      replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
+          .thenReturn(ImmutableList.of("test"))
+          // artificially terminate
+          .thenReturn(null);
+      when(clientProcessor.processClientInput(any()))
+          .thenThrow(ClientProcessingException.class);
+      // Act
+      replClientProcessorService.run();
+      // Assert
+      verify(outputWriter, times(2)).write(any());
+      verify(outputWriter, times(1)).writeWithNewLine(any());
     }
   }
 
@@ -100,8 +120,21 @@ public class ReplClientProcessorServiceTest {
     replClientProcessorService.triggerShutdown();
     replClientProcessorService.run();
     // Assert
-    verify(outputWriter, times(0)).writeWithNewLine(anyString());
-    verify(outputWriter, times(0)).write(anyString());
+    verify(outputWriter, times(0)).writeWithNewLine(any());
+    verify(outputWriter, times(0)).write(any());
+    verify(replReader, times(1)).close();
+  }
+
+  @Test
+  void triggerShutdown_replReader_throwsIOException() throws Exception {
+    // Arrange
+    doThrow(IOException.class).when(replReader).close();
+    // Act
+    replClientProcessorService.triggerShutdown();
+    replClientProcessorService.run();
+    // Assert
+    verify(outputWriter, times(0)).writeWithNewLine(any());
+    verify(outputWriter, times(0)).write(any());
     verify(replReader, times(1)).close();
   }
 }
