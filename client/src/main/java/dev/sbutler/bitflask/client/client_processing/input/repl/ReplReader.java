@@ -47,17 +47,31 @@ public final class ReplReader implements AutoCloseable {
     peeked = Character.toString(read);
   }
 
-  ReplString readReplString() throws IOException {
+  ReplString readReplString() throws IOException, ReplSyntaxException {
     if (isPeekedEndDocument()) {
       return null;
     }
     readAllWhiteSpace();
+    return switch (peekedAsToken) {
+      case CHARACTER, NUMBER -> readRawString();
+      case SINGLE_QUOTE, DOUBLE_QUOTE -> readQuotedString();
+      case default -> throw new ReplSyntaxException(String.format(
+          "The current element cannot be read as a ReplString. First character: [%s]", peeked));
+    };
+  }
+
+  private ReplString readRawString() throws IOException {
     StringBuilder builder = new StringBuilder();
     while (peekedIsNotSpace() && peekedIsNotEndLine() && peekedIsNotEndDocument()) {
       builder.append(peeked);
       peek();
     }
     return new ReplString(builder.toString());
+  }
+
+  private ReplString readQuotedString() throws IOException, ReplSyntaxException {
+    String quotedString = parseQuotedString();
+    return new ReplString(quotedString);
   }
 
   ReplInteger readReplInteger() throws IOException, ReplSyntaxException {
@@ -81,10 +95,7 @@ public final class ReplReader implements AutoCloseable {
     }
     readAllWhiteSpace();
     // Try to read as number
-    ReplString replString = readReplString();
-    if (replString == null) {
-      throw new ReplParseException("Read ReplString was null");
-    }
+    ReplString replString = readRawString();
     Long parsed = Longs.tryParse(replString.getAsString());
     if (parsed == null) {
       // was not a number
@@ -117,10 +128,8 @@ public final class ReplReader implements AutoCloseable {
     }
     readAllWhiteSpace();
     return switch (peekedAsToken) {
-      case CHARACTER -> readReplString();
       case NUMBER -> attemptReadingReplInteger();
-      case SINGLE_QUOTE -> readReplSingleQuotedString();
-      case DOUBLE_QUOTE -> readReplDoubleQuotedString();
+      case CHARACTER, SINGLE_QUOTE, DOUBLE_QUOTE -> readReplString();
       default -> throw new ReplParseException(String.format("Invalid token found: [%s]", peeked));
     };
   }
