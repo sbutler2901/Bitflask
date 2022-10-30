@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.client;
 
 import com.beust.jcommander.JCommander;
+import com.google.common.base.Joiner;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
@@ -86,7 +87,8 @@ public class Client implements Runnable {
   }
 
   private void executeInline(Injector injector) {
-    Reader reader = new StringReader(configuration.getInlineCmd());
+    String args = Joiner.on(' ').join(configuration.getInlineCmd());
+    Reader reader = new StringReader(args);
     ReplReader replReader = new ReplReader(reader);
 
     InlineClientProcessorService.Factory inlineFactory =
@@ -103,7 +105,7 @@ public class Client implements Runnable {
   }
 
   private boolean shouldExecuteWithRepl() {
-    return configuration.getInlineCmd().length() == 0;
+    return configuration.getInlineCmd().size() == 0;
   }
 
   private void registerShutdownHook(ClientProcessorService clientProcessorService) {

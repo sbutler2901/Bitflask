@@ -2,16 +2,16 @@ package dev.sbutler.bitflask.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.client.client_processing.ClientProcessor;
+import dev.sbutler.bitflask.client.client_processing.InlineClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -23,15 +23,28 @@ import org.mockito.MockedStatic;
 
 public class ClientTest {
 
-  Injector injector;
+  private final Injector injector = mock(Injector.class);
+  private final ReplClientProcessorService replProcessor =
+      mock(ReplClientProcessorService.class);
+  private final ReplClientProcessorService.Factory replFactory =
+      mock(ReplClientProcessorService.Factory.class);
+  private final InlineClientProcessorService inlineProcessor =
+      mock(InlineClientProcessorService.class);
+  private final InlineClientProcessorService.Factory inlineFactory =
+      mock(InlineClientProcessorService.Factory.class);
 
   @BeforeEach
   void beforeEach() {
-    injector = mock(Injector.class);
+    when(replFactory.create(any())).thenReturn(replProcessor);
+    when(inlineFactory.create(any())).thenReturn(inlineProcessor);
+    when(injector.getInstance(ReplClientProcessorService.Factory.class))
+        .thenReturn(replFactory);
+    when(injector.getInstance(InlineClientProcessorService.Factory.class))
+        .thenReturn(inlineFactory);
   }
 
   @Test
-  void inline() throws Exception {
+  void inline() {
     try (MockedStatic<SocketChannel> socketChannelMockedStatic = mockStatic(SocketChannel.class);
         MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       // Arrange
@@ -43,12 +56,10 @@ public class ClientTest {
       guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
           .thenReturn(injector);
 
-      ClientProcessor clientProcessor = mock(ClientProcessor.class);
-      doReturn(clientProcessor).when(injector).getInstance(ClientProcessor.class);
       // Act
       Client.main(args);
       // Assert
-      verify(clientProcessor, times(1)).processClientInput(any());
+      verify(inlineProcessor, times(1)).run();
     }
   }
 
@@ -65,14 +76,10 @@ public class ClientTest {
       guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
           .thenReturn(injector);
 
-      ReplClientProcessorService replClientProcessorService =
-          mock(ReplClientProcessorService.class);
-      doReturn(replClientProcessorService).when(injector)
-          .getInstance(ReplClientProcessorService.class);
       // Act
       Client.main(args);
       // Assert
-      verify(replClientProcessorService, times(1)).run();
+      verify(replProcessor, times(1)).run();
     }
   }
 
