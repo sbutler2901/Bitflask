@@ -45,6 +45,11 @@ public final class ReplInteger extends ReplElement {
   }
 
   @Override
+  public String getAsString() {
+    return value.toString();
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;

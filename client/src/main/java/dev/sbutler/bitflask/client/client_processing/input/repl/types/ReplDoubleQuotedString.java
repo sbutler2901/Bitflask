@@ -20,6 +20,7 @@ public final class ReplDoubleQuotedString extends ReplElement {
     this.value = value;
   }
 
+  @Override
   public String getAsString() {
     return value;
   }

@@ -18,6 +18,7 @@ public final class ReplString extends ReplElement {
     this.value = value;
   }
 
+  @Override
   public String getAsString() {
     return value;
   }
