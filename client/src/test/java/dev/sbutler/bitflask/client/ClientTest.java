@@ -31,7 +31,7 @@ public class ClientTest {
   }
 
   @Test
-  void inline() {
+  void inline() throws Exception {
     try (MockedStatic<SocketChannel> socketChannelMockedStatic = mockStatic(SocketChannel.class);
         MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       // Arrange

@@ -10,6 +10,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
+import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplElement;
+import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplString;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import dev.sbutler.bitflask.client.command_processing.ProcessingException;
 import dev.sbutler.bitflask.client.command_processing.RemoteCommandProcessor;
@@ -30,9 +32,9 @@ public class ClientProcessorTest {
   OutputWriter outputWriter;
 
   @Test
-  void localCommand_exit() {
+  void localCommand_exit() throws Exception {
     // Arrange
-    ImmutableList<String> clientInput = ImmutableList.of("exit");
+    ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("exit"));
     // Act
     boolean shouldContinue = clientProcessor.processClientInput(clientInput);
     // Assert
@@ -40,9 +42,9 @@ public class ClientProcessorTest {
   }
 
   @Test
-  void localCommand_help() {
+  void localCommand_help() throws Exception {
     // Arrange
-    ImmutableList<String> clientInput = ImmutableList.of("help");
+    ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("help"));
     // Act
     boolean shouldContinue = clientProcessor.processClientInput(clientInput);
     // Assert
@@ -53,7 +55,8 @@ public class ClientProcessorTest {
   @Test
   void remoteCommand() throws Exception {
     // Arrange
-    ImmutableList<String> clientInput = ImmutableList.of("get", "test");
+    ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("get"),
+        new ReplString("test"));
     doReturn("test result").when(remoteCommandProcessor).runCommand(any());
     // Act
     boolean shouldContinue = clientProcessor.processClientInput(clientInput);
@@ -66,7 +69,8 @@ public class ClientProcessorTest {
   @Test
   void remoteCommand_ProcessingException() throws Exception {
     // Arrange
-    ImmutableList<String> clientInput = ImmutableList.of("get", "test");
+    ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("get"),
+        new ReplString("test"));
     doThrow(ProcessingException.class).when(remoteCommandProcessor).runCommand(any());
     // Act
     boolean shouldContinue = clientProcessor.processClientInput(clientInput);
@@ -79,7 +83,7 @@ public class ClientProcessorTest {
   @Test
   void emptyInput() throws Exception {
     // Arrange
-    ImmutableList<String> clientInput = ImmutableList.of();
+    ImmutableList<ReplElement> clientInput = ImmutableList.of();
     // Act
     boolean shouldContinue = clientProcessor.processClientInput(clientInput);
     // Assert

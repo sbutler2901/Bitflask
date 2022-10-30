@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 public class ReplParserTest {
 
   @Test
-  void readNextLine() {
+  void readNextLine() throws Exception {
     // Arrange
     String value = "set test value";
     ReplReader replReader = new ReplReader(new StringReader(value));
