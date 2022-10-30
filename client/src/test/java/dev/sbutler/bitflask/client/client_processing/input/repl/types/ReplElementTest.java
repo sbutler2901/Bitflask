@@ -18,6 +18,14 @@ public class ReplElementTest {
   }
 
   @Test
+  void replString_throwsIllegalStateException() {
+    // Arrange
+    ReplString replString = new ReplString("value");
+    // Assert
+    assertThrows(IllegalStateException.class, replString::getAsReplInteger);
+  }
+
+  @Test
   void replInteger() {
     // Arrange
     ReplElement replElement = new ReplInteger(0);
@@ -27,26 +35,11 @@ public class ReplElementTest {
   }
 
   @Test
-  void replString_throwsIllegalStateException() {
+  void replInteger_getAsString() {
     // Arrange
-    ReplSingleQuotedString replSingleQuotedString = new ReplSingleQuotedString("value");
-    ReplDoubleQuotedString replDoubleQuotedString = new ReplDoubleQuotedString("value");
-    ReplInteger replInteger = new ReplInteger(0);
+    ReplInteger replInteger = new ReplInteger(1234);
     // Assert
-    assertThrows(IllegalStateException.class, replSingleQuotedString::getAsReplString);
-    assertThrows(IllegalStateException.class, replDoubleQuotedString::getAsReplString);
+    assertThat(replInteger.getAsString()).isEqualTo("1234");
     assertThrows(IllegalStateException.class, replInteger::getAsReplString);
-  }
-
-  @Test
-  void replInteger_throwsIllegalStateException() {
-    // Arrange
-    ReplString replString = new ReplString("value");
-    ReplSingleQuotedString replSingleQuotedString = new ReplSingleQuotedString("value");
-    ReplDoubleQuotedString replDoubleQuotedString = new ReplDoubleQuotedString("value");
-    // Assert
-    assertThrows(IllegalStateException.class, replString::getAsReplInteger);
-    assertThrows(IllegalStateException.class, replSingleQuotedString::getAsReplInteger);
-    assertThrows(IllegalStateException.class, replDoubleQuotedString::getAsReplInteger);
   }
 }
