@@ -120,185 +120,185 @@ public class ReplReaderTest {
   }
 
   @Test
-  void readReplSingleQuotedString() throws Exception {
+  void readReplString_singleQuotedString() throws Exception {
     // Arrange
     String value = "'test'";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplSingleQuotedString singleQuotedString = replReader.readReplSingleQuotedString();
+    ReplString singleQuotedString = replReader.readReplString();
     // Assert
     assertThat(singleQuotedString.getAsString()).isEqualTo("test");
   }
 
   @Test
-  void readReplSingleQuotedString_withInlineSpaces() throws Exception {
+  void readReplString_singleQuotedString_withInlineSpaces() throws Exception {
     // Arrange
     String value = "'test value'";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplSingleQuotedString singleQuotedString = replReader.readReplSingleQuotedString();
+    ReplString singleQuotedString = replReader.readReplString();
     // Assert
     assertThat(singleQuotedString.getAsString()).isEqualTo("test value");
   }
 
   @Test
-  void readReplSingleQuotedString_withEscape_singleQuote() throws Exception {
+  void readReplString_singleQuotedString_withEscape_singleQuote() throws Exception {
     // Arrange
     String value = "'test \\'value'";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplSingleQuotedString singleQuotedString = replReader.readReplSingleQuotedString();
+    ReplString singleQuotedString = replReader.readReplString();
     // Assert
     assertThat(singleQuotedString.getAsString()).isEqualTo("test 'value");
   }
 
   @Test
-  void readReplSingleQuotedString_withEscape_backslash() throws Exception {
+  void readReplString_singleQuotedString_withEscape_backslash() throws Exception {
     // Arrange
     String value = "'test \\\\value'";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplSingleQuotedString singleQuotedString = replReader.readReplSingleQuotedString();
+    ReplString singleQuotedString = replReader.readReplString();
     // Assert
     assertThat(singleQuotedString.getAsString()).isEqualTo("test \\value");
   }
 
   @Test
-  void readReplSingleQuotedString_unsupportedEscape() throws Exception {
+  void readReplString_singleQuotedString_unsupportedEscape() throws Exception {
     // Arrange
     String value = "'test\\nvalue'";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplSingleQuotedString singleQuotedString = replReader.readReplSingleQuotedString();
+    ReplString singleQuotedString = replReader.readReplString();
     // Assert
     assertThat(singleQuotedString.getAsString()).isEqualTo("test\\nvalue");
   }
 
   @Test
-  void readReplSingleQuotedString_unterminated_endOfInput_throwsReplSyntaxException() {
+  void readReplString_singleQuotedString_unterminated_endOfInput_throwsReplSyntaxException() {
     // Arrange
     String value = "'value\"";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
     ReplSyntaxException exception =
-        assertThrows(ReplSyntaxException.class, replReader::readToEndLine);
+        assertThrows(ReplSyntaxException.class, replReader::readReplString);
     // Assert
     assertTrue(exception.getMessage().toLowerCase().contains("not properly terminated"));
   }
 
   @Test
-  void replSingleQuotedString_spaceNotFollowing_throwsReplSyntaxException() {
+  void readReplString_singleQuotedString_spaceNotFollowing_throwsReplSyntaxException() {
     // Arrange
     String value = "'value'a";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
     ReplSyntaxException exception =
-        assertThrows(ReplSyntaxException.class, replReader::readToEndLine);
+        assertThrows(ReplSyntaxException.class, replReader::readReplString);
     // Assert
     assertTrue(exception.getMessage().toLowerCase().contains("followed with a space"));
   }
 
   @Test
-  void readReplDoubleQuotedString() throws Exception {
+  void readReplString_doubleQuotedString() throws Exception {
     // Arrange
     String value = "\"test\"";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplDoubleQuotedString doubleQuotedString = replReader.readReplDoubleQuotedString();
+    ReplString doubleQuotedString = replReader.readReplString();
     // Assert
     assertThat(doubleQuotedString.getAsString()).isEqualTo("test");
   }
 
   @Test
-  void readReplDoubleQuotedString_withInlineSpaces() throws Exception {
+  void readReplString_doubleQuotedString_withInlineSpaces() throws Exception {
     // Arrange
     String value = "\"test value\"";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplDoubleQuotedString doubleQuotedString = replReader.readReplDoubleQuotedString();
+    ReplString doubleQuotedString = replReader.readReplString();
     // Assert
     assertThat(doubleQuotedString.getAsString()).isEqualTo("test value");
   }
 
   @Test
-  void readReplDoubleQuotedString_withEscape_doubleQuote() throws Exception {
+  void readReplString_doubleQuotedString_withEscape_doubleQuote() throws Exception {
     // Arrange
     String value = "\"test \\\"value\"";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplDoubleQuotedString doubleQuotedString = replReader.readReplDoubleQuotedString();
+    ReplString doubleQuotedString = replReader.readReplString();
     // Assert
     assertThat(doubleQuotedString.getAsString()).isEqualTo("test \"value");
   }
 
   @Test
-  void readReplDoubleQuotedString_withEscape_backslash() throws Exception {
+  void readReplString_doubleQuotedString_withEscape_backslash() throws Exception {
     // Arrange
     String value = "\"test \\\\value\"";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplDoubleQuotedString doubleQuotedString = replReader.readReplDoubleQuotedString();
+    ReplString doubleQuotedString = replReader.readReplString();
     // Assert
     assertThat(doubleQuotedString.getAsString()).isEqualTo("test \\value");
   }
 
   @Test
-  void readReplDoubleQuotedString_unsupportedEscape() throws Exception {
+  void readReplString_doubleQuotedString_unsupportedEscape() throws Exception {
     // Arrange
     String value = "\"test\\rvalue\"";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplDoubleQuotedString doubleQuotedString = replReader.readReplDoubleQuotedString();
+    ReplString doubleQuotedString = replReader.readReplString();
     // Assert
     assertThat(doubleQuotedString.getAsString()).isEqualTo("test\\rvalue");
   }
 
   @Test
-  void readReplDoubleQuotedString_unterminated_endOfInput_throwsReplSyntaxException() {
+  void readReplString_doubleQuotedString_unterminated_endOfInput_throwsReplSyntaxException() {
     // Arrange
     String value = "\"value'";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
     ReplSyntaxException exception =
-        assertThrows(ReplSyntaxException.class, replReader::readToEndLine);
+        assertThrows(ReplSyntaxException.class, replReader::readReplString);
     // Assert
     assertTrue(exception.getMessage().toLowerCase().contains("not properly terminated"));
   }
 
   @Test
-  void replDoubleQuotedString_spaceNotFollowing_throwsReplSyntaxException() {
+  void readReplString_doubleQuotedString_spaceNotFollowing_throwsReplSyntaxException() {
     // Arrange
     String value = "\"value\"a";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
     ReplSyntaxException exception =
-        assertThrows(ReplSyntaxException.class, replReader::readToEndLine);
+        assertThrows(ReplSyntaxException.class, replReader::readReplString);
     // Assert
     assertTrue(exception.getMessage().toLowerCase().contains("followed with a space"));
   }
 
   @Test
-  void replDoubleQuotedString_withEscape_newline() throws Exception {
+  void readReplString_doubleQuotedString_withEscape_newline() throws Exception {
     // Arrange
     String value = "\"test\\nvalue\"";
     Reader reader = new StringReader(value);
     ReplReader replReader = new ReplReader(reader);
     // Act
-    ReplDoubleQuotedString doubleQuotedString = replReader.readReplDoubleQuotedString();
+    ReplString doubleQuotedString = replReader.readReplString();
     // Assert
     assertThat(doubleQuotedString.getAsString()).isEqualTo("test\nvalue");
   }

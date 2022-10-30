@@ -18,24 +18,6 @@ public class ReplElementTest {
   }
 
   @Test
-  void replSingleQuotedString() {
-    // Arrange
-    ReplElement replElement = new ReplSingleQuotedString("value");
-    // Assert
-    assertThat(replElement.isReplSingleQuotedString()).isTrue();
-    assertDoesNotThrow(replElement::getAsReplSingleQuotedString);
-  }
-
-  @Test
-  void replDoubleQuotedString() {
-    // Arrange
-    ReplElement replElement = new ReplDoubleQuotedString("value");
-    // Assert
-    assertThat(replElement.isReplDoubleQuotedString()).isTrue();
-    assertDoesNotThrow(replElement::getAsReplDoubleQuotedString);
-  }
-
-  @Test
   void replInteger() {
     // Arrange
     ReplElement replElement = new ReplInteger(0);
@@ -54,30 +36,6 @@ public class ReplElementTest {
     assertThrows(IllegalStateException.class, replSingleQuotedString::getAsReplString);
     assertThrows(IllegalStateException.class, replDoubleQuotedString::getAsReplString);
     assertThrows(IllegalStateException.class, replInteger::getAsReplString);
-  }
-
-  @Test
-  void replSingleQuotedString_throwsIllegalStateException() {
-    // Arrange
-    ReplString replString = new ReplString("value");
-    ReplDoubleQuotedString replDoubleQuotedString = new ReplDoubleQuotedString("value");
-    ReplInteger replInteger = new ReplInteger(0);
-    // Assert
-    assertThrows(IllegalStateException.class, replString::getAsReplSingleQuotedString);
-    assertThrows(IllegalStateException.class, replDoubleQuotedString::getAsReplSingleQuotedString);
-    assertThrows(IllegalStateException.class, replInteger::getAsReplSingleQuotedString);
-  }
-
-  @Test
-  void replDoubleQuotedString_throwsIllegalStateException() {
-    // Arrange
-    ReplString replString = new ReplString("value");
-    ReplSingleQuotedString replSingleQuotedString = new ReplSingleQuotedString("value");
-    ReplInteger replInteger = new ReplInteger(0);
-    // Assert
-    assertThrows(IllegalStateException.class, replString::getAsReplDoubleQuotedString);
-    assertThrows(IllegalStateException.class, replSingleQuotedString::getAsReplDoubleQuotedString);
-    assertThrows(IllegalStateException.class, replInteger::getAsReplDoubleQuotedString);
   }
 
   @Test

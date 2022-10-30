@@ -3,10 +3,8 @@ package dev.sbutler.bitflask.client.client_processing.input.repl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.primitives.Longs;
-import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplDoubleQuotedString;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplElement;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplInteger;
-import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplSingleQuotedString;
 import dev.sbutler.bitflask.client.client_processing.input.repl.types.ReplString;
 import java.io.IOException;
 import java.io.Reader;
@@ -102,24 +100,6 @@ public final class ReplReader implements AutoCloseable {
       return replString;
     }
     return new ReplInteger(parsed);
-  }
-
-  ReplSingleQuotedString readReplSingleQuotedString() throws IOException, ReplSyntaxException {
-    if (isPeekedEndDocument()) {
-      return null;
-    }
-    readAllWhiteSpace();
-    String quotedString = parseQuotedString();
-    return new ReplSingleQuotedString(quotedString);
-  }
-
-  ReplDoubleQuotedString readReplDoubleQuotedString() throws IOException, ReplSyntaxException {
-    if (isPeekedEndDocument()) {
-      return null;
-    }
-    readAllWhiteSpace();
-    String quotedString = parseQuotedString();
-    return new ReplDoubleQuotedString(quotedString);
   }
 
   ReplElement readNextElement() throws IOException, ReplSyntaxException {
