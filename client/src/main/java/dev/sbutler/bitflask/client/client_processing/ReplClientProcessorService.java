@@ -52,7 +52,20 @@ public class ReplClientProcessorService implements ClientProcessorService {
   public void run() {
     // Doesn't work when running from IDE (https://youtrack.jetbrains.com/issue/IDEA-18814)
     // boolean hasConsole = System.console() != null;
+    boolean shouldCleanup = false;
     while (continueProcessingClientInput) {
+      if (shouldCleanup) {
+        try {
+          ReplParser.cleanupForNextLine(replReader);
+          shouldCleanup = false;
+          continue;
+        } catch (ReplIOException e) {
+          outputWriter.writeWithNewLine(e.getMessage());
+          triggerShutdown();
+          break;
+        }
+      }
+
       outputWriter.write(SHELL_PREFIX);
       try {
         Optional<ImmutableList<ReplElement>> clientInputOptional =
@@ -63,7 +76,7 @@ public class ReplClientProcessorService implements ClientProcessorService {
         }
         clientInputOptional.ifPresent(this::processClientInput);
       } catch (ReplSyntaxException e) {
-        // TODO: handle cleanup of repl reader
+        shouldCleanup = true;
         outputWriter.writeWithNewLine(e.getMessage());
       } catch (ReplIOException e) {
         outputWriter.writeWithNewLine(e.getMessage());

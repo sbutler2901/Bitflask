@@ -68,7 +68,7 @@ public class ReplClientProcessorServiceTest {
   }
 
   @Test
-  void replParser_throwsReplSyntaxException() {
+  void replParser_throwsReplSyntaxException_cleanup() {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
       replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
@@ -78,8 +78,27 @@ public class ReplClientProcessorServiceTest {
       // Act
       replClientProcessorService.run();
       // Assert
+      replParserMockedStatic.verify(() -> ReplParser.cleanupForNextLine(any()), times(1));
       verify(outputWriter, times(2)).write(any());
       verify(outputWriter, times(1)).writeWithNewLine(any());
+    }
+  }
+
+  @Test
+  void replParser_throwsReplSyntaxException_cleanup_throwsReplIOException() throws Exception {
+    try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
+      // Arrange
+      replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
+          .thenThrow(ReplSyntaxException.class);
+      replParserMockedStatic.when(() -> ReplParser.cleanupForNextLine(any()))
+          .thenThrow(ReplIOException.class);
+      // Act
+      replClientProcessorService.run();
+      // Assert
+      replParserMockedStatic.verify(() -> ReplParser.cleanupForNextLine(any()), times(1));
+      verify(outputWriter, times(1)).write(any());
+      verify(outputWriter, times(2)).writeWithNewLine(any());
+      verify(replReader, times(1)).close();
     }
   }
 
