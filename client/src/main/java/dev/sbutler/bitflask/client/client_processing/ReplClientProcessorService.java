@@ -8,6 +8,7 @@ import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplSyntaxException;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
 import java.io.IOException;
+import java.util.Optional;
 import javax.inject.Inject;
 
 /**
@@ -54,14 +55,13 @@ public class ReplClientProcessorService implements ClientProcessorService {
     while (continueProcessingClientInput) {
       outputWriter.write(SHELL_PREFIX);
       try {
-        ImmutableList<ReplElement> clientInput = ReplParser.readNextLine(replReader);
-        if (clientInput == null) {
+        Optional<ImmutableList<ReplElement>> clientInputOptional =
+            ReplParser.readNextLine(replReader);
+        if (clientInputOptional.isEmpty()) {
           triggerShutdown();
           return;
         }
-        if (!clientInput.isEmpty()) {
-          processClientInput(clientInput);
-        }
+        clientInputOptional.ifPresent(this::processClientInput);
       } catch (ReplSyntaxException e) {
         // TODO: handle cleanup of repl reader
         outputWriter.writeWithNewLine(e.getMessage());

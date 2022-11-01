@@ -13,7 +13,9 @@ import dev.sbutler.bitflask.client.client_processing.repl.ReplIOException;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplParser;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplSyntaxException;
+import dev.sbutler.bitflask.client.client_processing.repl.types.ReplString;
 import java.io.IOException;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,11 +36,11 @@ public class ReplClientProcessorServiceTest {
   OutputWriter outputWriter;
 
   @Test
-  void replParser_nullClientInput() throws Exception {
+  void replParser_endOfInput() throws Exception {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
       replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
-          .thenReturn(null);
+          .thenReturn(Optional.empty());
       // Act
       replClientProcessorService.run();
       // Assert
@@ -52,8 +54,8 @@ public class ReplClientProcessorServiceTest {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
       replParserMockedStatic.when(() -> ReplParser.readNextLine(replReader))
-          .thenReturn(ImmutableList.of())
-          .thenReturn(ImmutableList.of("test"));
+          .thenReturn(Optional.of(ImmutableList.of()))
+          .thenReturn(Optional.of(ImmutableList.of()));
       when(clientProcessor.processClientInput(any()))
           .thenReturn(true)
           // artificially terminate
@@ -61,7 +63,7 @@ public class ReplClientProcessorServiceTest {
       // Act
       replClientProcessorService.run();
       // Assert
-      verify(outputWriter, times(3)).write(any());
+      verify(outputWriter, times(2)).write(any());
     }
   }
 
@@ -72,7 +74,7 @@ public class ReplClientProcessorServiceTest {
       replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
           .thenThrow(ReplSyntaxException.class)
           // artificially terminate
-          .thenReturn(null);
+          .thenReturn(Optional.empty());
       // Act
       replClientProcessorService.run();
       // Assert
@@ -101,9 +103,9 @@ public class ReplClientProcessorServiceTest {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
       replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
-          .thenReturn(ImmutableList.of("test"))
+          .thenReturn(Optional.of(ImmutableList.of(new ReplString("test"))))
           // artificially terminate
-          .thenReturn(null);
+          .thenReturn(Optional.empty());
       when(clientProcessor.processClientInput(any()))
           .thenThrow(ClientProcessingException.class);
       // Act

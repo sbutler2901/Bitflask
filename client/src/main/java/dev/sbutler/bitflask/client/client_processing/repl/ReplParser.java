@@ -2,21 +2,28 @@ package dev.sbutler.bitflask.client.client_processing.repl;
 
 import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
-import java.io.IOException;
+import java.util.Optional;
 
 public final class ReplParser {
 
   /**
-   * Reads the next line of input and parses into ReplElements. Null will be returned when the end
-   * of input has been reached. An empty list indicates there was no input to be parsed.
+   * Reads the next line of input and parses into ReplElements.
+   * <p>
+   * The returned Optional will be empty when there is no longer input data to be parsed. of input
+   * has been reached. An empty list indicates there was no input to be parsed.
    */
-  public static ImmutableList<ReplElement> readNextLine(ReplReader reader)
+  public static Optional<ImmutableList<ReplElement>> readNextLine(ReplReader reader)
       throws ReplSyntaxException, ReplIOException {
-    try {
-      return reader.readToEndLine();
-    } catch (IOException e) {
-      throw new ReplIOException("Failed to read next line", e);
-    }
+    return reader.readToEndLine();
+  }
+
+  /**
+   * Used to consume all input data until the end of the line or document has been reached.
+   *
+   * <p>No parsing will be performed and input data related errors will be ignored.
+   */
+  public static void cleanupForNextLine(ReplReader replReader) throws ReplIOException {
+    replReader.readToEndLineWithoutParsing();
   }
 
   private ReplParser() {
