@@ -37,6 +37,8 @@ public class Client implements Runnable {
       client.run();
     } catch (IOException e) {
       System.err.println("Failed to initialize connection to the server" + e);
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 
