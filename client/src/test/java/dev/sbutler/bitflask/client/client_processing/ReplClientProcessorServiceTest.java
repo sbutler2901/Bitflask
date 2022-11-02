@@ -37,7 +37,7 @@ public class ReplClientProcessorServiceTest {
   void beforeEach() {
     ReplClientProcessorService.Factory factory =
         new ReplClientProcessorService.Factory(clientProcessor, outputWriter);
-    replClientProcessorService = factory.create(replReader);
+    replClientProcessorService = factory.create(replReader, true);
   }
 
   @Test
