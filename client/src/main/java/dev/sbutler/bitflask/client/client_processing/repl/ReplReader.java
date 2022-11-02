@@ -11,6 +11,10 @@ import java.io.Reader;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+/**
+ * Core implementation that reads Repl input data and converts it into usable {@link ReplElement}
+ * objects.
+ */
 public final class ReplReader implements AutoCloseable {
 
   /**
@@ -103,6 +107,9 @@ public final class ReplReader implements AutoCloseable {
     return Optional.of(readElements);
   }
 
+  /**
+   * Gets the next input character and maps it to a {@link ReplToken} for further processing
+   */
   private void peek() throws ReplIOException, ReplSyntaxException {
     int nextPeeked;
     try {
@@ -225,6 +232,10 @@ public final class ReplReader implements AutoCloseable {
     return SpecialChars.BACK_SLASH + peeked;
   }
 
+  /**
+   * Maps a read character into a recognized {@link ReplToken}, or throws a
+   * {@link ReplSyntaxException} if an unrecognized value is encountered.
+   */
   private static ReplToken mapNextPeekedToToken(int nextPeeked) throws ReplSyntaxException {
     if (nextPeeked == -1) {
       return ReplToken.END_DOCUMENT;

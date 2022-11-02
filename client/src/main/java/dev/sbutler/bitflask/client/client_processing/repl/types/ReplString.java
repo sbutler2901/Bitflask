@@ -5,7 +5,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Objects;
 
 /**
- * Represents an unquoted Repl String. No parsing was performed.
+ * Represents a Repl String. If the input data was quoted any relevant escaping will have been
+ * performed.
  *
  * <p>Initializing with a null value will cause a {@link NullPointerException}.
  */

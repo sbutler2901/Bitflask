@@ -1,5 +1,8 @@
 package dev.sbutler.bitflask.client.client_processing.repl;
 
+/**
+ * Represents the various types of tokens recognized in Repl input data.
+ */
 public enum ReplToken {
   NUMBER,
   CHARACTER,

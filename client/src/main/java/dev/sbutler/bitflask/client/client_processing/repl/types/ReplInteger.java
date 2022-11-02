@@ -5,7 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Objects;
 
 /**
- * Represents a Repl Integer that is guaranteed to support 64-bit integers.
+ * Represents a Repl Integer that is guaranteed to support 64-bit integer values.
  *
  * <p>Initializing with a null value will cause a {@link NullPointerException}.
  */

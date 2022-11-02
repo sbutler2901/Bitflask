@@ -6,7 +6,7 @@ import java.io.IOException;
 import javax.inject.Inject;
 
 /**
- * Handles processing commands via communication with a remote server.
+ * Handles processing commands via communication with a remote server using the RESP protocol.
  */
 public class RespCommandProcessor implements RemoteCommandProcessor {
 

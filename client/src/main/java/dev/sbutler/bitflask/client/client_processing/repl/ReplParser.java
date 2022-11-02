@@ -4,6 +4,9 @@ import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
 import java.util.Optional;
 
+/**
+ * Used to interface with a {@link ReplReader} for input parsing needs.
+ */
 public final class ReplParser {
 
   /**

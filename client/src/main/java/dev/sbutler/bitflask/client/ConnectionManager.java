@@ -9,7 +9,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Manages the {@link Socket} connected to the server
+ * Manages the {@link Socket} connected to a remote server.
  */
 @Singleton
 class ConnectionManager implements AutoCloseable {
