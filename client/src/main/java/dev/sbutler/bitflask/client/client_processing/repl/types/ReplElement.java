@@ -30,7 +30,5 @@ public abstract class ReplElement {
     throw new IllegalStateException("Not a ReplInteger: " + this);
   }
 
-  public String getAsString() {
-    throw new UnsupportedOperationException(getClass().getSimpleName());
-  }
+  public abstract String getAsString();
 }
