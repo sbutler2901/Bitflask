@@ -56,13 +56,9 @@ public class InlineClientProcessorService implements ClientProcessorService {
   }
 
   private void processClientInput(ImmutableList<ReplElement> clientInput) {
-    try {
-      boolean shouldContinueProcessing = clientProcessor.processClientInput(clientInput);
-      if (!shouldContinueProcessing) {
-        triggerShutdown();
-      }
-    } catch (ClientProcessingException e) {
-      outputWriter.writeWithNewLine(e.getMessage());
+    boolean shouldContinueProcessing = clientProcessor.processClientInput(clientInput);
+    if (!shouldContinueProcessing) {
+      triggerShutdown();
     }
   }
 

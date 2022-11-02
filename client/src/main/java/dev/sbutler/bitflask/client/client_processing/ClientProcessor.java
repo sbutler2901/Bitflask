@@ -36,8 +36,7 @@ public class ClientProcessor {
   /**
    * Processing the provided client input returning whether processing should continue.
    */
-  public boolean processClientInput(ImmutableList<ReplElement> clientInput)
-      throws ClientProcessingException {
+  public boolean processClientInput(ImmutableList<ReplElement> clientInput) {
     ClientCommand clientCommand = mapClientInputToCommand(clientInput);
     return switch (clientCommand) {
       case LocalCommand localCommand -> processLocalCommand(localCommand);
@@ -67,9 +66,8 @@ public class ClientProcessor {
     return true;
   }
 
-  private ClientCommand mapClientInputToCommand(ImmutableList<ReplElement> clientInput)
-      throws ClientProcessingException {
-    String command = getCommandAsString(clientInput.get(0));
+  private ClientCommand mapClientInputToCommand(ImmutableList<ReplElement> clientInput) {
+    String command = clientInput.get(0).getAsString();
 
     if (Help.commandStringMatches(command)) {
       return new Help(outputWriter);
@@ -81,14 +79,6 @@ public class ClientProcessor {
     ImmutableList<String> args =
         convertReplElementsToArgs(clientInput.subList(1, clientInput.size()));
     return new RemoteCommand(command, args);
-  }
-
-  private static String getCommandAsString(ReplElement commandAsReplElement)
-      throws ClientProcessingException {
-    if (!commandAsReplElement.isReplString()) {
-      throw new ClientProcessingException("The provided command was not valid");
-    }
-    return commandAsReplElement.getAsReplString().getAsString();
   }
 
   private static ImmutableList<String> convertReplElementsToArgs(

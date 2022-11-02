@@ -39,6 +39,7 @@ public class ReplClientProcessorService implements ClientProcessorService {
   private final OutputWriter outputWriter;
 
   private boolean continueProcessingClientInput = true;
+  private boolean shouldCleanup = false;
 
   private ReplClientProcessorService(ClientProcessor clientProcessor,
       ReplReader replReader,
@@ -52,7 +53,6 @@ public class ReplClientProcessorService implements ClientProcessorService {
   public void run() {
     // Doesn't work when running from IDE (https://youtrack.jetbrains.com/issue/IDEA-18814)
     // boolean hasConsole = System.console() != null;
-    boolean shouldCleanup = false;
     while (continueProcessingClientInput) {
       if (shouldCleanup) {
         try {
@@ -86,14 +86,9 @@ public class ReplClientProcessorService implements ClientProcessorService {
   }
 
   private void processClientInput(ImmutableList<ReplElement> clientInput) {
-    try {
-      boolean shouldContinueProcessing = clientProcessor.processClientInput(clientInput);
-      if (!shouldContinueProcessing) {
-        triggerShutdown();
-      }
-    } catch (ClientProcessingException e) {
-      // TODO: handle cleanup of repl reader
-      outputWriter.writeWithNewLine(e.getMessage());
+    boolean shouldContinueProcessing = clientProcessor.processClientInput(clientInput);
+    if (!shouldContinueProcessing) {
+      triggerShutdown();
     }
   }
 
