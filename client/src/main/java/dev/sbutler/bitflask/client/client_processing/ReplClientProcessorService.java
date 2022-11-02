@@ -12,9 +12,9 @@ import java.util.Optional;
 import javax.inject.Inject;
 
 /**
- * Provides a REPL shell for a client to interactively execute commands.
+ * Handles getting and submitting client Repl input for processing.
  */
-public class ReplClientProcessorService implements ClientProcessorService {
+public class ReplClientProcessorService implements Runnable {
 
   private static final String SHELL_PREFIX = "> ";
 

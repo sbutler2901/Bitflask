@@ -4,7 +4,6 @@ import com.beust.jcommander.JCommander;
 import com.google.common.base.Joiner;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
@@ -70,13 +69,15 @@ public class Client implements Runnable {
     Injector injector = Guice.createInjector(ClientModule.create(configuration, connectionManager));
 
     Reader reader = createReader();
-    ClientProcessorService clientProcessorService = createClientProcessorService(injector, reader);
+    ReplClientProcessorService replClientProcessorService =
+        createReplClientProcessorService(injector, reader);
 
-    registerShutdownHook(clientProcessorService);
-    clientProcessorService.run();
+    registerShutdownHook(replClientProcessorService);
+    replClientProcessorService.run();
   }
 
-  private ClientProcessorService createClientProcessorService(Injector injector, Reader reader) {
+  private ReplClientProcessorService createReplClientProcessorService(Injector injector,
+      Reader reader) {
     ReplReader replReader = new ReplReader(reader);
     ReplClientProcessorService.Factory replFactory =
         injector.getInstance(ReplClientProcessorService.Factory.class);
@@ -96,10 +97,10 @@ public class Client implements Runnable {
     return configuration.getInlineCmd().size() == 0;
   }
 
-  private void registerShutdownHook(ClientProcessorService clientProcessorService) {
+  private void registerShutdownHook(ReplClientProcessorService replClientProcessorService) {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       System.out.println("Exiting...");
-      clientProcessorService.triggerShutdown();
+      replClientProcessorService.triggerShutdown();
       closeConnectionManager();
     }));
   }
