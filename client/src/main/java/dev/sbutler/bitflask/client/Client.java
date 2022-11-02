@@ -68,29 +68,28 @@ public class Client implements Runnable {
   @Override
   public void run() {
     Injector injector = Guice.createInjector(ClientModule.create(configuration, connectionManager));
-    if (shouldExecuteWithRepl()) {
-      Reader reader = new InputStreamReader(System.in);
-      execute(injector, reader);
-    } else {
-      String inlineCmd = Joiner.on(' ').join(configuration.getInlineCmd());
-      Reader reader = new StringReader(inlineCmd);
-      execute(injector, reader);
-    }
+
+    Reader reader = createReader();
+    ClientProcessorService clientProcessorService = createClientProcessorService(injector, reader);
+
+    registerShutdownHook(clientProcessorService);
+    clientProcessorService.run();
   }
 
-  private void execute(Injector injector, Reader reader) {
+  private ClientProcessorService createClientProcessorService(Injector injector, Reader reader) {
     ReplReader replReader = new ReplReader(reader);
     ReplClientProcessorService.Factory replFactory =
         injector.getInstance(ReplClientProcessorService.Factory.class);
-    ClientProcessorService clientProcessorService =
-        replFactory.create(replReader);
-
-    startClientProcessing(clientProcessorService);
+    return replFactory.create(replReader);
   }
 
-  private void startClientProcessing(ClientProcessorService clientProcessorService) {
-    registerShutdownHook(clientProcessorService);
-    clientProcessorService.run();
+  private Reader createReader() {
+    if (shouldExecuteWithRepl()) {
+      return new InputStreamReader(System.in);
+    }
+
+    String inlineCmd = Joiner.on(' ').join(configuration.getInlineCmd());
+    return new StringReader(inlineCmd);
   }
 
   private boolean shouldExecuteWithRepl() {
