@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.client.client_processing.InlineClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -28,19 +27,12 @@ public class ClientTest {
       mock(ReplClientProcessorService.class);
   private final ReplClientProcessorService.Factory replFactory =
       mock(ReplClientProcessorService.Factory.class);
-  private final InlineClientProcessorService inlineProcessor =
-      mock(InlineClientProcessorService.class);
-  private final InlineClientProcessorService.Factory inlineFactory =
-      mock(InlineClientProcessorService.Factory.class);
 
   @BeforeEach
   void beforeEach() {
     when(replFactory.create(any())).thenReturn(replProcessor);
-    when(inlineFactory.create(any())).thenReturn(inlineProcessor);
     when(injector.getInstance(ReplClientProcessorService.Factory.class))
         .thenReturn(replFactory);
-    when(injector.getInstance(InlineClientProcessorService.Factory.class))
-        .thenReturn(inlineFactory);
   }
 
   @Test
@@ -59,7 +51,7 @@ public class ClientTest {
       // Act
       Client.main(args);
       // Assert
-      verify(inlineProcessor, times(1)).run();
+      verify(replProcessor, times(1)).run();
     }
   }
 

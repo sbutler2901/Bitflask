@@ -5,7 +5,6 @@ import com.google.common.base.Joiner;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessorService;
-import dev.sbutler.bitflask.client.client_processing.InlineClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
@@ -68,33 +67,21 @@ public class Client implements Runnable {
   public void run() {
     Injector injector = Guice.createInjector(new ClientModule(configuration, connectionManager));
     if (shouldExecuteWithRepl()) {
-      executeWithRepl(injector);
+      Reader reader = new InputStreamReader(System.in);
+      execute(injector, reader);
     } else {
-      executeInline(injector);
+      String inlineCmd = Joiner.on(' ').join(configuration.getInlineCmd());
+      Reader reader = new StringReader(inlineCmd);
+      execute(injector, reader);
     }
   }
 
-  private void executeWithRepl(Injector injector) {
-    Reader reader = new InputStreamReader(System.in);
+  private void execute(Injector injector, Reader reader) {
     ReplReader replReader = new ReplReader(reader);
-
     ReplClientProcessorService.Factory replFactory =
         injector.getInstance(ReplClientProcessorService.Factory.class);
     ClientProcessorService clientProcessorService =
         replFactory.create(replReader);
-
-    startClientProcessing(clientProcessorService);
-  }
-
-  private void executeInline(Injector injector) {
-    String args = Joiner.on(' ').join(configuration.getInlineCmd());
-    Reader reader = new StringReader(args);
-    ReplReader replReader = new ReplReader(reader);
-
-    InlineClientProcessorService.Factory inlineFactory =
-        injector.getInstance(InlineClientProcessorService.Factory.class);
-    ClientProcessorService clientProcessorService =
-        inlineFactory.create(replReader);
 
     startClientProcessing(clientProcessorService);
   }
