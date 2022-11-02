@@ -65,7 +65,7 @@ public class Client implements Runnable {
 
   @Override
   public void run() {
-    Injector injector = Guice.createInjector(new ClientModule(configuration, connectionManager));
+    Injector injector = Guice.createInjector(ClientModule.create(configuration, connectionManager));
     if (shouldExecuteWithRepl()) {
       Reader reader = new InputStreamReader(System.in);
       execute(injector, reader);

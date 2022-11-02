@@ -11,10 +11,15 @@ import java.io.OutputStream;
 
 public class ClientModule extends AbstractModule {
 
+  public static ClientModule create(ClientConfiguration configuration,
+      ConnectionManager connectionManager) {
+    return new ClientModule(configuration, connectionManager);
+  }
+
   private final ClientConfiguration configuration;
   private final ConnectionManager connectionManager;
 
-  ClientModule(ClientConfiguration configuration, ConnectionManager connectionManager) {
+  private ClientModule(ClientConfiguration configuration, ConnectionManager connectionManager) {
     this.configuration = configuration;
     this.connectionManager = connectionManager;
   }

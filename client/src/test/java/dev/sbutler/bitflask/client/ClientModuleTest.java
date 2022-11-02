@@ -25,7 +25,7 @@ public class ClientModuleTest {
   void beforeEach() {
     configuration = mock(ClientConfiguration.class);
     connectionManager = mock(ConnectionManager.class);
-    clientModule = new ClientModule(configuration, connectionManager);
+    clientModule = ClientModule.create(configuration, connectionManager);
   }
 
   @Test
