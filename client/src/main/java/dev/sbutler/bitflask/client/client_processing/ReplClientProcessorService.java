@@ -29,24 +29,27 @@ public class ReplClientProcessorService implements ClientProcessorService {
       this.outputWriter = outputWriter;
     }
 
-    public ReplClientProcessorService create(ReplReader replReader) {
-      return new ReplClientProcessorService(clientProcessor, replReader, outputWriter);
+    public ReplClientProcessorService create(ReplReader replReader, boolean usePrompt) {
+      return new ReplClientProcessorService(clientProcessor, replReader, outputWriter, usePrompt);
     }
   }
 
   private final ClientProcessor clientProcessor;
   private final ReplReader replReader;
   private final OutputWriter outputWriter;
+  private final boolean usePrompt;
 
   private boolean continueProcessingClientInput = true;
   private boolean shouldCleanup = false;
 
   private ReplClientProcessorService(ClientProcessor clientProcessor,
       ReplReader replReader,
-      OutputWriter outputWriter) {
+      OutputWriter outputWriter,
+      boolean usePrompt) {
     this.clientProcessor = clientProcessor;
     this.replReader = replReader;
     this.outputWriter = outputWriter;
+    this.usePrompt = usePrompt;
   }
 
   @Override
@@ -66,22 +69,24 @@ public class ReplClientProcessorService implements ClientProcessorService {
         }
       }
 
-      outputWriter.write(SHELL_PREFIX);
-      try {
-        Optional<ImmutableList<ReplElement>> clientInputOptional =
-            ReplParser.readNextLine(replReader);
-        if (clientInputOptional.isEmpty()) {
-          triggerShutdown();
-          return;
-        }
-        clientInputOptional.ifPresent(this::processClientInput);
-      } catch (ReplSyntaxException e) {
-        shouldCleanup = true;
-        outputWriter.writeWithNewLine(e.getMessage());
-      } catch (ReplIOException e) {
-        outputWriter.writeWithNewLine(e.getMessage());
-        triggerShutdown();
+      if (usePrompt) {
+        outputWriter.write(SHELL_PREFIX);
       }
+      getAndProcessClientInput();
+    }
+  }
+
+  private void getAndProcessClientInput() {
+    try {
+      Optional<ImmutableList<ReplElement>> clientInputOptional =
+          ReplParser.readNextLine(replReader);
+      clientInputOptional.ifPresentOrElse(this::processClientInput, this::triggerShutdown);
+    } catch (ReplSyntaxException e) {
+      shouldCleanup = true;
+      outputWriter.writeWithNewLine(e.getMessage());
+    } catch (ReplIOException e) {
+      outputWriter.writeWithNewLine(e.getMessage());
+      triggerShutdown();
     }
   }
 

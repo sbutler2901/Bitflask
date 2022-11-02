@@ -80,7 +80,7 @@ public class Client implements Runnable {
     ReplReader replReader = new ReplReader(reader);
     ReplClientProcessorService.Factory replFactory =
         injector.getInstance(ReplClientProcessorService.Factory.class);
-    return replFactory.create(replReader);
+    return replFactory.create(replReader, shouldExecuteWithRepl());
   }
 
   private Reader createReader() {
