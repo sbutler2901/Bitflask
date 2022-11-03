@@ -9,7 +9,7 @@ import dev.sbutler.bitflask.resp.network.RespReader;
 import dev.sbutler.bitflask.resp.network.RespWriter;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
-import dev.sbutler.bitflask.resp.types.RespType;
+import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import java.io.EOFException;
 import java.io.IOException;
@@ -46,7 +46,7 @@ public class ClientMessageProcessor {
    * @return true if processing can continue, false otherwise
    */
   public boolean processNextMessage() {
-    RespType<?> rawClientMessage = readClientMessage();
+    RespElement rawClientMessage = readClientMessage();
     if (rawClientMessage == null) {
       return false;
     }
@@ -56,7 +56,7 @@ public class ClientMessageProcessor {
     }
     ListenableFuture<String> responseFuture = commandProcessingService.processCommandMessage(
         clientMessage);
-    RespType<?> response = getServerResponseToClient(responseFuture);
+    RespElement response = getServerResponseToClient(responseFuture);
     try {
       if (response == null) {
         response = new RespBulkString("Internal Error. Terminating");
@@ -71,10 +71,10 @@ public class ClientMessageProcessor {
     return true;
   }
 
-  private RespType<?> readClientMessage() {
-    RespType<?> readValue = null;
+  private RespElement readClientMessage() {
+    RespElement readValue = null;
     try {
-      readValue = respReader.readNextRespType();
+      readValue = respReader.readNextRespElement();
     } catch (EOFException e) {
       logger.atWarning().log("Client disconnected.");
     } catch (ProtocolException e) {
@@ -85,8 +85,8 @@ public class ClientMessageProcessor {
     return readValue;
   }
 
-  private RespType<?> getServerResponseToClient(ListenableFuture<String> responseFuture) {
-    RespType<?> response = null;
+  private RespElement getServerResponseToClient(ListenableFuture<String> responseFuture) {
+    RespElement response = null;
     try {
       response = new RespBulkString(responseFuture.get());
     } catch (InterruptedException e) {
@@ -98,18 +98,18 @@ public class ClientMessageProcessor {
     return response;
   }
 
-  private void writeResponseMessage(RespType<?> response) throws IOException {
-    respWriter.writeRespType(response);
+  private void writeResponseMessage(RespElement response) throws IOException {
+    respWriter.writeRespElement(response);
   }
 
-  private static ImmutableList<String> parseClientMessage(RespType<?> rawClientMessage) {
+  private static ImmutableList<String> parseClientMessage(RespElement rawClientMessage) {
     checkNotNull(rawClientMessage);
     ImmutableList.Builder<String> clientMessage = ImmutableList.builder();
     if (!(rawClientMessage instanceof RespArray clientMessageRespArray)) {
       logger.atWarning().log("The client's raw message must be a RespArray");
       return null;
     }
-    for (RespType<?> arg : clientMessageRespArray.getValue()) {
+    for (RespElement arg : clientMessageRespArray.getValue()) {
       if (!(arg instanceof RespBulkString argBulkString)) {
         logger.atWarning().log("The arguments of the client's raw message must be RespBulkStrings");
         return null;
