@@ -1,10 +1,11 @@
 package dev.sbutler.bitflask.server.network_service.client_handling_service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -39,8 +40,8 @@ public class ClientHandlingServiceChildModuleTest {
     try {
       injector.getBinding(ClientConnectionManager.class);
       injector.getBinding(ClientMessageProcessor.class);
-      injector.getBinding(InputStream.class);
-      injector.getBinding(OutputStream.class);
+      injector.getBinding(RespReader.class);
+      injector.getBinding(RespWriter.class);
     } catch (Exception e) {
       fail(e.getMessage());
     }
@@ -71,29 +72,27 @@ public class ClientHandlingServiceChildModuleTest {
   }
 
   @Test
-  void provideInputStream() throws Exception {
+  void provideRespReader() throws Exception {
     // Arrange
     InputStream inputStream = mock(InputStream.class);
     ClientConnectionManager clientConnectionManager = mock(ClientConnectionManager.class);
-    doReturn(inputStream).when(clientConnectionManager).getInputStream();
+    when(clientConnectionManager.getInputStream()).thenReturn(inputStream);
     // Act
-    InputStream providedInputStream =
-        clientHandlingServiceChildModule.provideInputStream(clientConnectionManager);
+    clientHandlingServiceChildModule.provideRespReader(clientConnectionManager);
     // Assert
-    assertEquals(inputStream, providedInputStream);
+    verify(clientConnectionManager, times(1)).getInputStream();
   }
 
   @Test
-  void provideOutputStream() throws Exception {
+  void provideRespWriter() throws Exception {
     // Arrange
     OutputStream outputStream = mock(OutputStream.class);
     ClientConnectionManager clientConnectionManager = mock(ClientConnectionManager.class);
-    doReturn(outputStream).when(clientConnectionManager).getOutputStream();
+    when(clientConnectionManager.getOutputStream()).thenReturn(outputStream);
     // Act
-    OutputStream providedOutputStream =
-        clientHandlingServiceChildModule.provideOutputStream(clientConnectionManager);
+    clientHandlingServiceChildModule.provideRespWriter(clientConnectionManager);
     // Assert
-    assertEquals(outputStream, providedOutputStream);
+    verify(clientConnectionManager, times(1)).getOutputStream();
   }
 
   private static class MockModule extends AbstractModule {

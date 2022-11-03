@@ -2,13 +2,11 @@ package dev.sbutler.bitflask.server.network_service.client_handling_service;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import dev.sbutler.bitflask.resp.network.RespNetworkModule;
 import dev.sbutler.bitflask.resp.network.RespReader;
 import dev.sbutler.bitflask.resp.network.RespWriter;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.InputStreamReader;
 import java.nio.channels.SocketChannel;
 import javax.inject.Singleton;
 
@@ -30,11 +28,6 @@ public class ClientHandlingServiceChildModule extends AbstractModule {
     this.socketChannel = socketChannel;
   }
 
-  @Override
-  protected void configure() {
-    install(new RespNetworkModule());
-  }
-
   @Provides
   @Singleton
   ClientConnectionManager provideClientConnectionManager() {
@@ -50,17 +43,15 @@ public class ClientHandlingServiceChildModule extends AbstractModule {
     return new ClientMessageProcessor(commandProcessingService, respReader, respWriter);
   }
 
-  // Used by RespNetworkModule to provide RespReader and RespWriter instances
-
   @Provides
-  InputStream provideInputStream(ClientConnectionManager connectionManager)
-      throws IOException {
-    return connectionManager.getInputStream();
+  @Singleton
+  RespReader provideRespReader(ClientConnectionManager connectionManager) throws IOException {
+    return new RespReader(new InputStreamReader(connectionManager.getInputStream()));
   }
 
   @Provides
-  OutputStream provideOutputStream(ClientConnectionManager connectionManager)
-      throws IOException {
-    return connectionManager.getOutputStream();
+  @Singleton
+  RespWriter provideRespWriter(ClientConnectionManager connectionManager) throws IOException {
+    return new RespWriter(connectionManager.getOutputStream());
   }
 }
