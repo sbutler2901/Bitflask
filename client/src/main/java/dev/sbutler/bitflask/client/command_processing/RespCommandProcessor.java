@@ -26,7 +26,7 @@ public class RespCommandProcessor implements RemoteCommandProcessor {
 
   private void writeCommand(RemoteCommand command) throws ProcessingException {
     try {
-      respWriter.writeRespType(command.getAsRespArray());
+      respWriter.writeRespElement(command.getAsRespArray());
     } catch (IOException e) {
       throw new ProcessingException("Failed to write command", e);
     }
@@ -34,7 +34,7 @@ public class RespCommandProcessor implements RemoteCommandProcessor {
 
   private String readResponse() throws ProcessingException {
     try {
-      return respReader.readNextRespType().toString();
+      return respReader.readNextRespElement().toString();
     } catch (IOException e) {
       throw new ProcessingException("Failed to read response", e);
     }

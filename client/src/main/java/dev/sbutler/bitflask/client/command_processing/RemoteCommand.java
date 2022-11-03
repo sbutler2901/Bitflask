@@ -5,7 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
-import dev.sbutler.bitflask.resp.types.RespType;
+import dev.sbutler.bitflask.resp.types.RespElement;
 
 public record RemoteCommand(String command, ImmutableList<String> args) implements ClientCommand {
 
@@ -14,7 +14,7 @@ public record RemoteCommand(String command, ImmutableList<String> args) implemen
   }
 
   public RespArray getAsRespArray() {
-    ImmutableList.Builder<RespType<?>> arrayArgs = ImmutableList.builder();
+    ImmutableList.Builder<RespElement> arrayArgs = ImmutableList.builder();
     arrayArgs.add(new RespBulkString(command));
 
     if (args != null) {
