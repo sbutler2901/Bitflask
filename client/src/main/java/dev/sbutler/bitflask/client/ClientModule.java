@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.client;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessingModule;
-import dev.sbutler.bitflask.client.command_processing.CommandProcessingModule;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
 import dev.sbutler.bitflask.resp.network.RespNetworkModule;
 import java.io.IOException;
@@ -28,7 +27,6 @@ public class ClientModule extends AbstractModule {
   @Override
   protected void configure() {
     install(new RespNetworkModule());
-    install(new CommandProcessingModule());
     install(new ClientProcessingModule());
   }
 

@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.client.command_processing.RemoteCommandProcessor;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
 import dev.sbutler.bitflask.resp.network.RespReader;
 import dev.sbutler.bitflask.resp.network.RespWriter;
@@ -34,7 +33,6 @@ public class ClientModuleTest {
     // Act / Assert
     injector.getBinding(RespReader.class);
     injector.getBinding(RespWriter.class);
-    injector.getBinding(RemoteCommandProcessor.class);
   }
 
   @Test

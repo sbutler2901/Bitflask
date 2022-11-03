@@ -11,7 +11,7 @@ import dev.sbutler.bitflask.client.command_processing.LocalCommand.Exit;
 import dev.sbutler.bitflask.client.command_processing.LocalCommand.Help;
 import dev.sbutler.bitflask.client.command_processing.ProcessingException;
 import dev.sbutler.bitflask.client.command_processing.RemoteCommand;
-import dev.sbutler.bitflask.client.command_processing.RemoteCommandProcessor;
+import dev.sbutler.bitflask.client.command_processing.RespCommandProcessor;
 import javax.inject.Inject;
 
 /**
@@ -23,13 +23,13 @@ import javax.inject.Inject;
  */
 public class ClientProcessor {
 
-  private final RemoteCommandProcessor remoteCommandProcessor;
+  private final RespCommandProcessor respCommandProcessor;
   private final OutputWriter outputWriter;
 
   @Inject
-  ClientProcessor(RemoteCommandProcessor remoteCommandProcessor,
+  ClientProcessor(RespCommandProcessor respCommandProcessor,
       OutputWriter outputWriter) {
-    this.remoteCommandProcessor = remoteCommandProcessor;
+    this.respCommandProcessor = respCommandProcessor;
     this.outputWriter = outputWriter;
   }
 
@@ -56,7 +56,7 @@ public class ClientProcessor {
 
   private boolean processRemoteCommand(RemoteCommand remoteCommand) {
     try {
-      String result = remoteCommandProcessor.runCommand(remoteCommand);
+      String result = respCommandProcessor.runCommand(remoteCommand);
       outputWriter.writeWithNewLine(result);
     } catch (ProcessingException e) {
       outputWriter.writeWithNewLine(

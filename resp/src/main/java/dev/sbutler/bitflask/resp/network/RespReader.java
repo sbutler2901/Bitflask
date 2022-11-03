@@ -24,7 +24,7 @@ public class RespReader {
 
   private final Reader reader;
 
-  RespReader(Reader reader) {
+  public RespReader(Reader reader) {
     this.reader = reader;
   }
 

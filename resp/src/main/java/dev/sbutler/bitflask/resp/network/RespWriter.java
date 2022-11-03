@@ -14,7 +14,7 @@ public class RespWriter {
 
   private final OutputStream outputStream;
 
-  RespWriter(OutputStream outputStream) {
+  public RespWriter(OutputStream outputStream) {
     this.outputStream = outputStream;
   }
 

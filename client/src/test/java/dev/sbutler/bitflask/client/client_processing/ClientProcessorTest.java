@@ -12,7 +12,7 @@ import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplString;
 import dev.sbutler.bitflask.client.command_processing.ProcessingException;
-import dev.sbutler.bitflask.client.command_processing.RemoteCommandProcessor;
+import dev.sbutler.bitflask.client.command_processing.RespCommandProcessor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,12 +25,12 @@ public class ClientProcessorTest {
   @InjectMocks
   ClientProcessor clientProcessor;
   @Mock
-  RemoteCommandProcessor remoteCommandProcessor;
+  RespCommandProcessor respCommandProcessor;
   @Mock
   OutputWriter outputWriter;
 
   @Test
-  void localCommand_exit() throws Exception {
+  void localCommand_exit() {
     // Arrange
     ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("exit"));
     // Act
@@ -40,7 +40,7 @@ public class ClientProcessorTest {
   }
 
   @Test
-  void localCommand_help() throws Exception {
+  void localCommand_help() {
     // Arrange
     ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("help"));
     // Act
@@ -55,12 +55,12 @@ public class ClientProcessorTest {
     // Arrange
     ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("get"),
         new ReplString("test"));
-    when(remoteCommandProcessor.runCommand(any())).thenReturn("test result");
+    when(respCommandProcessor.runCommand(any())).thenReturn("test result");
     // Act
     boolean shouldContinue = clientProcessor.processClientInput(clientInput);
     // Assert
     assertThat(shouldContinue).isTrue();
-    verify(remoteCommandProcessor, times(1)).runCommand(any());
+    verify(respCommandProcessor, times(1)).runCommand(any());
     verify(outputWriter, times(1)).writeWithNewLine(anyString());
   }
 
@@ -69,12 +69,12 @@ public class ClientProcessorTest {
     // Arrange
     ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("get"),
         new ReplString("test"));
-    when(remoteCommandProcessor.runCommand(any())).thenThrow(ProcessingException.class);
+    when(respCommandProcessor.runCommand(any())).thenThrow(ProcessingException.class);
     // Act
     boolean shouldContinue = clientProcessor.processClientInput(clientInput);
     // Assert
     assertThat(shouldContinue).isFalse();
-    verify(remoteCommandProcessor, times(1)).runCommand(any());
+    verify(respCommandProcessor, times(1)).runCommand(any());
     verify(outputWriter, times(1)).writeWithNewLine(anyString());
   }
 }

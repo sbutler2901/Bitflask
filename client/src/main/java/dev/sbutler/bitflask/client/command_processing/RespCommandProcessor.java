@@ -8,7 +8,7 @@ import javax.inject.Inject;
 /**
  * Handles processing commands via communication with a remote server using the RESP protocol.
  */
-public class RespCommandProcessor implements RemoteCommandProcessor {
+public class RespCommandProcessor {
 
   private final RespReader respReader;
   private final RespWriter respWriter;
