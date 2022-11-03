@@ -22,16 +22,16 @@ import javax.inject.Singleton;
  */
 public class ClientHandlingServiceChildModule extends AbstractModule {
 
-  private final SocketChannel socketChannel;
+  private final ClientConnectionManager connectionManager;
 
-  public ClientHandlingServiceChildModule(SocketChannel socketChannel) {
-    this.socketChannel = socketChannel;
+  public ClientHandlingServiceChildModule(ClientConnectionManager connectionManager) {
+    this.connectionManager = connectionManager;
   }
 
   @Provides
   @Singleton
   ClientConnectionManager provideClientConnectionManager() {
-    return new ClientConnectionManager(socketChannel);
+    return connectionManager;
   }
 
   @Provides

@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.server.network_service.client_handling_service;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -15,7 +14,6 @@ import dev.sbutler.bitflask.resp.network.RespWriter;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.channels.SocketChannel;
 import javax.inject.Provider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +28,7 @@ public class ClientHandlingServiceChildModuleTest {
   private ClientHandlingServiceChildModule clientHandlingServiceChildModule;
 
   @Mock
-  private SocketChannel socketChannel;
+  private ClientConnectionManager clientConnectionManager;
 
   @Test
   void configure() {
@@ -43,16 +41,16 @@ public class ClientHandlingServiceChildModuleTest {
       injector.getBinding(RespReader.class);
       injector.getBinding(RespWriter.class);
     } catch (Exception e) {
-      fail(e.getMessage());
+      throw new RuntimeException(e);
     }
   }
 
   @Test
   void provideClientConnectionManager() {
     // Act
-    ClientConnectionManager clientConnectionManager = clientHandlingServiceChildModule.provideClientConnectionManager();
+    ClientConnectionManager providedClientConnectionManager = clientHandlingServiceChildModule.provideClientConnectionManager();
     // Assert
-    assertNotNull(clientConnectionManager);
+    assertThat(providedClientConnectionManager).isEqualTo(clientConnectionManager);
   }
 
   @Test
@@ -68,7 +66,7 @@ public class ClientHandlingServiceChildModuleTest {
             respReader,
             respWriter);
     // Act
-    assertNotNull(clientMessageProcessor);
+    assertThat(clientMessageProcessor).isNotNull();
   }
 
   @Test

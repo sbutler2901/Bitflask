@@ -12,7 +12,7 @@ public class ClientConnectionManager implements AutoCloseable {
 
   private final SocketChannel socketChannel;
 
-  ClientConnectionManager(SocketChannel socketChannel) {
+  public ClientConnectionManager(SocketChannel socketChannel) {
     this.socketChannel = socketChannel;
   }
 
