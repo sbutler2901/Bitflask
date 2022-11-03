@@ -4,19 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public final class RespArray extends RespType<List<RespType<?>>> {
+public final class RespArray extends RespElement {
 
   public static final char TYPE_PREFIX = '*';
   public static final long NULL_ARRAY_LENGTH = -1;
 
-  private final List<RespType<?>> value;
+  private final List<RespElement> value;
 
-  public RespArray(List<RespType<?>> value) {
+  public RespArray(List<RespElement> value) {
     this.value = value;
   }
 
-  @Override
-  public List<RespType<?>> getValue() {
+  public List<RespElement> getValue() {
     return value;
   }
 
@@ -38,10 +37,10 @@ public final class RespArray extends RespType<List<RespType<?>>> {
     // Generate value list as encoded bytes and total length;
     int valuesEncodedBytesTotalLength = 0;
     List<byte[]> valuesEncodedList = new ArrayList<>();
-    for (RespType<?> respType : value) {
-      byte[] currentRespTypeEncodedBytes = respType.getEncodedBytes();
-      valuesEncodedList.add(currentRespTypeEncodedBytes);
-      valuesEncodedBytesTotalLength += currentRespTypeEncodedBytes.length;
+    for (RespElement respElement : value) {
+      byte[] currentRespElementEncodedBytes = respElement.getEncodedBytes();
+      valuesEncodedList.add(currentRespElementEncodedBytes);
+      valuesEncodedBytesTotalLength += currentRespElementEncodedBytes.length;
     }
 
     // Generate bytes for number of items in array
@@ -65,6 +64,10 @@ public final class RespArray extends RespType<List<RespType<?>>> {
     }
 
     return encodedBytes;
+  }
+
+  public int size() {
+    return value.size();
   }
 
   @Override

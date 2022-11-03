@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.resp.types;
 
 import java.util.Objects;
 
-public final class RespSimpleString extends RespType<String> {
+public final class RespSimpleString extends RespElement {
 
   public static final char TYPE_PREFIX = '+';
 
@@ -15,7 +15,6 @@ public final class RespSimpleString extends RespType<String> {
     this.value = value;
   }
 
-  @Override
   public String getValue() {
     return value;
   }

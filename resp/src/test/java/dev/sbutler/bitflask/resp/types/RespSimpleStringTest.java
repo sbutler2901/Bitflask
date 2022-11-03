@@ -1,6 +1,9 @@
 package dev.sbutler.bitflask.resp.types;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
@@ -19,7 +22,7 @@ class RespSimpleStringTest {
     String value = "simple";
     RespSimpleString simpleString = new RespSimpleString(value);
     byte[] expected = new byte[]{(byte) RespSimpleString.TYPE_PREFIX, 's', 'i', 'm', 'p', 'l', 'e',
-        RespType.CR, RespType.LF};
+        RespElement.CR, RespElement.LF};
     assertArrayEquals(expected, simpleString.getEncodedBytes());
   }
 

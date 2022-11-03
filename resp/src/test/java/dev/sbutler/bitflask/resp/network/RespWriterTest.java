@@ -4,7 +4,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import dev.sbutler.bitflask.resp.types.RespBulkString;
-import dev.sbutler.bitflask.resp.types.RespType;
+import dev.sbutler.bitflask.resp.types.RespElement;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
@@ -23,9 +23,9 @@ public class RespWriterTest {
   BufferedOutputStream bufferedOutputStream;
 
   @Test
-  void writeRespType_success() throws IOException {
-    RespType<?> toWrite = new RespBulkString("test");
-    respWriter.writeRespType(toWrite);
+  void writeRespElement_success() throws IOException {
+    RespElement toWrite = new RespBulkString("test");
+    respWriter.writeRespElement(toWrite);
     verify(bufferedOutputStream, times(1)).write(toWrite.getEncodedBytes());
   }
 

@@ -1,16 +1,18 @@
 package dev.sbutler.bitflask.resp.types;
 
-public final class RespError extends RespType<String> {
+import static com.google.common.base.Preconditions.checkNotNull;
+
+public final class RespError extends RespElement {
 
   public static final char TYPE_PREFIX = '-';
 
   private final String value;
 
   public RespError(String value) {
+    checkNotNull(value);
     this.value = value;
   }
 
-  @Override
   public String getValue() {
     return value;
   }

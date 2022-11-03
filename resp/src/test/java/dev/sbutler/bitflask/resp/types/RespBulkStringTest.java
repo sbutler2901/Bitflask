@@ -28,8 +28,8 @@ class RespBulkStringTest {
     String value = "simple";
     RespBulkString bulkString = new RespBulkString(value);
     byte[] expected = new byte[]{
-        RespBulkString.TYPE_PREFIX, '6', RespType.CR, RespType.LF,
-        's', 'i', 'm', 'p', 'l', 'e', RespType.CR, RespType.LF
+        RespBulkString.TYPE_PREFIX, '6', RespElement.CR, RespElement.LF,
+        's', 'i', 'm', 'p', 'l', 'e', RespElement.CR, RespElement.LF
     };
     assertArrayEquals(expected, bulkString.getEncodedBytes());
   }
@@ -38,7 +38,7 @@ class RespBulkStringTest {
   void getEncodedBytes_null() {
     RespBulkString bulkString = new RespBulkString(null);
     byte[] expected = new byte[]{
-        RespBulkString.TYPE_PREFIX, '-', '1', RespType.CR, RespType.LF
+        RespBulkString.TYPE_PREFIX, '-', '1', RespElement.CR, RespElement.LF
     };
     assertArrayEquals(expected, bulkString.getEncodedBytes());
   }

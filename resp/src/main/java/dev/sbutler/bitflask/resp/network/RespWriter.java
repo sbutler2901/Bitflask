@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.resp.network;
 
-import dev.sbutler.bitflask.resp.types.RespType;
+import dev.sbutler.bitflask.resp.types.RespElement;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -19,13 +19,13 @@ public class RespWriter {
   }
 
   /**
-   * Writes the provided RespType to the underlying output-stream
+   * Writes the provided RespElement to the underlying output-stream
    *
-   * @param respType the data to be written
+   * @param respElement the data to be written
    * @throws IOException if a general failure occurs while reading
    */
-  public void writeRespType(RespType<?> respType) throws IOException {
-    outputStream.write(respType.getEncodedBytes());
+  public void writeRespElement(RespElement respElement) throws IOException {
+    outputStream.write(respElement.getEncodedBytes());
     outputStream.flush();
   }
 

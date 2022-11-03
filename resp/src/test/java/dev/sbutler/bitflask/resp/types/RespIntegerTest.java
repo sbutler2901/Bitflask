@@ -21,7 +21,7 @@ class RespIntegerTest {
   void getEncodedBytes() {
     RespInteger singleDigit = new RespInteger(0);
     byte[] expected = new byte[]{
-        RespInteger.TYPE_PREFIX, '0', RespType.CR, RespType.LF,
+        RespInteger.TYPE_PREFIX, '0', RespElement.CR, RespElement.LF,
     };
     byte[] res = singleDigit.getEncodedBytes();
     assertArrayEquals(expected, res);

@@ -14,7 +14,7 @@ class RespArrayTest {
 
   @Test
   void getValue() {
-    List<RespType<?>> inputValues = new ArrayList<>();
+    List<RespElement> inputValues = new ArrayList<>();
     inputValues.add(new RespInteger(1));
     inputValues.add(new RespBulkString("bulk"));
     RespArray respArray = new RespArray(inputValues);
@@ -29,16 +29,16 @@ class RespArrayTest {
 
   @Test
   void getEncodedBytes() {
-    List<RespType<?>> inputValues = new ArrayList<>();
+    List<RespElement> inputValues = new ArrayList<>();
     inputValues.add(new RespInteger(1));
     inputValues.add(new RespInteger(2));
     inputValues.add(new RespInteger(3));
     RespArray respArray = new RespArray(inputValues);
     byte[] expected = new byte[]{
-        RespArray.TYPE_PREFIX, '3', RespType.CR, RespType.LF,
-        RespInteger.TYPE_PREFIX, '1', RespType.CR, RespType.LF,
-        RespInteger.TYPE_PREFIX, '2', RespType.CR, RespType.LF,
-        RespInteger.TYPE_PREFIX, '3', RespType.CR, RespType.LF,
+        RespArray.TYPE_PREFIX, '3', RespElement.CR, RespElement.LF,
+        RespInteger.TYPE_PREFIX, '1', RespElement.CR, RespElement.LF,
+        RespInteger.TYPE_PREFIX, '2', RespElement.CR, RespElement.LF,
+        RespInteger.TYPE_PREFIX, '3', RespElement.CR, RespElement.LF,
     };
     byte[] res = respArray.getEncodedBytes();
     assertArrayEquals(expected, res);
@@ -46,19 +46,19 @@ class RespArrayTest {
 
   @Test
   void getEncodedBytes_nestedArray() {
-    List<RespType<?>> inputValues = new ArrayList<>();
+    List<RespElement> inputValues = new ArrayList<>();
     inputValues.add(new RespInteger(1));
     inputValues.add(new RespBulkString("bulk"));
     inputValues.add(new RespArray(List.of(new RespBulkString("nested"))));
     RespArray respArray = new RespArray(inputValues);
     byte[] expected = new byte[]{
-        RespArray.TYPE_PREFIX, '3', RespType.CR, RespType.LF,
-        RespInteger.TYPE_PREFIX, '1', RespType.CR, RespType.LF,
-        RespBulkString.TYPE_PREFIX, '4', RespType.CR, RespType.LF,
-        'b', 'u', 'l', 'k', RespType.CR, RespType.LF,
-        RespArray.TYPE_PREFIX, '1', RespType.CR, RespType.LF,
-        RespBulkString.TYPE_PREFIX, '6', RespType.CR, RespType.LF,
-        'n', 'e', 's', 't', 'e', 'd', RespType.CR, RespType.LF,
+        RespArray.TYPE_PREFIX, '3', RespElement.CR, RespElement.LF,
+        RespInteger.TYPE_PREFIX, '1', RespElement.CR, RespElement.LF,
+        RespBulkString.TYPE_PREFIX, '4', RespElement.CR, RespElement.LF,
+        'b', 'u', 'l', 'k', RespElement.CR, RespElement.LF,
+        RespArray.TYPE_PREFIX, '1', RespElement.CR, RespElement.LF,
+        RespBulkString.TYPE_PREFIX, '6', RespElement.CR, RespElement.LF,
+        'n', 'e', 's', 't', 'e', 'd', RespElement.CR, RespElement.LF,
     };
     byte[] res = respArray.getEncodedBytes();
     assertArrayEquals(expected, res);
@@ -68,7 +68,7 @@ class RespArrayTest {
   void getEncodedBytes_empty() {
     RespArray respArray = new RespArray(new ArrayList<>());
     byte[] expected = new byte[]{
-        RespArray.TYPE_PREFIX, '0', RespType.CR, RespType.LF
+        RespArray.TYPE_PREFIX, '0', RespElement.CR, RespElement.LF
     };
     assertArrayEquals(expected, respArray.getEncodedBytes());
   }
@@ -77,14 +77,14 @@ class RespArrayTest {
   void getEncodedBytes_null() {
     RespArray respArray = new RespArray(null);
     byte[] expected = new byte[]{
-        RespArray.TYPE_PREFIX, '-', '1', RespType.CR, RespType.LF
+        RespArray.TYPE_PREFIX, '-', '1', RespElement.CR, RespElement.LF
     };
     assertArrayEquals(expected, respArray.getEncodedBytes());
   }
 
   @Test
   void toStringTest() {
-    List<RespType<?>> list = new ArrayList<>(List.of(new RespInteger(1)));
+    List<RespElement> list = new ArrayList<>(List.of(new RespInteger(1)));
     RespArray respArray = new RespArray(list);
     String expected = "[1]";
     assertEquals(expected, respArray.toString());
@@ -97,7 +97,7 @@ class RespArrayTest {
 
   @Test
   void equalsTest() {
-    List<RespType<?>> list = List.of(new RespInteger(1));
+    List<RespElement> list = List.of(new RespInteger(1));
     RespArray first = new RespArray(list);
     assertEquals(first, first);
     assertNotEquals(null, first);
@@ -107,7 +107,7 @@ class RespArrayTest {
 
   @Test
   void hashcodeTest() {
-    List<RespType<?>> list = new ArrayList<>(List.of(new RespInteger(1)));
+    List<RespElement> list = new ArrayList<>(List.of(new RespInteger(1)));
     RespArray respArray = new RespArray(list);
     assertEquals(Objects.hash(list), respArray.hashCode());
   }

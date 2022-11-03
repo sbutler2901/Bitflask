@@ -1,19 +1,17 @@
 package dev.sbutler.bitflask.resp.network;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
+import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespError;
 import dev.sbutler.bitflask.resp.types.RespInteger;
 import dev.sbutler.bitflask.resp.types.RespSimpleString;
-import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
@@ -32,9 +30,9 @@ public class RespReaderTest {
     when(bufferedReader.read()).thenReturn(-1);
     // Act
     EOFException e =
-        assertThrows(EOFException.class, respReader::readNextRespType);
+        assertThrows(EOFException.class, respReader::readNextRespElement);
     // Assert
-    assertTrue(e.getMessage().toLowerCase().contains("parse resptype"));
+    assertThat(e).hasMessageThat().ignoringCase().contains("parse next RespElement");
   }
 
   @Test
@@ -45,92 +43,92 @@ public class RespReaderTest {
     when(bufferedReader.read()).thenReturn(Integer.valueOf('a'));
     // Act
     ProtocolException e =
-        assertThrows(ProtocolException.class, respReader::readNextRespType);
+        assertThrows(ProtocolException.class, respReader::readNextRespElement);
     // Act
-    assertTrue(e.getMessage().toLowerCase().contains("code not recognized"));
+    assertThat(e).hasMessageThat().ignoringCase().contains("code not recognized");
   }
 
   @Test
   void respSimpleString() throws Exception {
     // Arrange
     String expected = "simple-string";
-    RespSimpleString respType = new RespSimpleString(expected);
+    RespSimpleString respElement = new RespSimpleString(expected);
     RespReader respReader =
-        createRespReaderWithRespTypeSeeded(respType);
+        createRespReaderWithRespElementSeeded(respElement);
     // Act
-    RespType<?> res = respReader.readNextRespType();
+    RespElement res = respReader.readNextRespElement();
     // Assert
-    assertTrue(res instanceof RespSimpleString);
-    assertEquals(expected, res.getValue());
+    assertThat(res.isRespSimpleString()).isTrue();
+    assertThat(res.getAsRespSimpleString().getValue()).isEqualTo(expected);
   }
 
   @Test
   void respBulkString() throws Exception {
     // Arrange
     String expected = "simple-string";
-    RespBulkString respType = new RespBulkString(expected);
+    RespBulkString respElement = new RespBulkString(expected);
     RespReader respReader =
-        createRespReaderWithRespTypeSeeded(respType);
+        createRespReaderWithRespElementSeeded(respElement);
     // Act
-    RespType<?> res = respReader.readNextRespType();
+    RespElement res = respReader.readNextRespElement();
     // Assert
-    assertTrue(res instanceof RespBulkString);
-    assertEquals(expected, res.getValue());
+    assertThat(res.isRespBulkString());
+    assertThat(res.getAsRespBulkString().getValue()).isEqualTo(expected);
   }
 
   @Test
   void respBulkString_newline() throws Exception {
     // Arrange
     String expected = "simple\nstring";
-    RespBulkString respType = new RespBulkString(expected);
+    RespBulkString respElement = new RespBulkString(expected);
     RespReader respReader =
-        createRespReaderWithRespTypeSeeded(respType);
+        createRespReaderWithRespElementSeeded(respElement);
     // Act
-    RespType<?> res = respReader.readNextRespType();
+    RespElement res = respReader.readNextRespElement();
     // Assert
-    assertTrue(res instanceof RespBulkString);
-    assertEquals(expected, res.getValue());
+    assertThat(res.isRespBulkString());
+    assertThat(res.getAsRespBulkString().getValue()).isEqualTo(expected);
   }
 
   @Test
   void respBulkString_null() throws Exception {
     // Arrange
-    RespBulkString respType = new RespBulkString(null);
+    RespBulkString respElement = new RespBulkString(null);
     RespReader respReader =
-        createRespReaderWithRespTypeSeeded(respType);
+        createRespReaderWithRespElementSeeded(respElement);
     // Act
-    RespType<?> res = respReader.readNextRespType();
+    RespElement res = respReader.readNextRespElement();
     // Assert
-    assertTrue(res instanceof RespBulkString);
-    assertNull(res.getValue());
+    assertThat(res.isRespBulkString());
+    assertThat(res.getAsRespBulkString().getValue()).isNull();
   }
 
   @Test
   void respBulkString_carriageReturnWithoutLineFeed() throws Exception {
     // Arrange
     String expected = "simple\rstring";
-    RespBulkString respType = new RespBulkString(expected);
+    RespBulkString respElement = new RespBulkString(expected);
     RespReader respReader =
-        createRespReaderWithRespTypeSeeded(respType);
+        createRespReaderWithRespElementSeeded(respElement);
     // Act
-    RespType<?> res = respReader.readNextRespType();
+    RespElement res = respReader.readNextRespElement();
     // Assert
-    assertTrue(res instanceof RespBulkString);
-    assertEquals(expected, res.getValue());
+    assertThat(res.isRespBulkString());
+    assertThat(res.getAsRespBulkString().getValue()).isEqualTo(expected);
   }
 
   @Test
   void respBulkString_carriageReturnTwice() throws Exception {
     // Arrange
     String expected = "simple\r\rstring";
-    RespBulkString respType = new RespBulkString(expected);
+    RespBulkString respElement = new RespBulkString(expected);
     RespReader respReader =
-        createRespReaderWithRespTypeSeeded(respType);
+        createRespReaderWithRespElementSeeded(respElement);
     // Act
-    RespType<?> res = respReader.readNextRespType();
+    RespElement res = respReader.readNextRespElement();
     // Assert
-    assertTrue(res instanceof RespBulkString);
-    assertEquals(expected, res.getValue());
+    assertThat(res.isRespBulkString());
+    assertThat(res.getAsRespBulkString().getValue()).isEqualTo(expected);
   }
 
   @Test
@@ -148,71 +146,71 @@ public class RespReaderTest {
         .thenReturn(Integer.valueOf('\n'));
     // Act
     ProtocolException e =
-        assertThrows(ProtocolException.class, respReader::readNextRespType);
+        assertThrows(ProtocolException.class, respReader::readNextRespElement);
     // Assert
-    assertTrue(e.getMessage().toLowerCase().contains("length didn't match"));
+    assertThat(e).hasMessageThat().ignoringCase().contains("length didn't match");
   }
 
   @Test
   void respInteger() throws Exception {
     // Arrange
-    int expected = 1000;
-    RespInteger respType = new RespInteger(expected);
+    long expected = 1000;
+    RespInteger respElement = new RespInteger(expected);
     RespReader respReader =
-        createRespReaderWithRespTypeSeeded(respType);
+        createRespReaderWithRespElementSeeded(respElement);
     // Act
-    RespType<?> res = respReader.readNextRespType();
+    RespElement res = respReader.readNextRespElement();
     // Assert
-    assertTrue(res instanceof RespInteger);
-    assertEquals(expected, ((RespInteger) res).getValue());
+    assertThat(res.isRespInteger()).isTrue();
+    assertThat(res.getAsRespInteger().getValue()).isEqualTo(expected);
   }
 
   @Test
   void respError() throws Exception {
     // Arrange
     String expected = "error";
-    RespError respType = new RespError(expected);
+    RespError respElement = new RespError(expected);
     RespReader respReader =
-        createRespReaderWithRespTypeSeeded(respType);
+        createRespReaderWithRespElementSeeded(respElement);
     // Act
-    RespType<?> res = respReader.readNextRespType();
+    RespElement res = respReader.readNextRespElement();
     // Assert
-    assertTrue(res instanceof RespError);
-    assertEquals(expected, res.getValue());
+    assertThat(res.isRespError()).isTrue();
+    assertThat(res.getAsRespError().getValue()).isEqualTo(expected);
   }
 
   @Test
   void respArray() throws Exception {
     // Arrange
-    ImmutableList<RespType<?>> expected =
+    ImmutableList<RespElement> expected =
         ImmutableList.of(new RespInteger(0));
-    RespArray respType = new RespArray(expected);
+    RespArray respElement = new RespArray(expected);
     RespReader respReader =
-        createRespReaderWithRespTypeSeeded(respType);
+        createRespReaderWithRespElementSeeded(respElement);
     // Act
-    RespType<?> res = respReader.readNextRespType();
+    RespElement res = respReader.readNextRespElement();
     // Assert
-    assertTrue(res instanceof RespArray);
-    RespArray resCasted = (RespArray) res;
-    assertEquals(expected.size(), resCasted.getValue().size());
-    assertEquals(expected, resCasted.getValue());
+    assertThat(res.isRespArray());
+    RespArray respArray = res.getAsRespArray();
+    assertThat(respArray.size()).isEqualTo(expected.size());
+    assertThat(respArray.getValue()).isEqualTo(expected);
   }
 
   @Test
   void respArray_null() throws Exception {
     // Arrange
-    RespArray respType = new RespArray(null);
+    RespArray respElement = new RespArray(null);
     RespReader respReader =
-        createRespReaderWithRespTypeSeeded(respType);
+        createRespReaderWithRespElementSeeded(respElement);
     // Act
-    RespType<?> res = respReader.readNextRespType();
+    RespElement res = respReader.readNextRespElement();
     // Assert
-    assertTrue(res instanceof RespArray);
-    assertNull(res.getValue());
+    assertThat(res.isRespArray());
+    assertThat(res.getAsRespArray().getValue()).isNull();
   }
 
-  private static RespReader createRespReaderWithRespTypeSeeded(RespType<?> respType) {
-    InputStream is = new ByteArrayInputStream(respType.getEncodedBytes());
+  private static RespReader createRespReaderWithRespElementSeeded(RespElement respElement) {
+    InputStream is = new ByteArrayInputStream(respElement.getEncodedBytes());
     BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(is));
     return new RespReader(bufferedReader);
   }

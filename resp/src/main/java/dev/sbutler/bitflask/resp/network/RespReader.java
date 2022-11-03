@@ -2,10 +2,10 @@ package dev.sbutler.bitflask.resp.network;
 
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
+import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespError;
 import dev.sbutler.bitflask.resp.types.RespInteger;
 import dev.sbutler.bitflask.resp.types.RespSimpleString;
-import dev.sbutler.bitflask.resp.types.RespType;
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
@@ -29,17 +29,17 @@ public class RespReader {
   }
 
   /**
-   * Reads the next RespType from the underlying input-stream
+   * Reads the next RespElement from the underlying input-stream
    *
-   * @return the read RespType
+   * @return the read RespElement
    * @throws EOFException      if the underlying input-stream is closed
    * @throws ProtocolException if the read input data is malformed
    * @throws IOException       if a general failure occurs while reading
    */
-  public RespType<?> readNextRespType() throws IOException {
+  public RespElement readNextRespElement() throws IOException {
     int code = bufferedReader.read();
     if (code == -1) {
-      throw new EOFException("Could not parse RespType");
+      throw new EOFException("Could not parse next RespElement");
     }
     return switch (code) {
       case RespSimpleString.TYPE_PREFIX -> readRespSimpleString();
@@ -47,7 +47,7 @@ public class RespReader {
       case RespInteger.TYPE_PREFIX -> readRespInteger();
       case RespError.TYPE_PREFIX -> readRespError();
       case RespArray.TYPE_PREFIX -> readRespArray();
-      default -> throw new ProtocolException("RespType code not recognized");
+      default -> throw new ProtocolException("RespElement code not recognized");
     };
   }
 
@@ -85,9 +85,9 @@ public class RespReader {
     if (numItems == RespArray.NULL_ARRAY_LENGTH) {
       return new RespArray(null);
     }
-    List<RespType<?>> respArrayValues = new ArrayList<>();
+    List<RespElement> respArrayValues = new ArrayList<>();
     for (int i = 0; i < numItems; i++) {
-      respArrayValues.add(readNextRespType());
+      respArrayValues.add(readNextRespElement());
     }
     return new RespArray(respArrayValues);
   }

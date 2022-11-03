@@ -2,18 +2,17 @@ package dev.sbutler.bitflask.resp.types;
 
 import java.util.Objects;
 
-public final class RespInteger extends RespType<Integer> {
+public final class RespInteger extends RespElement {
 
   public static final char TYPE_PREFIX = ':';
 
-  private final int value;
+  private final long value;
 
-  public RespInteger(int value) {
+  public RespInteger(long value) {
     this.value = value;
   }
 
-  @Override
-  public Integer getValue() {
+  public Long getValue() {
     return value;
   }
 
