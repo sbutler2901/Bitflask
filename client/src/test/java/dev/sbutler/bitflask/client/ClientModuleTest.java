@@ -1,8 +1,10 @@
 package dev.sbutler.bitflask.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doReturn;
+import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -31,6 +33,7 @@ public class ClientModuleTest {
   void configure() {
     Injector injector = Guice.createInjector(clientModule);
     // Act / Assert
+    injector.getBinding(ClientConfiguration.class);
     injector.getBinding(RespReader.class);
     injector.getBinding(RespWriter.class);
   }
@@ -40,28 +43,28 @@ public class ClientModuleTest {
     // Act
     ClientConfiguration providedConfiguration = clientModule.provideClientConfiguration();
     // Assert
-    assertEquals(configuration, providedConfiguration);
+    assertThat(providedConfiguration).isEqualTo(configuration);
   }
 
   @Test
-  void provideInputStream() throws Exception {
+  void provideRespReader() throws Exception {
     // Arrange
     InputStream inputStream = mock(InputStream.class);
-    doReturn(inputStream).when(connectionManager).getInputStream();
+    when(connectionManager.getInputStream()).thenReturn(inputStream);
     // Act
-    InputStream providedInputStream = clientModule.provideInputStream();
+    clientModule.provideRespReader();
     // Assert
-    assertEquals(inputStream, providedInputStream);
+    verify(connectionManager, times(1)).getInputStream();
   }
 
   @Test
-  void provideOutputStream() throws Exception {
+  void provideRespWriter() throws Exception {
     // Arrange
     OutputStream outputStream = mock(OutputStream.class);
-    doReturn(outputStream).when(connectionManager).getOutputStream();
+    when(connectionManager.getOutputStream()).thenReturn(outputStream);
     // Act
-    OutputStream providedOutputStream = clientModule.provideOutputStream();
+    clientModule.provideRespWriter();
     // Assert
-    assertEquals(outputStream, providedOutputStream);
+    verify(connectionManager, times(1)).getOutputStream();
   }
 }
