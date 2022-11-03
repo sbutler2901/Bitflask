@@ -6,26 +6,26 @@ import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespError;
 import dev.sbutler.bitflask.resp.types.RespInteger;
 import dev.sbutler.bitflask.resp.types.RespSimpleString;
-import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.Reader;
 import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Handles reading RESP data types from an underlying {@link java.io.InputStream} via a
- * {@link BufferedReader}.
+ * {@link Reader}.
  *
- * <p>This class does not handle lifecycle management of the provided BufferedReader, such as
+ * <p>This class does not handle lifecycle management of the provided Reader, such as
  * closing it.
  */
 public class RespReader {
 
-  private final BufferedReader bufferedReader;
+  private final Reader reader;
 
-  RespReader(BufferedReader reader) {
-    this.bufferedReader = reader;
+  RespReader(Reader reader) {
+    this.reader = reader;
   }
 
   /**
@@ -37,7 +37,7 @@ public class RespReader {
    * @throws IOException       if a general failure occurs while reading
    */
   public RespElement readNextRespElement() throws IOException {
-    int code = bufferedReader.read();
+    int code = reader.read();
     if (code == -1) {
       throw new EOFException("Could not parse next RespElement");
     }
@@ -102,7 +102,7 @@ public class RespReader {
     StringBuilder builder = new StringBuilder();
     int read;
     boolean crLastRead = false;
-    while ((read = bufferedReader.read()) != -1) {
+    while ((read = reader.read()) != -1) {
       char c = (char) read;
       if (crLastRead) {
         if (c == '\n') {

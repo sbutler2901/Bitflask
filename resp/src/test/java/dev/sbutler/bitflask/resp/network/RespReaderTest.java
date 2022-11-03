@@ -12,11 +12,11 @@ import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespError;
 import dev.sbutler.bitflask.resp.types.RespInteger;
 import dev.sbutler.bitflask.resp.types.RespSimpleString;
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.ProtocolException;
 import org.junit.jupiter.api.Test;
 
@@ -25,9 +25,9 @@ public class RespReaderTest {
   @Test
   void exception_EOFException() throws Exception {
     // Arrange
-    BufferedReader bufferedReader = mock(BufferedReader.class);
-    RespReader respReader = new RespReader(bufferedReader);
-    when(bufferedReader.read()).thenReturn(-1);
+    Reader reader = mock(Reader.class);
+    RespReader respReader = new RespReader(reader);
+    when(reader.read()).thenReturn(-1);
     // Act
     EOFException e =
         assertThrows(EOFException.class, respReader::readNextRespElement);
@@ -38,9 +38,9 @@ public class RespReaderTest {
   @Test
   void exception_ProtocolException() throws Exception {
     // Arrange
-    BufferedReader bufferedReader = mock(BufferedReader.class);
-    RespReader respReader = new RespReader(bufferedReader);
-    when(bufferedReader.read()).thenReturn(Integer.valueOf('a'));
+    Reader reader = mock(Reader.class);
+    RespReader respReader = new RespReader(reader);
+    when(reader.read()).thenReturn(Integer.valueOf('a'));
     // Act
     ProtocolException e =
         assertThrows(ProtocolException.class, respReader::readNextRespElement);
@@ -134,9 +134,9 @@ public class RespReaderTest {
   @Test
   void respBulkString_ProtocolException() throws Exception {
     // Arrange
-    BufferedReader bufferedReader = mock(BufferedReader.class);
-    RespReader respReader = new RespReader(bufferedReader);
-    when(bufferedReader.read())
+    Reader reader = mock(Reader.class);
+    RespReader respReader = new RespReader(reader);
+    when(reader.read())
         .thenReturn(Integer.valueOf(RespBulkString.TYPE_PREFIX))
         .thenReturn(Integer.valueOf('0'))
         .thenReturn(Integer.valueOf('\r'))
@@ -211,8 +211,8 @@ public class RespReaderTest {
 
   private static RespReader createRespReaderWithRespElementSeeded(RespElement respElement) {
     InputStream is = new ByteArrayInputStream(respElement.getEncodedBytes());
-    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(is));
-    return new RespReader(bufferedReader);
+    Reader reader = new InputStreamReader(is);
+    return new RespReader(reader);
   }
 
 }
