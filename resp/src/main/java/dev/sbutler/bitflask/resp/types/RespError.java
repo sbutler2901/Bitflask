@@ -1,7 +1,5 @@
 package dev.sbutler.bitflask.resp.types;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 public final class RespError extends RespElement {
 
   public static final char TYPE_PREFIX = '-';
@@ -9,7 +7,9 @@ public final class RespError extends RespElement {
   private final String value;
 
   public RespError(String value) {
-    checkNotNull(value);
+    if (value == null) {
+      throw new NullPointerException("Value cannot be null");
+    }
     this.value = value;
   }
 
