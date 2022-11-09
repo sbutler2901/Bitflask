@@ -39,6 +39,7 @@ public class RespReader {
   public RespElement readNextRespElement() throws IOException {
     int code = reader.read();
     if (code == -1) {
+      // TODO: consider wrapping result with optional
       throw new EOFException("Could not parse next RespElement");
     }
     return switch (code) {
