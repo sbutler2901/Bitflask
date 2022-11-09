@@ -10,7 +10,13 @@ public class RespService implements AutoCloseable {
 
   public static class Factory {
 
-    public RespService create(SocketChannel socketChannel) throws IOException {
+    private final SocketChannel socketChannel;
+
+    public Factory(SocketChannel socketChannel) {
+      this.socketChannel = socketChannel;
+    }
+
+    public RespService create() throws IOException {
       Reader socketReader = new InputStreamReader(socketChannel.socket().getInputStream());
       RespReader respReader = new RespReader(socketReader);
       RespWriter respWriter = new RespWriter(socketChannel.socket().getOutputStream());
