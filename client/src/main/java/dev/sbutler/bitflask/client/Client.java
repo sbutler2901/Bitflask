@@ -68,23 +68,23 @@ public class Client implements Runnable {
   public void run() {
     Injector injector = Guice.createInjector(ClientModule.create(configuration, connectionManager));
 
-    Reader reader = createReader();
+    Reader userInputReader = createUserInputReader();
     ReplClientProcessorService replClientProcessorService =
-        createReplClientProcessorService(injector, reader);
+        createReplClientProcessorService(injector, userInputReader);
 
     registerShutdownHook(replClientProcessorService);
     replClientProcessorService.run();
   }
 
   private ReplClientProcessorService createReplClientProcessorService(Injector injector,
-      Reader reader) {
-    ReplReader replReader = new ReplReader(reader);
+      Reader userInputReader) {
+    ReplReader replReader = new ReplReader(userInputReader);
     ReplClientProcessorService.Factory replFactory =
         injector.getInstance(ReplClientProcessorService.Factory.class);
     return replFactory.create(replReader, shouldExecuteWithRepl());
   }
 
-  private Reader createReader() {
+  private Reader createUserInputReader() {
     if (shouldExecuteWithRepl()) {
       return new InputStreamReader(System.in);
     }
