@@ -14,6 +14,9 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,14 +40,16 @@ public class ClientTest {
   }
 
   @Test
-  void inline() {
+  void inline() throws Exception {
     try (MockedStatic<SocketChannel> socketChannelMockedStatic = mockStatic(SocketChannel.class);
         MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       // Arrange
       String[] args = new String[]{"get", "test"};
+
       SocketChannel socketChannel = mock(SocketChannel.class);
       socketChannelMockedStatic.when(() -> SocketChannel.open(any(SocketAddress.class)))
           .thenReturn(socketChannel);
+      setupSocketChannelMock(socketChannel);
 
       guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
           .thenReturn(injector);
@@ -57,14 +62,16 @@ public class ClientTest {
   }
 
   @Test
-  void repl() {
+  void repl() throws Exception {
     try (MockedStatic<SocketChannel> socketChannelMockedStatic = mockStatic(SocketChannel.class);
         MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       // Arrange
       String[] args = new String[]{};
+
       SocketChannel socketChannel = mock(SocketChannel.class);
       socketChannelMockedStatic.when(() -> SocketChannel.open(any(SocketAddress.class)))
           .thenReturn(socketChannel);
+      setupSocketChannelMock(socketChannel);
 
       guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
           .thenReturn(injector);
@@ -77,7 +84,7 @@ public class ClientTest {
   }
 
   @Test
-  void connectionManager_IOException() {
+  void socketChannel_IOException() {
     try (MockedStatic<SocketChannel> socketChannelMockedStatic = mockStatic(SocketChannel.class);
         MockedConstruction<Client> clientMockedConstruction = mockConstruction(Client.class)) {
       // Arrange
@@ -89,5 +96,14 @@ public class ClientTest {
       // Assert
       assertEquals(0, clientMockedConstruction.constructed().size());
     }
+  }
+
+  private static void setupSocketChannelMock(SocketChannel socketChannel) throws Exception {
+    Socket socket = mock(Socket.class);
+    when(socketChannel.socket()).thenReturn(socket);
+    InputStream inputStream = mock(InputStream.class);
+    OutputStream outputStream = mock(OutputStream.class);
+    when(socket.getInputStream()).thenReturn(inputStream);
+    when(socket.getOutputStream()).thenReturn(outputStream);
   }
 }

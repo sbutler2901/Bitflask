@@ -9,6 +9,8 @@ import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
 import dev.sbutler.bitflask.client.configuration.ClientConfigurationConstants;
 import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
+import dev.sbutler.bitflask.resp.network.RespService;
+import dev.sbutler.bitflask.resp.network.RespService.Factory;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -20,22 +22,28 @@ import java.util.ResourceBundle;
 
 public class Client implements Runnable {
 
+  private final Injector injector;
   private final ClientConfiguration configuration;
-  private final ConnectionManager connectionManager;
 
-  Client(ClientConfiguration configuration, ConnectionManager connectionManager) {
+  Client(Injector injector, ClientConfiguration configuration) {
+    this.injector = injector;
     this.configuration = configuration;
-    this.connectionManager = connectionManager;
   }
 
   public static void main(String[] args) {
     ClientConfiguration configuration = initializeConfiguration(args);
+    RespService respService;
     try {
-      ConnectionManager connectionManager = createConnectionManager(configuration);
-      Client client = new Client(configuration, connectionManager);
-      client.run();
+      respService = createRespService(configuration);
     } catch (IOException e) {
       System.err.println("Failed to initialize connection to the server" + e);
+      return;
+    }
+
+    Injector injector = Guice.createInjector(ClientModule.create(configuration, respService));
+    Client client = new Client(injector, configuration);
+    try {
+      client.run();
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -56,28 +64,25 @@ public class Client implements Runnable {
     return configuration;
   }
 
-  private static ConnectionManager createConnectionManager(ClientConfiguration configuration)
+  private static RespService createRespService(ClientConfiguration configuration)
       throws IOException {
     SocketAddress socketAddress = new InetSocketAddress(configuration.getHost(),
         configuration.getPort());
     SocketChannel socketChannel = SocketChannel.open(socketAddress);
-    return new ConnectionManager(socketChannel);
+    RespService.Factory factory = new Factory(socketChannel);
+    return factory.create();
   }
 
   @Override
   public void run() {
-    Injector injector = Guice.createInjector(ClientModule.create(configuration, connectionManager));
-
-    Reader userInputReader = createUserInputReader();
     ReplClientProcessorService replClientProcessorService =
-        createReplClientProcessorService(injector, userInputReader);
-
+        createReplClientProcessorService();
     registerShutdownHook(replClientProcessorService);
     replClientProcessorService.run();
   }
 
-  private ReplClientProcessorService createReplClientProcessorService(Injector injector,
-      Reader userInputReader) {
+  private ReplClientProcessorService createReplClientProcessorService() {
+    Reader userInputReader = createUserInputReader();
     ReplReader replReader = new ReplReader(userInputReader);
     ReplClientProcessorService.Factory replFactory =
         injector.getInstance(ReplClientProcessorService.Factory.class);
@@ -101,13 +106,13 @@ public class Client implements Runnable {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       System.out.println("Exiting...");
       replClientProcessorService.triggerShutdown();
-      closeConnectionManager();
+      closeConnection();
     }));
   }
 
-  private void closeConnectionManager() {
+  private void closeConnection() {
     try {
-      connectionManager.close();
+      injector.getInstance(RespService.class).close();
     } catch (IOException e) {
       System.err.println("Issues closing connection " + e);
     }

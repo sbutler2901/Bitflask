@@ -4,25 +4,21 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessingModule;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
-import dev.sbutler.bitflask.resp.network.RespReader;
-import dev.sbutler.bitflask.resp.network.RespWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import javax.inject.Singleton;
+import dev.sbutler.bitflask.resp.network.RespService;
 
 public class ClientModule extends AbstractModule {
 
   public static ClientModule create(ClientConfiguration configuration,
-      ConnectionManager connectionManager) {
-    return new ClientModule(configuration, connectionManager);
+      RespService respService) {
+    return new ClientModule(configuration, respService);
   }
 
   private final ClientConfiguration configuration;
-  private final ConnectionManager connectionManager;
+  private final RespService respService;
 
-  private ClientModule(ClientConfiguration configuration, ConnectionManager connectionManager) {
+  private ClientModule(ClientConfiguration configuration, RespService respService) {
     this.configuration = configuration;
-    this.connectionManager = connectionManager;
+    this.respService = respService;
   }
 
   @Override
@@ -36,14 +32,7 @@ public class ClientModule extends AbstractModule {
   }
 
   @Provides
-  @Singleton
-  RespReader provideRespReader() throws IOException {
-    return new RespReader(new InputStreamReader(connectionManager.getInputStream()));
-  }
-
-  @Provides
-  @Singleton
-  RespWriter provideRespWriter() throws IOException {
-    return new RespWriter(connectionManager.getOutputStream());
+  RespService provideRespService() {
+    return respService;
   }
 }

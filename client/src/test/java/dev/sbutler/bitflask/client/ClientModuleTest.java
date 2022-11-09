@@ -2,17 +2,11 @@ package dev.sbutler.bitflask.client;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
-import dev.sbutler.bitflask.resp.network.RespReader;
-import dev.sbutler.bitflask.resp.network.RespWriter;
-import java.io.InputStream;
-import java.io.OutputStream;
+import dev.sbutler.bitflask.resp.network.RespService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,13 +14,13 @@ public class ClientModuleTest {
 
   ClientModule clientModule;
   ClientConfiguration configuration;
-  ConnectionManager connectionManager;
+  RespService respService;
 
   @BeforeEach
   void beforeEach() {
     configuration = mock(ClientConfiguration.class);
-    connectionManager = mock(ConnectionManager.class);
-    clientModule = ClientModule.create(configuration, connectionManager);
+    respService = mock(RespService.class);
+    clientModule = ClientModule.create(configuration, respService);
   }
 
   @Test
@@ -34,8 +28,7 @@ public class ClientModuleTest {
     Injector injector = Guice.createInjector(clientModule);
     // Act / Assert
     injector.getBinding(ClientConfiguration.class);
-    injector.getBinding(RespReader.class);
-    injector.getBinding(RespWriter.class);
+    injector.getBinding(RespService.class);
   }
 
   @Test
@@ -47,24 +40,10 @@ public class ClientModuleTest {
   }
 
   @Test
-  void provideRespReader() throws Exception {
-    // Arrange
-    InputStream inputStream = mock(InputStream.class);
-    when(connectionManager.getInputStream()).thenReturn(inputStream);
+  void provideRespService() {
     // Act
-    clientModule.provideRespReader();
+    RespService providedRespService = clientModule.provideRespService();
     // Assert
-    verify(connectionManager, times(1)).getInputStream();
-  }
-
-  @Test
-  void provideRespWriter() throws Exception {
-    // Arrange
-    OutputStream outputStream = mock(OutputStream.class);
-    when(connectionManager.getOutputStream()).thenReturn(outputStream);
-    // Act
-    clientModule.provideRespWriter();
-    // Assert
-    verify(connectionManager, times(1)).getOutputStream();
+    assertThat(providedRespService).isEqualTo(respService);
   }
 }
