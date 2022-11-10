@@ -40,8 +40,8 @@ import javax.inject.Singleton;
 @Singleton
 public final class SegmentManagerService extends AbstractService {
 
-  public record ManagedSegments(Segment writableSegment,
-                                ImmutableList<Segment> frozenSegments) {
+  record ManagedSegments(Segment writableSegment,
+                         ImmutableList<Segment> frozenSegments) {
 
   }
 
@@ -102,8 +102,7 @@ public final class SegmentManagerService extends AbstractService {
     notifyStopped();
   }
 
-  // TODO: provide explicitly writable or readable segments. With interfaces limiting capabilities
-  public ManagedSegments getManagedSegments() {
+  ManagedSegments getManagedSegments() {
     return managedSegmentsAtomicReference.get();
   }
 
