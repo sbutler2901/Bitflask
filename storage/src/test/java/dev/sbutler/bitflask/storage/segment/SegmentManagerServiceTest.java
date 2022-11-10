@@ -1,8 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -115,7 +113,7 @@ public class SegmentManagerServiceTest {
     segmentManagerService.startAsync().awaitRunning();
     ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
-    assertEquals(managedSegments, retrievedManagedSegments);
+    assertThat(retrievedManagedSegments).isEqualTo(managedSegments);
   }
 
   @Test
@@ -169,8 +167,8 @@ public class SegmentManagerServiceTest {
     limitConsumer.accept(writableSegment);
     ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
-    assertEquals(newWritableSegment, retrievedManagedSegments.writableSegment());
-    assertEquals(writableSegment, retrievedManagedSegments.frozenSegments().get(0));
+    assertThat(retrievedManagedSegments.writableSegment()).isEqualTo(newWritableSegment);
+    assertThat(retrievedManagedSegments.frozenSegments().get(0)).isEqualTo(writableSegment);
   }
 
   @SuppressWarnings("unchecked")
@@ -189,7 +187,7 @@ public class SegmentManagerServiceTest {
     limitConsumer.accept(mock(Segment.class));
     ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
-    assertEquals(writableSegment, retrievedManagedSegments.writableSegment());
+    assertThat(retrievedManagedSegments.writableSegment()).isEqualTo(writableSegment);
   }
 
   @SuppressWarnings("unchecked")
@@ -212,8 +210,8 @@ public class SegmentManagerServiceTest {
       Consumer<Segment> limitConsumer = captor.getValue();
       limitConsumer.accept(writableSegment);
       // Assert
-      assertFalse(segmentManagerService.isRunning());
-      assertEquals(e, segmentManagerService.failureCause());
+      assertThat(segmentManagerService.isRunning()).isFalse();
+      assertThat(segmentManagerService.failureCause()).isEqualTo(e);
     }
   }
 
@@ -234,8 +232,8 @@ public class SegmentManagerServiceTest {
     Consumer<Segment> limitConsumer = captor.getValue();
     limitConsumer.accept(writableSegment);
     // Assert
-    assertFalse(segmentManagerService.isRunning());
-    assertEquals(e, segmentManagerService.failureCause());
+    assertThat(segmentManagerService.isRunning()).isFalse();
+    assertThat(segmentManagerService.failureCause()).isEqualTo(e);
   }
 
   @SuppressWarnings("unchecked")
@@ -274,9 +272,9 @@ public class SegmentManagerServiceTest {
     limitConsumer.accept(writableSegment);
     ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
-    assertEquals(newWritableSegment, retrievedManagedSegments.writableSegment());
-    assertEquals(1, retrievedManagedSegments.frozenSegments().size());
-    assertEquals(compactedSegment, retrievedManagedSegments.frozenSegments().get(0));
+    assertThat(retrievedManagedSegments.writableSegment()).isEqualTo(newWritableSegment);
+    assertThat(retrievedManagedSegments.frozenSegments()).hasSize(1);
+    assertThat(retrievedManagedSegments.frozenSegments()).containsExactly(compactedSegment);
     verify(segmentDeleterFactory, times(1)).create(segmentsForCompaction);
   }
 
@@ -316,9 +314,9 @@ public class SegmentManagerServiceTest {
     limitConsumer.accept(writableSegment);
     ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
-    assertEquals(newWritableSegment, retrievedManagedSegments.writableSegment());
-    assertEquals(1, retrievedManagedSegments.frozenSegments().size());
-    assertEquals(writableSegment, retrievedManagedSegments.frozenSegments().get(0));
+    assertThat(retrievedManagedSegments.writableSegment()).isEqualTo(newWritableSegment);
+    assertThat(retrievedManagedSegments.frozenSegments()).hasSize(1);
+    assertThat(retrievedManagedSegments.frozenSegments()).containsExactly(writableSegment);
     verify(segmentDeleterFactory, times(1)).create(failedCompactionSegments);
   }
 
