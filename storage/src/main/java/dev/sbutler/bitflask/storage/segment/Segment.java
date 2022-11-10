@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 /**
  * Represents a single self-contained file for storing data
  */
-public final class Segment implements ReadableSegment {
+public final class Segment implements WritableSegment {
 
   record Entry(Header header, long offset) {
 
@@ -45,6 +45,7 @@ public final class Segment implements ReadableSegment {
       return Optional.empty();
     }
     if (!isOpen()) {
+      // TODO: create custom exception
       throw new IllegalStateException("This segment has been closed and cannot be read from");
     }
 
@@ -64,14 +65,9 @@ public final class Segment implements ReadableSegment {
     }
   }
 
-  /**
-   * Writes the provided key and value to the segment file
-   *
-   * @param key   the key to be written and saved for retrieving data
-   * @param value the associated data value to be written
-   */
   public void write(String key, String value) throws IOException {
     if (!isOpen()) {
+      // TODO: create custom exception
       throw new IllegalStateException("This segment has been closed and cannot be written to");
     }
 
@@ -85,6 +81,7 @@ public final class Segment implements ReadableSegment {
       return;
     }
     if (!isOpen()) {
+      // TODO: create custom exception
       throw new IllegalStateException("This segment has been closed and cannot be written to");
     }
 
