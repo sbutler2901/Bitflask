@@ -10,7 +10,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -76,9 +75,9 @@ public class SegmentTest {
     // Arrange
     String key = "key";
     Entry entry = new Entry(Header.DELETED, 0L);
-    doReturn(true).when(segmentFile).isOpen();
-    doReturn(true).when(keyedEntryMap).containsKey(key);
-    doReturn(entry).when(keyedEntryMap).get(key);
+    when(segmentFile.isOpen()).thenReturn(true);
+    when(keyedEntryMap.containsKey(anyString())).thenReturn(true);
+    when(keyedEntryMap.get(anyString())).thenReturn(entry);
     // Act
     Optional<String> result = segment.read(key);
     // Assert
@@ -90,16 +89,20 @@ public class SegmentTest {
     // Arrange
     String key = "key";
     Entry entry = new Entry(Header.KEY_VALUE, 0L);
-    doReturn(true).when(keyedEntryMap).containsKey(key);
-    doReturn(true).when(segmentFile).isOpen();
-    doReturn(entry).when(keyedEntryMap).get(key);
+    when(segmentFile.isOpen()).thenReturn(true);
+    when(keyedEntryMap.containsKey(anyString())).thenReturn(true);
+    when(keyedEntryMap.get(anyString())).thenReturn(entry);
     when(segmentFile.readByte(anyLong()))
         .thenReturn(Header.KEY_VALUE.getByteMap())
         .thenReturn((byte) 5);
-    doThrow(IOException.class).when(segmentFile).readAsString(anyInt(), anyLong());
+    IOException ioException = new IOException("test");
+    when(segmentFile.readAsString(anyInt(), anyLong()))
+        .thenThrow(ioException);
     // Act
-    assertThrows(IOException.class, () -> segment.read(key));
+    IOException exception =
+        assertThrows(IOException.class, () -> segment.read(key));
     // Assert
+    assertThat(exception).isEqualTo(ioException);
     verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
   }
 
@@ -107,7 +110,7 @@ public class SegmentTest {
   void read_keyNotFound() throws Exception {
     // Arrange
     String key = "key";
-    doReturn(false).when(keyedEntryMap).containsKey(key);
+    when(keyedEntryMap.containsKey(anyString())).thenReturn(false);
     // Act
     Optional<String> readResults = segment.read(key);
     // Assert
@@ -119,8 +122,8 @@ public class SegmentTest {
   void read_afterClose() {
     // Arrange
     String key = "key";
-    doReturn(true).when(keyedEntryMap).containsKey(key);
-    doReturn(false).when(segmentFile).isOpen();
+    when(keyedEntryMap.containsKey(anyString())).thenReturn(true);
+    when(segmentFile.isOpen()).thenReturn(false);
     // Act
     SegmentClosedException e =
         assertThrows(SegmentClosedException.class, () -> segment.read(key));
@@ -134,7 +137,7 @@ public class SegmentTest {
     // Arrange
     String key = "key", value = "value";
     byte[] encoded = Encoder.encode(Header.KEY_VALUE, key, value);
-    doReturn(true).when(segmentFile).isOpen();
+    when(segmentFile.isOpen()).thenReturn(true);
     // Act
     segment.write(key, value);
     // Assert
@@ -146,7 +149,7 @@ public class SegmentTest {
   void write_sizeLimitExceededConsumer() throws Exception {
     // Arrange
     segment = new Segment(segmentFile, keyedEntryMap, currentFileWriteOffset, 1);
-    doReturn(true).when(segmentFile).isOpen();
+    when(segmentFile.isOpen()).thenReturn(true);
     AtomicBoolean wasCalled = new AtomicBoolean(false);
     Consumer<Segment> limitConsumer = (ignored) -> wasCalled.set(true);
     segment.registerSizeLimitExceededConsumer(limitConsumer);
@@ -160,17 +163,21 @@ public class SegmentTest {
   void write_Exception() throws Exception {
     // Arrange
     String key = "key", value = "value";
-    doReturn(true).when(segmentFile).isOpen();
-    doThrow(IOException.class).when(segmentFile).write(any(), anyLong());
-    // Act / Assert
-    assertThrows(IOException.class, () -> segment.write(key, value));
+    when(segmentFile.isOpen()).thenReturn(true);
+    IOException ioException = new IOException("test");
+    doThrow(ioException).when(segmentFile).write(any(), anyLong());
+    // Act
+    IOException exception =
+        assertThrows(IOException.class, () -> segment.write(key, value));
+    // Assert
+    assertThat(exception).isEqualTo(ioException);
     verify(segmentFile, times(1)).write(any(), anyLong());
   }
 
   @Test
   void write_afterClose() {
     // Arrange
-    doReturn(false).when(segmentFile).isOpen();
+    when(segmentFile.isOpen()).thenReturn(false);
     // Act
     SegmentClosedException e =
         assertThrows(SegmentClosedException.class, () -> segment.write("key", "value"));
@@ -185,8 +192,8 @@ public class SegmentTest {
     String key = "key";
     byte[] encoded = Encoder.encodeNoValue(Header.DELETED, key);
     Entry entry = new Entry(Header.KEY_VALUE, 0L);
-    doReturn(entry).when(keyedEntryMap).get(key);
-    doReturn(true).when(segmentFile).isOpen();
+    when(keyedEntryMap.get(anyString())).thenReturn(entry);
+    when(segmentFile.isOpen()).thenReturn(true);
     // Act
     segment.delete(key);
     // Assert
@@ -199,8 +206,8 @@ public class SegmentTest {
     // Arrange
     String key = "key";
     Entry entry = new Entry(Header.KEY_VALUE, 0L);
-    doReturn(entry).when(keyedEntryMap).get(key);
-    doReturn(true).when(segmentFile).isOpen();
+    when(keyedEntryMap.get(anyString())).thenReturn(entry);
+    when(segmentFile.isOpen()).thenReturn(true);
     segment = new Segment(segmentFile, keyedEntryMap, currentFileWriteOffset, 1);
     AtomicBoolean wasCalled = new AtomicBoolean(false);
     Consumer<Segment> limitConsumer = (ignored) -> wasCalled.set(true);
@@ -216,11 +223,15 @@ public class SegmentTest {
     // Arrange
     String key = "key";
     Entry entry = new Entry(Header.KEY_VALUE, 0L);
-    doReturn(entry).when(keyedEntryMap).get(key);
-    doReturn(true).when(segmentFile).isOpen();
-    doThrow(IOException.class).when(segmentFile).write(any(), anyLong());
-    // Act / Assert
-    assertThrows(IOException.class, () -> segment.delete(key));
+    when(keyedEntryMap.get(anyString())).thenReturn(entry);
+    when(segmentFile.isOpen()).thenReturn(true);
+    IOException ioException = new IOException("test");
+    doThrow(ioException).when(segmentFile).write(any(), anyLong());
+    // Act
+    IOException exception =
+        assertThrows(IOException.class, () -> segment.delete(key));
+    // Assert
+    assertThat(exception).isEqualTo(ioException);
     verify(segmentFile, times(1)).write(any(), anyLong());
   }
 
@@ -229,8 +240,8 @@ public class SegmentTest {
     // Arrange
     String key = "key";
     Entry entry = new Entry(Header.KEY_VALUE, 0L);
-    doReturn(entry).when(keyedEntryMap).get(key);
-    doReturn(false).when(segmentFile).isOpen();
+    when(keyedEntryMap.get(anyString())).thenReturn(entry);
+    when(segmentFile.isOpen()).thenReturn(false);
     // Act
     SegmentClosedException e =
         assertThrows(SegmentClosedException.class, () -> segment.delete(key));
@@ -244,8 +255,8 @@ public class SegmentTest {
     // Arrange
     String key = "key", value = "value";
     assertThat(segment.containsKey(key)).isFalse();
-    doReturn(true).when(segmentFile).isOpen();
-    doReturn(true).when(keyedEntryMap).containsKey(key);
+    when(segmentFile.isOpen()).thenReturn(true);
+    when(keyedEntryMap.containsKey(anyString())).thenReturn(true);
     // Act
     segment.write(key, value);
     // Assert
@@ -256,7 +267,7 @@ public class SegmentTest {
   void exceedsStorageThreshold() throws Exception {
     // Arrange
     segment = new Segment(segmentFile, keyedEntryMap, currentFileWriteOffset, 1);
-    doReturn(true).when(segmentFile).isOpen();
+    when(segmentFile.isOpen()).thenReturn(true);
     segment.write("key", "value");
     // Act / Assert
     assertThat(segment.exceedsStorageThreshold()).isTrue();
@@ -271,7 +282,7 @@ public class SegmentTest {
         "key1",
         new Entry(Header.DELETED, 10L)
     );
-    doReturn(keyedEntryMapEntries.entrySet()).when(keyedEntryMap).entrySet();
+    when(keyedEntryMap.entrySet()).thenReturn(keyedEntryMapEntries.entrySet());
     // Act
     ImmutableMap<String, Header> keyHeaderMap = segment.getSegmentKeyHeaderMap();
     // Assert
@@ -288,7 +299,7 @@ public class SegmentTest {
   void getSegmentFileKey() {
     // Arrange
     int fileKey = 0;
-    doReturn(fileKey).when(segmentFile).getSegmentFileKey();
+    when(segmentFile.getSegmentFileKey()).thenReturn(fileKey);
     // Act
     int segmentFileKey = segment.getSegmentFileKey();
     // Assert
@@ -324,7 +335,7 @@ public class SegmentTest {
   @Test
   void deleteSegment_withoutClosing() {
     // Arrange
-    doReturn(true).when(segmentFile).isOpen();
+    when(segmentFile.isOpen()).thenReturn(true);
     // Act
     IllegalStateException exception =
         assertThrows(IllegalStateException.class, () -> segment.deleteSegment());
