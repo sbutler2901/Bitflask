@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
@@ -14,7 +14,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.segment.Segment;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,20 +26,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class WriteCommandTest {
 
   WriteCommand command;
-  ManagedSegments managedSegments;
-  String key = "key", value = "value";
-  WriteDTO dto = new WriteDTO(key, value);
+
+  @Mock
+  SegmentManagerService segmentManagerService;
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
+  String key = "key", value = "value";
+  WriteDTO dto = new WriteDTO(key, value);
+
   @Mock
   Segment writable;
-  @Mock
-  Segment frozen;
 
   @BeforeEach
   void beforeEach() {
-    managedSegments = new ManagedSegments(writable, ImmutableList.of(frozen));
-    command = new WriteCommand(executorService, managedSegments, dto);
+    when(segmentManagerService.getWritableSegment()).thenReturn(writable);
+    command = new WriteCommand(executorService, segmentManagerService, dto);
   }
 
   @Test

@@ -8,8 +8,8 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.segment.Segment;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
+import dev.sbutler.bitflask.storage.segment.ReadableSegment;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -22,13 +22,15 @@ public class ReadCommand implements StorageCommand {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
-  private final ManagedSegments managedSegments;
+  private final SegmentManagerService segmentManagerService;
   private final ReadDTO readDTO;
 
-  public ReadCommand(ListeningExecutorService executorService, ManagedSegments managedSegments,
+  public ReadCommand(
+      ListeningExecutorService executorService,
+      SegmentManagerService segmentManagerService,
       ReadDTO readDTO) {
     this.executorService = executorService;
-    this.managedSegments = managedSegments;
+    this.segmentManagerService = segmentManagerService;
     this.readDTO = readDTO;
   }
 
@@ -47,7 +49,7 @@ public class ReadCommand implements StorageCommand {
         });
   }
 
-  private StorageResponse readFromSegment(Segment segment) {
+  private StorageResponse readFromSegment(ReadableSegment segment) {
     String key = readDTO.key();
 
     logger.atInfo()
@@ -68,16 +70,9 @@ public class ReadCommand implements StorageCommand {
     return new Success(String.format("[%s] not found", readDTO.key()));
   }
 
-  private Optional<Segment> findLatestSegmentWithKey() {
-    String key = readDTO.key();
-    if (managedSegments.writableSegment().containsKey(key)) {
-      return Optional.of(managedSegments.writableSegment());
-    }
-    for (Segment segment : managedSegments.frozenSegments()) {
-      if (segment.containsKey(key)) {
-        return Optional.of(segment);
-      }
-    }
-    return Optional.empty();
+  private Optional<ReadableSegment> findLatestSegmentWithKey() {
+    return segmentManagerService.getReadableSegments().stream()
+        .filter(s -> s.containsKey(readDTO.key()))
+        .findFirst();
   }
 }

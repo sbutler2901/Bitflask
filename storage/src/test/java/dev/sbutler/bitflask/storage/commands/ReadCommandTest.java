@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -16,7 +17,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.segment.Segment;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
 import java.io.IOException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,11 +30,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ReadCommandTest {
 
   ReadCommand command;
-  ManagedSegments managedSegments;
-  String key = "key", value = "value";
-  ReadDTO dto = new ReadDTO(key);
+
+  @Mock
+  SegmentManagerService segmentManagerService;
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
+  String key = "key", value = "value";
+  ReadDTO dto = new ReadDTO(key);
+
   @Mock
   Segment writable;
   @Mock
@@ -41,8 +45,9 @@ public class ReadCommandTest {
 
   @BeforeEach
   void beforeEach() {
-    managedSegments = new ManagedSegments(writable, ImmutableList.of(frozen));
-    command = new ReadCommand(executorService, managedSegments, dto);
+    when(segmentManagerService.getReadableSegments())
+        .thenReturn(ImmutableList.of(writable, frozen));
+    command = new ReadCommand(executorService, segmentManagerService, dto);
   }
 
   @Test

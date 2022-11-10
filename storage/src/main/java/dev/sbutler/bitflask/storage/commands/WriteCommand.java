@@ -8,8 +8,8 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.segment.Segment;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
+import dev.sbutler.bitflask.storage.segment.WritableSegment;
 import java.io.IOException;
 
 /**
@@ -20,13 +20,15 @@ public class WriteCommand implements StorageCommand {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
-  private final ManagedSegments managedSegments;
+  private final SegmentManagerService segmentManagerService;
   private final WriteDTO writeDTO;
 
-  public WriteCommand(ListeningExecutorService executorService, ManagedSegments managedSegments,
+  public WriteCommand(
+      ListeningExecutorService executorService,
+      SegmentManagerService segmentManagerService,
       WriteDTO writeDTO) {
     this.executorService = executorService;
-    this.managedSegments = managedSegments;
+    this.segmentManagerService = segmentManagerService;
     this.writeDTO = writeDTO;
   }
 
@@ -39,13 +41,13 @@ public class WriteCommand implements StorageCommand {
   private StorageResponse write() {
     String key = writeDTO.key();
     String value = writeDTO.value();
-    Segment writableSegment = managedSegments.writableSegment();
+    WritableSegment segment = segmentManagerService.getWritableSegment();
 
     logger.atInfo().log("Writing [%s] : [%s] to segment [%d]", key, value,
-        writableSegment.getSegmentFileKey());
+        segment.getSegmentFileKey());
 
     try {
-      writableSegment.write(key, value);
+      segment.write(key, value);
       logger.atInfo().log("Successful write of [%s]:[%s]", key, value);
       return new Success("OK");
     } catch (IOException e) {

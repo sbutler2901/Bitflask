@@ -8,7 +8,8 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
+import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
+import dev.sbutler.bitflask.storage.segment.WritableSegment;
 import java.io.IOException;
 
 /**
@@ -20,15 +21,15 @@ public class DeleteCommand implements StorageCommand {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
-  private final ManagedSegments managedSegments;
+  private final SegmentManagerService segmentManagerService;
   private final DeleteDTO deleteDTO;
 
   public DeleteCommand(
       ListeningExecutorService executorService,
-      ManagedSegments managedSegments,
+      SegmentManagerService segmentManagerService,
       DeleteDTO deleteDTO) {
     this.executorService = executorService;
-    this.managedSegments = managedSegments;
+    this.segmentManagerService = segmentManagerService;
     this.deleteDTO = deleteDTO;
   }
 
@@ -41,7 +42,12 @@ public class DeleteCommand implements StorageCommand {
   private StorageResponse delete() {
     String key = deleteDTO.key();
     try {
-      managedSegments.writableSegment().delete(key);
+      WritableSegment segment = segmentManagerService.getWritableSegment();
+
+      logger.atInfo().log("Deleting [%s] from segment [%d]", key,
+          segment.getSegmentFileKey());
+
+      segment.delete(key);
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Failed to delete [%s]", key);
       return new Failed(String.format("Failure to delete [%s]", key));
