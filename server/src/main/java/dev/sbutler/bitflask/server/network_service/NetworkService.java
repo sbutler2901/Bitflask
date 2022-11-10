@@ -5,8 +5,8 @@ import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
-import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientConnectionManager;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceChildModule;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceParentModule;
@@ -16,6 +16,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -32,7 +33,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
   private final ServerConfiguration serverConfiguration;
   private ServerSocketChannel serverSocketChannel;
   private Injector parentInjector;
-  private final HashSet<ClientHandlingService> runningClientHandlingServices = new HashSet<>();
+  private final Set<ClientHandlingService> runningClientHandlingServices = new HashSet<>();
   private volatile boolean isRunning = true;
 
   @Inject
@@ -60,9 +61,9 @@ public final class NetworkService extends AbstractExecutionThreadService {
   private void acceptAndExecuteNextClientConnection() throws IOException {
     try {
       SocketChannel socketChannel = serverSocketChannel.accept();
-      ClientConnectionManager connectionManager = new ClientConnectionManager(socketChannel);
+      RespService.Factory respServiceFactory = new RespService.Factory(socketChannel);
       Injector childInjector = parentInjector.createChildInjector(
-          new ClientHandlingServiceChildModule(connectionManager));
+          ClientHandlingServiceChildModule.create(respServiceFactory.create()));
       ClientHandlingService clientHandlingService = childInjector.getInstance(
           ClientHandlingService.class);
 

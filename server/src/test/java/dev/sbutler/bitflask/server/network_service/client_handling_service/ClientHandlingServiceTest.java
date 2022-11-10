@@ -6,6 +6,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import dev.sbutler.bitflask.resp.network.RespService;
 import java.io.IOException;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -21,9 +22,9 @@ public class ClientHandlingServiceTest {
   ClientHandlingService clientHandlingService;
 
   @Mock
-  ClientConnectionManager clientConnectionManager;
+  private RespService respService;
   @Mock
-  ClientMessageProcessor clientMessageProcessor;
+  private ClientMessageProcessor clientMessageProcessor;
 
   @Test
   void run() throws Exception {
@@ -33,7 +34,7 @@ public class ClientHandlingServiceTest {
     assertTimeoutPreemptively(Duration.ofMillis(100), () -> clientHandlingService.run());
     // Assert
     verify(clientMessageProcessor, times(1)).processNextMessage();
-    verify(clientConnectionManager, times(1)).close();
+    verify(respService, times(1)).close();
   }
 
   @Test
@@ -44,7 +45,7 @@ public class ClientHandlingServiceTest {
     assertTimeoutPreemptively(Duration.ofMillis(100), () -> clientHandlingService.run());
     // Assert
     verify(clientMessageProcessor, times(1)).processNextMessage();
-    verify(clientConnectionManager, times(1)).close();
+    verify(respService, times(1)).close();
   }
 
   @Test
@@ -52,18 +53,18 @@ public class ClientHandlingServiceTest {
     // Act
     clientHandlingService.close();
     // Assert
-    verify(clientConnectionManager, times(1)).close();
+    verify(respService, times(1)).close();
   }
 
   @Test
   void close_IOException() throws Exception {
     // Arrange
     doReturn(false).when(clientMessageProcessor).processNextMessage();
-    doThrow(IOException.class).when(clientConnectionManager).close();
+    doThrow(IOException.class).when(respService).close();
     // Act
     assertTimeoutPreemptively(Duration.ofMillis(1000), () -> clientHandlingService.run());
     // Assert
     verify(clientMessageProcessor, times(1)).processNextMessage();
-    verify(clientConnectionManager, times(1)).close();
+    verify(respService, times(1)).close();
   }
 }

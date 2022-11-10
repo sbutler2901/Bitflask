@@ -18,6 +18,9 @@ import dev.sbutler.bitflask.server.network_service.client_handling_service.Clien
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceChildModule;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceParentModule;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -74,6 +77,8 @@ public class NetworkServiceTest {
       when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
       SocketChannel socketChannel = mock(SocketChannel.class);
       doReturn(socketChannel).when(serverSocketChannel).accept();
+      setupSocketChannelMock(socketChannel);
+
       Injector parentInjector = mock(Injector.class);
       guiceMockedStatic.when(
               () -> Guice.createInjector(any(ClientHandlingServiceParentModule.class)))
@@ -121,6 +126,8 @@ public class NetworkServiceTest {
       when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
       SocketChannel socketChannel = mock(SocketChannel.class);
       doReturn(socketChannel).when(serverSocketChannel).accept();
+      setupSocketChannelMock(socketChannel);
+
       Injector parentInjector = mock(Injector.class);
       guiceMockedStatic.when(
               () -> Guice.createInjector(any(ClientHandlingServiceParentModule.class)))
@@ -130,6 +137,7 @@ public class NetworkServiceTest {
           ClientHandlingServiceChildModule.class));
       ClientHandlingService clientHandlingService = mock(ClientHandlingService.class);
       doReturn(clientHandlingService).when(childInjector).getInstance(ClientHandlingService.class);
+
       doThrow(IOException.class).when(serverSocketChannel).close();
       // Act
       networkService.startUp();
@@ -141,4 +149,12 @@ public class NetworkServiceTest {
     }
   }
 
+  private static void setupSocketChannelMock(SocketChannel socketChannel) throws Exception {
+    Socket socket = mock(Socket.class);
+    when(socketChannel.socket()).thenReturn(socket);
+    InputStream inputStream = mock(InputStream.class);
+    OutputStream outputStream = mock(OutputStream.class);
+    when(socket.getInputStream()).thenReturn(inputStream);
+    when(socket.getOutputStream()).thenReturn(outputStream);
+  }
 }

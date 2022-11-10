@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.server.network_service.client_handling_service;
 
 import com.google.common.flogger.FluentLogger;
+import dev.sbutler.bitflask.resp.network.RespService;
 import java.io.Closeable;
 import java.io.IOException;
 import javax.inject.Inject;
@@ -12,15 +13,14 @@ public class ClientHandlingService implements Runnable, Closeable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ClientConnectionManager clientConnectionManager;
+  private final RespService respService;
   private final ClientMessageProcessor clientMessageProcessor;
 
   private volatile boolean shouldContinueRunning = true;
 
   @Inject
-  ClientHandlingService(ClientConnectionManager clientConnectionManager,
-      ClientMessageProcessor clientMessageProcessor) {
-    this.clientConnectionManager = clientConnectionManager;
+  ClientHandlingService(RespService respService, ClientMessageProcessor clientMessageProcessor) {
+    this.respService = respService;
     this.clientMessageProcessor = clientMessageProcessor;
   }
 
@@ -47,7 +47,7 @@ public class ClientHandlingService implements Runnable, Closeable {
     logger.atInfo().log("Terminating client session.");
     shouldContinueRunning = false;
     try {
-      clientConnectionManager.close();
+      respService.close();
     } catch (IOException e) {
       logger.atSevere().withCause(e).log("Failed to correctly terminate the client session");
     }

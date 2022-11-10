@@ -5,8 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListenableFuture;
-import dev.sbutler.bitflask.resp.network.RespReader;
-import dev.sbutler.bitflask.resp.network.RespWriter;
+import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespElement;
@@ -15,6 +14,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.ProtocolException;
 import java.util.concurrent.ExecutionException;
+import javax.inject.Inject;
 
 /**
  * Handles receiving a client's incoming messages, parsing them, submitting them for processing, and
@@ -25,16 +25,13 @@ public class ClientMessageProcessor {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final CommandProcessingService commandProcessingService;
-  private final RespReader respReader;
-  private final RespWriter respWriter;
+  private final RespService respService;
 
-  ClientMessageProcessor(
-      CommandProcessingService commandProcessingService,
-      RespReader respReader,
-      RespWriter respWriter) {
+  @Inject
+  ClientMessageProcessor(CommandProcessingService commandProcessingService,
+      RespService respService) {
     this.commandProcessingService = commandProcessingService;
-    this.respReader = respReader;
-    this.respWriter = respWriter;
+    this.respService = respService;
   }
 
   /**
@@ -74,7 +71,7 @@ public class ClientMessageProcessor {
   private RespElement readClientMessage() {
     RespElement readValue = null;
     try {
-      readValue = respReader.readNextRespElement();
+      readValue = respService.read();
     } catch (EOFException e) {
       logger.atWarning().log("Client disconnected.");
     } catch (ProtocolException e) {
@@ -99,7 +96,7 @@ public class ClientMessageProcessor {
   }
 
   private void writeResponseMessage(RespElement response) throws IOException {
-    respWriter.writeRespElement(response);
+    respService.write(response);
   }
 
   private static ImmutableList<String> parseClientMessage(RespElement rawClientMessage) {

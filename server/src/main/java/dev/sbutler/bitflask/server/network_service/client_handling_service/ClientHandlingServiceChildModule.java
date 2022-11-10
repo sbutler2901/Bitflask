@@ -2,13 +2,9 @@ package dev.sbutler.bitflask.server.network_service.client_handling_service;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import dev.sbutler.bitflask.resp.network.RespReader;
-import dev.sbutler.bitflask.resp.network.RespWriter;
+import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.channels.SocketChannel;
-import javax.inject.Singleton;
 
 /**
  * Provides the necessary Guice bindings for classes initialized for a single client connection.
@@ -22,36 +18,18 @@ import javax.inject.Singleton;
  */
 public class ClientHandlingServiceChildModule extends AbstractModule {
 
-  private final ClientConnectionManager connectionManager;
+  public static ClientHandlingServiceChildModule create(RespService respService) {
+    return new ClientHandlingServiceChildModule(respService);
+  }
 
-  public ClientHandlingServiceChildModule(ClientConnectionManager connectionManager) {
-    this.connectionManager = connectionManager;
+  private final RespService respService;
+
+  public ClientHandlingServiceChildModule(RespService respService) {
+    this.respService = respService;
   }
 
   @Provides
-  @Singleton
-  ClientConnectionManager provideClientConnectionManager() {
-    return connectionManager;
-  }
-
-  @Provides
-  @Singleton
-  ClientMessageProcessor provideClientMessageProcessor(
-      CommandProcessingService commandProcessingService,
-      RespReader respReader,
-      RespWriter respWriter) {
-    return new ClientMessageProcessor(commandProcessingService, respReader, respWriter);
-  }
-
-  @Provides
-  @Singleton
-  RespReader provideRespReader(ClientConnectionManager connectionManager) throws IOException {
-    return new RespReader(new InputStreamReader(connectionManager.getInputStream()));
-  }
-
-  @Provides
-  @Singleton
-  RespWriter provideRespWriter(ClientConnectionManager connectionManager) throws IOException {
-    return new RespWriter(connectionManager.getOutputStream());
+  RespService provideRespService() {
+    return respService;
   }
 }

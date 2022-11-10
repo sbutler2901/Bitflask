@@ -13,8 +13,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
-import dev.sbutler.bitflask.resp.network.RespReader;
-import dev.sbutler.bitflask.resp.network.RespWriter;
+import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespElement;
@@ -39,9 +38,7 @@ public class ClientMessageProcessorTest {
   @Mock
   CommandProcessingService commandProcessingService;
   @Mock
-  RespReader respReader;
-  @Mock
-  RespWriter respWriter;
+  RespService respService;
 
   @Test
   void processRequest_success() throws Exception {
@@ -51,55 +48,55 @@ public class ClientMessageProcessorTest {
     ));
     String responseValue = "pong";
     RespElement expectedResponse = new RespBulkString(responseValue);
-    doReturn(rawClientMessage).when(respReader).readNextRespElement();
+    doReturn(rawClientMessage).when(respService).read();
     doReturn(immediateFuture(responseValue)).when(commandProcessingService)
         .processCommandMessage(any());
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertTrue(processingSuccessful);
-    verify(respReader, times(1)).readNextRespElement();
+    verify(respService, times(1)).read();
     verify(commandProcessingService, times(1)).processCommandMessage(any());
-    verify(respWriter, times(1)).writeRespElement(expectedResponse);
+    verify(respService, times(1)).write(expectedResponse);
   }
 
   @Test
   void readClientMessage_EOFException() throws Exception {
     // Arrange
-    doThrow(EOFException.class).when(respReader).readNextRespElement();
+    doThrow(EOFException.class).when(respService).read();
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertFalse(processingSuccessful);
-    verify(respReader, times(1)).readNextRespElement();
+    verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respWriter, times(0)).writeRespElement(any(RespElement.class));
+    verify(respService, times(0)).write(any(RespElement.class));
   }
 
   @Test
   void readClientMessage_ProtocolException() throws Exception {
     // Arrange
-    doThrow(ProtocolException.class).when(respReader).readNextRespElement();
+    doThrow(ProtocolException.class).when(respService).read();
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertFalse(processingSuccessful);
-    verify(respReader, times(1)).readNextRespElement();
+    verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respWriter, times(0)).writeRespElement(any(RespElement.class));
+    verify(respService, times(0)).write(any(RespElement.class));
   }
 
   @Test
   void readClientMessage_IOException() throws Exception {
     // Arrange
-    doThrow(IOException.class).when(respReader).readNextRespElement();
+    doThrow(IOException.class).when(respService).read();
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertFalse(processingSuccessful);
-    verify(respReader, times(1)).readNextRespElement();
+    verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respWriter, times(0)).writeRespElement(any(RespElement.class));
+    verify(respService, times(0)).write(any(RespElement.class));
   }
 
   @SuppressWarnings("unchecked")
@@ -109,7 +106,7 @@ public class ClientMessageProcessorTest {
     RespElement rawClientMessage = new RespArray(List.of(
         new RespBulkString("ping")
     ));
-    doReturn(rawClientMessage).when(respReader).readNextRespElement();
+    doReturn(rawClientMessage).when(respService).read();
     ListenableFuture<String> responseFuture = mock(ListenableFuture.class);
     doThrow(InterruptedException.class).when(responseFuture).get();
     doReturn(responseFuture).when(commandProcessingService).processCommandMessage(any());
@@ -117,9 +114,9 @@ public class ClientMessageProcessorTest {
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertFalse(processingSuccessful);
-    verify(respReader, times(1)).readNextRespElement();
+    verify(respService, times(1)).read();
     verify(commandProcessingService, times(1)).processCommandMessage(any());
-    verify(respWriter, times(1)).writeRespElement(any(RespElement.class));
+    verify(respService, times(1)).write(any(RespElement.class));
   }
 
   @Test
@@ -128,16 +125,16 @@ public class ClientMessageProcessorTest {
     RespElement rawClientMessage = new RespArray(List.of(
         new RespBulkString("ping")
     ));
-    doReturn(rawClientMessage).when(respReader).readNextRespElement();
+    doReturn(rawClientMessage).when(respService).read();
     doReturn(immediateFailedFuture(new RuntimeException("test")))
         .when(commandProcessingService).processCommandMessage(any());
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertFalse(processingSuccessful);
-    verify(respReader, times(1)).readNextRespElement();
+    verify(respService, times(1)).read();
     verify(commandProcessingService, times(1)).processCommandMessage(any());
-    verify(respWriter, times(1)).writeRespElement(any(RespElement.class));
+    verify(respService, times(1)).write(any(RespElement.class));
   }
 
   @Test
@@ -147,45 +144,45 @@ public class ClientMessageProcessorTest {
         new RespBulkString("ping")
     ));
     String responseValue = "pong";
-    doReturn(rawClientMessage).when(respReader).readNextRespElement();
+    doReturn(rawClientMessage).when(respService).read();
     doReturn(immediateFuture(responseValue)).when(commandProcessingService)
         .processCommandMessage(any());
-    doThrow(IOException.class).when(respWriter).writeRespElement(any());
+    doThrow(IOException.class).when(respService).write(any());
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertFalse(processingSuccessful);
-    verify(respReader, times(1)).readNextRespElement();
+    verify(respService, times(1)).read();
     verify(commandProcessingService, times(1)).processCommandMessage(any());
-    verify(respWriter, times(1)).writeRespElement(any());
+    verify(respService, times(1)).write(any());
   }
 
   @Test
   void parseClientMessage_noRespArray() throws Exception {
     // Arrange
     RespElement rawClientMessage = new RespBulkString("ping");
-    doReturn(rawClientMessage).when(respReader).readNextRespElement();
+    doReturn(rawClientMessage).when(respService).read();
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertFalse(processingSuccessful);
-    verify(respReader, times(1)).readNextRespElement();
+    verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respWriter, times(0)).writeRespElement(any(RespElement.class));
+    verify(respService, times(0)).write(any(RespElement.class));
   }
 
   @Test
   void parseClientMessage_notRespBulkStringArgs() throws Exception {
     // Arrange
     RespElement rawClientMessage = new RespArray(ImmutableList.of(new RespInteger(1)));
-    doReturn(rawClientMessage).when(respReader).readNextRespElement();
+    doReturn(rawClientMessage).when(respService).read();
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
     assertFalse(processingSuccessful);
-    verify(respReader, times(1)).readNextRespElement();
+    verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respWriter, times(0)).writeRespElement(any(RespElement.class));
+    verify(respService, times(0)).write(any(RespElement.class));
   }
 
 }
