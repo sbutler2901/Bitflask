@@ -124,6 +124,15 @@ public final class Segment {
   }
 
   /**
+   * Checks if the segment exceeds the new segment threshold
+   *
+   * @return whether it exceeds the threshold, or not
+   */
+  boolean exceedsStorageThreshold() {
+    return currentFileWriteOffset.get() > segmentSizeLimit;
+  }
+
+  /**
    * Checks if the segment contains the provided key
    *
    * @param key the key to be searched for
@@ -131,23 +140,6 @@ public final class Segment {
    */
   public boolean containsKey(String key) {
     return keyedEntryMap.containsKey(key);
-  }
-
-  /**
-   * Checks if the segment exceeds the new segment threshold
-   *
-   * @return whether it exceeds the threshold, or not
-   */
-  public boolean exceedsStorageThreshold() {
-    return currentFileWriteOffset.get() > segmentSizeLimit;
-  }
-
-  /**
-   * Returns all keys mapped to their {@link Header}
-   */
-  ImmutableMap<String, Header> getSegmentKeyHeaderMap() {
-    return keyedEntryMap.entrySet().stream()
-        .collect(toImmutableMap(Map.Entry::getKey, (e) -> e.getValue().header()));
   }
 
   /**
@@ -181,11 +173,19 @@ public final class Segment {
   }
 
   /**
+   * Returns all keys mapped to their {@link Header}
+   */
+  ImmutableMap<String, Header> getSegmentKeyHeaderMap() {
+    return keyedEntryMap.entrySet().stream()
+        .collect(toImmutableMap(Map.Entry::getKey, (e) -> e.getValue().header()));
+  }
+
+  /**
    * Deletes this segment from the filesystem
    *
    * @throws IOException if there is an issue deleting the segment
    */
-  public void deleteSegment() throws IOException {
+  void deleteSegment() throws IOException {
     if (isOpen()) {
       throw new IllegalStateException("Segment should be closed before deleting");
     }
@@ -200,7 +200,7 @@ public final class Segment {
   /**
    * Marks the segment as compacted
    */
-  public void markCompacted() {
+  void markCompacted() {
     hasBeenCompacted = true;
   }
 
@@ -209,14 +209,14 @@ public final class Segment {
    *
    * @return whether the segment has been compacted or not
    */
-  public boolean hasBeenCompacted() {
+  boolean hasBeenCompacted() {
     return hasBeenCompacted;
   }
 
   /**
    * Registers a consumer to be called once this segment's size limit has been reached.
    */
-  public void registerSizeLimitExceededConsumer(Consumer<Segment> sizeLimitExceededConsumer) {
+  void registerSizeLimitExceededConsumer(Consumer<Segment> sizeLimitExceededConsumer) {
     this.sizeLimitExceededConsumer = sizeLimitExceededConsumer;
   }
 
