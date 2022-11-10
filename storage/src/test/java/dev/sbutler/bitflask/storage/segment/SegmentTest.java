@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -122,10 +123,11 @@ public class SegmentTest {
     doReturn(true).when(keyedEntryMap).containsKey(key);
     doReturn(false).when(segmentFile).isOpen();
     // Act
-    RuntimeException e =
-        assertThrows(RuntimeException.class, () -> segment.read(key));
+    SegmentClosedException e =
+        assertThrows(SegmentClosedException.class, () -> segment.read(key));
     // Assert
     assertTrue(e.getMessage().contains("closed"));
+    assertTrue(e.getMessage().contains("read"));
   }
 
   @Test
@@ -171,10 +173,11 @@ public class SegmentTest {
     // Arrange
     doReturn(false).when(segmentFile).isOpen();
     // Act
-    RuntimeException e =
-        assertThrows(RuntimeException.class, () -> segment.write("key", "value"));
+    SegmentClosedException e =
+        assertThrows(SegmentClosedException.class, () -> segment.write("key", "value"));
     // Assert
     assertTrue(e.getMessage().contains("closed"));
+    assertTrue(e.getMessage().contains("written"));
   }
 
   @Test
@@ -230,10 +233,11 @@ public class SegmentTest {
     doReturn(entry).when(keyedEntryMap).get(key);
     doReturn(false).when(segmentFile).isOpen();
     // Act
-    RuntimeException e =
-        assertThrows(RuntimeException.class, () -> segment.delete(key));
+    SegmentClosedException e =
+        assertThrows(SegmentClosedException.class, () -> segment.delete(key));
     // Assert
     assertTrue(e.getMessage().contains("closed"));
+    assertTrue(e.getMessage().contains("deleted"));
   }
 
   @Test
@@ -319,9 +323,14 @@ public class SegmentTest {
   }
 
   @Test
-  void delete_withoutClosing() {
+  void deleteSegment_withoutClosing() {
+    // Arrange
     doReturn(true).when(segmentFile).isOpen();
-    assertThrows(RuntimeException.class, () -> segment.deleteSegment());
+    // Act
+    IllegalStateException exception =
+        assertThrows(IllegalStateException.class, () -> segment.deleteSegment());
+    // Assert
+    assertThat(exception).hasMessageThat().ignoringCase().contains("closed before deleting");
   }
 
   @Test
