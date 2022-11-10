@@ -82,10 +82,7 @@ public final class Segment {
     }
 
     byte[] encodedBytes = Encoder.encode(Header.KEY_VALUE, key, value);
-    long writeOffset = currentFileWriteOffset.getAndAdd(encodedBytes.length);
-    Entry entry = new Entry(Header.KEY_VALUE, writeOffset);
-
-    writeAndUpdateEntries(key, encodedBytes, entry);
+    writeAndUpdateEntries(key, encodedBytes, Header.KEY_VALUE);
   }
 
   public void delete(String key) throws IOException {
@@ -98,17 +95,24 @@ public final class Segment {
     }
 
     byte[] encodedBytes = Encoder.encodeNoValue(Header.DELETED, key);
-    long writeOffset = currentFileWriteOffset.getAndAdd(encodedBytes.length);
-    Entry tombstoneEntry = new Entry(Header.DELETED, writeOffset);
-
-    writeAndUpdateEntries(key, encodedBytes, tombstoneEntry);
+    writeAndUpdateEntries(key, encodedBytes, Header.DELETED);
   }
 
-  private void writeAndUpdateEntries(String key, byte[] encodedBytes, Entry entry)
+  /**
+   * This operation will atomically write the encoded bytes and update the Segment's state.
+   *
+   * <p>A failure while writing will leave the Segment in the state it was prior to calling.
+   */
+  private void writeAndUpdateEntries(String key, byte[] encodedBytes, Header header)
       throws IOException {
     readWriteLock.writeLock().lock();
     try {
-      segmentFile.write(encodedBytes, entry.offset());
+      long writeOffset = currentFileWriteOffset.get();
+      Entry entry = new Entry(header, writeOffset);
+
+      segmentFile.write(encodedBytes, writeOffset);
+      currentFileWriteOffset.addAndGet(encodedBytes.length);
+
       keyedEntryMap.put(key, entry);
     } finally {
       readWriteLock.writeLock().unlock();
