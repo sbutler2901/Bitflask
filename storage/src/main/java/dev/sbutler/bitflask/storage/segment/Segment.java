@@ -45,8 +45,7 @@ public final class Segment implements WritableSegment {
       return Optional.empty();
     }
     if (!isOpen()) {
-      // TODO: create custom exception
-      throw new IllegalStateException("This segment has been closed and cannot be read from");
+      throw new SegmentClosedException("This segment has been closed and cannot be read from");
     }
 
     Entry entry = keyedEntryMap.get(key);
@@ -67,8 +66,7 @@ public final class Segment implements WritableSegment {
 
   public void write(String key, String value) throws IOException {
     if (!isOpen()) {
-      // TODO: create custom exception
-      throw new IllegalStateException("This segment has been closed and cannot be written to");
+      throw new SegmentClosedException("This segment has been closed and cannot be written to");
     }
 
     byte[] encodedBytes = Encoder.encode(Header.KEY_VALUE, key, value);
@@ -81,8 +79,7 @@ public final class Segment implements WritableSegment {
       return;
     }
     if (!isOpen()) {
-      // TODO: create custom exception
-      throw new IllegalStateException("This segment has been closed and cannot be written to");
+      throw new SegmentClosedException("This segment has been closed and cannot be written to");
     }
 
     byte[] encodedBytes = Encoder.encodeNoValue(Header.DELETED, key);
@@ -159,7 +156,7 @@ public final class Segment implements WritableSegment {
    */
   void deleteSegment() throws IOException {
     if (isOpen()) {
-      throw new IllegalStateException("Segment should be closed before deleting");
+      throw new SegmentClosedException("Segment should be closed before deleting");
     }
     try {
       readWriteLock.writeLock().lock();

@@ -10,6 +10,9 @@ public interface ReadableSegment {
 
   /**
    * Reads the provided key's value, if present.
+   *
+   * @throws SegmentClosedException when called after the Segment has been closed
+   * @throws IOException            when a general I/O error occurs
    */
   Optional<String> read(String key) throws IOException;
 
