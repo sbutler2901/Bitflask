@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -57,7 +56,7 @@ public class SegmentManagerServiceTest {
 
   @BeforeEach
   void beforeEach() {
-    doReturn(3).when(storageConfiguration).getStorageCompactionThreshold();
+    when(storageConfiguration.getStorageCompactionThreshold()).thenReturn(3);
     segmentManagerService = new SegmentManagerService(
         executorService,
         segmentFactory,
@@ -69,18 +68,18 @@ public class SegmentManagerServiceTest {
   }
 
   @Test
-  void doStart() throws Exception {
+  void doStart() {
     // Arrange
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of());
     // Act
     segmentManagerService.startAsync().awaitRunning();
   }
 
   @Test
-  void doStart_exception() throws Exception {
+  void doStart_exception() {
     // Arrange
     doThrow(SegmentLoaderException.class).when(segmentLoader).loadExistingSegments();
     // Act / Assert
@@ -89,13 +88,13 @@ public class SegmentManagerServiceTest {
   }
 
   @Test
-  void doStop() throws Exception {
+  void doStop() {
     // Arrange
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
     Segment frozenSegment = mock(Segment.class);
-    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of(frozenSegment));
     // Act
     segmentManagerService.startAsync().awaitRunning();
     segmentManagerService.stopAsync().awaitTerminated();
@@ -105,12 +104,13 @@ public class SegmentManagerServiceTest {
   }
 
   @Test
-  void getManagedSegments() throws Exception {
+  void getManagedSegments() {
     // Arrange
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of());
     // Act
     segmentManagerService.startAsync().awaitRunning();
     ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
@@ -152,13 +152,15 @@ public class SegmentManagerServiceTest {
   @Test
   void segmentSizeLimitExceededConsumer() throws Exception {
     // Arrange
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
     Segment frozenSegment = mock(Segment.class);
-    doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of(frozenSegment));
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of(frozenSegment));
     Segment newWritableSegment = mock(Segment.class);
-    doReturn(newWritableSegment).when(segmentFactory).createSegment();
+    when(segmentFactory.createSegment()).thenReturn(newWritableSegment);
+    when(segmentFactory.createSegment()).thenReturn(newWritableSegment);
     ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
     // Act
     segmentManagerService.startAsync().awaitRunning();
@@ -173,12 +175,12 @@ public class SegmentManagerServiceTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  void segmentSizeLimitExceededConsumer_outdatedUpdate() throws Exception {
+  void segmentSizeLimitExceededConsumer_outdatedUpdate() {
     // Arrange
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of());
     ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
     // Act
     segmentManagerService.startAsync().awaitRunning();
@@ -192,14 +194,14 @@ public class SegmentManagerServiceTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  void segmentSizeLimitExceededConsumer_failedSubmission() throws Exception {
+  void segmentSizeLimitExceededConsumer_failedSubmission() {
     try (MockedStatic<Futures> futuresMockedStatic = mockStatic(Futures.class)) {
       // Arrange
-      doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+      when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
       Segment writableSegment = mock(Segment.class);
-      doReturn(writableSegment).when(managedSegments).writableSegment();
+      when(managedSegments.writableSegment()).thenReturn(writableSegment);
       Segment frozenSegment = mock(Segment.class);
-      doReturn(ImmutableList.of(frozenSegment)).when(managedSegments).frozenSegments();
+      when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of(frozenSegment));
       ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
       RejectedExecutionException e = new RejectedExecutionException();
       futuresMockedStatic.when(() -> Futures.submit(any(Callable.class), any()))
@@ -219,10 +221,10 @@ public class SegmentManagerServiceTest {
   @Test
   void segmentSizeLimitExceededConsumer_failedNewWritableCreation() throws Exception {
     // Arrange
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of());
     IOException e = new IOException();
     doThrow(e).when(segmentFactory).createSegment();
     ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
@@ -243,15 +245,15 @@ public class SegmentManagerServiceTest {
     setupForCompaction();
 
     // Callback initializing compaction
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of());
     Segment newWritableSegment = mock(Segment.class);
-    doReturn(newWritableSegment).when(segmentFactory).createSegment();
+    when(segmentFactory.createSegment()).thenReturn(newWritableSegment);
 
     // After compaction
-    doReturn(true).when(writableSegment).hasBeenCompacted();
+    when(writableSegment.hasBeenCompacted()).thenReturn(true);
     ImmutableList<Segment> segmentsForCompaction = ImmutableList.of(writableSegment);
     Segment compactedSegment = mock(Segment.class);
     CompactionResults compactionResults = new CompactionResults.Success(
@@ -285,12 +287,12 @@ public class SegmentManagerServiceTest {
     setupForCompaction();
 
     // Callback initializing compaction
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of());
     Segment newWritableSegment = mock(Segment.class);
-    doReturn(newWritableSegment).when(segmentFactory).createSegment();
+    when(segmentFactory.createSegment()).thenReturn(newWritableSegment);
 
     // After compaction
     ImmutableList<Segment> segmentsForCompaction = ImmutableList.of(writableSegment);
@@ -327,15 +329,15 @@ public class SegmentManagerServiceTest {
     setupForCompaction();
 
     // Callback initializing compaction
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of());
     Segment newWritableSegment = mock(Segment.class);
-    doReturn(newWritableSegment).when(segmentFactory).createSegment();
+    when(segmentFactory.createSegment()).thenReturn(newWritableSegment);
 
     // After compaction
-    doReturn(true).when(writableSegment).hasBeenCompacted();
+    when(writableSegment.hasBeenCompacted()).thenReturn(true);
     ImmutableList<Segment> segmentsForCompaction = ImmutableList.of(writableSegment);
     Segment compactedSegment = mock(Segment.class);
     CompactionResults compactionResults = new CompactionResults.Success(
@@ -366,15 +368,15 @@ public class SegmentManagerServiceTest {
     setupForCompaction();
 
     // Callback initializing compaction
-    doReturn(managedSegments).when(segmentLoader).loadExistingSegments();
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
     Segment writableSegment = mock(Segment.class);
-    doReturn(writableSegment).when(managedSegments).writableSegment();
-    doReturn(ImmutableList.of()).when(managedSegments).frozenSegments();
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of());
     Segment newWritableSegment = mock(Segment.class);
-    doReturn(newWritableSegment).when(segmentFactory).createSegment();
+    when(segmentFactory.createSegment()).thenReturn(newWritableSegment);
 
     // After compaction
-    doReturn(true).when(writableSegment).hasBeenCompacted();
+    when(writableSegment.hasBeenCompacted()).thenReturn(true);
     ImmutableList<Segment> segmentsForCompaction = ImmutableList.of(writableSegment);
     Segment compactedSegment = mock(Segment.class);
     CompactionResults compactionResults = new CompactionResults.Success(
@@ -399,7 +401,7 @@ public class SegmentManagerServiceTest {
   }
 
   private void setupForCompaction() {
-    doReturn(1).when(storageConfiguration).getStorageCompactionThreshold();
+    when(storageConfiguration.getStorageCompactionThreshold()).thenReturn(1);
     segmentManagerService = new SegmentManagerService(
         executorService,
         segmentFactory,
@@ -412,13 +414,13 @@ public class SegmentManagerServiceTest {
 
   private void compactorMock(CompactionResults compactionResults) {
     SegmentCompactor segmentCompactor = mock(SegmentCompactor.class);
-    doReturn(segmentCompactor).when(segmentCompactorFactory).create(any());
-    doReturn(compactionResults).when(segmentCompactor).compactSegments();
+    when(segmentCompactorFactory.create(any())).thenReturn(segmentCompactor);
+    when(segmentCompactor.compactSegments()).thenReturn(compactionResults);
   }
 
   private void deleterMock(DeletionResults deletionResults) {
     SegmentDeleter segmentDeleter = mock(SegmentDeleter.class);
-    doReturn(segmentDeleter).when(segmentDeleterFactory).create(any());
-    doReturn(deletionResults).when(segmentDeleter).deleteSegments();
+    when(segmentDeleterFactory.create(any())).thenReturn(segmentDeleter);
+    when(segmentDeleter.deleteSegments()).thenReturn(deletionResults);
   }
 }
