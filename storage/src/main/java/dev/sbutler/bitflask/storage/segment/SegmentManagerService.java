@@ -107,6 +107,18 @@ public final class SegmentManagerService extends AbstractService {
     return managedSegmentsAtomicReference.get();
   }
 
+  public WritableSegment getWritableSegment() {
+    return managedSegmentsAtomicReference.get().writableSegment();
+  }
+
+  public ImmutableList<ReadableSegment> getReadableSegments() {
+    ImmutableList.Builder<ReadableSegment> readableSegments = new ImmutableList.Builder<>();
+    ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
+    readableSegments.add(managedSegments.writableSegment());
+    readableSegments.addAll(managedSegments.frozenSegments());
+    return readableSegments.build();
+  }
+
   /**
    * Called by a Segment once its size limit has been exceeded initiating manger update logic.
    *

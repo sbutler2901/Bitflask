@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -114,6 +116,36 @@ public class SegmentManagerServiceTest {
     ManagedSegments retrievedManagedSegments = segmentManagerService.getManagedSegments();
     // Assert
     assertEquals(managedSegments, retrievedManagedSegments);
+  }
+
+  @Test
+  void getWritableSegment() {
+    // Arrange
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
+    Segment writableSegment = mock(Segment.class);
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of());
+    // Act
+    segmentManagerService.startAsync().awaitRunning();
+    WritableSegment segment = segmentManagerService.getWritableSegment();
+    // Assert
+    assertThat(segment).isEqualTo(writableSegment);
+  }
+
+  @Test
+  void getReadableSegments() {
+    // Arrange
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
+    Segment writableSegment = mock(Segment.class);
+    Segment frozenSegment = mock(Segment.class);
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of(frozenSegment));
+    // Act
+    segmentManagerService.startAsync().awaitRunning();
+    ImmutableList<ReadableSegment> readableSegments = segmentManagerService.getReadableSegments();
+    // Assert
+    assertThat(readableSegments).hasSize(2);
+    assertThat(readableSegments).containsExactly(writableSegment, frozenSegment).inOrder();
   }
 
   @SuppressWarnings("unchecked")
