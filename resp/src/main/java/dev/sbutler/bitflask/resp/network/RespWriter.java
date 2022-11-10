@@ -10,7 +10,7 @@ import java.io.OutputStream;
  * <p>this class does not handle lifecycle management of the provided OutputStream, such as closing
  * it.
  */
-public class RespWriter {
+final class RespWriter {
 
   private final OutputStream outputStream;
 
@@ -28,5 +28,4 @@ public class RespWriter {
     outputStream.write(respElement.getEncodedBytes());
     outputStream.flush();
   }
-
 }

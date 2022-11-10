@@ -20,7 +20,7 @@ import java.util.List;
  * <p>This class does not handle lifecycle management of the provided Reader, such as
  * closing it.
  */
-public class RespReader {
+final class RespReader {
 
   private final Reader reader;
 
