@@ -1,8 +1,6 @@
 package dev.sbutler.bitflask.storage.commands;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
@@ -48,9 +46,9 @@ public class WriteCommandTest {
     // Act
     ListenableFuture<StorageResponse> responseFuture = command.execute();
     // Assert
-    assertInstanceOf(Success.class, responseFuture.get());
+    assertThat(responseFuture.get()).isInstanceOf(Success.class);
     Success response = (Success) responseFuture.get();
-    assertEquals("OK", response.message());
+    assertThat(response.message()).isEqualTo("OK");
   }
 
   @Test
@@ -59,8 +57,8 @@ public class WriteCommandTest {
     // Act
     ListenableFuture<StorageResponse> responseFuture = command.execute();
     // Assert
-    assertInstanceOf(Failed.class, responseFuture.get());
+    assertThat(responseFuture.get()).isInstanceOf(Failed.class);
     Failed response = (Failed) responseFuture.get();
-    assertTrue(response.message().toLowerCase().contains("failure"));
+    assertThat(response.message()).ignoringCase().contains("failure to write");
   }
 }

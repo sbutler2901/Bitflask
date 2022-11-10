@@ -1,10 +1,7 @@
 package dev.sbutler.bitflask.storage.commands;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
@@ -53,53 +50,53 @@ public class ReadCommandTest {
   @Test
   void keyFound_writeableSegment() throws Exception {
     // Arrange
-    doReturn(true).when(writable).containsKey(key);
-    doReturn(Optional.of(value)).when(writable).read(key);
+    when(writable.containsKey(anyString())).thenReturn(true);
+    when(writable.read(anyString())).thenReturn(Optional.of(value));
     // Act
     ListenableFuture<StorageResponse> responseFuture = command.execute();
     // Assert
-    assertInstanceOf(Success.class, responseFuture.get());
+    assertThat(responseFuture.get()).isInstanceOf(Success.class);
     Success response = (Success) responseFuture.get();
-    assertEquals(value, response.message());
+    assertThat(response.message()).isEqualTo(value);
   }
 
   @Test
   void keyFound_frozenSegments() throws Exception {
     // Arrange
-    doReturn(false).when(writable).containsKey(key);
-    doReturn(true).when(frozen).containsKey(key);
-    doReturn(Optional.of(value)).when(frozen).read(key);
+    when(writable.containsKey(anyString())).thenReturn(false);
+    when(frozen.containsKey(anyString())).thenReturn(true);
+    when(frozen.read(anyString())).thenReturn(Optional.of(value));
     // Act
     ListenableFuture<StorageResponse> responseFuture = command.execute();
     // Assert
-    assertInstanceOf(Success.class, responseFuture.get());
+    assertThat(responseFuture.get()).isInstanceOf(Success.class);
     Success response = (Success) responseFuture.get();
-    assertEquals(value, response.message());
+    assertThat(response.message()).isEqualTo(value);
   }
 
   @Test
   void keyNotFound() throws Exception {
     // Arrange
-    doReturn(false).when(writable).containsKey(anyString());
-    doReturn(false).when(frozen).containsKey(anyString());
+    when(writable.containsKey(anyString())).thenReturn(false);
+    when(frozen.containsKey(anyString())).thenReturn(false);
     // Act
     ListenableFuture<StorageResponse> responseFuture = command.execute();
     // Assert
-    assertInstanceOf(Success.class, responseFuture.get());
+    assertThat(responseFuture.get()).isInstanceOf(Success.class);
     Success response = (Success) responseFuture.get();
-    assertTrue(response.message().contains("not found"));
+    assertThat(response.message()).ignoringCase().contains("not found");
   }
 
   @Test
   void readException() throws Exception {
     // Arrange
-    doReturn(true).when(writable).containsKey(key);
+    when(writable.containsKey(anyString())).thenReturn(true);
     doThrow(IOException.class).when(writable).read(key);
     // Act
     ListenableFuture<StorageResponse> responseFuture = command.execute();
     // Assert
-    assertInstanceOf(Failed.class, responseFuture.get());
+    assertThat(responseFuture.get()).isInstanceOf(Failed.class);
     Failed response = (Failed) responseFuture.get();
-    assertTrue(response.message().toLowerCase().contains("failure"));
+    assertThat(response.message()).ignoringCase().contains("failure to read");
   }
 }
