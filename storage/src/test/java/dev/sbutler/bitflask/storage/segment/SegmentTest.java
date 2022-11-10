@@ -1,15 +1,14 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -57,18 +56,18 @@ public class SegmentTest {
     // Arrange
     String key = "key", value = "value";
     Entry entry = new Entry(Header.KEY_VALUE, 0L);
-    doReturn(true).when(segmentFile).isOpen();
-    doReturn(true).when(keyedEntryMap).containsKey(key);
-    doReturn(entry).when(keyedEntryMap).get(key);
+    when(segmentFile.isOpen()).thenReturn(true);
+    when(keyedEntryMap.containsKey(anyString())).thenReturn(true);
+    when(keyedEntryMap.get(anyString())).thenReturn(entry);
     when(segmentFile.readByte(anyLong()))
         .thenReturn(Header.KEY_VALUE.getByteMap())
         .thenReturn((byte) 5);
-    doReturn(value).when(segmentFile).readAsString(anyInt(), anyLong());
+    when(segmentFile.readAsString(anyInt(), anyLong())).thenReturn(value);
     // Act
     Optional<String> result = segment.read(key);
     // Assert
-    assertTrue(result.isPresent());
-    assertEquals(value, result.get());
+    assertThat(result).isPresent();
+    assertThat(result).hasValue(value);
     verify(segmentFile, times(1)).readAsString(anyInt(), anyLong());
   }
 
@@ -83,7 +82,7 @@ public class SegmentTest {
     // Act
     Optional<String> result = segment.read(key);
     // Assert
-    assertTrue(result.isEmpty());
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -112,7 +111,7 @@ public class SegmentTest {
     // Act
     Optional<String> readResults = segment.read(key);
     // Assert
-    assertTrue(readResults.isEmpty());
+    assertThat(readResults).isEmpty();
     verify(segmentFile, times(0)).read(anyInt(), anyLong());
   }
 
@@ -126,8 +125,8 @@ public class SegmentTest {
     SegmentClosedException e =
         assertThrows(SegmentClosedException.class, () -> segment.read(key));
     // Assert
-    assertTrue(e.getMessage().contains("closed"));
-    assertTrue(e.getMessage().contains("read"));
+    assertThat(e).hasMessageThat().ignoringCase().contains("closed");
+    assertThat(e).hasMessageThat().ignoringCase().contains("read");
   }
 
   @Test
@@ -154,7 +153,7 @@ public class SegmentTest {
     // Act
     segment.write("key", "value");
     // Assert
-    assertTrue(wasCalled.get());
+    assertThat(wasCalled.get()).isTrue();
   }
 
   @Test
@@ -176,8 +175,8 @@ public class SegmentTest {
     SegmentClosedException e =
         assertThrows(SegmentClosedException.class, () -> segment.write("key", "value"));
     // Assert
-    assertTrue(e.getMessage().contains("closed"));
-    assertTrue(e.getMessage().contains("written"));
+    assertThat(e).hasMessageThat().ignoringCase().contains("closed");
+    assertThat(e).hasMessageThat().ignoringCase().contains("written");
   }
 
   @Test
@@ -209,7 +208,7 @@ public class SegmentTest {
     // Act
     segment.delete(key);
     // Assert
-    assertTrue(wasCalled.get());
+    assertThat(wasCalled.get()).isTrue();
   }
 
   @Test
@@ -236,21 +235,21 @@ public class SegmentTest {
     SegmentClosedException e =
         assertThrows(SegmentClosedException.class, () -> segment.delete(key));
     // Assert
-    assertTrue(e.getMessage().contains("closed"));
-    assertTrue(e.getMessage().contains("deleted"));
+    assertThat(e).hasMessageThat().ignoringCase().contains("closed");
+    assertThat(e).hasMessageThat().ignoringCase().contains("deleted");
   }
 
   @Test
   void containsKey() throws Exception {
     // Arrange
     String key = "key", value = "value";
-    assertFalse(segment.containsKey(key));
+    assertThat(segment.containsKey(key)).isFalse();
     doReturn(true).when(segmentFile).isOpen();
     doReturn(true).when(keyedEntryMap).containsKey(key);
     // Act
     segment.write(key, value);
     // Assert
-    assertTrue(segment.containsKey(key));
+    assertThat(segment.containsKey(key)).isTrue();
   }
 
   @Test
@@ -260,7 +259,7 @@ public class SegmentTest {
     doReturn(true).when(segmentFile).isOpen();
     segment.write("key", "value");
     // Act / Assert
-    assertTrue(segment.exceedsStorageThreshold());
+    assertThat(segment.exceedsStorageThreshold()).isTrue();
   }
 
   @Test
@@ -282,7 +281,7 @@ public class SegmentTest {
         "key1",
         Header.DELETED
     );
-    assertEquals(expected, keyHeaderMap);
+    assertThat(keyHeaderMap).isEqualTo(expected);
   }
 
   @Test
@@ -293,7 +292,7 @@ public class SegmentTest {
     // Act
     int segmentFileKey = segment.getSegmentFileKey();
     // Assert
-    assertEquals(fileKey, segmentFileKey);
+    assertThat(segmentFileKey).isEqualTo(fileKey);
   }
 
   @Test
@@ -302,7 +301,7 @@ public class SegmentTest {
     segment.close();
     // Assert
     verify(segmentFile, times(1)).close();
-    assertFalse(segment.isOpen());
+    assertThat(segment.isOpen()).isFalse();
   }
 
   @Test
@@ -335,14 +334,14 @@ public class SegmentTest {
 
   @Test
   void compactedCheck() {
-    assertFalse(segment.hasBeenCompacted());
+    assertThat(segment.hasBeenCompacted()).isFalse();
     segment.markCompacted();
-    assertTrue(segment.hasBeenCompacted());
+    assertThat(segment.hasBeenCompacted()).isTrue();
   }
 
   @Test
   void toStringTest() {
-    assertEquals("segment-0", segment.toString());
+    assertThat(segment.toString()).isEqualTo("segment-0");
   }
 
 }
