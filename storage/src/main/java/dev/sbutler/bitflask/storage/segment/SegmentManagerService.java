@@ -102,6 +102,7 @@ public final class SegmentManagerService extends AbstractService {
     notifyStopped();
   }
 
+  // TODO: provide explicitly writable or readable segments. With interfaces limiting capabilities
   public ManagedSegments getManagedSegments() {
     return managedSegmentsAtomicReference.get();
   }

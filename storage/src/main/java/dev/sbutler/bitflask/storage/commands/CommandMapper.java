@@ -26,6 +26,7 @@ public class CommandMapper {
   }
 
   public StorageCommand mapToCommand(StorageCommandDTO commandDTO) {
+    // TODO: provide segment manager service to commands
     ManagedSegments managedSegments = segmentManagerService.getManagedSegments();
     return switch (commandDTO) {
       case ReadDTO readDTO -> new ReadCommand(executorService, managedSegments, readDTO);
