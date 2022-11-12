@@ -204,6 +204,8 @@ public class SegmentManagerServiceTest {
       RejectedExecutionException e = new RejectedExecutionException();
       futuresMockedStatic.when(() -> Futures.submit(any(Callable.class), any()))
           .thenThrow(e);
+      futuresMockedStatic.when(() -> Futures.submit(any(Runnable.class), any()))
+          .thenCallRealMethod();
       // Act
       segmentManagerService.startAsync().awaitRunning();
       verify(writableSegment).registerSizeLimitExceededConsumer(captor.capture());

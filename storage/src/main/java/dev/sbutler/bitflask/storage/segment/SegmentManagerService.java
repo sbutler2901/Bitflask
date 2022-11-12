@@ -29,10 +29,11 @@ import javax.inject.Singleton;
 /**
  * Manages and maintains the Segments used by the storage engine.
  *
- * <p>Handles providing the segment active for writing and other frozen segments available for
- * reading via {@link ManagedSegments}.
+ * <p>Handles providing the active {@link WritableSegment} as well as frozen
+ * {@link ReadableSegment}s available for reading.
  *
- * <p>Updates the segment active for writing when its size limit threshold has been reached.
+ * <p>Updates the active {@link WritableSegment} when its size limit threshold has been reached
+ * creating a new one and freezes the current one.
  *
  * <p>Periodically compacts the frozen segments, removing outdated key:value pairs, and deleting
  * the old segments.
@@ -82,24 +83,31 @@ public final class SegmentManagerService extends AbstractService {
 
   @Override
   protected void doStart() {
-    try {
-      ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
-      managedSegments.writableSegment()
-          .registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
-      managedSegmentsAtomicReference.set(managedSegments);
-      nextCompactionThreshold.set(compactionThreshold + managedSegments.frozenSegments().size());
-    } catch (SegmentLoaderException e) {
-      notifyFailed(e);
-    }
-    notifyStarted();
+    Futures.submit(() -> {
+      try {
+        ManagedSegments managedSegments = segmentLoader.loadExistingSegments();
+        managedSegments.writableSegment()
+            .registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
+        managedSegmentsAtomicReference.set(managedSegments);
+        nextCompactionThreshold.set(compactionThreshold + managedSegments.frozenSegments().size());
+      } catch (Exception e) {
+        notifyFailed(e);
+      }
+      notifyStarted();
+    }, executorService);
   }
 
   @Override
   protected void doStop() {
-    ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
-    managedSegments.writableSegment().close();
-    managedSegments.frozenSegments().forEach(Segment::close);
-    notifyStopped();
+    Futures.submit(() -> {
+      try {
+        ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
+        managedSegments.writableSegment().close();
+        managedSegments.frozenSegments().forEach(Segment::close);
+      } finally {
+        notifyStopped();
+      }
+    }, executorService);
   }
 
   ManagedSegments getManagedSegments() {
@@ -137,7 +145,11 @@ public final class SegmentManagerService extends AbstractService {
   }
 
   /**
-   * The task to be executed when a Segment indicates its size limit has been reached
+   * The task to be executed when a Segment indicates its size limit has been reached.
+   *
+   * <p>This task may create a new writable segment, perform compaction, and perform
+   * post-compaction deletion. Compaction may be activated when a new segment is created and
+   * deletion will be activated if compaction is activated.
    */
   private Callable<Void> createSizeLimitTask(Segment segment) {
     return () -> {
