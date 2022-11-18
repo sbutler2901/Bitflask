@@ -1,12 +1,16 @@
 package dev.sbutler.bitflask.client.configuration;
 
 import com.beust.jcommander.Parameter;
+import dev.sbutler.bitflask.common.configuration.Configurations;
 import dev.sbutler.bitflask.common.configuration.validators.NonBlankStringValidator;
 import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValidator;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClientConfiguration {
+/**
+ * Provides access to the server's runtime configurations.
+ */
+public class ClientConfiguration implements Configurations {
 
   @Parameter(description = "inline command")
   private List<String> inlineCommand = new ArrayList<>();
