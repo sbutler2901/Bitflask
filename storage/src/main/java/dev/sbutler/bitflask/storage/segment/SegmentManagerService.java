@@ -9,7 +9,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
@@ -72,13 +72,13 @@ public final class SegmentManagerService extends AbstractService {
       SegmentCompactor.Factory segmentCompactorFactory,
       SegmentDeleter.Factory segmentDeleterFactory,
       SegmentLoader segmentLoader,
-      StorageConfiguration storageConfiguration) {
+      StorageConfigurations storageConfigurations) {
     this.executorService = executorService;
     this.segmentFactory = segmentFactory;
     this.segmentCompactorFactory = segmentCompactorFactory;
     this.segmentDeleterFactory = segmentDeleterFactory;
     this.segmentLoader = segmentLoader;
-    this.compactionThreshold = storageConfiguration.getStorageCompactionThreshold();
+    this.compactionThreshold = storageConfigurations.getStorageCompactionThreshold();
   }
 
   @Override

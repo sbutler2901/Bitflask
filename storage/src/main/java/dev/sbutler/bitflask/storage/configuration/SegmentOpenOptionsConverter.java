@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.storage.configuration;
 
 import com.beust.jcommander.IStringConverter;
 import dev.sbutler.bitflask.common.configuration.exceptions.IllegalConfigurationException;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurationConstants.StorageSegmentCreationModeArgs;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurationsConstants.StorageSegmentCreationModeArgs;
 import java.nio.file.StandardOpenOption;
 
 /**
@@ -22,7 +22,7 @@ class SegmentOpenOptionsConverter implements IStringConverter<StandardOpenOption
     } catch (IllegalArgumentException e) {
       throw new IllegalConfigurationException(
           String.format("Parameter %s was invalid (found %s)",
-              StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_NAME, value));
+              StorageConfigurationsConstants.STORAGE_SEGMENT_CREATION_MODE_NAME, value));
     }
     if (mode.equals(StorageSegmentCreationModeArgs.CREATE)) {
       return StandardOpenOption.CREATE;

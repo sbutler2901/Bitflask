@@ -15,7 +15,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
-import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
@@ -48,20 +48,20 @@ public class SegmentManagerServiceTest {
   @Mock
   SegmentLoader segmentLoader;
   @Mock
-  StorageConfiguration storageConfiguration = new StorageConfiguration();
+  StorageConfigurations storageConfigurations = new StorageConfigurations();
   @Mock
   ManagedSegments managedSegments;
 
   @BeforeEach
   void beforeEach() {
-    when(storageConfiguration.getStorageCompactionThreshold()).thenReturn(3);
+    when(storageConfigurations.getStorageCompactionThreshold()).thenReturn(3);
     segmentManagerService = new SegmentManagerService(
         executorService,
         segmentFactory,
         segmentCompactorFactory,
         segmentDeleterFactory,
         segmentLoader,
-        storageConfiguration
+        storageConfigurations
     );
   }
 
@@ -401,14 +401,14 @@ public class SegmentManagerServiceTest {
   }
 
   private void setupForCompaction() {
-    when(storageConfiguration.getStorageCompactionThreshold()).thenReturn(1);
+    when(storageConfigurations.getStorageCompactionThreshold()).thenReturn(1);
     segmentManagerService = new SegmentManagerService(
         executorService,
         segmentFactory,
         segmentCompactorFactory,
         segmentDeleterFactory,
         segmentLoader,
-        storageConfiguration
+        storageConfigurations
     );
   }
 

@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-public class StorageConfigurationConstants {
+public class StorageConfigurationsConstants {
 
   // Storage Dispatcher Capacity
   static final String STORAGE_DISPATCHER_CAPACITY_FLAG = "--storageDispatcherCapacity";
@@ -80,6 +80,6 @@ public class StorageConfigurationConstants {
           .put(STORAGE_COMPACTION_THRESHOLD_FLAG, STORAGE_COMPACTION_THRESHOLD_CONFIGURATION)
           .build();
 
-  private StorageConfigurationConstants() {
+  private StorageConfigurationsConstants() {
   }
 }

@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.segment.Encoder.Header;
 import dev.sbutler.bitflask.storage.segment.Encoder.Offsets;
 import dev.sbutler.bitflask.storage.segment.Encoder.PartialOffsets;
@@ -52,18 +52,18 @@ final class SegmentFactory {
 
   @Inject
   SegmentFactory(SegmentFile.Factory segmentFileFactory,
-      StorageConfiguration storageConfiguration) {
+      StorageConfigurations storageConfigurations) {
     this.segmentFileFactory = segmentFileFactory;
-    this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
-    this.segmentSizeLimit = storageConfiguration.getStorageSegmentSizeLimit();
-    this.fileChannelOptions = determineFileChannelOptions(storageConfiguration);
+    this.storeDirectoryPath = storageConfigurations.getStorageStoreDirectoryPath();
+    this.segmentSizeLimit = storageConfigurations.getStorageSegmentSizeLimit();
+    this.fileChannelOptions = determineFileChannelOptions(storageConfigurations);
   }
 
   private ImmutableSet<StandardOpenOption> determineFileChannelOptions(
-      StorageConfiguration storageConfiguration) {
+      StorageConfigurations storageConfigurations) {
     return ImmutableSet.<StandardOpenOption>builder()
         .addAll(BASE_FILE_CHANNEL_OPTIONS)
-        .add(storageConfiguration.getStorageSegmentCreationMode())
+        .add(storageConfigurations.getStorageSegmentCreationMode())
         .build();
   }
 

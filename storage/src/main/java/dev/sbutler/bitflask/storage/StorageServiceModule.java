@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.storage;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.sbutler.bitflask.common.io.FilesHelper;
-import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.configuration.concurrency.ConcurrencyModule;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
@@ -12,21 +12,21 @@ import javax.inject.Singleton;
 public class StorageServiceModule extends AbstractModule {
 
   private static final StorageServiceModule instance = new StorageServiceModule();
-  private static StorageConfiguration storageConfiguration = new StorageConfiguration();
+  private static StorageConfigurations storageConfigurations = new StorageConfigurations();
 
   private StorageCommandDispatcher storageCommandDispatcher = null;
 
   private StorageServiceModule() {
   }
 
-  public static void setStorageConfiguration(StorageConfiguration storageConfiguration) {
-    StorageServiceModule.storageConfiguration = storageConfiguration;
+  public static void setStorageConfiguration(StorageConfigurations storageConfigurations) {
+    StorageServiceModule.storageConfigurations = storageConfigurations;
   }
 
   public static StorageServiceModule getInstance() {
-    if (storageConfiguration == null) {
+    if (storageConfigurations == null) {
       throw new IllegalStateException(
-          "The StorageServiceModule must have the StorageConfiguration set before it can be used");
+          "The StorageServiceModule must have the StorageConfigurations set before it can be used");
     }
     return instance;
   }
@@ -38,17 +38,17 @@ public class StorageServiceModule extends AbstractModule {
   }
 
   @Provides
-  StorageConfiguration provideStorageConfiguration() {
-    return storageConfiguration;
+  StorageConfigurations provideStorageConfiguration() {
+    return storageConfigurations;
   }
 
   @Provides
   @Singleton
   StorageCommandDispatcher provideStorageCommandDispatcher(
-      StorageConfiguration storageConfiguration) {
+      StorageConfigurations storageConfigurations) {
     if (storageCommandDispatcher == null) {
       storageCommandDispatcher = new StorageCommandDispatcher(
-          storageConfiguration.getStorageDispatcherCapacity());
+          storageConfigurations.getStorageDispatcherCapacity());
     }
     return storageCommandDispatcher;
   }

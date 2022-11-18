@@ -9,7 +9,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
@@ -26,13 +26,13 @@ public class StorageServiceModuleTest {
     IllegalStateException exception =
         assertThrows(IllegalStateException.class, StorageServiceModule::getInstance);
     // Assert
-    assertThat(exception).hasMessageThat().ignoringCase().contains("StorageConfiguration");
+    assertThat(exception).hasMessageThat().ignoringCase().contains("StorageConfigurations");
   }
 
   @Test
   void configure() {
     // Arrange
-    StorageServiceModule.setStorageConfiguration(new StorageConfiguration());
+    StorageServiceModule.setStorageConfiguration(new StorageConfigurations());
     Injector injector = Guice.createInjector(StorageServiceModule.getInstance());
     // Act / Assert
     injector.getBinding(
@@ -43,35 +43,35 @@ public class StorageServiceModuleTest {
   @Test
   void provideStorageConfiguration() {
     // Arrange
-    StorageConfiguration setStorageConfiguration = new StorageConfiguration();
-    StorageServiceModule.setStorageConfiguration(setStorageConfiguration);
+    StorageConfigurations setStorageConfigurations = new StorageConfigurations();
+    StorageServiceModule.setStorageConfiguration(setStorageConfigurations);
     StorageServiceModule storageServiceModule = StorageServiceModule.getInstance();
     // Act
-    StorageConfiguration storageConfiguration = storageServiceModule.provideStorageConfiguration();
+    StorageConfigurations storageConfigurations = storageServiceModule.provideStorageConfiguration();
     // Assert
-    assertThat(storageConfiguration).isEqualTo(setStorageConfiguration);
+    assertThat(storageConfigurations).isEqualTo(setStorageConfigurations);
   }
 
   @Test
   void provideStorageCommandDispatcher() {
     // Arrange
-    StorageConfiguration storageConfiguration = mock(StorageConfiguration.class);
-    when(storageConfiguration.getStorageDispatcherCapacity()).thenReturn(1);
-    StorageServiceModule.setStorageConfiguration(storageConfiguration);
+    StorageConfigurations storageConfigurations = mock(StorageConfigurations.class);
+    when(storageConfigurations.getStorageDispatcherCapacity()).thenReturn(1);
+    StorageServiceModule.setStorageConfiguration(storageConfigurations);
     StorageServiceModule storageServiceModule = StorageServiceModule.getInstance();
     // Act
     StorageCommandDispatcher storageCommandDispatcher =
-        storageServiceModule.provideStorageCommandDispatcher(storageConfiguration);
+        storageServiceModule.provideStorageCommandDispatcher(storageConfigurations);
     // Assert
     assertThat(storageCommandDispatcher)
-        .isEqualTo(storageServiceModule.provideStorageCommandDispatcher(storageConfiguration));
+        .isEqualTo(storageServiceModule.provideStorageCommandDispatcher(storageConfigurations));
   }
 
   @Test
   void provideFilesHelper() {
     // Arrange
-    StorageConfiguration setStorageConfiguration = new StorageConfiguration();
-    StorageServiceModule.setStorageConfiguration(setStorageConfiguration);
+    StorageConfigurations setStorageConfigurations = new StorageConfigurations();
+    StorageServiceModule.setStorageConfiguration(setStorageConfigurations);
     StorageServiceModule storageServiceModule = StorageServiceModule.getInstance();
     StorageThreadFactory threadFactory = mock(StorageThreadFactory.class);
     // Act

@@ -9,7 +9,7 @@ import com.google.common.io.MoreFiles;
 import com.google.mu.util.stream.BiStream;
 import dev.sbutler.bitflask.common.concurrency.StructuredTaskScopeUtils;
 import dev.sbutler.bitflask.common.io.FilesHelper;
-import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
@@ -37,12 +37,12 @@ final class SegmentLoader {
   @Inject
   SegmentLoader(SegmentFactory segmentFactory, SegmentFile.Factory segmentFileFactory,
       StorageThreadFactory storageThreadFactory, FilesHelper filesHelper,
-      StorageConfiguration storageConfiguration) {
+      StorageConfigurations storageConfigurations) {
     this.storageThreadFactory = storageThreadFactory;
     this.segmentFactory = segmentFactory;
     this.segmentFileFactory = segmentFileFactory;
     this.filesHelper = filesHelper;
-    this.storeDirectoryPath = storageConfiguration.getStorageStoreDirectoryPath();
+    this.storeDirectoryPath = storageConfigurations.getStorageStoreDirectoryPath();
   }
 
   /**

@@ -11,30 +11,30 @@ import java.nio.file.StandardOpenOption;
 /**
  * Provides access to the storage engine's runtime configurations.
  */
-public class StorageConfiguration implements Configurations {
+public class StorageConfigurations implements Configurations {
 
-  @Parameter(names = StorageConfigurationConstants.STORAGE_DISPATCHER_CAPACITY_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.STORAGE_DISPATCHER_CAPACITY_FLAG,
       validateWith = PositiveIntegerValidator.class,
       description = "The maximum number of storage submissions that can be queued")
   private int storageDispatcherCapacity;
 
-  @Parameter(names = StorageConfigurationConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG,
       validateWith = AbsolutePathValidator.class,
       description = "The directory path in which storage segments will be read & written. This must be an absolute path.")
   private Path storageStoreDirectoryPath;
 
-  @Parameter(names = StorageConfigurationConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.STORAGE_SEGMENT_SIZE_LIMIT_FLAG,
       validateWith = PositiveLongValidator.class,
       description = "The size limit of a segment before a new one will be created")
   private long storageSegmentSizeLimit;
 
-  @Parameter(names = StorageConfigurationConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG,
       converter = SegmentOpenOptionsConverter.class,
       description = "The method used for Segment creation. 'create' will reuse pre-existing segments, loading their content at start. 'truncate' will overwrite pre-exiting segments ignoring their contents."
   )
   private StandardOpenOption storageSegmentCreationMode;
 
-  @Parameter(names = StorageConfigurationConstants.STORAGE_COMPACTION_THRESHOLD_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.STORAGE_COMPACTION_THRESHOLD_FLAG,
       validateWith = PositiveIntegerValidator.class,
       description = "The number of new segments to be created before compaction is performed"
   )
@@ -62,7 +62,7 @@ public class StorageConfiguration implements Configurations {
 
   @Override
   public String toString() {
-    return "StorageConfiguration{" +
+    return "StorageConfigurations{" +
         "storageDispatcherCapacity=" + storageDispatcherCapacity +
         ", storageStoreDirectoryPath=" + storageStoreDirectoryPath +
         ", storageSegmentSizeLimit=" + storageSegmentSizeLimit +

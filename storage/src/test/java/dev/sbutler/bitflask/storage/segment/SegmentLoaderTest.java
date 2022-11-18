@@ -15,7 +15,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.SettableFuture;
 import dev.sbutler.bitflask.common.io.FilesHelper;
-import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
@@ -49,7 +49,7 @@ class SegmentLoaderTest {
   @Mock
   private FilesHelper filesHelper;
   @Mock
-  private StorageConfiguration storageConfiguration;
+  private StorageConfigurations storageConfigurations;
 
   @Test
   void loadExistingSegments() throws Exception {

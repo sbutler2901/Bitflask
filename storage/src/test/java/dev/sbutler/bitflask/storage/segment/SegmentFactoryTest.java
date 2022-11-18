@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
-import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -146,11 +146,11 @@ public class SegmentFactoryTest {
 
   private void mockSegmentFactory(StandardOpenOption openOption) {
     segmentFileFactory = mock(SegmentFile.Factory.class);
-    StorageConfiguration storageConfiguration = mock(StorageConfiguration.class);
-    when(storageConfiguration.getStorageStoreDirectoryPath())
+    StorageConfigurations storageConfigurations = mock(StorageConfigurations.class);
+    when(storageConfigurations.getStorageStoreDirectoryPath())
         .thenReturn(Path.of("/tmp/.bitflask"));
-    when(storageConfiguration.getStorageSegmentSizeLimit()).thenReturn(100L);
-    when(storageConfiguration.getStorageSegmentCreationMode()).thenReturn(openOption);
-    segmentFactory = new SegmentFactory(segmentFileFactory, storageConfiguration);
+    when(storageConfigurations.getStorageSegmentSizeLimit()).thenReturn(100L);
+    when(storageConfigurations.getStorageSegmentCreationMode()).thenReturn(openOption);
+    segmentFactory = new SegmentFactory(segmentFileFactory, storageConfigurations);
   }
 }

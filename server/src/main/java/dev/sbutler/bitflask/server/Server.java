@@ -17,8 +17,8 @@ import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
-import dev.sbutler.bitflask.storage.configuration.StorageConfiguration;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurationConstants;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurationsConstants;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ResourceBundle;
@@ -111,21 +111,21 @@ class Server {
         .parse(argv);
     ServerModule.setServerConfiguration(serverConfigurations);
 
-    StorageConfiguration storageConfiguration = new StorageConfiguration();
+    StorageConfigurations storageConfigurations = new StorageConfigurations();
     ConfigurationDefaultProvider storageConfigurationDefaultProvider =
         new ConfigurationDefaultProvider(
-            StorageConfigurationConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP,
+            StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP,
             resourceBundle);
     JCommander.newBuilder()
-        .addObject(storageConfiguration)
+        .addObject(storageConfigurations)
         .defaultProvider(storageConfigurationDefaultProvider)
         .acceptUnknownOptions(true)
         .build()
         .parse(argv);
-    StorageServiceModule.setStorageConfiguration(storageConfiguration);
+    StorageServiceModule.setStorageConfiguration(storageConfigurations);
 
     logger.atInfo().log(serverConfigurations.toString());
-    logger.atInfo().log(storageConfiguration.toString());
+    logger.atInfo().log(storageConfigurations.toString());
   }
 
   private static void printConfigInfo() {
