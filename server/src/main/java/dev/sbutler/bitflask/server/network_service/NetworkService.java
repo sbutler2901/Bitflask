@@ -6,7 +6,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.resp.network.RespService;
-import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
+import dev.sbutler.bitflask.server.configuration.ServerConfigurations;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceChildModule;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceParentModule;
@@ -30,22 +30,22 @@ public final class NetworkService extends AbstractExecutionThreadService {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ExecutorService executorService;
-  private final ServerConfiguration serverConfiguration;
+  private final ServerConfigurations serverConfigurations;
   private ServerSocketChannel serverSocketChannel;
   private Injector parentInjector;
   private final Set<ClientHandlingService> runningClientHandlingServices = new HashSet<>();
   private volatile boolean isRunning = true;
 
   @Inject
-  NetworkService(ExecutorService executorService, ServerConfiguration serverConfiguration) {
+  NetworkService(ExecutorService executorService, ServerConfigurations serverConfigurations) {
     this.executorService = executorService;
-    this.serverConfiguration = serverConfiguration;
+    this.serverConfigurations = serverConfigurations;
   }
 
   @Override
   protected void startUp() throws IOException {
     ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-    InetSocketAddress inetSocketAddress = new InetSocketAddress(serverConfiguration.getPort());
+    InetSocketAddress inetSocketAddress = new InetSocketAddress(serverConfigurations.getPort());
     serverSocketChannel.bind(inetSocketAddress);
     this.serverSocketChannel = serverSocketChannel;
     this.parentInjector = Guice.createInjector(new ClientHandlingServiceParentModule());

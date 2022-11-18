@@ -13,7 +13,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
+import dev.sbutler.bitflask.server.configuration.ServerConfigurations;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceChildModule;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceParentModule;
@@ -42,13 +42,13 @@ public class NetworkServiceTest {
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
   @Mock
-  ServerConfiguration serverConfiguration;
+  ServerConfigurations serverConfigurations;
   @Mock
   ServerSocketChannel serverSocketChannel;
 
   @BeforeEach
   void beforeEach() {
-    doReturn(9090).when(serverConfiguration).getPort();
+    doReturn(9090).when(serverConfigurations).getPort();
   }
 
   @Test

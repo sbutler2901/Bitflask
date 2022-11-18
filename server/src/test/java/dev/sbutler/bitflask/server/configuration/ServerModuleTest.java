@@ -22,13 +22,13 @@ public class ServerModuleTest {
     IllegalStateException exception =
         assertThrows(IllegalStateException.class, ServerModule::getInstance);
     // Assert
-    assertTrue(exception.getMessage().contains("ServerConfiguration"));
+    assertTrue(exception.getMessage().contains("ServerConfigurations"));
   }
 
   @Test
   void configure() {
     // Arrange
-    ServerModule.setServerConfiguration(new ServerConfiguration());
+    ServerModule.setServerConfiguration(new ServerConfigurations());
     Injector injector = Guice.createInjector(ServerModule.getInstance());
     // Act / Assert
     injector.getBinding(StorageService.class);
@@ -39,12 +39,12 @@ public class ServerModuleTest {
   @Test
   void provideServerConfiguration() {
     // Arrange
-    ServerConfiguration expectedServerConfiguration = new ServerConfiguration();
-    ServerModule.setServerConfiguration(expectedServerConfiguration);
+    ServerConfigurations expectedServerConfigurations = new ServerConfigurations();
+    ServerModule.setServerConfiguration(expectedServerConfigurations);
     ServerModule serverModule = ServerModule.getInstance();
     // Act
-    ServerConfiguration serverConfiguration = serverModule.provideServerConfiguration();
+    ServerConfigurations serverConfigurations = serverModule.provideServerConfiguration();
     // Assert
-    assertEquals(expectedServerConfiguration, serverConfiguration);
+    assertEquals(expectedServerConfigurations, serverConfigurations);
   }
 }

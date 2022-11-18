@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import dev.sbutler.bitflask.common.configuration.Configuration;
 
-public class ServerConfigurationConstants {
+public class ServerConfigurationsConstants {
 
   // Server Port
   static final String SERVER_PORT_FLAG_SHORT = "-p";
@@ -23,7 +23,7 @@ public class ServerConfigurationConstants {
           .put(SERVER_PORT_FLAG_LONG, SERVER_PORT_CONFIGURATION)
           .build();
 
-  private ServerConfigurationConstants() {
+  private ServerConfigurationsConstants() {
 
   }
 }

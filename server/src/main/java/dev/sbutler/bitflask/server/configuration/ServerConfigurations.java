@@ -7,11 +7,11 @@ import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValid
 /**
  * Provides access to the server's runtime configurations.
  */
-public class ServerConfiguration implements Configurations {
+public class ServerConfigurations implements Configurations {
 
   @Parameter(names = {
-      ServerConfigurationConstants.SERVER_PORT_FLAG_SHORT,
-      ServerConfigurationConstants.SERVER_PORT_FLAG_LONG},
+      ServerConfigurationsConstants.SERVER_PORT_FLAG_SHORT,
+      ServerConfigurationsConstants.SERVER_PORT_FLAG_LONG},
       validateWith = PositiveIntegerValidator.class,
       description = "Port that the server listens on for incoming connections")
   private int port;
@@ -22,7 +22,7 @@ public class ServerConfiguration implements Configurations {
 
   @Override
   public String toString() {
-    return "ServerConfiguration{" +
+    return "ServerConfigurations{" +
         "port=" + port +
         '}';
   }

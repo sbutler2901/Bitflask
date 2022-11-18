@@ -11,8 +11,8 @@ import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
-import dev.sbutler.bitflask.server.configuration.ServerConfiguration;
-import dev.sbutler.bitflask.server.configuration.ServerConfigurationConstants;
+import dev.sbutler.bitflask.server.configuration.ServerConfigurations;
+import dev.sbutler.bitflask.server.configuration.ServerConfigurationsConstants;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
@@ -98,18 +98,18 @@ class Server {
   private static void initializeConfigurations(String[] argv) {
     ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
 
-    ServerConfiguration serverConfiguration = new ServerConfiguration();
+    ServerConfigurations serverConfigurations = new ServerConfigurations();
     ConfigurationDefaultProvider serverConfigurationDefaultProvider =
         new ConfigurationDefaultProvider(
-            ServerConfigurationConstants.SERVER_FLAG_TO_CONFIGURATION_MAP,
+            ServerConfigurationsConstants.SERVER_FLAG_TO_CONFIGURATION_MAP,
             resourceBundle);
     JCommander.newBuilder()
-        .addObject(serverConfiguration)
+        .addObject(serverConfigurations)
         .defaultProvider(serverConfigurationDefaultProvider)
         .acceptUnknownOptions(true)
         .build()
         .parse(argv);
-    ServerModule.setServerConfiguration(serverConfiguration);
+    ServerModule.setServerConfiguration(serverConfigurations);
 
     StorageConfiguration storageConfiguration = new StorageConfiguration();
     ConfigurationDefaultProvider storageConfigurationDefaultProvider =
@@ -124,7 +124,7 @@ class Server {
         .parse(argv);
     StorageServiceModule.setStorageConfiguration(storageConfiguration);
 
-    logger.atInfo().log(serverConfiguration.toString());
+    logger.atInfo().log(serverConfigurations.toString());
     logger.atInfo().log(storageConfiguration.toString());
   }
 
