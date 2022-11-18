@@ -2,7 +2,6 @@ package dev.sbutler.bitflask.server;
 
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 
-import com.beust.jcommander.JCommander;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.Service;
@@ -10,7 +9,7 @@ import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
+import dev.sbutler.bitflask.common.configuration.ConfigurationsBuilder;
 import dev.sbutler.bitflask.server.configuration.ServerConfigurations;
 import dev.sbutler.bitflask.server.configuration.ServerConfigurationsConstants;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
@@ -40,10 +39,10 @@ class Server {
   private Server() {
   }
 
-  public static void main(String[] argv) {
+  public static void main(String[] args) {
     executionStarted = Instant.now();
     printConfigInfo();
-    initializeConfigurations(argv);
+    initializeConfigurations(args);
     Injector injector = Guice.createInjector(ServerModule.getInstance());
     ImmutableSet<Service> services = ImmutableSet.of(
         injector.getInstance(StorageService.class),
@@ -95,33 +94,19 @@ class Server {
     }));
   }
 
-  private static void initializeConfigurations(String[] argv) {
+  private static void initializeConfigurations(String[] args) {
     ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
+    ConfigurationsBuilder configsBuilder = new ConfigurationsBuilder(args, resourceBundle);
 
     ServerConfigurations serverConfigurations = new ServerConfigurations();
-    ConfigurationDefaultProvider serverConfigurationDefaultProvider =
-        new ConfigurationDefaultProvider(
-            ServerConfigurationsConstants.SERVER_FLAG_TO_CONFIGURATION_MAP,
-            resourceBundle);
-    JCommander.newBuilder()
-        .addObject(serverConfigurations)
-        .defaultProvider(serverConfigurationDefaultProvider)
-        .acceptUnknownOptions(true)
-        .build()
-        .parse(argv);
+    configsBuilder.buildAcceptingUnknownOptions(
+        serverConfigurations,
+        ServerConfigurationsConstants.SERVER_FLAG_TO_CONFIGURATION_MAP);
     ServerModule.setServerConfiguration(serverConfigurations);
 
     StorageConfigurations storageConfigurations = new StorageConfigurations();
-    ConfigurationDefaultProvider storageConfigurationDefaultProvider =
-        new ConfigurationDefaultProvider(
-            StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP,
-            resourceBundle);
-    JCommander.newBuilder()
-        .addObject(storageConfigurations)
-        .defaultProvider(storageConfigurationDefaultProvider)
-        .acceptUnknownOptions(true)
-        .build()
-        .parse(argv);
+    configsBuilder.buildAcceptingUnknownOptions(storageConfigurations,
+        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageServiceModule.setStorageConfiguration(storageConfigurations);
 
     logger.atInfo().log(serverConfigurations.toString());
