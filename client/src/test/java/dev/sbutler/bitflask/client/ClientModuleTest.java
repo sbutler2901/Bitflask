@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
+import dev.sbutler.bitflask.client.configuration.ClientConfigurations;
 import dev.sbutler.bitflask.resp.network.RespService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,12 +13,12 @@ import org.junit.jupiter.api.Test;
 public class ClientModuleTest {
 
   ClientModule clientModule;
-  ClientConfiguration configuration;
+  ClientConfigurations configuration;
   RespService respService;
 
   @BeforeEach
   void beforeEach() {
-    configuration = mock(ClientConfiguration.class);
+    configuration = mock(ClientConfigurations.class);
     respService = mock(RespService.class);
     clientModule = ClientModule.create(configuration, respService);
   }
@@ -27,14 +27,14 @@ public class ClientModuleTest {
   void configure() {
     Injector injector = Guice.createInjector(clientModule);
     // Act / Assert
-    injector.getBinding(ClientConfiguration.class);
+    injector.getBinding(ClientConfigurations.class);
     injector.getBinding(RespService.class);
   }
 
   @Test
   void provideClientConfiguration() {
     // Act
-    ClientConfiguration providedConfiguration = clientModule.provideClientConfiguration();
+    ClientConfigurations providedConfiguration = clientModule.provideClientConfiguration();
     // Assert
     assertThat(providedConfiguration).isEqualTo(configuration);
   }

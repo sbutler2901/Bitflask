@@ -11,14 +11,14 @@ import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
 import dev.sbutler.bitflask.common.configuration.exceptions.IllegalConfigurationException;
 import org.junit.jupiter.api.Test;
 
-public class ClientConfigurationTest {
+public class ClientConfigurationsTest {
 
   @Test
   void propertyFile() {
     // Arrange
     ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        ClientConfigurationConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
-    ClientConfiguration configuration = new ClientConfiguration();
+        ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
+    ClientConfigurations configuration = new ClientConfigurations();
     String[] argv = new String[]{};
     // Act
     JCommander.newBuilder()
@@ -28,18 +28,18 @@ public class ClientConfigurationTest {
         .parse(argv);
     // Assert
     assertEquals(
-        defaultProvider.getDefaultValueFor(ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT),
+        defaultProvider.getDefaultValueFor(ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT),
         configuration.getHost());
     assertEquals(
-        defaultProvider.getDefaultValueFor(ClientConfigurationConstants.SERVER_HOST_FLAG_LONG),
+        defaultProvider.getDefaultValueFor(ClientConfigurationsConstants.SERVER_HOST_FLAG_LONG),
         configuration.getHost());
     assertEquals(
         Integer.parseInt(defaultProvider.getDefaultValueFor(
-            ClientConfigurationConstants.SERVER_PORT_FLAG_SHORT)),
+            ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT)),
         configuration.getPort());
     assertEquals(
         Integer.parseInt(defaultProvider.getDefaultValueFor(
-            ClientConfigurationConstants.SERVER_PORT_FLAG_LONG)),
+            ClientConfigurationsConstants.SERVER_PORT_FLAG_LONG)),
         configuration.getPort());
   }
 
@@ -49,8 +49,8 @@ public class ClientConfigurationTest {
     ConfigurationDefaultProvider defaultProvider = mock(
         ConfigurationDefaultProvider.class);
     doReturn(" ").when(defaultProvider)
-        .getDefaultValueFor(ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT);
-    ClientConfiguration configuration = new ClientConfiguration();
+        .getDefaultValueFor(ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT);
+    ClientConfigurations configuration = new ClientConfigurations();
     String[] argv = new String[]{};
     // Act
     IllegalConfigurationException exception =
@@ -62,7 +62,7 @@ public class ClientConfigurationTest {
                 .parse(argv));
     // Assert
     assertTrue(
-        exception.getMessage().contains(ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT));
+        exception.getMessage().contains(ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT));
   }
 
   @Test
@@ -71,8 +71,8 @@ public class ClientConfigurationTest {
     ConfigurationDefaultProvider defaultProvider = mock(
         ConfigurationDefaultProvider.class);
     doReturn("-1").when(defaultProvider)
-        .getDefaultValueFor(ClientConfigurationConstants.SERVER_PORT_FLAG_SHORT);
-    ClientConfiguration configuration = new ClientConfiguration();
+        .getDefaultValueFor(ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT);
+    ClientConfigurations configuration = new ClientConfigurations();
     String[] argv = new String[]{};
     // Act
     IllegalConfigurationException exception =
@@ -84,19 +84,19 @@ public class ClientConfigurationTest {
                 .parse(argv));
     // Assert
     assertTrue(
-        exception.getMessage().contains(ClientConfigurationConstants.SERVER_PORT_FLAG_SHORT));
+        exception.getMessage().contains(ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT));
   }
 
   @Test
   void commandLineFlags() {
     // Arrange
     ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        ClientConfigurationConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
-    ClientConfiguration configuration = new ClientConfiguration();
+        ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
+    ClientConfigurations configuration = new ClientConfigurations();
     String[] argv = new String[]{
-        ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT,
+        ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT,
         "test",
-        ClientConfigurationConstants.SERVER_PORT_FLAG_SHORT,
+        ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT,
         "9091"};
     // Act
     JCommander.newBuilder()
@@ -113,10 +113,10 @@ public class ClientConfigurationTest {
   void commandLineFlags_illegalConfiguration_serverHost() {
     // Arrange
     ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        ClientConfigurationConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
-    ClientConfiguration configuration = new ClientConfiguration();
+        ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
+    ClientConfigurations configuration = new ClientConfigurations();
     String[] argv = new String[]{
-        ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT,
+        ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT,
         " "};
     // Act
     IllegalConfigurationException exception =
@@ -129,17 +129,17 @@ public class ClientConfigurationTest {
         );
     // Assert
     assertTrue(
-        exception.getMessage().contains(ClientConfigurationConstants.SERVER_HOST_FLAG_SHORT));
+        exception.getMessage().contains(ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT));
   }
 
   @Test
   void commandLineFlags_illegalConfiguration_serverPort() {
     // Arrange
     ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        ClientConfigurationConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
-    ClientConfiguration configuration = new ClientConfiguration();
+        ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
+    ClientConfigurations configuration = new ClientConfigurations();
     String[] argv = new String[]{
-        ClientConfigurationConstants.SERVER_PORT_FLAG_SHORT,
+        ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT,
         "-1"};
     // Act
     IllegalConfigurationException exception =
@@ -151,6 +151,6 @@ public class ClientConfigurationTest {
                 .parse(argv));
     // Assert
     assertTrue(
-        exception.getMessage().contains(ClientConfigurationConstants.SERVER_PORT_FLAG_SHORT));
+        exception.getMessage().contains(ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT));
   }
 }

@@ -6,8 +6,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
-import dev.sbutler.bitflask.client.configuration.ClientConfiguration;
-import dev.sbutler.bitflask.client.configuration.ClientConfigurationConstants;
+import dev.sbutler.bitflask.client.configuration.ClientConfigurations;
+import dev.sbutler.bitflask.client.configuration.ClientConfigurationsConstants;
 import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.network.RespService.Factory;
@@ -23,15 +23,15 @@ import java.util.ResourceBundle;
 public class Client implements Runnable {
 
   private final Injector injector;
-  private final ClientConfiguration configuration;
+  private final ClientConfigurations configuration;
 
-  Client(Injector injector, ClientConfiguration configuration) {
+  Client(Injector injector, ClientConfigurations configuration) {
     this.injector = injector;
     this.configuration = configuration;
   }
 
   public static void main(String[] args) {
-    ClientConfiguration configuration = initializeConfiguration(args);
+    ClientConfigurations configuration = initializeConfiguration(args);
     RespService respService;
     try {
       respService = createRespService(configuration);
@@ -49,12 +49,12 @@ public class Client implements Runnable {
     }
   }
 
-  private static ClientConfiguration initializeConfiguration(String[] args) {
+  private static ClientConfigurations initializeConfiguration(String[] args) {
     ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
-    ClientConfiguration configuration = new ClientConfiguration();
+    ClientConfigurations configuration = new ClientConfigurations();
     ConfigurationDefaultProvider defaultProvider =
         new ConfigurationDefaultProvider(
-            ClientConfigurationConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP,
+            ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP,
             resourceBundle);
     JCommander.newBuilder()
         .addObject(configuration)
@@ -64,7 +64,7 @@ public class Client implements Runnable {
     return configuration;
   }
 
-  private static RespService createRespService(ClientConfiguration configuration)
+  private static RespService createRespService(ClientConfigurations configuration)
       throws IOException {
     SocketAddress socketAddress = new InetSocketAddress(configuration.getHost(),
         configuration.getPort());
