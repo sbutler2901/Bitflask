@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.common.configuration;
 
 import com.beust.jcommander.IDefaultProvider;
-import com.google.common.collect.ImmutableMap;
 import java.util.ResourceBundle;
 
 /**
@@ -9,24 +8,24 @@ import java.util.ResourceBundle;
  */
 public class ConfigurationDefaultProvider implements IDefaultProvider {
 
-  private final ImmutableMap<String, Configuration> flagToConfigurationMap;
+  private final ConfigurationFlagMap flagMap;
   private final ResourceBundle resourceBundle;
 
-  public ConfigurationDefaultProvider(ImmutableMap<String, Configuration> flagToConfigurationMap) {
-    this.flagToConfigurationMap = flagToConfigurationMap;
+  public ConfigurationDefaultProvider(ConfigurationFlagMap flagMap) {
+    this.flagMap = flagMap;
     this.resourceBundle = null;
   }
 
   public ConfigurationDefaultProvider(
-      ImmutableMap<String, Configuration> flagToConfigurationMap,
+      ConfigurationFlagMap flagMap,
       ResourceBundle resourceBundle) {
-    this.flagToConfigurationMap = flagToConfigurationMap;
+    this.flagMap = flagMap;
     this.resourceBundle = resourceBundle;
   }
 
   @Override
   public String getDefaultValueFor(String flag) {
-    Configuration configuration = flagToConfigurationMap.get(flag);
+    Configuration configuration = flagMap.get(flag);
     if (configuration == null) {
       return null;
     }

@@ -1,8 +1,8 @@
 package dev.sbutler.bitflask.storage.configuration;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import dev.sbutler.bitflask.common.configuration.Configuration;
+import dev.sbutler.bitflask.common.configuration.ConfigurationFlagMap;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -71,8 +71,8 @@ public class StorageConfigurationsConstants {
       STORAGE_COMPACTION_THRESHOLD_PROPERTY_KEY,
       STORAGE_COMPACTION_THRESHOLD_DEFAULT);
 
-  public static final ImmutableMap<String, Configuration> STORAGE_FLAG_TO_CONFIGURATION_MAP =
-      new ImmutableMap.Builder<String, Configuration>()
+  public static final ConfigurationFlagMap STORAGE_FLAG_TO_CONFIGURATION_MAP =
+      new ConfigurationFlagMap.Builder()
           .put(STORAGE_DISPATCHER_CAPACITY_FLAG, STORAGE_DISPATCHER_CONFIGURATION)
           .put(STORAGE_STORE_DIRECTORY_PATH_FLAG, STORAGE_STORE_DIRECTORY_PATH_CONFIGURATION)
           .put(STORAGE_SEGMENT_SIZE_LIMIT_FLAG, STORAGE_SEGMENT_SIZE_LIMIT_CONFIGURATION)

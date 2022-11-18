@@ -1,8 +1,8 @@
 package dev.sbutler.bitflask.client.configuration;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import dev.sbutler.bitflask.common.configuration.Configuration;
+import dev.sbutler.bitflask.common.configuration.ConfigurationFlagMap;
 
 public class ClientConfigurationsConstants {
 
@@ -28,14 +28,14 @@ public class ClientConfigurationsConstants {
       DEFAULT_SERVER_PORT
   );
 
-  public static final ImmutableMap<String, Configuration> CLIENT_FLAG_TO_CONFIGURATION_MAP =
-      new ImmutableMap.Builder<String, Configuration>()
-          // Server Host
-          .put(SERVER_HOST_FLAG_SHORT, SERVER_HOST_CONFIGURATION)
-          .put(SERVER_HOST_FLAG_LONG, SERVER_HOST_CONFIGURATION)
-          // Server Port
-          .put(SERVER_PORT_FLAG_SHORT, SERVER_PORT_CONFIGURATION)
-          .put(SERVER_PORT_FLAG_LONG, SERVER_PORT_CONFIGURATION)
+  public static final ConfigurationFlagMap CLIENT_FLAG_TO_CONFIGURATION_MAP =
+      new ConfigurationFlagMap.Builder()
+          .putAll(
+              ImmutableList.of(SERVER_HOST_FLAG_SHORT, SERVER_HOST_FLAG_LONG),
+              SERVER_HOST_CONFIGURATION)
+          .putAll(
+              ImmutableList.of(SERVER_PORT_FLAG_SHORT, SERVER_PORT_FLAG_LONG),
+              SERVER_PORT_CONFIGURATION)
           .build();
 
   private ClientConfigurationsConstants() {

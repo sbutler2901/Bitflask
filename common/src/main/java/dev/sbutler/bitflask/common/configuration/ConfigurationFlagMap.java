@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.common.configuration;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 /**
@@ -36,7 +35,7 @@ public class ConfigurationFlagMap {
     /**
      * Maps all flags to the configuration
      */
-    public Builder putAll(ImmutableList<String> flags, Configuration configuration) {
+    public Builder putAll(Iterable<String> flags, Configuration configuration) {
       flags.forEach(f -> map.put(f, configuration));
       return this;
     }
