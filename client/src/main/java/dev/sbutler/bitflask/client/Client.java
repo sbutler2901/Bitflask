@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.client;
 
-import com.beust.jcommander.JCommander;
 import com.google.common.base.Joiner;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -8,7 +7,7 @@ import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.configuration.ClientConfigurations;
 import dev.sbutler.bitflask.client.configuration.ClientConfigurationsConstants;
-import dev.sbutler.bitflask.common.configuration.ConfigurationDefaultProvider;
+import dev.sbutler.bitflask.common.configuration.ConfigurationsBuilder;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.network.RespService.Factory;
 import java.io.IOException;
@@ -51,16 +50,12 @@ public class Client implements Runnable {
 
   private static ClientConfigurations initializeConfiguration(String[] args) {
     ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
+    ConfigurationsBuilder configsBuilder = new ConfigurationsBuilder(args, resourceBundle);
+
     ClientConfigurations configuration = new ClientConfigurations();
-    ConfigurationDefaultProvider defaultProvider =
-        new ConfigurationDefaultProvider(
-            ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP,
-            resourceBundle);
-    JCommander.newBuilder()
-        .addObject(configuration)
-        .defaultProvider(defaultProvider)
-        .build()
-        .parse(args);
+    configsBuilder.build(configuration,
+        ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
+
     return configuration;
   }
 
