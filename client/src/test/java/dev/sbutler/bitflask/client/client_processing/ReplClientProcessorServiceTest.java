@@ -13,6 +13,7 @@ import dev.sbutler.bitflask.client.client_processing.repl.ReplIOException;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplParser;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplSyntaxException;
+import dev.sbutler.bitflask.client.configuration.ClientConfigurations;
 import java.io.IOException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,12 +33,14 @@ public class ReplClientProcessorServiceTest {
   ReplReader replReader;
   @Mock
   OutputWriter outputWriter;
+  @Mock
+  ClientConfigurations configurations;
 
   @BeforeEach
   void beforeEach() {
-    ReplClientProcessorService.Factory factory =
-        new ReplClientProcessorService.Factory(clientProcessor, outputWriter);
-    replClientProcessorService = factory.create(replReader, true);
+    when(configurations.getUsePrompt()).thenReturn(true);
+    replClientProcessorService =
+        new ReplClientProcessorService(clientProcessor, replReader, outputWriter, configurations);
   }
 
   @Test

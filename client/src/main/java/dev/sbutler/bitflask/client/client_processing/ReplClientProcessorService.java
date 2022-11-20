@@ -7,6 +7,7 @@ import dev.sbutler.bitflask.client.client_processing.repl.ReplParser;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplSyntaxException;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
+import dev.sbutler.bitflask.client.configuration.ClientConfigurations;
 import java.io.IOException;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -18,38 +19,24 @@ public class ReplClientProcessorService implements Runnable {
 
   private static final String SHELL_PREFIX = "> ";
 
-  public static class Factory {
-
-    private final ClientProcessor clientProcessor;
-    private final OutputWriter outputWriter;
-
-    @Inject
-    public Factory(ClientProcessor clientProcessor, OutputWriter outputWriter) {
-      this.clientProcessor = clientProcessor;
-      this.outputWriter = outputWriter;
-    }
-
-    public ReplClientProcessorService create(ReplReader replReader, boolean usePrompt) {
-      return new ReplClientProcessorService(clientProcessor, replReader, outputWriter, usePrompt);
-    }
-  }
-
   private final ClientProcessor clientProcessor;
   private final ReplReader replReader;
   private final OutputWriter outputWriter;
-  private final boolean usePrompt;
+  private final ClientConfigurations configurations;
 
   private boolean continueProcessingClientInput = true;
   private boolean shouldCleanup = false;
 
-  private ReplClientProcessorService(ClientProcessor clientProcessor,
+  @Inject
+  public ReplClientProcessorService(
+      ClientProcessor clientProcessor,
       ReplReader replReader,
       OutputWriter outputWriter,
-      boolean usePrompt) {
+      ClientConfigurations configurations) {
     this.clientProcessor = clientProcessor;
     this.replReader = replReader;
     this.outputWriter = outputWriter;
-    this.usePrompt = usePrompt;
+    this.configurations = configurations;
   }
 
   @Override
@@ -69,7 +56,7 @@ public class ReplClientProcessorService implements Runnable {
         }
       }
 
-      if (usePrompt) {
+      if (configurations.getUsePrompt()) {
         outputWriter.write(SHELL_PREFIX);
       }
       getAndProcessClientInput();

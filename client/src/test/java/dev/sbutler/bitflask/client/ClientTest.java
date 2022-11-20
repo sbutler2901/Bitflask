@@ -2,7 +2,6 @@ package dev.sbutler.bitflask.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
@@ -29,14 +28,12 @@ public class ClientTest {
   private final Injector injector = mock(Injector.class);
   private final ReplClientProcessorService replProcessor =
       mock(ReplClientProcessorService.class);
-  private final ReplClientProcessorService.Factory replFactory =
-      mock(ReplClientProcessorService.Factory.class);
 
   @BeforeEach
   void beforeEach() {
-    when(replFactory.create(any(), anyBoolean())).thenReturn(replProcessor);
-    when(injector.getInstance(ReplClientProcessorService.Factory.class))
-        .thenReturn(replFactory);
+//    when(replFactory.create(any(), anyBoolean())).thenReturn(replProcessor);
+//    when(injector.getInstance(ReplClientProcessorService.Factory.class))
+//        .thenReturn(replFactory);
   }
 
   @Test

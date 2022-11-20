@@ -42,4 +42,8 @@ public class ClientConfigurations implements Configurations {
   public int getPort() {
     return port;
   }
+
+  public boolean getUsePrompt() {
+    return inlineCommand.size() == 0;
+  }
 }
