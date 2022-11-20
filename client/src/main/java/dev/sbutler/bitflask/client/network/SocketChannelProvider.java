@@ -9,12 +9,12 @@ import java.nio.channels.SocketChannel;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
-public class SocketChannelProvider implements Provider<SocketChannel> {
+class SocketChannelProvider implements Provider<SocketChannel> {
 
   private final SocketAddress socketAddress;
 
   @Inject
-  public SocketChannelProvider(ClientConfigurations configurations) {
+  SocketChannelProvider(ClientConfigurations configurations) {
     this.socketAddress =
         new InetSocketAddress(configurations.getHost(), configurations.getPort());
   }
