@@ -30,7 +30,7 @@ public class Client implements Runnable {
   }
 
   public static void main(String[] args) {
-    ClientConfigurations configuration = initializeConfiguration(args);
+    ClientConfigurations configuration = initializeConfigurations(args);
     RespService respService;
     try {
       respService = createRespService(configuration);
@@ -48,7 +48,7 @@ public class Client implements Runnable {
     }
   }
 
-  private static ClientConfigurations initializeConfiguration(String[] args) {
+  private static ClientConfigurations initializeConfigurations(String[] args) {
     ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
     ConfigurationsBuilder configsBuilder = new ConfigurationsBuilder(args, resourceBundle);
 
