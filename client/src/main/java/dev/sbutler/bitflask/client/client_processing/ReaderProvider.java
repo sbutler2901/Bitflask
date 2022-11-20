@@ -8,12 +8,12 @@ import java.io.StringReader;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
-public class ReaderProvider implements Provider<Reader> {
+class ReaderProvider implements Provider<Reader> {
 
   private final ClientConfigurations configurations;
 
   @Inject
-  public ReaderProvider(ClientConfigurations configurations) {
+  ReaderProvider(ClientConfigurations configurations) {
     this.configurations = configurations;
   }
 

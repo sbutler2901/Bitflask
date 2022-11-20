@@ -43,6 +43,8 @@ public class ClientConfigurations implements Configurations {
     return port;
   }
 
+  // Derived configurations
+
   public boolean getUsePrompt() {
     return inlineCommand.size() == 0;
   }

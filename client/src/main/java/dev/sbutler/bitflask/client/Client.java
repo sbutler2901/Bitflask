@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.client;
 
+import com.google.inject.ConfigurationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.ProvisionException;
@@ -25,6 +26,8 @@ public class Client {
 
       replClientProcessorService.run();
     } catch (ProvisionException e) {
+      e.getErrorMessages().forEach(System.err::println);
+    } catch (ConfigurationException e) {
       e.getErrorMessages().forEach(System.err::println);
     } catch (Exception e) {
       e.printStackTrace();

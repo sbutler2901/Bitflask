@@ -10,11 +10,14 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Optional;
 import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Core implementation that reads Repl input data and converts it into usable {@link ReplElement}
  * objects.
  */
+@Singleton
 public final class ReplReader implements AutoCloseable {
 
   /**
@@ -33,6 +36,7 @@ public final class ReplReader implements AutoCloseable {
   private String peeked = "";
   private ReplToken peekedAsToken = ReplToken.START_DOCUMENT;
 
+  @Inject
   public ReplReader(Reader reader) {
     this.reader = reader;
   }
