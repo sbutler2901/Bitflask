@@ -17,6 +17,14 @@ public class ConfigurationModule extends AbstractModule {
     this.args = args;
   }
 
+  @Override
+  protected void configure() {
+    bind(ConfigurationFlagMap.class)
+        .toInstance(ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
+    bind(ResourceBundle.class)
+        .toInstance(ResourceBundle.getBundle(CONFIG_RESOURCE_BUNDLE_BASE_NAME));
+  }
+
   @Provides
   @Singleton
   ClientConfigurations provideClientConfiguration(ConfigurationsBuilder configsBuilder,
@@ -29,16 +37,5 @@ public class ConfigurationModule extends AbstractModule {
   @Provides
   ConfigurationsBuilder provideConfigurationsBuilder(ResourceBundle resourceBundle) {
     return new ConfigurationsBuilder(args, resourceBundle);
-  }
-
-  @Provides
-  ConfigurationFlagMap provideConfigurationFlagMap() {
-    return ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP;
-  }
-
-  @Provides
-  @Singleton
-  ResourceBundle provideResourceBundle() {
-    return ResourceBundle.getBundle(CONFIG_RESOURCE_BUNDLE_BASE_NAME);
   }
 }
