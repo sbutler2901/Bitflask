@@ -10,10 +10,10 @@ public class NetworkModule extends AbstractModule {
   @Override
   protected void configure() {
     bind(SocketChannel.class)
-        .toProvider(SocketChannelProviderImpl.class)
+        .toProvider(SocketChannelProvider.class)
         .in(Singleton.class);
     bind(RespService.class)
-        .toProvider(RespServiceProviderImpl.class)
+        .toProvider(RespServiceProvider.class)
         .in(Singleton.class);
   }
 }

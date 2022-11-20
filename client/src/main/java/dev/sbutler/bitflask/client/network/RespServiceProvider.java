@@ -8,12 +8,12 @@ import java.nio.channels.SocketChannel;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
-public class RespServiceProviderImpl implements Provider<RespService> {
+public class RespServiceProvider implements Provider<RespService> {
 
   private final RespService.Factory factory;
 
   @Inject
-  public RespServiceProviderImpl(SocketChannel socketChannel) {
+  public RespServiceProvider(SocketChannel socketChannel) {
     this.factory = new Factory(socketChannel);
   }
 
