@@ -2,9 +2,9 @@ package dev.sbutler.bitflask.client;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.ProvisionException;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.client.configuration.ConfigurationModule;
-import dev.sbutler.bitflask.client.network.RespServiceProvider;
 import dev.sbutler.bitflask.resp.network.RespService;
 import java.io.IOException;
 
@@ -19,19 +19,13 @@ public class Client {
 
       ReplClientProcessorService replClientProcessorService =
           injector.getInstance(ReplClientProcessorService.class);
-
-      RespService respService;
-      try {
-        respService = injector.getInstance(RespServiceProvider.class).get();
-      } catch (IOException e) {
-        System.out.println("Failure to initialize RespService");
-        e.printStackTrace();
-        return;
-      }
+      RespService respService = injector.getInstance(RespService.class);
 
       registerShutdownHook(replClientProcessorService, respService);
 
       replClientProcessorService.run();
+    } catch (ProvisionException e) {
+      e.getErrorMessages().forEach(System.err::println);
     } catch (Exception e) {
       e.printStackTrace();
     }

@@ -1,25 +1,29 @@
 package dev.sbutler.bitflask.client.network;
 
+import com.google.inject.ProvisionException;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.network.RespService.Factory;
 import java.io.IOException;
+import java.nio.channels.SocketChannel;
 import javax.inject.Inject;
+import javax.inject.Provider;
 
-public class RespServiceProviderImpl implements RespServiceProvider {
+public class RespServiceProviderImpl implements Provider<RespService> {
 
-  //  private final SocketChannel socketChannel;
-  private final SocketChannelProvider socketChannelProvider;
+  private final RespService.Factory factory;
 
   @Inject
-//  public RespServiceProviderImpl(SocketChannel socketChannel) {
-  public RespServiceProviderImpl(SocketChannelProvider socketChannelProvider) {
-//    this.socketChannel = socketChannel;
-    this.socketChannelProvider = socketChannelProvider;
+  public RespServiceProviderImpl(SocketChannel socketChannel) {
+    this.factory = new Factory(socketChannel);
   }
 
   @Override
-  public RespService get() throws IOException {
-    RespService.Factory factory = new Factory(socketChannelProvider.get());
-    return factory.create();
+  public RespService get() {
+    try {
+      return factory.create();
+    } catch (IOException e) {
+      throw new ProvisionException(
+          String.format("Failed to provision RespService: %s", e.getMessage()));
+    }
   }
 }

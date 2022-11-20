@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.client.command_processing;
 
-import dev.sbutler.bitflask.client.network.RespServiceProvider;
+import dev.sbutler.bitflask.resp.network.RespService;
 import java.io.IOException;
 import javax.inject.Inject;
 
@@ -9,11 +9,11 @@ import javax.inject.Inject;
  */
 public class RespCommandProcessor {
 
-  private final RespServiceProvider respServiceProvider;
+  private final RespService respService;
 
   @Inject
-  public RespCommandProcessor(RespServiceProvider respServiceProvider) {
-    this.respServiceProvider = respServiceProvider;
+  public RespCommandProcessor(RespService respService) {
+    this.respService = respService;
   }
 
   public String runCommand(RemoteCommand command) throws ProcessingException {
@@ -23,7 +23,7 @@ public class RespCommandProcessor {
 
   private void writeCommand(RemoteCommand command) throws ProcessingException {
     try {
-      respServiceProvider.get().write(command.getAsRespArray());
+      respService.write(command.getAsRespArray());
     } catch (IOException e) {
       throw new ProcessingException("Failed to write command", e);
     }
@@ -31,7 +31,7 @@ public class RespCommandProcessor {
 
   private String readResponse() throws ProcessingException {
     try {
-      return respServiceProvider.get().read().toString();
+      return respService.read().toString();
     } catch (IOException e) {
       throw new ProcessingException("Failed to read response", e);
     }
