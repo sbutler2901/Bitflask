@@ -12,9 +12,6 @@ import java.util.List;
  */
 public class ClientConfigurations implements Configurations {
 
-  @Parameter(description = "inline command")
-  private List<String> inlineCommand = new ArrayList<>();
-
   @Parameter(names = {
       ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT,
       ClientConfigurationsConstants.SERVER_HOST_FLAG_LONG},
@@ -31,9 +28,8 @@ public class ClientConfigurations implements Configurations {
   )
   private int port;
 
-  public List<String> getInlineCmd() {
-    return inlineCommand;
-  }
+  @Parameter(description = "inline command")
+  private List<String> inlineCommand = new ArrayList<>();
 
   public String getHost() {
     return host;
@@ -41,6 +37,10 @@ public class ClientConfigurations implements Configurations {
 
   public int getPort() {
     return port;
+  }
+
+  public List<String> getInlineCmd() {
+    return inlineCommand;
   }
 
   // Derived configurations

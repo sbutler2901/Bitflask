@@ -24,8 +24,7 @@ class SocketChannelProvider implements Provider<SocketChannel> {
     try {
       return SocketChannel.open(socketAddress);
     } catch (IOException e) {
-      throw new ProvisionException(
-          String.format("Failed to provision SocketChannel: %s", e.getMessage()));
+      throw new ProvisionException("Failed to provision SocketChannel", e);
     }
   }
 }

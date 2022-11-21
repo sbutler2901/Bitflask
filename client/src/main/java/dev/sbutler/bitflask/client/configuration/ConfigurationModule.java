@@ -27,7 +27,8 @@ public class ConfigurationModule extends AbstractModule {
 
   @Provides
   @Singleton
-  ClientConfigurations provideClientConfiguration(ConfigurationsBuilder configsBuilder,
+  ClientConfigurations provideClientConfiguration(
+      ConfigurationsBuilder configsBuilder,
       ConfigurationFlagMap flagMap) {
     ClientConfigurations configuration = new ClientConfigurations();
     configsBuilder.build(configuration, flagMap);

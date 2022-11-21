@@ -1,8 +1,7 @@
 package dev.sbutler.bitflask.client.configuration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -27,20 +26,20 @@ public class ClientConfigurationsTest {
         .build()
         .parse(argv);
     // Assert
-    assertEquals(
-        defaultProvider.getDefaultValueFor(ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT),
-        configuration.getHost());
-    assertEquals(
-        defaultProvider.getDefaultValueFor(ClientConfigurationsConstants.SERVER_HOST_FLAG_LONG),
-        configuration.getHost());
-    assertEquals(
-        Integer.parseInt(defaultProvider.getDefaultValueFor(
-            ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT)),
-        configuration.getPort());
-    assertEquals(
-        Integer.parseInt(defaultProvider.getDefaultValueFor(
-            ClientConfigurationsConstants.SERVER_PORT_FLAG_LONG)),
-        configuration.getPort());
+    assertThat(configuration.getHost())
+        .isEqualTo(defaultProvider.getDefaultValueFor(
+            ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT));
+    assertThat(configuration.getHost())
+        .isEqualTo(defaultProvider.getDefaultValueFor(
+            ClientConfigurationsConstants.SERVER_HOST_FLAG_LONG));
+    assertThat(configuration.getPort())
+        .isEqualTo(Integer.parseInt(defaultProvider.getDefaultValueFor(
+            ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT)));
+    assertThat(configuration.getPort())
+        .isEqualTo(Integer.parseInt(defaultProvider.getDefaultValueFor(
+            ClientConfigurationsConstants.SERVER_PORT_FLAG_LONG)));
+    assertThat(configuration.getInlineCmd()).hasSize(0);
+    assertThat(configuration.getUsePrompt()).isTrue();
   }
 
   @Test
@@ -61,8 +60,8 @@ public class ClientConfigurationsTest {
                 .build()
                 .parse(argv));
     // Assert
-    assertTrue(
-        exception.getMessage().contains(ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT));
+    assertThat(exception).hasMessageThat().contains(
+        ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT);
   }
 
   @Test
@@ -83,8 +82,8 @@ public class ClientConfigurationsTest {
                 .build()
                 .parse(argv));
     // Assert
-    assertTrue(
-        exception.getMessage().contains(ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT));
+    assertThat(exception).hasMessageThat().contains(
+        ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT);
   }
 
   @Test
@@ -97,7 +96,9 @@ public class ClientConfigurationsTest {
         ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT,
         "test",
         ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT,
-        "9091"};
+        "9091",
+        "get",
+        "test"};
     // Act
     JCommander.newBuilder()
         .addObject(configuration)
@@ -105,8 +106,10 @@ public class ClientConfigurationsTest {
         .build()
         .parse(argv);
     // Assert
-    assertEquals("test", configuration.getHost());
-    assertEquals(9091, configuration.getPort());
+    assertThat(configuration.getHost()).isEqualTo("test");
+    assertThat(configuration.getPort()).isEqualTo(9091);
+    assertThat(configuration.getInlineCmd()).containsExactly("get", "test");
+    assertThat(configuration.getUsePrompt()).isFalse();
   }
 
   @Test
@@ -128,8 +131,8 @@ public class ClientConfigurationsTest {
                 .parse(argv)
         );
     // Assert
-    assertTrue(
-        exception.getMessage().contains(ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT));
+    assertThat(exception).hasMessageThat().contains(
+        ClientConfigurationsConstants.SERVER_HOST_FLAG_SHORT);
   }
 
   @Test
@@ -150,7 +153,7 @@ public class ClientConfigurationsTest {
                 .build()
                 .parse(argv));
     // Assert
-    assertTrue(
-        exception.getMessage().contains(ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT));
+    assertThat(exception).hasMessageThat().contains(
+        ClientConfigurationsConstants.SERVER_PORT_FLAG_SHORT);
   }
 }

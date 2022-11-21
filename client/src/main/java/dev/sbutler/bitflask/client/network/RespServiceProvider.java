@@ -22,8 +22,7 @@ class RespServiceProvider implements Provider<RespService> {
     try {
       return factory.create();
     } catch (IOException e) {
-      throw new ProvisionException(
-          String.format("Failed to provision RespService: %s", e.getMessage()));
+      throw new ProvisionException("Failed to provision RespService", e);
     }
   }
 }
