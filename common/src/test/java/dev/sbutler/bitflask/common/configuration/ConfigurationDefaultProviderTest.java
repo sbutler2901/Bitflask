@@ -6,7 +6,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.ResourceBundle;
 import org.junit.jupiter.api.Test;
 
@@ -24,11 +23,10 @@ public class ConfigurationDefaultProviderTest {
           "propertyKey1",
           "defaultValue1");
 
-  private final ImmutableMap<String, Configuration> flagToConfigurationMap =
-      new ImmutableMap.Builder<String, Configuration>()
-          .put(firstConfiguration.flags().get(0), firstConfiguration)
-          .put(secondConfiguration.flags().get(0), secondConfiguration)
-          .put(secondConfiguration.flags().get(1), secondConfiguration)
+  private final ConfigurationFlagMap flagToConfigurationMap =
+      new ConfigurationFlagMap.Builder()
+          .putAll(firstConfiguration.flags(), firstConfiguration)
+          .putAll(secondConfiguration.flags(), secondConfiguration)
           .build();
 
   @Test

@@ -9,11 +9,11 @@ import java.util.ResourceBundle;
  */
 public class ConfigurationsBuilder {
 
-  private final String[] argv;
+  private final String[] args;
   private final ResourceBundle resourceBundle;
 
-  public ConfigurationsBuilder(String[] argv, ResourceBundle resourceBundle) {
-    this.argv = argv;
+  public ConfigurationsBuilder(String[] args, ResourceBundle resourceBundle) {
+    this.args = args;
     this.resourceBundle = resourceBundle;
   }
 
@@ -25,7 +25,7 @@ public class ConfigurationsBuilder {
         .defaultProvider(defaultProvider)
         .acceptUnknownOptions(false)
         .build()
-        .parse(argv);
+        .parse(args);
   }
 
   public void buildAcceptingUnknownOptions(Configurations configurations,
@@ -37,6 +37,6 @@ public class ConfigurationsBuilder {
         .defaultProvider(defaultProvider)
         .acceptUnknownOptions(true)
         .build()
-        .parse(argv);
+        .parse(args);
   }
 }
