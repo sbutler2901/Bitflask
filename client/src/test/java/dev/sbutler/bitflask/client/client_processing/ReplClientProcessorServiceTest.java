@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.client.client_processing;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -38,7 +39,7 @@ public class ReplClientProcessorServiceTest {
 
   @BeforeEach
   void beforeEach() {
-    when(configurations.getUsePrompt()).thenReturn(true);
+    lenient().when(configurations.getUsePrompt()).thenReturn(true);
     replClientProcessorService =
         new ReplClientProcessorService(clientProcessor, replReader, outputWriter, configurations);
   }

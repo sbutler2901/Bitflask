@@ -1,22 +1,19 @@
 package dev.sbutler.bitflask.client.client_processing;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.Mockito.mock;
-
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
-import dev.sbutler.bitflask.client.client_processing.output.StdoutOutputWriter;
+import java.io.Reader;
 import org.junit.jupiter.api.Test;
 
 public class ClientProcessingModuleTest {
 
-  private final ClientProcessingModule clientProcessingModule = new ClientProcessingModule();
+  private final Injector injector = Guice.createInjector(new ClientProcessingModule());
 
   @Test
-  void provideOutputWriter() {
-    StdoutOutputWriter stdoutOutputWriter = mock(StdoutOutputWriter.class);
-    OutputWriter outputWriter = clientProcessingModule.provideOutputWriter(stdoutOutputWriter);
-    assertEquals(stdoutOutputWriter, outputWriter);
-    assertInstanceOf(StdoutOutputWriter.class, outputWriter);
+  void configure() {
+    // Act / Assert
+    injector.getBinding(Reader.class);
+    injector.getProvider(OutputWriter.class);
   }
 }
