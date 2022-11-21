@@ -6,7 +6,13 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.channels.SocketChannel;
 
-public class RespService implements AutoCloseable {
+/**
+ * Handles reading and writing {@link RespElement}s via a {@link SocketChannel}.
+ *
+ * <p>This class is expected to assume ownership of the provided SocketChannel with the service's
+ * lifecycle tied to it. Closing this service closes the underlying SocketChannel.
+ */
+public final class RespService implements AutoCloseable {
 
   public static class Factory {
 
