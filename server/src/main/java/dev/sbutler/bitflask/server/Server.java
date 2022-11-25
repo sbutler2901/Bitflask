@@ -79,7 +79,7 @@ class Server {
   @SuppressWarnings("UnstableApiUsage")
   private static void registerShutdownHook(ServiceManager serviceManager,
       ExecutorService executorService) {
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+    Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(() -> {
       System.out.println("Starting Server shutdown hook");
       // Give the services 5 seconds to stop to ensure that we are responsive to shut down
       // requests.
