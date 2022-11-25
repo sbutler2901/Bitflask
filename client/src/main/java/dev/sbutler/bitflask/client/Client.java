@@ -37,7 +37,7 @@ public class Client {
   private static void registerShutdownHook(
       ReplClientProcessorService replClientProcessorService,
       RespService respService) {
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+    Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(() -> {
       System.out.println("Exiting...");
       replClientProcessorService.triggerShutdown();
       closeConnection(respService);

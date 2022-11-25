@@ -15,6 +15,7 @@ import com.google.inject.Injector;
 import com.google.inject.ProvisionException;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.resp.network.RespService;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
@@ -94,73 +95,23 @@ public class ClientTest {
     }
   }
 
-/*
   @Test
-  void inline() throws Exception {
-    try (MockedStatic<SocketChannel> socketChannelMockedStatic = mockStatic(SocketChannel.class);
-        MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
+  void closeConnection_throwsIoException() throws Exception {
+    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       // Arrange
-      String[] args = new String[]{"get", "test"};
-
-      SocketChannel socketChannel = mock(SocketChannel.class);
-      socketChannelMockedStatic.when(() -> SocketChannel.open(any(SocketAddress.class)))
-          .thenReturn(socketChannel);
-      setupSocketChannelMock(socketChannel);
-
+      when(injector.getInstance(ReplClientProcessorService.class))
+          .thenReturn(replProcessor);
+      when(injector.getInstance(RespService.class))
+          .thenReturn(respService);
       guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
           .thenReturn(injector);
 
+      doThrow(new IOException("test")).when(respService).close();
+
       // Act
-      Client.main(args);
+      Client.main(new String[0]);
       // Assert
       verify(replProcessor, times(1)).run();
     }
   }
-
-  @Test
-  void repl() throws Exception {
-    try (MockedStatic<SocketChannel> socketChannelMockedStatic = mockStatic(SocketChannel.class);
-        MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
-      // Arrange
-      String[] args = new String[]{};
-
-      SocketChannel socketChannel = mock(SocketChannel.class);
-      socketChannelMockedStatic.when(() -> SocketChannel.open(any(SocketAddress.class)))
-          .thenReturn(socketChannel);
-      setupSocketChannelMock(socketChannel);
-
-      guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
-          .thenReturn(injector);
-
-      // Act
-      Client.main(args);
-      // Assert
-      verify(replProcessor, times(1)).run();
-    }
-  }
-
-  @Test
-  void socketChannel_IOException() {
-    try (MockedStatic<SocketChannel> socketChannelMockedStatic = mockStatic(SocketChannel.class);
-        MockedConstruction<Client> clientMockedConstruction = mockConstruction(Client.class)) {
-      // Arrange
-      String[] args = new String[]{};
-      socketChannelMockedStatic.when(() -> SocketChannel.open(any(SocketAddress.class)))
-          .thenThrow(IOException.class);
-      // Act
-      Client.main(args);
-      // Assert
-      assertEquals(0, clientMockedConstruction.constructed().size());
-    }
-  }
-
-  private static void setupSocketChannelMock(SocketChannel socketChannel) throws Exception {
-    Socket socket = mock(Socket.class);
-    when(socketChannel.socket()).thenReturn(socket);
-    InputStream inputStream = mock(InputStream.class);
-    OutputStream outputStream = mock(OutputStream.class);
-    when(socket.getInputStream()).thenReturn(inputStream);
-    when(socket.getOutputStream()).thenReturn(outputStream);
-  }
-*/
 }
