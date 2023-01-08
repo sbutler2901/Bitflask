@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import dev.sbutler.bitflask.client.client_processing.ClientProcessingModule;
-import dev.sbutler.bitflask.client.network.NetworkModule;
 
 public class ClientModule extends AbstractModule {
 
@@ -17,7 +16,6 @@ public class ClientModule extends AbstractModule {
   @Override
   protected void configure() {
     runtimeModules.forEach(this::install);
-    install(new NetworkModule());
     install(new ClientProcessingModule());
   }
 
