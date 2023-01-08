@@ -4,9 +4,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.sbutler.bitflask.common.io.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.configuration.concurrency.ConcurrencyModule;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
+import java.util.concurrent.ThreadFactory;
 import javax.inject.Singleton;
 
 public class StorageServiceModule extends AbstractModule {
@@ -24,17 +23,7 @@ public class StorageServiceModule extends AbstractModule {
   }
 
   public static StorageServiceModule getInstance() {
-    if (storageConfigurations == null) {
-      throw new IllegalStateException(
-          "The StorageServiceModule must have the StorageConfigurations set before it can be used");
-    }
     return instance;
-  }
-
-  @Override
-  protected void configure() {
-    super.configure();
-    install(ConcurrencyModule.getInstance());
   }
 
   @Provides
@@ -54,7 +43,7 @@ public class StorageServiceModule extends AbstractModule {
   }
 
   @Provides
-  FilesHelper provideFilesHelper(StorageThreadFactory storageThreadFactory) {
-    return new FilesHelper(storageThreadFactory);
+  FilesHelper provideFilesHelper(ThreadFactory threadFactory) {
+    return new FilesHelper(threadFactory);
   }
 }

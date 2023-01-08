@@ -18,10 +18,6 @@ public class ServerModule extends AbstractModule {
   }
 
   public static ServerModule getInstance() {
-    if (serverConfigurations == null) {
-      throw new IllegalStateException(
-          "The ServerModule must have the ServerConfigurations set before it can be used");
-    }
     return instance;
   }
 
@@ -36,4 +32,5 @@ public class ServerModule extends AbstractModule {
   ServerConfigurations provideServerConfiguration() {
     return serverConfigurations;
   }
+
 }

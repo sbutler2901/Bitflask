@@ -4,6 +4,7 @@ import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTe
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.Service;
 import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
@@ -21,7 +22,6 @@ import dev.sbutler.bitflask.storage.configuration.StorageConfigurationsConstants
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ResourceBundle;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nonnull;
@@ -40,23 +40,27 @@ class Server {
   }
 
   public static void main(String[] args) {
-    executionStarted = Instant.now();
-    printConfigInfo();
-    initializeConfigurations(args);
-    Injector injector = Guice.createInjector(ServerModule.getInstance());
-    ImmutableSet<Service> services = ImmutableSet.of(
-        injector.getInstance(StorageService.class),
-        injector.getInstance(NetworkService.class)
-    );
-    ServiceManager serviceManager = new ServiceManager(services);
-    ExecutorService executorService = injector.getInstance(ExecutorService.class);
-    addServiceManagerListener(serviceManager, executorService);
-    registerShutdownHook(serviceManager, executorService);
-    serviceManager.startAsync();
+    try {
+      executionStarted = Instant.now();
+      printConfigInfo();
+      initializeConfigurations(args);
+      Injector injector = Guice.createInjector(ServerModule.getInstance());
+      ImmutableSet<Service> services = ImmutableSet.of(
+          injector.getInstance(StorageService.class),
+          injector.getInstance(NetworkService.class));
+      ServiceManager serviceManager = new ServiceManager(services);
+      ListeningExecutorService listeningExecutorService =
+          injector.getInstance(ListeningExecutorService.class);
+      addServiceManagerListener(serviceManager, listeningExecutorService);
+      registerShutdownHook(serviceManager, listeningExecutorService);
+      serviceManager.startAsync();
+    } catch (Exception e) {
+      logger.atSevere().withCause(e).log("Server catastrophic failure");
+    }
   }
 
   private static void addServiceManagerListener(ServiceManager serviceManager,
-      ExecutorService executorService) {
+      ListeningExecutorService listeningExecutorService) {
     serviceManager.addListener(
         new Listener() {
           public void stopped() {
@@ -73,12 +77,12 @@ class Server {
                 .log("[%s] failed.", service.getClass());
             serviceManager.stopAsync();
           }
-        }, executorService);
+        }, listeningExecutorService);
   }
 
   @SuppressWarnings("UnstableApiUsage")
   private static void registerShutdownHook(ServiceManager serviceManager,
-      ExecutorService executorService) {
+      ListeningExecutorService listeningExecutorService) {
     Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(() -> {
       System.out.println("Starting Server shutdown hook");
       // Give the services 5 seconds to stop to ensure that we are responsive to shut down
@@ -89,7 +93,7 @@ class Server {
         // stopping timed out
         System.err.println("ServiceManager timed out while stopping" + timeout);
       }
-      shutdownAndAwaitTermination(executorService, Duration.ofSeconds(5));
+      shutdownAndAwaitTermination(listeningExecutorService, Duration.ofSeconds(5));
       System.out.println("Shutdown hook completed");
     }));
   }

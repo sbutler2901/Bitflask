@@ -10,7 +10,6 @@ import com.google.mu.util.stream.BiStream;
 import dev.sbutler.bitflask.common.concurrency.StructuredTaskScopeUtils;
 import dev.sbutler.bitflask.common.io.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
@@ -21,6 +20,7 @@ import java.util.Comparator;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import javax.inject.Inject;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
@@ -30,15 +30,15 @@ final class SegmentLoader {
 
   private final SegmentFactory segmentFactory;
   private final SegmentFile.Factory segmentFileFactory;
-  private final StorageThreadFactory storageThreadFactory;
+  private final ThreadFactory threadFactory;
   private final FilesHelper filesHelper;
   private final Path storeDirectoryPath;
 
   @Inject
   SegmentLoader(SegmentFactory segmentFactory, SegmentFile.Factory segmentFileFactory,
-      StorageThreadFactory storageThreadFactory, FilesHelper filesHelper,
+      ThreadFactory threadFactory, FilesHelper filesHelper,
       StorageConfigurations storageConfigurations) {
-    this.storageThreadFactory = storageThreadFactory;
+    this.threadFactory = threadFactory;
     this.segmentFactory = segmentFactory;
     this.segmentFileFactory = segmentFileFactory;
     this.filesHelper = filesHelper;
@@ -216,7 +216,7 @@ final class SegmentLoader {
       ImmutableList<SegmentFile> segmentFiles) throws InterruptedException {
     ImmutableMap.Builder<SegmentFile, Future<Segment>> segmentFileFutureSegmentMap = new ImmutableMap.Builder<>();
     try (var scope = new StructuredTaskScope.ShutdownOnFailure("create-segments",
-        storageThreadFactory)) {
+        threadFactory)) {
       for (SegmentFile segmentFile : segmentFiles) {
         Callable<Segment> segmentCallable = () -> segmentFactory.createSegmentFromFile(segmentFile);
         segmentFileFutureSegmentMap.put(segmentFile, scope.fork(segmentCallable));

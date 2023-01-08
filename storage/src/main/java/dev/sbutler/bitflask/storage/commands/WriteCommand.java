@@ -19,15 +19,15 @@ public class WriteCommand implements StorageCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ListeningExecutorService executorService;
+  private final ListeningExecutorService listeningExecutorService;
   private final SegmentManagerService segmentManagerService;
   private final WriteDTO writeDTO;
 
   public WriteCommand(
-      ListeningExecutorService executorService,
+      ListeningExecutorService listeningExecutorService,
       SegmentManagerService segmentManagerService,
       WriteDTO writeDTO) {
-    this.executorService = executorService;
+    this.listeningExecutorService = listeningExecutorService;
     this.segmentManagerService = segmentManagerService;
     this.writeDTO = writeDTO;
   }
@@ -35,7 +35,7 @@ public class WriteCommand implements StorageCommand {
   @Override
   public ListenableFuture<StorageResponse> execute() {
     logger.atInfo().log("Submitting write for [%s] : [%s]", writeDTO.key(), writeDTO.value());
-    return Futures.submit(this::write, executorService);
+    return Futures.submit(this::write, listeningExecutorService);
   }
 
   private StorageResponse write() {

@@ -6,7 +6,6 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.Encoder.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
@@ -21,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import jdk.incubator.concurrent.StructuredTaskScope;
@@ -60,12 +60,12 @@ final class SegmentCompactor {
   static class Factory {
 
     private final SegmentFactory segmentFactory;
-    private final StorageThreadFactory storageThreadFactory;
+    private final ThreadFactory threadFactory;
 
     @Inject
-    Factory(SegmentFactory segmentFactory, StorageThreadFactory storageThreadFactory) {
+    Factory(SegmentFactory segmentFactory, ThreadFactory threadFactory) {
       this.segmentFactory = segmentFactory;
-      this.storageThreadFactory = storageThreadFactory;
+      this.threadFactory = threadFactory;
     }
 
     /**
@@ -76,21 +76,21 @@ final class SegmentCompactor {
      * @return the created SegmentCompactor
      */
     SegmentCompactor create(ImmutableList<Segment> segmentsToBeCompacted) {
-      return new SegmentCompactor(segmentFactory, storageThreadFactory, segmentsToBeCompacted);
+      return new SegmentCompactor(segmentFactory, threadFactory, segmentsToBeCompacted);
     }
   }
 
   private final SegmentFactory segmentFactory;
-  private final StorageThreadFactory storageThreadFactory;
+  private final ThreadFactory threadFactory;
   private final ImmutableList<Segment> segmentsToBeCompacted;
 
   private final AtomicBoolean compactionStarted = new AtomicBoolean();
 
   private SegmentCompactor(SegmentFactory segmentFactory,
-      StorageThreadFactory storageThreadFactory,
+      ThreadFactory threadFactory,
       ImmutableList<Segment> segmentsToBeCompacted) {
     this.segmentFactory = segmentFactory;
-    this.storageThreadFactory = storageThreadFactory;
+    this.threadFactory = threadFactory;
     this.segmentsToBeCompacted = segmentsToBeCompacted;
   }
 
@@ -160,7 +160,7 @@ final class SegmentCompactor {
   private ImmutableMap<String, String> createKeyValueMap(
       ImmutableMap<String, Segment> keySegmentMap) throws InterruptedException, ExecutionException {
     try (var scope = new StructuredTaskScope.ShutdownOnFailure("compaction-key-value-map-scope",
-        storageThreadFactory)) {
+        threadFactory)) {
       ImmutableList<Future<Entry<String, String>>> taskFutures =
           keySegmentMap.entrySet().stream()
               .map(this::createKeyValueCallable)

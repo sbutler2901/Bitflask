@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -104,8 +105,9 @@ public class DispatcherTest {
     // Arrange
     ListenableFuture<Integer> responseFuture = dispatcher.put(1);
     // Act
-    DispatcherSubmission<Integer, Integer> submission = dispatcher.poll(1, TimeUnit.SECONDS);
-    submission.responseFuture().set(2);
+    Optional<DispatcherSubmission<Integer, Integer>> submission = dispatcher.poll(1,
+        TimeUnit.SECONDS);
+    submission.get().responseFuture().set(2);
     // Assert
     assertTrue(responseFuture.isDone());
     assertEquals(2, responseFuture.get());

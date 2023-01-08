@@ -20,15 +20,15 @@ public class DeleteCommand implements StorageCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ListeningExecutorService executorService;
+  private final ListeningExecutorService listeningExecutorService;
   private final SegmentManagerService segmentManagerService;
   private final DeleteDTO deleteDTO;
 
   public DeleteCommand(
-      ListeningExecutorService executorService,
+      ListeningExecutorService listeningExecutorService,
       SegmentManagerService segmentManagerService,
       DeleteDTO deleteDTO) {
-    this.executorService = executorService;
+    this.listeningExecutorService = listeningExecutorService;
     this.segmentManagerService = segmentManagerService;
     this.deleteDTO = deleteDTO;
   }
@@ -36,7 +36,7 @@ public class DeleteCommand implements StorageCommand {
   @Override
   public ListenableFuture<StorageResponse> execute() {
     logger.atInfo().log("Submitting delete for [%s]", deleteDTO.key());
-    return Futures.submit(this::delete, executorService);
+    return Futures.submit(this::delete, listeningExecutorService);
   }
 
   private StorageResponse delete() {

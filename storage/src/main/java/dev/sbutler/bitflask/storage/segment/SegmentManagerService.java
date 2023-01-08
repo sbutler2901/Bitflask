@@ -10,7 +10,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import java.io.IOException;
@@ -48,7 +47,7 @@ public final class SegmentManagerService extends AbstractService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ListeningExecutorService executorService;
+  private final ListeningExecutorService listeningExecutorService;
   private final SegmentFactory segmentFactory;
   private final SegmentCompactor.Factory segmentCompactorFactory;
   private final SegmentDeleter.Factory segmentDeleterFactory;
@@ -67,13 +66,13 @@ public final class SegmentManagerService extends AbstractService {
 
   @Inject
   SegmentManagerService(
-      @StorageExecutorService ListeningExecutorService executorService,
+      ListeningExecutorService listeningExecutorService,
       SegmentFactory segmentFactory,
       SegmentCompactor.Factory segmentCompactorFactory,
       SegmentDeleter.Factory segmentDeleterFactory,
       SegmentLoader segmentLoader,
       StorageConfigurations storageConfigurations) {
-    this.executorService = executorService;
+    this.listeningExecutorService = listeningExecutorService;
     this.segmentFactory = segmentFactory;
     this.segmentCompactorFactory = segmentCompactorFactory;
     this.segmentDeleterFactory = segmentDeleterFactory;
@@ -94,7 +93,7 @@ public final class SegmentManagerService extends AbstractService {
         notifyFailed(e);
       }
       notifyStarted();
-    }, executorService);
+    }, listeningExecutorService);
   }
 
   @Override
@@ -107,7 +106,7 @@ public final class SegmentManagerService extends AbstractService {
       } finally {
         notifyStopped();
       }
-    }, executorService);
+    }, listeningExecutorService);
   }
 
   ManagedSegments getManagedSegments() {
@@ -135,7 +134,7 @@ public final class SegmentManagerService extends AbstractService {
   private void segmentSizeLimitExceededConsumer(Segment segment) {
     try {
       ListenableFuture<Void> sizeLimitFuture =
-          Futures.submit(createSizeLimitTask(segment), executorService);
+          Futures.submit(createSizeLimitTask(segment), listeningExecutorService);
       registerSizeLimitTaskCallback(sizeLimitFuture);
     } catch (RejectedExecutionException e) {
       logger.atSevere().withCause(e)
@@ -182,7 +181,7 @@ public final class SegmentManagerService extends AbstractService {
             .log("Failed to execute size limit exceeded task");
         notifyFailed(t);
       }
-    }, executorService);
+    }, listeningExecutorService);
   }
 
   /**

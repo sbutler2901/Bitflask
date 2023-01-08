@@ -2,12 +2,12 @@ package dev.sbutler.bitflask.storage.segment;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Success;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import jdk.incubator.concurrent.StructuredTaskScope;
@@ -50,11 +50,11 @@ final class SegmentDeleter {
    */
   static class Factory {
 
-    private final StorageThreadFactory storageThreadFactory;
+    private final ThreadFactory threadFactory;
 
     @Inject
-    Factory(StorageThreadFactory storageThreadFactory) {
-      this.storageThreadFactory = storageThreadFactory;
+    Factory(ThreadFactory threadFactory) {
+      this.threadFactory = threadFactory;
     }
 
     /**
@@ -64,18 +64,18 @@ final class SegmentDeleter {
      * @return the created SegmentDeleter
      */
     SegmentDeleter create(ImmutableList<Segment> segmentsToBeDeleted) {
-      return new SegmentDeleter(storageThreadFactory, segmentsToBeDeleted);
+      return new SegmentDeleter(threadFactory, segmentsToBeDeleted);
     }
   }
 
-  private final StorageThreadFactory storageThreadFactory;
+  private final ThreadFactory threadFactory;
   private final ImmutableList<Segment> segmentsToBeDeleted;
 
   private final AtomicBoolean deletionStarted = new AtomicBoolean();
 
-  private SegmentDeleter(StorageThreadFactory storageThreadFactory,
+  private SegmentDeleter(ThreadFactory threadFactory,
       ImmutableList<Segment> segmentsToBeDeleted) {
-    this.storageThreadFactory = storageThreadFactory;
+    this.threadFactory = threadFactory;
     this.segmentsToBeDeleted = segmentsToBeDeleted;
   }
 
@@ -114,7 +114,7 @@ final class SegmentDeleter {
    */
   private ImmutableMap<Segment, Future<Void>> closeAndDeleteSegments() throws Exception {
     try (var scope = new StructuredTaskScope<>("deletion-close-delete-scope",
-        storageThreadFactory)) {
+        threadFactory)) {
       ImmutableMap.Builder<Segment, Future<Void>> segmentDeletionFutureMap = ImmutableMap.builder();
       for (Segment segment : segmentsToBeDeleted) {
         Future<Void> closeAndDeleteFuture = scope.fork(() -> {

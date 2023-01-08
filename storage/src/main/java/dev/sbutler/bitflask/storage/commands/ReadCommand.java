@@ -21,15 +21,15 @@ public class ReadCommand implements StorageCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ListeningExecutorService executorService;
+  private final ListeningExecutorService listeningExecutorService;
   private final SegmentManagerService segmentManagerService;
   private final ReadDTO readDTO;
 
   public ReadCommand(
-      ListeningExecutorService executorService,
+      ListeningExecutorService listeningExecutorService,
       SegmentManagerService segmentManagerService,
       ReadDTO readDTO) {
-    this.executorService = executorService;
+    this.listeningExecutorService = listeningExecutorService;
     this.segmentManagerService = segmentManagerService;
     this.readDTO = readDTO;
   }
@@ -37,7 +37,7 @@ public class ReadCommand implements StorageCommand {
   @Override
   public ListenableFuture<StorageResponse> execute() {
     logger.atInfo().log("Submitting read for [%s]", readDTO.key());
-    return Futures.submit(this::read, executorService);
+    return Futures.submit(this::read, listeningExecutorService);
   }
 
   private StorageResponse read() {

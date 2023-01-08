@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.common.dispatcher;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import java.util.Optional;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -75,8 +76,9 @@ public abstract class Dispatcher<C, R> {
   /**
    * Retrieves the next submission waiting for the provided time if empty
    */
-  public DispatcherSubmission<C, R> poll(long timeout, TimeUnit unit) throws InterruptedException {
-    return submissions.pollFirst(timeout, unit);
+  public Optional<DispatcherSubmission<C, R>> poll(long timeout, TimeUnit unit)
+      throws InterruptedException {
+    return Optional.ofNullable(submissions.pollFirst(timeout, unit));
   }
 
   /**

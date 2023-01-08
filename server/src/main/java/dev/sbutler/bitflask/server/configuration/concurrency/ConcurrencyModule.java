@@ -1,16 +1,18 @@
 package dev.sbutler.bitflask.server.configuration.concurrency;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import javax.inject.Singleton;
 
 public class ConcurrencyModule extends AbstractModule {
 
   private static final ConcurrencyModule instance = new ConcurrencyModule();
 
-  private ExecutorService executorService;
+  private ListeningExecutorService listeningExecutorService;
 
   private ConcurrencyModule() {
   }
@@ -21,10 +23,16 @@ public class ConcurrencyModule extends AbstractModule {
 
   @Provides
   @Singleton
-  ExecutorService provideExecutorService(ServerThreadFactory serverThreadFactory) {
-    if (executorService == null) {
-      executorService = Executors.newThreadPerTaskExecutor(serverThreadFactory);
+  ListeningExecutorService provideExecutorService(ServerThreadFactory serverThreadFactory) {
+    if (listeningExecutorService == null) {
+      listeningExecutorService = MoreExecutors.listeningDecorator(
+          Executors.newThreadPerTaskExecutor(serverThreadFactory));
     }
-    return executorService;
+    return listeningExecutorService;
+  }
+
+  @Provides
+  ThreadFactory provideThreadFactory(ServerThreadFactory serverThreadFactory) {
+    return serverThreadFactory;
   }
 }

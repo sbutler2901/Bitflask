@@ -4,7 +4,6 @@ import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.resp.network.RespService;
 import java.io.Closeable;
 import java.io.IOException;
-import javax.inject.Inject;
 
 /**
  * Handles the processing of a specific client including messages and network resources.
@@ -18,10 +17,15 @@ public class ClientHandlingService implements Runnable, Closeable {
 
   private volatile boolean shouldContinueRunning = true;
 
-  @Inject
-  ClientHandlingService(RespService respService, ClientMessageProcessor clientMessageProcessor) {
+  private ClientHandlingService(RespService respService,
+      ClientMessageProcessor clientMessageProcessor) {
     this.respService = respService;
     this.clientMessageProcessor = clientMessageProcessor;
+  }
+
+  public static ClientHandlingService create(RespService respService,
+      ClientMessageProcessor clientMessageProcessor) {
+    return new ClientHandlingService(respService, clientMessageProcessor);
   }
 
   @Override

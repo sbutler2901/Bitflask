@@ -26,8 +26,21 @@ public class ClientMessageProcessor {
   private final CommandProcessingService commandProcessingService;
   private final RespService respService;
 
-  @Inject
-  ClientMessageProcessor(CommandProcessingService commandProcessingService,
+  public static final class Factory {
+
+    private final CommandProcessingService commandProcessingService;
+
+    @Inject
+    Factory(CommandProcessingService commandProcessingService) {
+      this.commandProcessingService = commandProcessingService;
+    }
+
+    public ClientMessageProcessor create(RespService respService) {
+      return new ClientMessageProcessor(commandProcessingService, respService);
+    }
+  }
+
+  private ClientMessageProcessor(CommandProcessingService commandProcessingService,
       RespService respService) {
     this.commandProcessingService = commandProcessingService;
     this.respService = respService;

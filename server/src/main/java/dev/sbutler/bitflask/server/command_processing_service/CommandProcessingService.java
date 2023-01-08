@@ -4,10 +4,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 
 /**
@@ -16,13 +16,13 @@ import javax.inject.Inject;
  */
 public class CommandProcessingService {
 
-  private final ExecutorService executorService;
+  private final ListeningExecutorService listeningExecutorService;
   private final StorageCommandDispatcher storageCommandDispatcher;
 
   @Inject
-  CommandProcessingService(ExecutorService executorService,
+  CommandProcessingService(ListeningExecutorService listeningExecutorService,
       StorageCommandDispatcher storageCommandDispatcher) {
-    this.executorService = executorService;
+    this.listeningExecutorService = listeningExecutorService;
     this.storageCommandDispatcher = storageCommandDispatcher;
   }
 
@@ -58,10 +58,11 @@ public class CommandProcessingService {
   private ServerCommand createCommand(CommandType commandType, ImmutableList<String> args) {
     return switch (commandType) {
       case PING -> new PingCommand();
-      case GET -> new GetCommand(executorService, storageCommandDispatcher, args.get(0));
-      case SET ->
-          new SetCommand(executorService, storageCommandDispatcher, args.get(0), args.get(1));
-      case DEL -> new DeleteCommand(executorService, storageCommandDispatcher, args.get(0));
+      case GET -> new GetCommand(listeningExecutorService, storageCommandDispatcher, args.get(0));
+      case SET -> new SetCommand(listeningExecutorService, storageCommandDispatcher, args.get(0),
+          args.get(1));
+      case DEL ->
+          new DeleteCommand(listeningExecutorService, storageCommandDispatcher, args.get(0));
     };
   }
 

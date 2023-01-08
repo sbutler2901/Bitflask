@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.storage.commands;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
@@ -14,23 +13,25 @@ import javax.inject.Inject;
  */
 public class CommandMapper {
 
-  private final ListeningExecutorService executorService;
+  private final ListeningExecutorService listeningExecutorService;
   private final SegmentManagerService segmentManagerService;
 
   @Inject
-  public CommandMapper(@StorageExecutorService ListeningExecutorService executorService,
+  public CommandMapper(ListeningExecutorService listeningExecutorService,
       SegmentManagerService segmentManagerService) {
-    this.executorService = executorService;
+    this.listeningExecutorService = listeningExecutorService;
     this.segmentManagerService = segmentManagerService;
   }
 
   public StorageCommand mapToCommand(StorageCommandDTO commandDTO) {
     // TODO: provide segment manager service to commands
     return switch (commandDTO) {
-      case ReadDTO readDTO -> new ReadCommand(executorService, segmentManagerService, readDTO);
-      case WriteDTO writeDTO -> new WriteCommand(executorService, segmentManagerService, writeDTO);
+      case ReadDTO readDTO ->
+          new ReadCommand(listeningExecutorService, segmentManagerService, readDTO);
+      case WriteDTO writeDTO ->
+          new WriteCommand(listeningExecutorService, segmentManagerService, writeDTO);
       case DeleteDTO deleteDTO ->
-          new DeleteCommand(executorService, segmentManagerService, deleteDTO);
+          new DeleteCommand(listeningExecutorService, segmentManagerService, deleteDTO);
     };
   }
 }
