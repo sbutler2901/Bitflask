@@ -5,7 +5,6 @@ import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.resp.network.RespService;
-import dev.sbutler.bitflask.resp.network.RespService.Factory;
 import dev.sbutler.bitflask.server.configuration.ServerConfigurations;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientMessageProcessor;
@@ -83,8 +82,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   private ClientHandlingService createClientHandlingService(SocketChannel socketChannel)
       throws IOException {
-    RespService.Factory respServiceFactory = new Factory(socketChannel);
-    RespService respService = respServiceFactory.create();
+    RespService respService = RespService.create(socketChannel);
     ClientMessageProcessor clientMessageProcessor =
         clientMessageProcessorFactory.create(respService);
     return ClientHandlingService.create(respService, clientMessageProcessor);

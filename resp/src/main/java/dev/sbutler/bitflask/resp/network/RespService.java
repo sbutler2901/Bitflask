@@ -14,22 +14,6 @@ import java.nio.channels.SocketChannel;
  */
 public final class RespService implements AutoCloseable {
 
-  public static class Factory {
-
-    private final SocketChannel socketChannel;
-
-    public Factory(SocketChannel socketChannel) {
-      this.socketChannel = socketChannel;
-    }
-
-    public RespService create() throws IOException {
-      Reader socketReader = new InputStreamReader(socketChannel.socket().getInputStream());
-      RespReader respReader = new RespReader(socketReader);
-      RespWriter respWriter = new RespWriter(socketChannel.socket().getOutputStream());
-      return new RespService(socketChannel, respReader, respWriter);
-    }
-  }
-
   private final SocketChannel socketChannel;
   private final RespReader respReader;
   private final RespWriter respWriter;
@@ -38,6 +22,13 @@ public final class RespService implements AutoCloseable {
     this.socketChannel = socketChannel;
     this.respReader = respReader;
     this.respWriter = respWriter;
+  }
+
+  public static RespService create(SocketChannel socketChannel) throws IOException {
+    Reader socketReader = new InputStreamReader(socketChannel.socket().getInputStream());
+    RespReader respReader = new RespReader(socketReader);
+    RespWriter respWriter = new RespWriter(socketChannel.socket().getOutputStream());
+    return new RespService(socketChannel, respReader, respWriter);
   }
 
   public RespElement read() throws IOException {
