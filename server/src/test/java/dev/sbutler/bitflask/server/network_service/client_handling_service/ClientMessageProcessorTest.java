@@ -116,7 +116,7 @@ public class ClientMessageProcessorTest {
     assertFalse(processingSuccessful);
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(1)).processCommandMessage(any());
-    verify(respService, times(1)).write(any(RespElement.class));
+    verify(respService, times(0)).write(any(RespElement.class));
   }
 
   @Test
@@ -134,7 +134,7 @@ public class ClientMessageProcessorTest {
     assertFalse(processingSuccessful);
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(1)).processCommandMessage(any());
-    verify(respService, times(1)).write(any(RespElement.class));
+    verify(respService, times(0)).write(any(RespElement.class));
   }
 
   @Test

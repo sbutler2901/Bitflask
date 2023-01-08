@@ -34,7 +34,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
   private ServerSocketChannel serverSocketChannel;
   private Injector parentInjector;
   private final Set<ClientHandlingService> runningClientHandlingServices = new HashSet<>();
-  private volatile boolean isRunning = true;
+  private volatile boolean shouldContinueRunning = true;
 
   @Inject
   NetworkService(ExecutorService executorService, ServerConfigurations serverConfigurations) {
@@ -53,8 +53,11 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   @Override
   protected void run() throws IOException {
-    while (isRunning && serverSocketChannel.isOpen()) {
+    while (shouldContinueRunning && serverSocketChannel.isOpen()) {
       acceptAndExecuteNextClientConnection();
+      if (Thread.currentThread().isInterrupted()) {
+        triggerShutdown();
+      }
     }
   }
 
@@ -77,16 +80,16 @@ public final class NetworkService extends AbstractExecutionThreadService {
   }
 
   private void submitClientHandlingService(ClientHandlingService clientHandlingService) {
+    runningClientHandlingServices.add(clientHandlingService);
     Futures.submit(clientHandlingService, executorService)
         .addListener(() -> runningClientHandlingServices.remove(clientHandlingService),
             executorService);
-    runningClientHandlingServices.add(clientHandlingService);
   }
 
   @SuppressWarnings("UnstableApiUsage")
   @Override
   protected void triggerShutdown() {
-    isRunning = false;
+    shouldContinueRunning = false;
     try {
       serverSocketChannel.close();
     } catch (IOException e) {

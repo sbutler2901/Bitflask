@@ -36,7 +36,7 @@ public final class StorageService extends AbstractService implements Runnable {
   private final ListeningExecutorService executorService;
   private final StorageCommandDispatcher commandDispatcher;
   private final CommandMapper commandMapper;
-  private volatile boolean isRunning = true;
+  private volatile boolean shouldContinueRunning = true;
 
   @Inject
   public StorageService(@StorageExecutorService ListeningExecutorService executorService,
@@ -65,7 +65,7 @@ public final class StorageService extends AbstractService implements Runnable {
   @Override
   public void run() {
     try {
-      while (isRunning) {
+      while (shouldContinueRunning && !Thread.currentThread().isInterrupted()) {
         // TODO: bound executor task acceptance
         DispatcherSubmission<StorageCommandDTO, StorageResponse> submission =
             commandDispatcher.poll(1, TimeUnit.SECONDS);
@@ -87,7 +87,7 @@ public final class StorageService extends AbstractService implements Runnable {
   @SuppressWarnings("UnstableApiUsage")
   @Override
   protected void doStop() {
-    isRunning = false;
+    shouldContinueRunning = false;
     commandDispatcher.closeAndDrain();
     stopServices();
     shutdownAndAwaitTermination(executorService, Duration.ofSeconds(5));

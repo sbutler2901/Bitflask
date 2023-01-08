@@ -52,5 +52,4 @@ public class ClientHandlingService implements Runnable, Closeable {
       logger.atSevere().withCause(e).log("Failed to correctly terminate the client session");
     }
   }
-
 }
