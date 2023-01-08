@@ -13,8 +13,8 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -22,7 +22,7 @@ import javax.inject.Singleton;
  * Handles accepting incoming client requests and submitting them for processing.
  */
 @Singleton
-public final class NetworkService extends AbstractExecutionThreadService {
+public final class NetworkService extends AbstractExecutionThreadService implements AutoCloseable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -31,8 +31,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
   private final ServerConfigurations serverConfigurations;
 
   private ServerSocketChannel serverSocketChannel;
-  private final Set<ClientHandlingService> runningClientHandlingServices = new HashSet<>();
-  private volatile boolean shouldContinueRunning = true;
+  private final Set<ClientHandlingService> runningClientHandlingServices = ConcurrentHashMap.newKeySet();
 
   @Inject
   NetworkService(ListeningExecutorService listeningExecutorService,
@@ -45,9 +44,8 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   @Override
   protected void startUp() throws IOException {
-    logger.atFine().log("NetworkService: startUp start");
     this.serverSocketChannel = createServerSocketChannel();
-    logger.atFine().log("NetworkService: startUp end");
+    registerShutdownListener();
   }
 
   private ServerSocketChannel createServerSocketChannel() throws IOException {
@@ -59,15 +57,13 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   @Override
   protected void run() throws IOException {
-    logger.atFine().log("NetworkService: starting run");
-    while (shouldContinueRunning && serverSocketChannel.isOpen()
+    while (isRunning() && serverSocketChannel.isOpen()
         && !Thread.currentThread().isInterrupted()) {
-      acceptAndExecuteNextClientConnection();
+      acceptNextClientConnection();
     }
-    logger.atFine().log("NetworkService: stopping run");
   }
 
-  private void acceptAndExecuteNextClientConnection() throws IOException {
+  private void acceptNextClientConnection() throws IOException {
     try {
       SocketChannel socketChannel = serverSocketChannel.accept();
       logger.atInfo()
@@ -91,19 +87,28 @@ public final class NetworkService extends AbstractExecutionThreadService {
   private void submitClientHandlingService(ClientHandlingService clientHandlingService) {
     runningClientHandlingServices.add(clientHandlingService);
     Futures.submit(clientHandlingService, listeningExecutorService)
-        .addListener(() -> runningClientHandlingServices.remove(clientHandlingService),
+        .addListener(
+            () -> runningClientHandlingServices.remove(clientHandlingService),
             listeningExecutorService);
   }
 
-  @SuppressWarnings("UnstableApiUsage")
-  @Override
-  protected void triggerShutdown() {
-    logger.atInfo().log("NetworkService: shutdown triggered");
-    shouldContinueRunning = false;
+  private void registerShutdownListener() {
+    this.addListener(new Listener() {
+      @SuppressWarnings("NullableProblems")
+      @Override
+      public void stopping(State from) {
+        super.stopping(from);
+        close();
+      }
+    }, listeningExecutorService);
+  }
+
+  public void close() {
     try {
       serverSocketChannel.close();
     } catch (IOException e) {
-      System.err.println("Error closing NetworkService's ServerSocketChannel" + e);
+      logger.atWarning().withCause(e)
+          .log("Error closing NetworkService's ServerSocketChannel");
     }
     runningClientHandlingServices.forEach(ClientHandlingService::close);
   }

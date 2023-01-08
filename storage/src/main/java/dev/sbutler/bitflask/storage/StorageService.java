@@ -1,7 +1,5 @@
 package dev.sbutler.bitflask.storage;
 
-import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
@@ -14,7 +12,6 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -33,7 +30,6 @@ public final class StorageService extends AbstractExecutionThreadService {
   private final ListeningExecutorService listeningExecutorService;
   private final StorageCommandDispatcher commandDispatcher;
   private final CommandMapper commandMapper;
-  private volatile boolean shouldContinueRunning = true;
 
   @Inject
   public StorageService(ListeningExecutorService listeningExecutorService,
@@ -47,23 +43,18 @@ public final class StorageService extends AbstractExecutionThreadService {
 
   @Override
   protected void startUp() {
-    logger.atFine().log("StorageService: startUp start");
     serviceManager.startAsync();
     registerShutdownListener();
     serviceManager.awaitHealthy();
-    logger.atFine().log("StorageService: startUp end");
   }
 
   @Override
   public void run() throws Exception {
-    logger.atFine().log("StorageService: starting run");
-    while (shouldContinueRunning && !Thread.currentThread().isInterrupted()) {
+    while (isRunning() && !Thread.currentThread().isInterrupted()) {
       Optional<DispatcherSubmission<StorageCommandDTO, StorageResponse>> submission =
           commandDispatcher.poll(1, TimeUnit.SECONDS);
       submission.ifPresent(this::processSubmission);
     }
-    logger.atFine().log("StorageService: stopping run");
-    System.out.println("StorageService: stopping run");
   }
 
   private void processSubmission(
@@ -74,29 +65,12 @@ public final class StorageService extends AbstractExecutionThreadService {
 
   private void registerShutdownListener() {
     this.addListener(new Listener() {
-      @Override
-      public void running() {
-        logger.atFine().log("StorageService.Listener: running");
-      }
-
-      @SuppressWarnings("UnstableApiUsage")
+      @SuppressWarnings("NullableProblems")
       @Override
       public void stopping(State from) {
         super.stopping(from);
-        logger.atFine().log("StorageService.Listener: stopping started, from state: %s", from);
-
-        shouldContinueRunning = false;
         commandDispatcher.closeAndDrain();
         stopServices();
-        shutdownAndAwaitTermination(listeningExecutorService, Duration.ofSeconds(5));
-        System.out.println("StorageService.Listener: stopping finished");
-      }
-
-      @Override
-      public void failed(State from, Throwable failure) {
-        super.failed(from, failure);
-        logger.atFine().withCause(failure)
-            .log("StorageService.Listener: failed, from state: %s", from);
       }
     }, listeningExecutorService);
   }
@@ -106,9 +80,9 @@ public final class StorageService extends AbstractExecutionThreadService {
     // requests.
     try {
       serviceManager.stopAsync().awaitStopped(5, TimeUnit.SECONDS);
-    } catch (TimeoutException timeout) {
-      // stopping timed out
-      logger.atWarning().log("StorageService: ServiceManager timed out while stopping");
+    } catch (TimeoutException e) {
+      logger.atWarning().withCause(e)
+          .log("StorageService: ServiceManager timed out while stopping");
     }
   }
 }
