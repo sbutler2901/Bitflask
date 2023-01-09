@@ -19,6 +19,9 @@ import dev.sbutler.bitflask.storage.StorageService;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurationsConstants;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ResourceBundle;
@@ -43,20 +46,34 @@ public final class Server {
     try {
       executionStarted = Instant.now();
       printConfigInfo();
-      initializeConfigurations(args);
+      ServerConfigurations serverConfigurations = initializeConfigurations(args);
+
       Injector injector = Guice.createInjector(ServerModule.getInstance());
+      ServerSocketChannel serverSocketChannel = createServerSocketChannel(serverConfigurations);
+      NetworkService.Factory networkServiceFactory =
+          injector.getInstance(NetworkService.Factory.class);
       ImmutableSet<Service> services = ImmutableSet.of(
           injector.getInstance(StorageService.class),
-          injector.getInstance(NetworkService.class));
-      ServiceManager serviceManager = new ServiceManager(services);
+          networkServiceFactory.create(serverSocketChannel));
       ListeningExecutorService listeningExecutorService =
           injector.getInstance(ListeningExecutorService.class);
+
+      ServiceManager serviceManager = new ServiceManager(services);
       addServiceManagerListener(serviceManager, listeningExecutorService);
       registerShutdownHook(serviceManager, listeningExecutorService);
+
       serviceManager.startAsync();
     } catch (Exception e) {
       logger.atSevere().withCause(e).log("Server catastrophic failure");
     }
+  }
+
+  private static ServerSocketChannel createServerSocketChannel(
+      ServerConfigurations serverConfigurations) throws IOException {
+    ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+    InetSocketAddress inetSocketAddress = new InetSocketAddress(serverConfigurations.getPort());
+    serverSocketChannel.bind(inetSocketAddress);
+    return serverSocketChannel;
   }
 
   private static void addServiceManagerListener(ServiceManager serviceManager,
@@ -98,7 +115,7 @@ public final class Server {
     }));
   }
 
-  private static void initializeConfigurations(String[] args) {
+  private static ServerConfigurations initializeConfigurations(String[] args) {
     ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
     ConfigurationsBuilder configsBuilder = new ConfigurationsBuilder(args, resourceBundle);
 
@@ -115,6 +132,7 @@ public final class Server {
 
     logger.atInfo().log(serverConfigurations.toString());
     logger.atInfo().log(storageConfigurations.toString());
+    return serverConfigurations;
   }
 
   private static void printConfigInfo() {

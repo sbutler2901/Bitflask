@@ -40,8 +40,6 @@ final class ClientMessageProcessor implements AutoCloseable {
   private final CommandProcessingService commandProcessingService;
   private final RespService respService;
 
-  private volatile boolean isClosed = false;
-
   private ClientMessageProcessor(CommandProcessingService commandProcessingService,
       RespService respService) {
     this.commandProcessingService = commandProcessingService;
@@ -57,7 +55,7 @@ final class ClientMessageProcessor implements AutoCloseable {
    * @return true if processing can continue, false otherwise
    */
   public boolean processNextMessage() {
-    if (isClosed) {
+    if (!respService.isOpen()) {
       return false;
     }
     return readClientMessage()
@@ -121,12 +119,11 @@ final class ClientMessageProcessor implements AutoCloseable {
   }
 
   public boolean isOpen() {
-    return !isClosed;
+    return respService.isOpen();
   }
 
   @Override
   public void close() throws IOException {
-    isClosed = true;
     respService.close();
   }
 }

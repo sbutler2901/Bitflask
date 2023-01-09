@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.storage;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ServiceManager;
 import dev.sbutler.bitflask.common.dispatcher.DispatcherSubmission;
 import dev.sbutler.bitflask.storage.commands.CommandMapper;
@@ -27,15 +26,12 @@ public final class StorageService extends AbstractExecutionThreadService {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ServiceManager serviceManager;
-  private final ListeningExecutorService listeningExecutorService;
   private final StorageCommandDispatcher commandDispatcher;
   private final CommandMapper commandMapper;
 
   @Inject
-  public StorageService(ListeningExecutorService listeningExecutorService,
-      SegmentManagerService segmentManagerService, StorageCommandDispatcher commandDispatcher,
-      CommandMapper commandMapper) {
-    this.listeningExecutorService = listeningExecutorService;
+  public StorageService(SegmentManagerService segmentManagerService,
+      StorageCommandDispatcher commandDispatcher, CommandMapper commandMapper) {
     this.commandDispatcher = commandDispatcher;
     this.commandMapper = commandMapper;
     this.serviceManager = new ServiceManager(ImmutableSet.of(segmentManagerService));
@@ -44,7 +40,6 @@ public final class StorageService extends AbstractExecutionThreadService {
   @Override
   protected void startUp() {
     serviceManager.startAsync();
-    registerShutdownListener();
     serviceManager.awaitHealthy();
   }
 
@@ -63,16 +58,11 @@ public final class StorageService extends AbstractExecutionThreadService {
     submission.responseFuture().setFuture(command.execute());
   }
 
-  private void registerShutdownListener() {
-    this.addListener(new Listener() {
-      @SuppressWarnings("NullableProblems")
-      @Override
-      public void stopping(State from) {
-        super.stopping(from);
-        commandDispatcher.closeAndDrain();
-        stopServices();
-      }
-    }, listeningExecutorService);
+  @SuppressWarnings("UnstableApiUsage")
+  @Override
+  protected void triggerShutdown() {
+    commandDispatcher.closeAndDrain();
+    stopServices();
   }
 
   private void stopServices() {

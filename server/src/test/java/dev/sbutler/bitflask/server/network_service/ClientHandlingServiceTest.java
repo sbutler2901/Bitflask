@@ -1,70 +1,58 @@
 package dev.sbutler.bitflask.server.network_service;
 
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.resp.network.RespService;
-import java.io.IOException;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ServiceManager;
+import com.google.common.util.concurrent.testing.TestingExecutors;
 import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 public class ClientHandlingServiceTest {
 
-  @InjectMocks
-  ClientHandlingService clientHandlingService;
-
-  @Mock
-  private RespService respService;
-  @Mock
+  private ClientHandlingService clientHandlingService;
   private ClientMessageProcessor clientMessageProcessor;
+
+  @SuppressWarnings("UnstableApiUsage")
+  @BeforeEach
+  void beforeEach() {
+    clientMessageProcessor = mock(ClientMessageProcessor.class);
+    clientHandlingService = new ClientHandlingService(
+        TestingExecutors.sameThreadScheduledExecutor(),
+        clientMessageProcessor);
+  }
 
   @Test
   void run() throws Exception {
     // Arrange
-    doReturn(false).when(clientMessageProcessor).processNextMessage();
+    when(clientMessageProcessor.isOpen()).thenReturn(true);
+    when(clientMessageProcessor.processNextMessage()).thenReturn(false);
     // Act
-    assertTimeoutPreemptively(Duration.ofMillis(100), () -> clientHandlingService.run());
+    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(clientHandlingService));
+    serviceManager.startAsync();
+    serviceManager.stopAsync().awaitStopped(Duration.ofMillis(100));
     // Assert
+    verify(clientMessageProcessor, times(1)).isOpen();
     verify(clientMessageProcessor, times(1)).processNextMessage();
-    verify(respService, times(1)).close();
+    verify(clientMessageProcessor, times(1)).close();
   }
 
   @Test
   void run_runtimeException() throws Exception {
     // Arrange
+    when(clientMessageProcessor.isOpen()).thenReturn(true);
     doThrow(RuntimeException.class).when(clientMessageProcessor).processNextMessage();
     // Act
-    assertTimeoutPreemptively(Duration.ofMillis(100), () -> clientHandlingService.run());
+    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(clientHandlingService));
+    serviceManager.startAsync();
     // Assert
+    verify(clientMessageProcessor, times(1)).isOpen();
     verify(clientMessageProcessor, times(1)).processNextMessage();
-    verify(respService, times(1)).close();
-  }
-
-  @Test
-  void close() throws Exception {
-    // Act
-    clientHandlingService.close();
-    // Assert
-    verify(respService, times(1)).close();
-  }
-
-  @Test
-  void close_IOException() throws Exception {
-    // Arrange
-    doReturn(false).when(clientMessageProcessor).processNextMessage();
-    doThrow(IOException.class).when(respService).close();
-    // Act
-    assertTimeoutPreemptively(Duration.ofMillis(1000), () -> clientHandlingService.run());
-    // Assert
-    verify(clientMessageProcessor, times(1)).processNextMessage();
-    verify(respService, times(1)).close();
+    verify(clientMessageProcessor, times(1)).close();
   }
 }

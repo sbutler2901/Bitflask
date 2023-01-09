@@ -39,6 +39,10 @@ public final class RespService implements AutoCloseable {
     respWriter.writeRespElement(respElement);
   }
 
+  public boolean isOpen() {
+    return socketChannel.isOpen();
+  }
+
   @Override
   public void close() throws IOException {
     socketChannel.close();

@@ -39,7 +39,7 @@ final class ClientHandlingService extends AbstractService implements Runnable {
   private final ListeningExecutorService listeningExecutorService;
   private final ClientMessageProcessor clientMessageProcessor;
 
-  private ClientHandlingService(ListeningExecutorService listeningExecutorService,
+  ClientHandlingService(ListeningExecutorService listeningExecutorService,
       ClientMessageProcessor clientMessageProcessor) {
     this.listeningExecutorService = listeningExecutorService;
     this.clientMessageProcessor = clientMessageProcessor;
@@ -60,12 +60,10 @@ final class ClientHandlingService extends AbstractService implements Runnable {
           break;
         }
       }
-    } catch (Exception e) {
-      logger.atSevere().withCause(e)
-          .log("Unexpected error while processing client messages");
-      notifyFailed(e);
+    } finally {
+      // Ensure resources are closed
+      stopAsync();
     }
-    stopAsync();
   }
 
   @Override
