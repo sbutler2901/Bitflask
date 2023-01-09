@@ -30,7 +30,7 @@ import javax.annotation.Nonnull;
  * Bootstraps the server initializing all necessary services, starting them, and handling shutdown
  * cleanup.
  */
-class Server {
+public final class Server {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 

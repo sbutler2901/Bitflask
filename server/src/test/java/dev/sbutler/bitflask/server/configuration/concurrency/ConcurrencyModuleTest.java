@@ -19,12 +19,12 @@ public class ConcurrencyModuleTest {
   void provideExecutorService() {
     try (MockedStatic<Executors> executorsMockedStatic = mockStatic(Executors.class)) {
       ExecutorService mockExecutorService = mock(ExecutorService.class);
-      ServerThreadFactory serverThreadFactory = mock(ServerThreadFactory.class);
+      VirtualThreadFactory virtualThreadFactory = mock(VirtualThreadFactory.class);
       executorsMockedStatic.when(
               () -> Executors.newThreadPerTaskExecutor(any(ThreadFactory.class)))
           .thenReturn(mockExecutorService);
       ExecutorService executorService = concurrencyModule.provideExecutorService(
-          serverThreadFactory);
+          virtualThreadFactory);
       assertEquals(mockExecutorService, executorService);
     }
   }

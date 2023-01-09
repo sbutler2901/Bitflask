@@ -23,16 +23,16 @@ public class ConcurrencyModule extends AbstractModule {
 
   @Provides
   @Singleton
-  ListeningExecutorService provideExecutorService(ServerThreadFactory serverThreadFactory) {
+  ListeningExecutorService provideExecutorService(VirtualThreadFactory virtualThreadFactory) {
     if (listeningExecutorService == null) {
       listeningExecutorService = MoreExecutors.listeningDecorator(
-          Executors.newThreadPerTaskExecutor(serverThreadFactory));
+          Executors.newThreadPerTaskExecutor(virtualThreadFactory));
     }
     return listeningExecutorService;
   }
 
   @Provides
-  ThreadFactory provideThreadFactory(ServerThreadFactory serverThreadFactory) {
-    return serverThreadFactory;
+  ThreadFactory provideThreadFactory(VirtualThreadFactory virtualThreadFactory) {
+    return virtualThreadFactory;
   }
 }

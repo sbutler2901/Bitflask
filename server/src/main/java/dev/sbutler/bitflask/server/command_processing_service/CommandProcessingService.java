@@ -4,9 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import java.util.List;
 import javax.inject.Inject;
 
@@ -14,16 +12,13 @@ import javax.inject.Inject;
  * Handles interpreting command messages, processing server specific commands or dispatching storage
  * related commands to the StorageService for processing.
  */
-public class CommandProcessingService {
+public final class CommandProcessingService {
 
-  private final ListeningExecutorService listeningExecutorService;
-  private final StorageCommandDispatcher storageCommandDispatcher;
+  private final CommandFactory commandFactory;
 
   @Inject
-  CommandProcessingService(ListeningExecutorService listeningExecutorService,
-      StorageCommandDispatcher storageCommandDispatcher) {
-    this.listeningExecutorService = listeningExecutorService;
-    this.storageCommandDispatcher = storageCommandDispatcher;
+  CommandProcessingService(CommandFactory commandFactory) {
+    this.commandFactory = commandFactory;
   }
 
   /**
@@ -57,12 +52,10 @@ public class CommandProcessingService {
 
   private ServerCommand createCommand(CommandType commandType, ImmutableList<String> args) {
     return switch (commandType) {
-      case PING -> new PingCommand();
-      case GET -> new GetCommand(listeningExecutorService, storageCommandDispatcher, args.get(0));
-      case SET -> new SetCommand(listeningExecutorService, storageCommandDispatcher, args.get(0),
-          args.get(1));
-      case DEL ->
-          new DeleteCommand(listeningExecutorService, storageCommandDispatcher, args.get(0));
+      case PING -> commandFactory.createPingCommand();
+      case GET -> commandFactory.createGetCommand(args.get(0));
+      case SET -> commandFactory.createSetCommand(args.get(0), args.get(1));
+      case DEL -> commandFactory.createDeleteCommand(args.get(0));
     };
   }
 

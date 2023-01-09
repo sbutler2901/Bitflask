@@ -2,15 +2,11 @@ package dev.sbutler.bitflask.server.network_service;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.server.configuration.ServerConfigurations;
 import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
-import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientMessageProcessor;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
@@ -27,7 +23,7 @@ public final class NetworkService extends AbstractExecutionThreadService impleme
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService listeningExecutorService;
-  private final ClientMessageProcessor.Factory clientMessageProcessorFactory;
+  private final ClientHandlingService.Factory clientHandlingServiceFactory;
   private final ServerConfigurations serverConfigurations;
 
   private ServerSocketChannel serverSocketChannel;
@@ -35,10 +31,10 @@ public final class NetworkService extends AbstractExecutionThreadService impleme
 
   @Inject
   NetworkService(ListeningExecutorService listeningExecutorService,
-      ClientMessageProcessor.Factory clientMessageProcessorFactory,
+      ClientHandlingService.Factory clientHandlingServiceFactory,
       ServerConfigurations serverConfigurations) {
     this.listeningExecutorService = listeningExecutorService;
-    this.clientMessageProcessorFactory = clientMessageProcessorFactory;
+    this.clientHandlingServiceFactory = clientHandlingServiceFactory;
     this.serverConfigurations = serverConfigurations;
   }
 
@@ -59,39 +55,43 @@ public final class NetworkService extends AbstractExecutionThreadService impleme
   protected void run() throws IOException {
     while (isRunning() && serverSocketChannel.isOpen()
         && !Thread.currentThread().isInterrupted()) {
-      acceptNextClientConnection();
+      SocketChannel socketChannel = acceptNextClientConnection();
+
+      ClientHandlingService clientHandlingService =
+          clientHandlingServiceFactory.create(socketChannel);
+      startClientHandlingService(clientHandlingService);
     }
   }
 
-  private void acceptNextClientConnection() throws IOException {
-    try {
-      SocketChannel socketChannel = serverSocketChannel.accept();
-      logger.atInfo()
-          .log("Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
-
-      ClientHandlingService clientHandlingService = createClientHandlingService(socketChannel);
-      submitClientHandlingService(clientHandlingService);
-    } catch (ClosedChannelException e) {
-      logger.atInfo().log("ServerSocketChannel closed");
-    }
+  private SocketChannel acceptNextClientConnection() throws IOException {
+    SocketChannel socketChannel = serverSocketChannel.accept();
+    logger.atInfo()
+        .log("Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
+    return socketChannel;
   }
 
-  private ClientHandlingService createClientHandlingService(SocketChannel socketChannel)
-      throws IOException {
-    RespService respService = RespService.create(socketChannel);
-    ClientMessageProcessor clientMessageProcessor =
-        clientMessageProcessorFactory.create(respService);
-    return ClientHandlingService.create(respService, clientMessageProcessor);
-  }
-
-  private void submitClientHandlingService(ClientHandlingService clientHandlingService) {
+  private void startClientHandlingService(ClientHandlingService clientHandlingService) {
     runningClientHandlingServices.add(clientHandlingService);
-    Futures.submit(clientHandlingService, listeningExecutorService)
-        .addListener(
-            () -> runningClientHandlingServices.remove(clientHandlingService),
-            listeningExecutorService);
+
+    // Clean up after service has reached a terminal state
+    clientHandlingService.startAsync().addListener(new Listener() {
+      @SuppressWarnings("NullableProblems")
+      @Override
+      public void terminated(State from) {
+        runningClientHandlingServices.remove(clientHandlingService);
+      }
+
+      @SuppressWarnings("NullableProblems")
+      @Override
+      public void failed(State from, Throwable failure) {
+        runningClientHandlingServices.remove(clientHandlingService);
+      }
+    }, listeningExecutorService);
   }
 
+  /**
+   * Handles graceful shutdown when this service has been stopped
+   */
   private void registerShutdownListener() {
     this.addListener(new Listener() {
       @SuppressWarnings("NullableProblems")
@@ -99,17 +99,23 @@ public final class NetworkService extends AbstractExecutionThreadService impleme
       public void stopping(State from) {
         super.stopping(from);
         close();
+        stopAllClientHandlingServices();
       }
     }, listeningExecutorService);
   }
 
+  @Override
   public void close() {
     try {
       serverSocketChannel.close();
     } catch (IOException e) {
       logger.atWarning().withCause(e)
-          .log("Error closing NetworkService's ServerSocketChannel");
+          .log("Error closing the ServerSocketChannel");
     }
-    runningClientHandlingServices.forEach(ClientHandlingService::close);
+  }
+
+  private void stopAllClientHandlingServices() {
+    runningClientHandlingServices.forEach(ClientHandlingService::stopAsync);
+    runningClientHandlingServices.forEach(ClientHandlingService::awaitTerminated);
   }
 }

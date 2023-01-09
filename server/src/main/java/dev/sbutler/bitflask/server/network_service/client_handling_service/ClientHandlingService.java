@@ -1,59 +1,84 @@
 package dev.sbutler.bitflask.server.network_service.client_handling_service;
 
 import com.google.common.flogger.FluentLogger;
+import com.google.common.util.concurrent.AbstractService;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.resp.network.RespService;
-import java.io.Closeable;
 import java.io.IOException;
+import java.nio.channels.SocketChannel;
+import javax.inject.Inject;
 
 /**
  * Handles the processing of a specific client including messages and network resources.
  */
-public class ClientHandlingService implements Runnable, Closeable {
+public final class ClientHandlingService extends AbstractService implements Runnable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final RespService respService;
+  public static class Factory {
+
+    private final ListeningExecutorService listeningExecutorService;
+    private final ClientMessageProcessor.Factory clientMessageProcessorFactory;
+
+    @Inject
+    Factory(ListeningExecutorService listeningExecutorService,
+        ClientMessageProcessor.Factory clientMessageProcessorFactory) {
+      this.listeningExecutorService = listeningExecutorService;
+      this.clientMessageProcessorFactory = clientMessageProcessorFactory;
+    }
+
+    public ClientHandlingService create(SocketChannel socketChannel) throws IOException {
+      RespService respService = RespService.create(socketChannel);
+      ClientMessageProcessor clientMessageProcessor =
+          clientMessageProcessorFactory.create(respService);
+      return new ClientHandlingService(listeningExecutorService, clientMessageProcessor);
+    }
+  }
+
+  private final ListeningExecutorService listeningExecutorService;
   private final ClientMessageProcessor clientMessageProcessor;
 
-  private volatile boolean shouldContinueRunning = true;
-
-  private ClientHandlingService(RespService respService,
+  private ClientHandlingService(ListeningExecutorService listeningExecutorService,
       ClientMessageProcessor clientMessageProcessor) {
-    this.respService = respService;
+    this.listeningExecutorService = listeningExecutorService;
     this.clientMessageProcessor = clientMessageProcessor;
   }
 
-  public static ClientHandlingService create(RespService respService,
-      ClientMessageProcessor clientMessageProcessor) {
-    return new ClientHandlingService(respService, clientMessageProcessor);
+  @Override
+  protected void doStart() {
+    Futures.submit(this, listeningExecutorService);
   }
 
-  @Override
   public void run() {
+    notifyStarted();
     try {
-      processClientMessages();
+      while (isRunning() && clientMessageProcessor.isOpen()
+          && !Thread.currentThread().isInterrupted()) {
+        boolean shouldContinueRunning = clientMessageProcessor.processNextMessage();
+        if (!shouldContinueRunning) {
+          break;
+        }
+      }
     } catch (Exception e) {
       logger.atSevere().withCause(e)
-          .log("Processing client messages failed. Terminating connection!");
-    } finally {
-      close();
+          .log("Unexpected error while processing client messages");
+      notifyFailed(e);
     }
-  }
-
-  private void processClientMessages() {
-    while (!Thread.currentThread().isInterrupted() && shouldContinueRunning) {
-      shouldContinueRunning = clientMessageProcessor.processNextMessage();
-    }
+    stopAsync();
   }
 
   @Override
-  public void close() {
-    logger.atInfo().log("Terminating client session.");
-    shouldContinueRunning = false;
+  protected void doStop() {
     try {
-      respService.close();
+      clientMessageProcessor.close();
+      notifyStopped();
     } catch (IOException e) {
-      logger.atSevere().withCause(e).log("Failed to correctly terminate the client session");
+      logger.atSevere().withCause(e).log("Failed to close the ClientMessageProcessor");
+      notifyFailed(e);
+    } catch (Exception e) {
+      logger.atSevere().withCause(e).log("Unexpected error while stopping");
+      notifyFailed(e);
     }
   }
 }

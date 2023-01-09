@@ -19,12 +19,9 @@ import javax.inject.Inject;
  * Handles receiving a client's incoming messages, parsing them, submitting them for processing, and
  * responding.
  */
-public class ClientMessageProcessor {
+public final class ClientMessageProcessor implements AutoCloseable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-
-  private final CommandProcessingService commandProcessingService;
-  private final RespService respService;
 
   public static final class Factory {
 
@@ -39,6 +36,11 @@ public class ClientMessageProcessor {
       return new ClientMessageProcessor(commandProcessingService, respService);
     }
   }
+
+  private final CommandProcessingService commandProcessingService;
+  private final RespService respService;
+
+  private volatile boolean isClosed = false;
 
   private ClientMessageProcessor(CommandProcessingService commandProcessingService,
       RespService respService) {
@@ -55,6 +57,9 @@ public class ClientMessageProcessor {
    * @return true if processing can continue, false otherwise
    */
   public boolean processNextMessage() {
+    if (isClosed) {
+      return false;
+    }
     return readClientMessage()
         .flatMap(this::parseClientMessage)
         .map(commandProcessingService::processCommandMessage)
@@ -100,19 +105,28 @@ public class ClientMessageProcessor {
       clientMessage.add(argBulkString.getValue());
     }
     return Optional.of(clientMessage.build());
-
   }
 
   private Optional<RespElement> readClientMessage() {
     try {
       return Optional.of(respService.read());
     } catch (EOFException e) {
-      logger.atWarning().log("Client disconnected.");
+      logger.atInfo().log("Client disconnected.");
     } catch (ProtocolException e) {
       logger.atWarning().withCause(e).log("Client message format malformed");
     } catch (IOException e) {
       logger.atSevere().withCause(e).log("Failure reading client's message");
     }
     return Optional.empty();
+  }
+
+  public boolean isOpen() {
+    return !isClosed;
+  }
+
+  @Override
+  public void close() throws IOException {
+    isClosed = true;
+    respService.close();
   }
 }

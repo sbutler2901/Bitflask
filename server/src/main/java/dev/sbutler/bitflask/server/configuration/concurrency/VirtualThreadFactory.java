@@ -6,9 +6,9 @@ import javax.annotation.Nonnull;
 import javax.inject.Singleton;
 
 @Singleton
-class ServerThreadFactory implements ThreadFactory {
+final class VirtualThreadFactory implements ThreadFactory {
 
-  private static final String NETWORK_SERVICE_THREAD_NAME = "server-pool-";
+  private static final String NETWORK_SERVICE_THREAD_NAME = "virtual-pool-";
 
   private static final AtomicInteger threadNum = new AtomicInteger();
 
