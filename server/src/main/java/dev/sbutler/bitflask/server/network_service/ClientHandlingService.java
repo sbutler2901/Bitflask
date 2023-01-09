@@ -16,7 +16,7 @@ final class ClientHandlingService extends AbstractService implements Runnable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  public static class Factory {
+  static class Factory {
 
     private final ListeningExecutorService listeningExecutorService;
     private final ClientMessageProcessor.Factory clientMessageProcessorFactory;
@@ -28,7 +28,7 @@ final class ClientHandlingService extends AbstractService implements Runnable {
       this.clientMessageProcessorFactory = clientMessageProcessorFactory;
     }
 
-    public ClientHandlingService create(SocketChannel socketChannel) throws IOException {
+    ClientHandlingService create(SocketChannel socketChannel) throws IOException {
       RespService respService = RespService.create(socketChannel);
       ClientMessageProcessor clientMessageProcessor =
           clientMessageProcessorFactory.create(respService);

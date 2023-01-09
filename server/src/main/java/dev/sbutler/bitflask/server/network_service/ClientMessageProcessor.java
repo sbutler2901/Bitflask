@@ -23,7 +23,7 @@ final class ClientMessageProcessor implements AutoCloseable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  public static final class Factory {
+  static final class Factory {
 
     private final CommandProcessingService commandProcessingService;
 
@@ -32,7 +32,7 @@ final class ClientMessageProcessor implements AutoCloseable {
       this.commandProcessingService = commandProcessingService;
     }
 
-    public ClientMessageProcessor create(RespService respService) {
+    ClientMessageProcessor create(RespService respService) {
       return new ClientMessageProcessor(commandProcessingService, respService);
     }
   }
