@@ -12,11 +12,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import com.google.inject.Guice;
-import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.configuration.ServerConfigurations;
-import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingService;
-import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceChildModule;
-import dev.sbutler.bitflask.server.network_service.client_handling_service.ClientHandlingServiceParentModule;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -79,15 +75,6 @@ public class NetworkServiceTest {
       doReturn(socketChannel).when(serverSocketChannel).accept();
       setupSocketChannelMock(socketChannel);
 
-      Injector parentInjector = mock(Injector.class);
-      guiceMockedStatic.when(
-              () -> Guice.createInjector(any(ClientHandlingServiceParentModule.class)))
-          .thenReturn(parentInjector);
-      Injector childInjector = mock(Injector.class);
-      doReturn(childInjector).when(parentInjector).createChildInjector(any(
-          ClientHandlingServiceChildModule.class));
-      ClientHandlingService clientHandlingService = mock(ClientHandlingService.class);
-      doReturn(clientHandlingService).when(childInjector).getInstance(ClientHandlingService.class);
       // Act
       networkService.startUp();
       networkService.run();
@@ -127,16 +114,6 @@ public class NetworkServiceTest {
       SocketChannel socketChannel = mock(SocketChannel.class);
       doReturn(socketChannel).when(serverSocketChannel).accept();
       setupSocketChannelMock(socketChannel);
-
-      Injector parentInjector = mock(Injector.class);
-      guiceMockedStatic.when(
-              () -> Guice.createInjector(any(ClientHandlingServiceParentModule.class)))
-          .thenReturn(parentInjector);
-      Injector childInjector = mock(Injector.class);
-      doReturn(childInjector).when(parentInjector).createChildInjector(any(
-          ClientHandlingServiceChildModule.class));
-      ClientHandlingService clientHandlingService = mock(ClientHandlingService.class);
-      doReturn(clientHandlingService).when(childInjector).getInstance(ClientHandlingService.class);
 
       doThrow(IOException.class).when(serverSocketChannel).close();
       // Act

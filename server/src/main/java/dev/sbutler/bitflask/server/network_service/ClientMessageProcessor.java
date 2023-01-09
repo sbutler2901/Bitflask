@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.network_service.client_handling_service;
+package dev.sbutler.bitflask.server.network_service;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
@@ -19,7 +19,7 @@ import javax.inject.Inject;
  * Handles receiving a client's incoming messages, parsing them, submitting them for processing, and
  * responding.
  */
-public final class ClientMessageProcessor implements AutoCloseable {
+final class ClientMessageProcessor implements AutoCloseable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 

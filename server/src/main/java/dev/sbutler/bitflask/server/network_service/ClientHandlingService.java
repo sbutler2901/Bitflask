@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.network_service.client_handling_service;
+package dev.sbutler.bitflask.server.network_service;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractService;
@@ -12,7 +12,7 @@ import javax.inject.Inject;
 /**
  * Handles the processing of a specific client including messages and network resources.
  */
-public final class ClientHandlingService extends AbstractService implements Runnable {
+final class ClientHandlingService extends AbstractService implements Runnable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 

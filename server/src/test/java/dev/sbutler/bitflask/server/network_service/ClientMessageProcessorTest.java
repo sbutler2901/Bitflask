@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.network_service.client_handling_service;
+package dev.sbutler.bitflask.server.network_service;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
