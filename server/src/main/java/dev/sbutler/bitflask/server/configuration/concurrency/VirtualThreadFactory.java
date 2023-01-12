@@ -8,7 +8,7 @@ import javax.inject.Singleton;
 @Singleton
 final class VirtualThreadFactory implements ThreadFactory {
 
-  private static final String NETWORK_SERVICE_THREAD_NAME = "virtual-pool-";
+  static final String NETWORK_SERVICE_THREAD_NAME = "virtual-pool-";
 
   private static final AtomicInteger threadNum = new AtomicInteger();
 

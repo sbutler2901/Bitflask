@@ -17,7 +17,7 @@ public class VirtualThreadFactoryTest {
     Thread thread = virtualThreadFactory.newThread(runnable);
     assertTrue(thread.isVirtual());
     assertEquals(thread.getState(), State.NEW);
-    assertTrue(thread.getName().contains("server-pool"));
+    assertTrue(thread.getName().contains(VirtualThreadFactory.NETWORK_SERVICE_THREAD_NAME));
   }
 
 }
