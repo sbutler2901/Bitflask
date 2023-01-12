@@ -12,7 +12,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.common.util.concurrent.SettableFuture;
@@ -41,8 +40,6 @@ class StorageServiceTest {
 
   StorageService storageService;
   @Mock
-  ListeningExecutorService executorService = mock(ListeningExecutorService.class);
-  @Mock
   SegmentManagerService segmentManagerService;
   @Mock
   StorageCommandDispatcher storageCommandDispatcher;
@@ -56,8 +53,8 @@ class StorageServiceTest {
     try (MockedConstruction<ServiceManager> serviceManagerMockedConstruction =
         mockConstruction(ServiceManager.class)) {
       // Arrange
-      storageService = new StorageService(executorService, segmentManagerService,
-          storageCommandDispatcher, commandMapper);
+      storageService = new StorageService(segmentManagerService, storageCommandDispatcher,
+          commandMapper);
       ServiceManager serviceManager = serviceManagerMockedConstruction.constructed().get(0);
       doReturn(serviceManager).when(serviceManager).startAsync();
       doReturn(serviceManager).when(serviceManager).stopAsync();
@@ -76,7 +73,7 @@ class StorageServiceTest {
     try (MockedConstruction<ServiceManager> serviceManagerMockedConstruction =
         mockConstruction(ServiceManager.class)) {
       // Arrange
-      storageService = new StorageService(executorService, segmentManagerService,
+      storageService = new StorageService(segmentManagerService,
           storageCommandDispatcher, commandMapper);
       ServiceManager serviceManager = serviceManagerMockedConstruction.constructed().get(0);
       doReturn(serviceManager).when(serviceManager).startAsync();
@@ -107,7 +104,7 @@ class StorageServiceTest {
     try (MockedConstruction<ServiceManager> serviceManagerMockedConstruction =
         mockConstruction(ServiceManager.class)) {
       // Arrange
-      storageService = new StorageService(executorService, segmentManagerService,
+      storageService = new StorageService(segmentManagerService,
           storageCommandDispatcher, commandMapper);
       ServiceManager serviceManager = serviceManagerMockedConstruction.constructed().get(0);
       doReturn(serviceManager).when(serviceManager).startAsync();
@@ -133,7 +130,7 @@ class StorageServiceTest {
           serviceManagerAtomicReference.set(mock);
         })) {
       // Arrange
-      storageService = new StorageService(executorService, segmentManagerService,
+      storageService = new StorageService(segmentManagerService,
           storageCommandDispatcher, commandMapper);
       ServiceManager serviceManager = serviceManagerMockedConstruction.constructed().get(0);
       doReturn(serviceManager).when(serviceManager).startAsync();
@@ -156,7 +153,7 @@ class StorageServiceTest {
     try (MockedConstruction<ServiceManager> serviceManagerMockedConstruction =
         mockConstruction(ServiceManager.class)) {
       // Arrange
-      storageService = new StorageService(executorService, segmentManagerService,
+      storageService = new StorageService(segmentManagerService,
           storageCommandDispatcher, commandMapper);
       ServiceManager serviceManager = serviceManagerMockedConstruction.constructed().get(0);
       doReturn(serviceManager).when(serviceManager).startAsync();

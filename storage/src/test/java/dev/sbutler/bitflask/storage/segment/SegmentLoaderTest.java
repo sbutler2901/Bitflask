@@ -16,7 +16,6 @@ import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.SettableFuture;
 import dev.sbutler.bitflask.common.io.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
@@ -25,13 +24,13 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @SuppressWarnings({"UnstableApiUsage", "unchecked"})
@@ -40,8 +39,8 @@ class SegmentLoaderTest {
 
   @InjectMocks
   private SegmentLoader segmentLoader;
-  @Spy
-  private StorageThreadFactory storageThreadFactory = new StorageThreadFactory();
+  @Mock
+  private ThreadFactory threadFactory;
   @Mock
   private SegmentFactory segmentFactory;
   @Mock

@@ -11,7 +11,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
@@ -20,9 +19,11 @@ import dev.sbutler.bitflask.storage.segment.SegmentDeleter.Factory;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,15 +31,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class SegmentDeleterTest {
 
   SegmentDeleter segmentDeleter;
-  @Spy
-  StorageThreadFactory storageThreadFactory = new StorageThreadFactory();
+  @Mock
+  ThreadFactory threadFactory;
   @Spy
   ImmutableList<Segment> segmentsToBeCompacted = ImmutableList.of(mock(Segment.class),
       mock(Segment.class));
 
   @BeforeEach
   void setup() {
-    SegmentDeleter.Factory segmentDeleterFactory = new Factory(storageThreadFactory);
+    SegmentDeleter.Factory segmentDeleterFactory = new Factory(threadFactory);
     segmentDeleter = segmentDeleterFactory.create(segmentsToBeCompacted);
   }
 
@@ -63,7 +64,7 @@ public class SegmentDeleterTest {
   @Test
   void deletion_repeatedCalls() {
     // Arrange
-    SegmentDeleter.Factory segmentDeleterFactory = new Factory(storageThreadFactory);
+    SegmentDeleter.Factory segmentDeleterFactory = new Factory(threadFactory);
     segmentDeleter = segmentDeleterFactory.create(ImmutableList.of());
     segmentDeleter.deleteSegments();
     // Act
@@ -76,7 +77,7 @@ public class SegmentDeleterTest {
   @Test
   void deletion_closeAndDelete_Exception() {
     // Arrange
-    SegmentDeleter.Factory segmentDeleterFactory = new Factory(storageThreadFactory);
+    SegmentDeleter.Factory segmentDeleterFactory = new Factory(threadFactory);
     // Artificially cause failure
     segmentDeleter = segmentDeleterFactory.create(null);
     // Act

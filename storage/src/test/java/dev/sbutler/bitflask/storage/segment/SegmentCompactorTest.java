@@ -17,7 +17,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.segment.Encoder.Header;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
@@ -27,6 +26,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,8 +40,8 @@ public class SegmentCompactorTest {
   SegmentCompactor segmentCompactor;
   @Mock
   SegmentFactory segmentFactory;
-  @Spy
-  StorageThreadFactory storageThreadFactory = new StorageThreadFactory();
+  @Mock
+  ThreadFactory threadFactory;
   @Spy
   ImmutableList<Segment> segmentsToBeCompacted = ImmutableList.of(mock(Segment.class),
       mock(Segment.class));
@@ -49,7 +49,7 @@ public class SegmentCompactorTest {
   @BeforeEach
   void setup() {
     SegmentCompactor.Factory segmentCompactorFactory = new Factory(segmentFactory,
-        storageThreadFactory);
+        threadFactory);
     segmentCompactor = segmentCompactorFactory.create(segmentsToBeCompacted);
   }
 

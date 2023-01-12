@@ -5,14 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageExecutorService;
-import dev.sbutler.bitflask.storage.configuration.concurrency.StorageThreadFactory;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
+import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.Test;
 
 public class StorageServiceModuleTest {
@@ -27,17 +22,6 @@ public class StorageServiceModuleTest {
         assertThrows(IllegalStateException.class, StorageServiceModule::getInstance);
     // Assert
     assertThat(exception).hasMessageThat().ignoringCase().contains("StorageConfigurations");
-  }
-
-  @Test
-  void configure() {
-    // Arrange
-    StorageServiceModule.setStorageConfiguration(new StorageConfigurations());
-    Injector injector = Guice.createInjector(StorageServiceModule.getInstance());
-    // Act / Assert
-    injector.getBinding(
-        Key.get(ListeningExecutorService.class).withAnnotation(StorageExecutorService.class));
-    injector.getBinding(StorageService.class);
   }
 
   @Test
@@ -73,7 +57,7 @@ public class StorageServiceModuleTest {
     StorageConfigurations setStorageConfigurations = new StorageConfigurations();
     StorageServiceModule.setStorageConfiguration(setStorageConfigurations);
     StorageServiceModule storageServiceModule = StorageServiceModule.getInstance();
-    StorageThreadFactory threadFactory = mock(StorageThreadFactory.class);
+    ThreadFactory threadFactory = mock(ThreadFactory.class);
     // Act
     storageServiceModule.provideFilesHelper(threadFactory);
   }
