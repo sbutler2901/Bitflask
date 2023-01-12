@@ -10,23 +10,12 @@ import javax.inject.Singleton;
 
 public class StorageServiceModule extends AbstractModule {
 
-  private static final StorageServiceModule instance = new StorageServiceModule();
-  private static StorageConfigurations storageConfigurations = null;
+  private final StorageConfigurations storageConfigurations;
 
   private StorageCommandDispatcher storageCommandDispatcher = null;
 
-  private StorageServiceModule() {
-  }
-
-  public static void setStorageConfiguration(StorageConfigurations storageConfigurations) {
-    StorageServiceModule.storageConfigurations = storageConfigurations;
-  }
-
-  public static StorageServiceModule getInstance() {
-    if (storageConfigurations == null) {
-      throw new IllegalStateException("StorageConfigurations must be set before using this module");
-    }
-    return instance;
+  public StorageServiceModule(StorageConfigurations storageConfigurations) {
+    this.storageConfigurations = storageConfigurations;
   }
 
   @Provides

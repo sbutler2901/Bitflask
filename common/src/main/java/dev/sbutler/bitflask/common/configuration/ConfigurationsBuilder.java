@@ -7,7 +7,7 @@ import java.util.ResourceBundle;
  * Builds {@link dev.sbutler.bitflask.common.configuration.Configurations} from command line
  * arguments and config files expressed as {@link ResourceBundle}s.
  */
-public class ConfigurationsBuilder {
+public final class ConfigurationsBuilder {
 
   private final String[] args;
   private final ResourceBundle resourceBundle;

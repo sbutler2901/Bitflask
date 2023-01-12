@@ -11,14 +11,14 @@ import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.common.configuration.ConfigurationsBuilder;
+import dev.sbutler.bitflask.server.configuration.ConfigurationsInitializer;
+import dev.sbutler.bitflask.server.configuration.ConfigurationsInitializer.InitializedConfigurations;
 import dev.sbutler.bitflask.server.configuration.ServerConfigurations;
-import dev.sbutler.bitflask.server.configuration.ServerConfigurationsConstants;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
+import dev.sbutler.bitflask.server.configuration.concurrency.ConcurrencyModule;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurationsConstants;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
@@ -45,20 +45,27 @@ public final class Server {
   public static void main(String[] args) {
     try {
       executionStarted = Instant.now();
-      printConfigInfo();
-      ServerConfigurations serverConfigurations = initializeConfigurations(args);
+      InitializedConfigurations initializedConfigurations = initializeConfigurations(args);
+      printConfigInfo(initializedConfigurations);
 
-      Injector injector = Guice.createInjector(ServerModule.getInstance());
-      ServerSocketChannel serverSocketChannel = createServerSocketChannel(serverConfigurations);
+      Injector injector = Guice.createInjector(
+          new ConcurrencyModule(),
+          new ServerModule(initializedConfigurations.serverConfigurations()),
+          new StorageServiceModule(initializedConfigurations.storageConfigurations()));
+
+      ServerSocketChannel serverSocketChannel =
+          createServerSocketChannel(initializedConfigurations.serverConfigurations());
       NetworkService.Factory networkServiceFactory =
           injector.getInstance(NetworkService.Factory.class);
+
       ImmutableSet<Service> services = ImmutableSet.of(
           injector.getInstance(StorageService.class),
           networkServiceFactory.create(serverSocketChannel));
+
+      ServiceManager serviceManager = new ServiceManager(services);
       ListeningExecutorService listeningExecutorService =
           injector.getInstance(ListeningExecutorService.class);
 
-      ServiceManager serviceManager = new ServiceManager(services);
       addServiceManagerListener(serviceManager, listeningExecutorService);
       registerShutdownHook(serviceManager, listeningExecutorService);
 
@@ -115,30 +122,22 @@ public final class Server {
     }));
   }
 
-  private static ServerConfigurations initializeConfigurations(String[] args) {
+  private static InitializedConfigurations initializeConfigurations(String[] args) {
     ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
-    ConfigurationsBuilder configsBuilder = new ConfigurationsBuilder(args, resourceBundle);
+    ConfigurationsBuilder configurationsBuilder = new ConfigurationsBuilder(args, resourceBundle);
+    ConfigurationsInitializer configurationsInitializer =
+        new ConfigurationsInitializer(configurationsBuilder);
 
-    ServerConfigurations serverConfigurations = new ServerConfigurations();
-    configsBuilder.buildAcceptingUnknownOptions(
-        serverConfigurations,
-        ServerConfigurationsConstants.SERVER_FLAG_TO_CONFIGURATION_MAP);
-    ServerModule.setServerConfiguration(serverConfigurations);
-
-    StorageConfigurations storageConfigurations = new StorageConfigurations();
-    configsBuilder.buildAcceptingUnknownOptions(storageConfigurations,
-        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
-    StorageServiceModule.setStorageConfiguration(storageConfigurations);
-
-    logger.atInfo().log(serverConfigurations.toString());
-    logger.atInfo().log(storageConfigurations.toString());
-    return serverConfigurations;
+    return configurationsInitializer.initializeConfigurations();
   }
 
-  private static void printConfigInfo() {
+  private static void printConfigInfo(InitializedConfigurations initializedConfigurations) {
     logger.atInfo().log("Using java version [%s]", System.getProperty("java.version"));
     logger.atInfo()
         .log("Runtime processors available [%d]", Runtime.getRuntime().availableProcessors());
+
+    logger.atInfo().log(initializedConfigurations.serverConfigurations().toString());
+    logger.atInfo().log(initializedConfigurations.storageConfigurations().toString());
   }
 
   private static void logTimeFromStart() {

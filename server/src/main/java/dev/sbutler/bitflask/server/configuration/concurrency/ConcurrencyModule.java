@@ -10,16 +10,7 @@ import javax.inject.Singleton;
 
 public class ConcurrencyModule extends AbstractModule {
 
-  private static final ConcurrencyModule instance = new ConcurrencyModule();
-
   private ListeningExecutorService listeningExecutorService;
-
-  private ConcurrencyModule() {
-  }
-
-  public static ConcurrencyModule getInstance() {
-    return instance;
-  }
 
   @Provides
   @Singleton
