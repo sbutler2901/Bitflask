@@ -8,7 +8,7 @@ import dev.sbutler.bitflask.storage.StorageServiceModule;
 public class ServerModule extends AbstractModule {
 
   private static final ServerModule instance = new ServerModule();
-  private static ServerConfigurations serverConfigurations = new ServerConfigurations();
+  private static ServerConfigurations serverConfigurations = null;
 
   private ServerModule() {
   }
@@ -18,6 +18,9 @@ public class ServerModule extends AbstractModule {
   }
 
   public static ServerModule getInstance() {
+    if (serverConfigurations == null) {
+      throw new IllegalStateException("ServerConfigurations must be set before using this module");
+    }
     return instance;
   }
 
@@ -32,5 +35,4 @@ public class ServerModule extends AbstractModule {
   ServerConfigurations provideServerConfiguration() {
     return serverConfigurations;
   }
-
 }

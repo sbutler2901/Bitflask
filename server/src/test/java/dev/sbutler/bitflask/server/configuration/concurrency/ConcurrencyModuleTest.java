@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
-import java.util.concurrent.ExecutorService;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.Test;
@@ -18,12 +18,12 @@ public class ConcurrencyModuleTest {
   @Test
   void provideExecutorService() {
     try (MockedStatic<Executors> executorsMockedStatic = mockStatic(Executors.class)) {
-      ExecutorService mockExecutorService = mock(ExecutorService.class);
+      ListeningExecutorService mockExecutorService = mock(ListeningExecutorService.class);
       VirtualThreadFactory virtualThreadFactory = mock(VirtualThreadFactory.class);
       executorsMockedStatic.when(
               () -> Executors.newThreadPerTaskExecutor(any(ThreadFactory.class)))
           .thenReturn(mockExecutorService);
-      ExecutorService executorService = concurrencyModule.provideExecutorService(
+      ListeningExecutorService executorService = concurrencyModule.provideExecutorService(
           virtualThreadFactory);
       assertEquals(mockExecutorService, executorService);
     }
