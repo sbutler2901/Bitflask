@@ -203,4 +203,23 @@ public class ClientMessageProcessorTest {
     // Arrange
     assertThat(processingSuccessful).isFalse();
   }
+
+  @Test
+  void isOpen() {
+    // Act
+    boolean isOpen = clientMessageProcessor.isOpen();
+    // Assert
+    assertThat(isOpen).isTrue();
+    verify(respService, times(1)).isOpen();
+  }
+
+  @Test
+  void close() throws Exception {
+    // Arrange
+    reset(respService);
+    // Act
+    clientMessageProcessor.close();
+    // Assert
+    verify(respService, times(1)).close();
+  }
 }
