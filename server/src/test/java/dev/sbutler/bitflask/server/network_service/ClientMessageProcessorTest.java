@@ -1,15 +1,16 @@
 package dev.sbutler.bitflask.server.network_service;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -23,22 +24,29 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.ProtocolException;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class ClientMessageProcessorTest {
 
-  @InjectMocks
   ClientMessageProcessor clientMessageProcessor;
 
   @Mock
   CommandProcessingService commandProcessingService;
   @Mock
   RespService respService;
+
+  @BeforeEach
+  void beforeEach() {
+    var factory = new ClientMessageProcessor.Factory(commandProcessingService);
+    clientMessageProcessor = factory.create(respService);
+
+    when(respService.isOpen()).thenReturn(true);
+  }
 
   @Test
   void processRequest_success() throws Exception {
@@ -54,7 +62,7 @@ public class ClientMessageProcessorTest {
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
-    assertTrue(processingSuccessful);
+    assertThat(processingSuccessful).isTrue();
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(1)).processCommandMessage(any());
     verify(respService, times(1)).write(expectedResponse);
@@ -67,7 +75,7 @@ public class ClientMessageProcessorTest {
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
-    assertFalse(processingSuccessful);
+    assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
     verify(respService, times(0)).write(any(RespElement.class));
@@ -80,7 +88,7 @@ public class ClientMessageProcessorTest {
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
-    assertFalse(processingSuccessful);
+    assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
     verify(respService, times(0)).write(any(RespElement.class));
@@ -93,7 +101,7 @@ public class ClientMessageProcessorTest {
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
-    assertFalse(processingSuccessful);
+    assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
     verify(respService, times(0)).write(any(RespElement.class));
@@ -113,7 +121,7 @@ public class ClientMessageProcessorTest {
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
-    assertFalse(processingSuccessful);
+    assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(1)).processCommandMessage(any());
     verify(respService, times(0)).write(any(RespElement.class));
@@ -131,7 +139,7 @@ public class ClientMessageProcessorTest {
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
-    assertFalse(processingSuccessful);
+    assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(1)).processCommandMessage(any());
     verify(respService, times(0)).write(any(RespElement.class));
@@ -151,7 +159,7 @@ public class ClientMessageProcessorTest {
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
-    assertFalse(processingSuccessful);
+    assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(1)).processCommandMessage(any());
     verify(respService, times(1)).write(any());
@@ -165,7 +173,7 @@ public class ClientMessageProcessorTest {
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
-    assertFalse(processingSuccessful);
+    assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
     verify(respService, times(0)).write(any(RespElement.class));
@@ -179,10 +187,20 @@ public class ClientMessageProcessorTest {
     // Act
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
     // Arrange
-    assertFalse(processingSuccessful);
+    assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
     verify(respService, times(0)).write(any(RespElement.class));
   }
 
+  @Test
+  void respServiceClosed() {
+    // Arrange
+    reset(respService);
+    when(respService.isOpen()).thenReturn(false);
+    // Act
+    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+    // Arrange
+    assertThat(processingSuccessful).isFalse();
+  }
 }
