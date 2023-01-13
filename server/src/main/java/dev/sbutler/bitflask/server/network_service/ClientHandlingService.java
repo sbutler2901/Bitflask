@@ -39,7 +39,7 @@ final class ClientHandlingService extends AbstractService implements Runnable {
   private final ListeningExecutorService listeningExecutorService;
   private final ClientMessageProcessor clientMessageProcessor;
 
-  ClientHandlingService(ListeningExecutorService listeningExecutorService,
+  private ClientHandlingService(ListeningExecutorService listeningExecutorService,
       ClientMessageProcessor clientMessageProcessor) {
     this.listeningExecutorService = listeningExecutorService;
     this.clientMessageProcessor = clientMessageProcessor;
