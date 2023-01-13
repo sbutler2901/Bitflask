@@ -17,6 +17,7 @@ import com.google.inject.Injector;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
 import java.nio.channels.ServerSocketChannel;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,6 +75,14 @@ class ServerTest {
         verify(injector, times(1)).getInstance(ListeningExecutorService.class);
         verify(serviceManager, times(1)).startAsync();
       }
+    }
+  }
+
+  @Test
+  void main_catastrophic_error() {
+    try (MockedStatic<Instant> instantMockedStatic = mockStatic(Instant.class)) {
+      instantMockedStatic.when(Instant::now).thenThrow(RuntimeException.class);
+      Server.main(new String[0]);
     }
   }
 }
