@@ -1,11 +1,8 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import java.util.List;
 import javax.inject.Inject;
 
 /**
@@ -26,7 +23,6 @@ public final class CommandProcessingService {
    * results.
    */
   public ListenableFuture<String> processCommandMessage(ImmutableList<String> commandMessage) {
-    checkNotNull(commandMessage);
     if (commandMessage.size() < 1) {
       return createFailureFuture("Message must contain at least one argument");
     }
@@ -41,30 +37,12 @@ public final class CommandProcessingService {
     }
 
     ImmutableList<String> args = commandMessage.subList(1, commandMessage.size());
-    if (!isValidCommandArgs(commandType, args)) {
-      return createFailureFuture(
-          String.format("Invalid arguments for command [%s]: %s", messageCommand, args));
+    try {
+      ServerCommand command = commandFactory.createCommand(commandType, args);
+      return command.execute();
+    } catch (InvalidCommandArgumentsException e) {
+      return createFailureFuture(e.getMessage());
     }
-
-    ServerCommand command = createCommand(commandType, args);
-    return command.execute();
-  }
-
-  private ServerCommand createCommand(CommandType commandType, ImmutableList<String> args) {
-    return switch (commandType) {
-      case PING -> commandFactory.createPingCommand();
-      case GET -> commandFactory.createGetCommand(args.get(0));
-      case SET -> commandFactory.createSetCommand(args.get(0), args.get(1));
-      case DEL -> commandFactory.createDeleteCommand(args.get(0));
-    };
-  }
-
-  private static boolean isValidCommandArgs(CommandType commandType, List<String> args) {
-    return switch (commandType) {
-      case PING -> args.size() == 0;
-      case GET, DEL -> args.size() == 1;
-      case SET -> args.size() == 2;
-    };
   }
 
   private static ListenableFuture<String> createFailureFuture(String responseMessage) {
