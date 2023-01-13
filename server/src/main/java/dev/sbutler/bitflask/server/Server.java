@@ -49,9 +49,10 @@ public final class Server {
       printConfigInfo(initializedConfigurations);
 
       Injector injector = Guice.createInjector(
-          new ConcurrencyModule(),
-          new ServerModule(initializedConfigurations.serverConfigurations()),
-          new StorageServiceModule(initializedConfigurations.storageConfigurations()));
+          ImmutableSet.of(
+              new ConcurrencyModule(),
+              new ServerModule(initializedConfigurations.serverConfigurations()),
+              new StorageServiceModule(initializedConfigurations.storageConfigurations())));
 
       ServerSocketChannel serverSocketChannel =
           createServerSocketChannel(initializedConfigurations.serverConfigurations());

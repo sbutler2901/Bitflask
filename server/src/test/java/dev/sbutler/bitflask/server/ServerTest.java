@@ -1,21 +1,22 @@
 package dev.sbutler.bitflask.server;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.server.network_service.NetworkService;
 import dev.sbutler.bitflask.storage.StorageService;
-import java.util.concurrent.ExecutorService;
+import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,22 +30,35 @@ class ServerTest {
 
   @Test
   void main() {
-    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
+    try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class);
+        MockedStatic<ServerSocketChannel> serverSocketChannelMockedStatic = mockStatic(
+            ServerSocketChannel.class)) {
       AtomicReference<ServiceManager> serviceManagerAtomicReference = new AtomicReference<>();
       ArgumentCaptor<Listener> listenerArgumentCaptor = ArgumentCaptor.forClass(Listener.class);
       try (MockedConstruction<ServiceManager> serviceManagerMockedConstruction = mockConstruction(
           ServiceManager.class, (mock, context) -> {
-            doReturn(mock).when(mock).stopAsync();
+            when(mock.stopAsync()).thenReturn(mock);
             serviceManagerAtomicReference.set(mock);
           })) {
         // Arrange
         Injector injector = mock(Injector.class);
-        StorageService storageService = mock(StorageService.class);
-        doReturn(storageService).when(injector).getInstance(StorageService.class);
-        doReturn(mock(NetworkService.class)).when(injector).getInstance(NetworkService.class);
-        doReturn(mock(ExecutorService.class)).when(injector).getInstance(ExecutorService.class);
-        guiceMockedStatic.when(() -> Guice.createInjector(any(ServerModule.class)))
+        guiceMockedStatic.when(() -> Guice.createInjector(any(ImmutableSet.class)))
             .thenReturn(injector);
+
+        ServerSocketChannel serverSocketChannel = mock(ServerSocketChannel.class);
+        serverSocketChannelMockedStatic.when(ServerSocketChannel::open)
+            .thenReturn(serverSocketChannel);
+
+        StorageService storageService = mock(StorageService.class);
+        NetworkService.Factory networkServiceFactory = mock(NetworkService.Factory.class);
+        when(injector.getInstance(NetworkService.Factory.class)).thenReturn(networkServiceFactory);
+        when(injector.getInstance(StorageService.class)).thenReturn(storageService);
+        when(injector.getInstance(ListeningExecutorService.class)).thenReturn(
+            mock(ListeningExecutorService.class));
+
+        NetworkService networkService = mock(NetworkService.class);
+        when(networkServiceFactory.create(serverSocketChannel)).thenReturn(networkService);
+
         // Act
         Server.main(new String[0]);
         verify(serviceManagerAtomicReference.get()).addListener(listenerArgumentCaptor.capture(),
@@ -55,9 +69,9 @@ class ServerTest {
         serviceManagerListener.failure(storageService);
         ServiceManager serviceManager = serviceManagerMockedConstruction.constructed().get(0);
         // Assert
+        verify(injector, times(1)).getInstance(NetworkService.Factory.class);
         verify(injector, times(1)).getInstance(StorageService.class);
-        verify(injector, times(1)).getInstance(NetworkService.class);
-        verify(injector, times(1)).getInstance(ExecutorService.class);
+        verify(injector, times(1)).getInstance(ListeningExecutorService.class);
         verify(serviceManager, times(1)).startAsync();
       }
     }
