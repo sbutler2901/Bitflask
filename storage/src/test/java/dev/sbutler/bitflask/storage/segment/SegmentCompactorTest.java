@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,8 +39,6 @@ public class SegmentCompactorTest {
   SegmentCompactor segmentCompactor;
   @Mock
   SegmentFactory segmentFactory;
-  @Mock
-  ThreadFactory threadFactory;
   @Spy
   ImmutableList<Segment> segmentsToBeCompacted = ImmutableList.of(mock(Segment.class),
       mock(Segment.class));
@@ -49,7 +46,7 @@ public class SegmentCompactorTest {
   @BeforeEach
   void setup() {
     SegmentCompactor.Factory segmentCompactorFactory = new Factory(segmentFactory,
-        threadFactory);
+        Thread.ofVirtual().factory());
     segmentCompactor = segmentCompactorFactory.create(segmentsToBeCompacted);
   }
 

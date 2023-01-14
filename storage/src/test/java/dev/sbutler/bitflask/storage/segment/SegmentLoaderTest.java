@@ -31,6 +31,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @SuppressWarnings({"UnstableApiUsage", "unchecked"})
@@ -39,8 +40,8 @@ class SegmentLoaderTest {
 
   @InjectMocks
   private SegmentLoader segmentLoader;
-  @Mock
-  private ThreadFactory threadFactory;
+  @Spy
+  private ThreadFactory threadFactory = Thread.ofVirtual().factory();
   @Mock
   private SegmentFactory segmentFactory;
   @Mock

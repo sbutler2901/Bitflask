@@ -23,7 +23,6 @@ import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -31,8 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class SegmentDeleterTest {
 
   SegmentDeleter segmentDeleter;
-  @Mock
-  ThreadFactory threadFactory;
+  ThreadFactory threadFactory = Thread.ofVirtual().factory();
   @Spy
   ImmutableList<Segment> segmentsToBeCompacted = ImmutableList.of(mock(Segment.class),
       mock(Segment.class));
