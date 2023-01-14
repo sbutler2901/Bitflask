@@ -8,6 +8,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -76,15 +77,13 @@ public final class NetworkService extends AbstractExecutionThreadService {
     clientHandlingService
         .startAsync()
         .addListener(new Listener() {
-          @SuppressWarnings("NullableProblems")
           @Override
-          public void terminated(State from) {
+          public void terminated(@Nonnull State from) {
             runningClientHandlingServices.remove(clientHandlingService);
           }
 
-          @SuppressWarnings("NullableProblems")
           @Override
-          public void failed(State from, Throwable failure) {
+          public void failed(@Nonnull State from, @Nonnull Throwable failure) {
             runningClientHandlingServices.remove(clientHandlingService);
           }
         }, listeningExecutorService);
