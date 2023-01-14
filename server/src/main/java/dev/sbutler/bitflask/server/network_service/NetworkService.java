@@ -57,16 +57,20 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   @Override
   protected void run() throws IOException {
-    while (isRunning && serverSocketChannel.isOpen()
-        && !Thread.currentThread().isInterrupted()) {
-      SocketChannel socketChannel = serverSocketChannel.accept();
-      logger.atInfo().log(
-          "Received incoming client connection from [%s]",
-          socketChannel.getRemoteAddress());
+    try {
+      while (isRunning && serverSocketChannel.isOpen()
+          && !Thread.currentThread().isInterrupted()) {
+        SocketChannel socketChannel = serverSocketChannel.accept();
+        logger.atInfo().log(
+            "Received incoming client connection from [%s]",
+            socketChannel.getRemoteAddress());
 
-      ClientHandlingService clientHandlingService =
-          clientHandlingServiceFactory.create(socketChannel);
-      startClientHandlingService(clientHandlingService);
+        ClientHandlingService clientHandlingService =
+            clientHandlingServiceFactory.create(socketChannel);
+        startClientHandlingService(clientHandlingService);
+      }
+    } finally {
+      triggerShutdown();
     }
   }
 
