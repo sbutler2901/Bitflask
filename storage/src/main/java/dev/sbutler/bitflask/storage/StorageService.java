@@ -1,9 +1,6 @@
 package dev.sbutler.bitflask.storage;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
-import com.google.common.util.concurrent.ServiceManager;
 import dev.sbutler.bitflask.common.dispatcher.DispatcherSubmission;
 import dev.sbutler.bitflask.storage.commands.CommandMapper;
 import dev.sbutler.bitflask.storage.commands.StorageCommand;
@@ -13,7 +10,6 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -23,32 +19,37 @@ import javax.inject.Singleton;
 @Singleton
 public final class StorageService extends AbstractExecutionThreadService {
 
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-
-  private final ServiceManager serviceManager;
+  private final SegmentManagerService segmentManagerService;
   private final StorageCommandDispatcher commandDispatcher;
   private final CommandMapper commandMapper;
+
+  private volatile boolean isRunning = true;
 
   @Inject
   public StorageService(SegmentManagerService segmentManagerService,
       StorageCommandDispatcher commandDispatcher, CommandMapper commandMapper) {
+    this.segmentManagerService = segmentManagerService;
     this.commandDispatcher = commandDispatcher;
     this.commandMapper = commandMapper;
-    this.serviceManager = new ServiceManager(ImmutableSet.of(segmentManagerService));
   }
 
   @Override
   protected void startUp() {
-    serviceManager.startAsync();
-    serviceManager.awaitHealthy();
+    segmentManagerService.startAsync();
+    segmentManagerService.awaitRunning();
   }
 
   @Override
   public void run() throws Exception {
-    while (isRunning() && !Thread.currentThread().isInterrupted()) {
-      Optional<DispatcherSubmission<StorageCommandDTO, StorageResponse>> submission =
-          commandDispatcher.poll(1, TimeUnit.SECONDS);
-      submission.ifPresent(this::processSubmission);
+    try {
+      while (isRunning && segmentManagerService.isRunning()
+          && !Thread.currentThread().isInterrupted()) {
+        Optional<DispatcherSubmission<StorageCommandDTO, StorageResponse>> submission =
+            commandDispatcher.poll(1, TimeUnit.SECONDS);
+        submission.ifPresent(this::processSubmission);
+      }
+    } finally {
+      triggerShutdown();
     }
   }
 
@@ -61,18 +62,9 @@ public final class StorageService extends AbstractExecutionThreadService {
   @SuppressWarnings("UnstableApiUsage")
   @Override
   protected void triggerShutdown() {
+    isRunning = false;
     commandDispatcher.closeAndDrain();
-    stopServices();
-  }
-
-  private void stopServices() {
-    // Give the services 5 seconds to stop to ensure that we are responsive to shut down
-    // requests.
-    try {
-      serviceManager.stopAsync().awaitStopped(5, TimeUnit.SECONDS);
-    } catch (TimeoutException e) {
-      logger.atWarning().withCause(e)
-          .log("StorageService: ServiceManager timed out while stopping");
-    }
+    segmentManagerService.stopAsync();
+    segmentManagerService.awaitTerminated();
   }
 }
