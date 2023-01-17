@@ -1,13 +1,13 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static java.util.function.Predicate.not;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractService;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
@@ -15,13 +15,10 @@ import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.concurrent.Callable;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -58,11 +55,8 @@ public final class SegmentManagerService extends AbstractService {
   private final int compactionThreshold;
   private final AtomicInteger nextCompactionThreshold = new AtomicInteger();
 
-  private final ReentrantLock newSegmentLock = new ReentrantLock();
-  private final AtomicBoolean creatingNewActiveSegment = new AtomicBoolean(false);
   private final ReentrantLock managedSegmentsLock = new ReentrantLock();
   private final ReentrantLock compactionLock = new ReentrantLock();
-  private final AtomicBoolean compactionActive = new AtomicBoolean(false);
 
   @Inject
   SegmentManagerService(
@@ -89,10 +83,10 @@ public final class SegmentManagerService extends AbstractService {
             .registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
         managedSegmentsAtomicReference.set(managedSegments);
         nextCompactionThreshold.set(compactionThreshold + managedSegments.frozenSegments().size());
+        notifyStarted();
       } catch (Exception e) {
         notifyFailed(e);
       }
-      notifyStarted();
     }, listeningExecutorService);
   }
 
@@ -103,8 +97,9 @@ public final class SegmentManagerService extends AbstractService {
         ManagedSegments managedSegments = managedSegmentsAtomicReference.get();
         managedSegments.writableSegment().close();
         managedSegments.frozenSegments().forEach(Segment::close);
-      } finally {
         notifyStopped();
+      } catch (Exception e) {
+        notifyFailed(e);
       }
     }, listeningExecutorService);
   }
@@ -126,16 +121,14 @@ public final class SegmentManagerService extends AbstractService {
   }
 
   /**
-   * Called by a Segment once its size limit has been exceeded initiating manger update logic.
+   * Called by a Segment once its size limit has been exceeded initiating manager update logic.
    *
    * <p>Update entails creating a new active write segment and, if needed, performing compaction
    * and deletion.
    */
   private void segmentSizeLimitExceededConsumer(Segment segment) {
     try {
-      ListenableFuture<Void> sizeLimitFuture =
-          Futures.submit(createSizeLimitTask(segment), listeningExecutorService);
-      registerSizeLimitTaskCallback(sizeLimitFuture);
+      Futures.submit(createSizeLimitExceededTask(segment), listeningExecutorService);
     } catch (RejectedExecutionException e) {
       logger.atSevere().withCause(e)
           .log("Failed to submit cleanup task after segment size limit exceeded");
@@ -150,38 +143,25 @@ public final class SegmentManagerService extends AbstractService {
    * post-compaction deletion. Compaction may be activated when a new segment is created and
    * deletion will be activated if compaction is activated.
    */
-  private Callable<Void> createSizeLimitTask(Segment segment) {
+  private Runnable createSizeLimitExceededTask(Segment segment) {
     return () -> {
-      boolean segmentCreated = handleSegmentSizeLimitExceeded(segment);
-      if (!segmentCreated) {
-        return null;
-      }
-      ImmutableList<Segment> segmentsForDeletion = handleInitiatingCompaction();
-      initiateDeletion(segmentsForDeletion);
-      return null;
-    };
-  }
-
-  /**
-   * Registers the callback to handle successful or failed execution of a size limit future.
-   *
-   * <p>This handles catastrophic failures that occur during execution beyond general anticipated
-   * failures.
-   */
-  private void registerSizeLimitTaskCallback(ListenableFuture<Void> sizeLimitFuture) {
-    Futures.addCallback(sizeLimitFuture, new FutureCallback<>() {
-      @Override
-      public void onSuccess(Void result) {
-        logger.atInfo().log("Successfully executed size limit exceeded task");
-      }
-
-      @Override
-      public void onFailure(@Nonnull Throwable t) {
-        logger.atSevere().withCause(t)
+      try {
+        boolean segmentCreated = handleCreatingNewSegment(segment);
+        if (!segmentCreated) {
+          return;
+        }
+        ImmutableList<Segment> segmentsForDeletion = handleInitiatingCompaction();
+        if (segmentsForDeletion.isEmpty()) {
+          return;
+        }
+        initiateDeletion(segmentsForDeletion);
+      } catch (Exception e) {
+        logger.atSevere().withCause(e)
             .log("Failed to execute size limit exceeded task");
-        notifyFailed(t);
+        notifyFailed(e);
       }
-    }, listeningExecutorService);
+      logger.atInfo().log("Successfully executed size limit exceeded task");
+    };
   }
 
   /**
@@ -189,28 +169,18 @@ public final class SegmentManagerService extends AbstractService {
    *
    * @return whether a new segment was created
    */
-  private boolean handleSegmentSizeLimitExceeded(Segment segment) throws IOException {
-    newSegmentLock.lock();
-    try {
-      if (shouldSkipCreatingNewActiveSegment(segment)) {
-        return false;
+  private boolean handleCreatingNewSegment(Segment segment) throws IOException {
+    if (managedSegmentsLock.tryLock()) {
+      try {
+        if (segment.equals(managedSegmentsAtomicReference.get().writableSegment())) {
+          createNewWritableSegmentAndUpdateManagedSegments();
+          return true;
+        }
+      } finally {
+        managedSegmentsLock.unlock();
       }
-      creatingNewActiveSegment.set(true);
-    } finally {
-      newSegmentLock.unlock();
     }
-
-    try {
-      createNewWritableSegmentAndUpdateManagedSegments();
-      return true;
-    } finally {
-      creatingNewActiveSegment.set(false);
-    }
-  }
-
-  private boolean shouldSkipCreatingNewActiveSegment(Segment segment) {
-    return creatingNewActiveSegment.get() || !segment.equals(
-        managedSegmentsAtomicReference.get().writableSegment());
+    return false;
   }
 
   /**
@@ -219,51 +189,36 @@ public final class SegmentManagerService extends AbstractService {
    * @throws IOException if there is an issue creating a new segment
    */
   private void createNewWritableSegmentAndUpdateManagedSegments() throws IOException {
-    managedSegmentsLock.lock();
-    try {
-      logger.atInfo().log("Creating new active segment");
-      ManagedSegments currentManagedSegments = managedSegmentsAtomicReference.get();
-      Segment newWritableSegment = segmentFactory.createSegment();
-      ImmutableList<Segment> newFrozenSegments = new ImmutableList.Builder<Segment>()
-          .add(currentManagedSegments.writableSegment())
-          .addAll(currentManagedSegments.frozenSegments())
-          .build();
+    logger.atInfo().log("Creating new active segment");
 
-      newWritableSegment.registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
-      managedSegmentsAtomicReference.set(
-          new ManagedSegments(newWritableSegment, newFrozenSegments));
-    } finally {
-      managedSegmentsLock.unlock();
-    }
+    Segment newWritableSegment = segmentFactory.createSegment();
+    newWritableSegment.registerSizeLimitExceededConsumer(this::segmentSizeLimitExceededConsumer);
+
+    ManagedSegments currentManagedSegments = managedSegmentsAtomicReference.get();
+    ImmutableList<Segment> newFrozenSegments = new ImmutableList.Builder<Segment>()
+        .add(currentManagedSegments.writableSegment())
+        .addAll(currentManagedSegments.frozenSegments())
+        .build();
+
+    managedSegmentsAtomicReference.set(
+        new ManagedSegments(newWritableSegment, newFrozenSegments));
   }
 
   /**
    * Determines if a compaction should be started, and initiates the process if so.
    */
   private ImmutableList<Segment> handleInitiatingCompaction() {
-    compactionLock.lock();
-    try {
-      if (shouldSkipInitiatingCompaction()) {
-        return ImmutableList.of();
+    if (compactionLock.tryLock()) {
+      try {
+        if (managedSegmentsAtomicReference.get().frozenSegments().size()
+            >= nextCompactionThreshold.get()) {
+          return initiateCompaction();
+        }
+      } finally {
+        compactionLock.unlock();
       }
-      compactionActive.set(true);
-    } finally {
-      compactionLock.unlock();
     }
-
-    ImmutableList<Segment> segmentsForDeletion;
-    try {
-      segmentsForDeletion = initiateCompaction();
-    } finally {
-      compactionActive.set(false);
-    }
-    return segmentsForDeletion;
-  }
-
-  private boolean shouldSkipInitiatingCompaction() {
-    return compactionActive.get()
-        || managedSegmentsAtomicReference.get().frozenSegments.size()
-        < nextCompactionThreshold.get();
+    return ImmutableList.of();
   }
 
   /**
@@ -302,11 +257,12 @@ public final class SegmentManagerService extends AbstractService {
     managedSegmentsLock.lock();
     try {
       logger.atInfo().log("Updating after compaction");
-      ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
+
       Deque<Segment> newFrozenSegments = new ArrayDeque<>();
+      ManagedSegments currentManagedSegment = managedSegmentsAtomicReference.get();
 
       currentManagedSegment.frozenSegments().stream()
-          .filter((segment) -> !segment.hasBeenCompacted())
+          .filter(not(Segment::hasBeenCompacted))
           .forEach(newFrozenSegments::offerFirst);
       newFrozenSegments.addAll(compactedSegments);
 
@@ -324,9 +280,6 @@ public final class SegmentManagerService extends AbstractService {
    * Initiates deletion, processes and logs the results.
    */
   private void initiateDeletion(ImmutableList<Segment> segmentsForDeletion) {
-    if (segmentsForDeletion.isEmpty()) {
-      return;
-    }
     logger.atInfo()
         .log("Queueing [%d] segments for deletion after compaction", segmentsForDeletion.size());
     SegmentDeleter segmentDeleter = segmentDeleterFactory.create(segmentsForDeletion);

@@ -20,7 +20,6 @@ import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
 import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,10 +78,13 @@ public class SegmentManagerServiceTest {
   @Test
   void doStart_exception() {
     // Arrange
-    doThrow(SegmentLoaderException.class).when(segmentLoader).loadExistingSegments();
-    // Act / Assert
-    assertThrows(IllegalStateException.class,
+    SegmentLoaderException segmentLoaderException = new SegmentLoaderException("test");
+    doThrow(segmentLoaderException).when(segmentLoader).loadExistingSegments();
+    // Act
+    IllegalStateException e = assertThrows(IllegalStateException.class,
         () -> segmentManagerService.startAsync().awaitRunning());
+    // Assert
+    assertThat(e).hasCauseThat().isEqualTo(segmentLoaderException);
   }
 
   @Test
@@ -99,6 +101,25 @@ public class SegmentManagerServiceTest {
     // Assert
     verify(writableSegment, times(1)).close();
     verify(frozenSegment, times(1)).close();
+  }
+
+  @Test
+  void doStop_exception() {
+    // Arrange
+    when(segmentLoader.loadExistingSegments()).thenReturn(managedSegments);
+    Segment writableSegment = mock(Segment.class);
+    when(managedSegments.writableSegment()).thenReturn(writableSegment);
+    when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of());
+
+    RuntimeException runtimeException = new RuntimeException("test");
+    doThrow(runtimeException).when(writableSegment).close();
+    // Act
+    segmentManagerService.startAsync().awaitRunning();
+
+    IllegalStateException e = assertThrows(IllegalStateException.class,
+        () -> segmentManagerService.stopAsync().awaitTerminated());
+    // Assert
+    assertThat(e).hasCauseThat().isEqualTo(e);
   }
 
   @Test
@@ -202,10 +223,9 @@ public class SegmentManagerServiceTest {
       when(managedSegments.frozenSegments()).thenReturn(ImmutableList.of(frozenSegment));
       ArgumentCaptor<Consumer<Segment>> captor = ArgumentCaptor.forClass(Consumer.class);
       RejectedExecutionException e = new RejectedExecutionException();
-      futuresMockedStatic.when(() -> Futures.submit(any(Callable.class), any()))
-          .thenThrow(e);
       futuresMockedStatic.when(() -> Futures.submit(any(Runnable.class), any()))
-          .thenCallRealMethod();
+          .thenCallRealMethod()
+          .thenThrow(e);
       // Act
       segmentManagerService.startAsync().awaitRunning();
       verify(writableSegment).registerSizeLimitExceededConsumer(captor.capture());
