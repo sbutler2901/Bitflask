@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
  * As a result the value must be received as an {@code int} to represent the range supported by this
  * class.
  */
-public record UnsignedShort(int value) {
+public final class UnsignedShort {
 
   /**
    * The number of bits used to represent an UnsignedShort.
@@ -37,17 +37,23 @@ public record UnsignedShort(int value) {
    */
   public static final int BYTE_ARRAY_LENGTH = 4;
 
+  private final int value;
+
+  private UnsignedShort(int value) {
+    checkArgument(value >= MIN_VALUE,
+        "Provided value less than MIN_VALUE. Received [%d], expected [%d]", value, MIN_VALUE);
+    checkArgument(value <= MAX_VALUE,
+        "Provided value greater than MAX_VALUE. Received [%d], expected [%d]", value, MAX_VALUE);
+    this.value = value;
+  }
+
   /**
    * Expects a value in the inclusive number range 0 - 65,535
    *
    * <p>An {@link IllegalArgumentException} will be thrown if an invalid value is provided.
    */
-  public UnsignedShort {
-    checkArgument(value >= MIN_VALUE,
-        "Provided value less than MIN_VALUE. Received [%d], expected [%d]", value, MIN_VALUE);
-    checkArgument(value <= MAX_VALUE,
-        "Provided value greater than MAX_VALUE. Received [%d], expected [%d]", value, MAX_VALUE);
-
+  public static UnsignedShort valueOf(int value) {
+    return new UnsignedShort(value);
   }
 
   /**
@@ -57,6 +63,9 @@ public record UnsignedShort(int value) {
    *
    * <p>The array will be converted into a value using {@code ByteBuffer.wrap(bytes).getInt()} and
    * must be within the inclusive number range 0 - 65,535.
+   *
+   * <p>An {@link IllegalArgumentException} will be thrown if the byte array resolves to an invalid
+   * value.
    */
   public static UnsignedShort fromBytes(byte[] bytes) {
     checkArgument(bytes.length == BYTE_ARRAY_LENGTH,
@@ -64,6 +73,13 @@ public record UnsignedShort(int value) {
         BYTE_ARRAY_LENGTH);
     int value = ByteBuffer.wrap(bytes).getInt();
     return new UnsignedShort(value);
+  }
+
+  /**
+   * Gets the value.
+   */
+  public int getValue() {
+    return value;
   }
 
   /**
