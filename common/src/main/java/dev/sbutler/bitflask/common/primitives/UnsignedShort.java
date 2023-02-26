@@ -2,8 +2,7 @@ package dev.sbutler.bitflask.common.primitives;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.common.primitives.Ints;
-import java.nio.ByteBuffer;
+import com.google.common.primitives.UnsignedBytes;
 
 /**
  * Represents a 2-byte unsigned value.
@@ -32,10 +31,9 @@ public final class UnsignedShort {
    * A constant holding the minimum value an UnsignedShort can have, 0.
    */
   public static final int MIN_VALUE = 0;
-  /**
-   * The expected array length when creating an UnsignedShort from a {@code byte[]}.
-   */
-  public static final int BYTE_ARRAY_LENGTH = 4;
+
+  private static final int HIGH_ORDER_BYTE_BITMASK = 0xff00;
+  private static final int LOWER_ORDER_BYTE_BITMASK = 0x00ff;
 
   private final int value;
 
@@ -59,20 +57,32 @@ public final class UnsignedShort {
   /**
    * Creates a new UnsignedShort instant from the provided byte array.
    *
-   * <p>The provided array must be of length 4.
+   * <p>The 0th index of the array will be interpreted as the higher order byte and the 1st index
+   * will be interpreted as the lower order byte.
    *
-   * <p>The array will be converted into a value using {@code ByteBuffer.wrap(bytes).getInt()} and
-   * must be within the inclusive number range 0 - 65,535.
-   *
-   * <p>An {@link IllegalArgumentException} will be thrown if the byte array resolves to an invalid
-   * value.
+   * <p>An {@link IllegalArgumentException} will be thrown if the provided byte array's length is
+   * not 2.
    */
   public static UnsignedShort fromBytes(byte[] bytes) {
-    checkArgument(bytes.length == BYTE_ARRAY_LENGTH,
-        "Provided byte array length invalid. Provided [%d], expected [%d]", bytes.length,
-        BYTE_ARRAY_LENGTH);
-    int value = ByteBuffer.wrap(bytes).getInt();
+    checkArgument(bytes.length == 2, "Byte array length must be 2. Provided array's length [%d]",
+        bytes.length);
+    int higherOrderShifted = (UnsignedBytes.toInt(bytes[0]) << Byte.SIZE);
+    int value = higherOrderShifted + UnsignedBytes.toInt(bytes[1]);
     return new UnsignedShort(value);
+  }
+
+  /**
+   * Converts the stored value into a byte array of length 2.
+   *
+   * <p>The higher ordered byte will be in the 0th index with the lower ordered byte in the 1st
+   * index.
+   */
+  public byte[] toByteArray() {
+    int higherOrderByteMasked = (value & HIGH_ORDER_BYTE_BITMASK) >> Byte.SIZE;
+    int lowerOrderByteMasked = value & LOWER_ORDER_BYTE_BITMASK;
+    byte higherOrderByte = UnsignedBytes.checkedCast(higherOrderByteMasked);
+    byte lowerOrderByte = UnsignedBytes.checkedCast(lowerOrderByteMasked);
+    return new byte[]{higherOrderByte, lowerOrderByte};
   }
 
   /**
@@ -80,12 +90,5 @@ public final class UnsignedShort {
    */
   public int getValue() {
     return value;
-  }
-
-  /**
-   * Converts the stored value into a byte array of length 4.
-   */
-  public byte[] toByteArray() {
-    return Ints.toByteArray(value);
   }
 }
