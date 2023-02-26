@@ -17,14 +17,14 @@ public class UnsignedShortTest {
   public void value_valid_minValue() {
     UnsignedShort unsignedShort = UnsignedShort.valueOf(UnsignedShort.MIN_VALUE);
 
-    assertThat(unsignedShort.getValue()).isEqualTo(UnsignedShort.MIN_VALUE);
+    assertThat(unsignedShort.value()).isEqualTo(UnsignedShort.MIN_VALUE);
   }
 
   @Test
   public void value_valid_maxValue() {
     UnsignedShort unsignedShort = UnsignedShort.valueOf(UnsignedShort.MAX_VALUE);
 
-    assertThat(unsignedShort.getValue()).isEqualTo(UnsignedShort.MAX_VALUE);
+    assertThat(unsignedShort.value()).isEqualTo(UnsignedShort.MAX_VALUE);
   }
 
   @Test
@@ -49,14 +49,14 @@ public class UnsignedShortTest {
   public void fromBytes_valid_minValue() {
     UnsignedShort unsignedShort = UnsignedShort.fromBytes(MIN_VALUE_BYTES);
 
-    assertThat(unsignedShort.getValue()).isEqualTo(UnsignedShort.MIN_VALUE);
+    assertThat(unsignedShort.value()).isEqualTo(UnsignedShort.MIN_VALUE);
   }
 
   @Test
   public void fromBytes_valid_maxValue() {
     UnsignedShort unsignedShort = UnsignedShort.fromBytes(MAX_VALUE_BYTES);
 
-    assertThat(unsignedShort.getValue()).isEqualTo(UnsignedShort.MAX_VALUE);
+    assertThat(unsignedShort.value()).isEqualTo(UnsignedShort.MAX_VALUE);
   }
 
   @Test

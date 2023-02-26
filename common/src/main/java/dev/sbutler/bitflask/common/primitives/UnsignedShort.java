@@ -13,7 +13,7 @@ import com.google.common.primitives.UnsignedBytes;
  * As a result the value must be received as an {@code int} to represent the range supported by this
  * class.
  */
-public final class UnsignedShort {
+public record UnsignedShort(int value) {
 
   /**
    * The number of bits used to represent an UnsignedShort.
@@ -35,14 +35,12 @@ public final class UnsignedShort {
   private static final int HIGH_ORDER_BYTE_BITMASK = 0xff00;
   private static final int LOWER_ORDER_BYTE_BITMASK = 0x00ff;
 
-  private final int value;
 
-  private UnsignedShort(int value) {
+  public UnsignedShort {
     checkArgument(value >= MIN_VALUE,
         "Provided value less than MIN_VALUE. Received [%d], expected [%d]", value, MIN_VALUE);
     checkArgument(value <= MAX_VALUE,
         "Provided value greater than MAX_VALUE. Received [%d], expected [%d]", value, MAX_VALUE);
-    this.value = value;
   }
 
   /**
@@ -83,12 +81,5 @@ public final class UnsignedShort {
     byte higherOrderByte = UnsignedBytes.checkedCast(higherOrderByteMasked);
     byte lowerOrderByte = UnsignedBytes.checkedCast(lowerOrderByteMasked);
     return new byte[]{higherOrderByte, lowerOrderByte};
-  }
-
-  /**
-   * Gets the value.
-   */
-  public int getValue() {
-    return value;
   }
 }
