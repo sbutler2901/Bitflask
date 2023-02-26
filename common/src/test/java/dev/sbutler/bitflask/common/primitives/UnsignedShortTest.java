@@ -59,7 +59,7 @@ public class UnsignedShortTest {
   }
 
   @Test
-  public void value_invalid_lessThanMinValue() {
+  public void value_invalid_lessThanMinValue_throwsIllegalArgumentException() {
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class,
             () -> UnsignedShort.valueOf(UnsignedShort.MIN_VALUE - 1));
@@ -68,7 +68,7 @@ public class UnsignedShortTest {
   }
 
   @Test
-  public void value_invalid_greaterThanMaxValue() {
+  public void value_invalid_greaterThanMaxValue_throwsIllegalArgumentException() {
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class,
             () -> UnsignedShort.valueOf(UnsignedShort.MAX_VALUE + 1));
@@ -91,7 +91,7 @@ public class UnsignedShortTest {
   }
 
   @Test
-  public void fromBytes_invalid_arrayLength_lessThanTwo() {
+  public void fromBytes_invalid_arrayLength_lessThanTwo_throwsIllegalArgumentException() {
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class,
             () -> UnsignedShort.fromBytes(new byte[0]));
@@ -100,7 +100,7 @@ public class UnsignedShortTest {
   }
 
   @Test
-  public void fromBytes_invalid_arrayLength_greaterThanTwo() {
+  public void fromBytes_invalid_arrayLength_greaterThanTwo_throwsIllegalArgumentException() {
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class,
             () -> UnsignedShort.fromBytes(new byte[3]));
