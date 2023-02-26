@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segmentV1;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;

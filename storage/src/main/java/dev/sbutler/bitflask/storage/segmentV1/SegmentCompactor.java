@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segmentV1;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
@@ -6,9 +6,9 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import dev.sbutler.bitflask.storage.segment.Encoder.Header;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
+import dev.sbutler.bitflask.storage.segmentV1.Encoder.Header;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentCompactor.CompactionResults.Failed;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentCompactor.CompactionResults.Success;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;

@@ -1,12 +1,12 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segmentV1;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.segment.Encoder.Header;
-import dev.sbutler.bitflask.storage.segment.Encoder.Offsets;
-import dev.sbutler.bitflask.storage.segment.Encoder.PartialOffsets;
-import dev.sbutler.bitflask.storage.segment.Segment.Entry;
+import dev.sbutler.bitflask.storage.segmentV1.Encoder.Header;
+import dev.sbutler.bitflask.storage.segmentV1.Encoder.Offsets;
+import dev.sbutler.bitflask.storage.segmentV1.Encoder.PartialOffsets;
+import dev.sbutler.bitflask.storage.segmentV1.Segment.Entry;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;

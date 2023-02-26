@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segmentV1;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -11,11 +11,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Success;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.Factory;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentDeleter.DeletionResults;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentDeleter.DeletionResults.FailedGeneral;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentDeleter.DeletionResults.FailedSegments;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentDeleter.DeletionResults.Success;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentDeleter.Factory;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;

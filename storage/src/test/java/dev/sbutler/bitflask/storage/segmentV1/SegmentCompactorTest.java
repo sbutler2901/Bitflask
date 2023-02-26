@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segmentV1;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,11 +17,11 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import dev.sbutler.bitflask.storage.segment.Encoder.Header;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Failed;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults.Success;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.Factory;
+import dev.sbutler.bitflask.storage.segmentV1.Encoder.Header;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentCompactor.CompactionResults;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentCompactor.CompactionResults.Failed;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentCompactor.CompactionResults.Success;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentCompactor.Factory;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;

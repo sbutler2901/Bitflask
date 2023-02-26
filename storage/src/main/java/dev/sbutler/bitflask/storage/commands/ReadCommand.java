@@ -8,8 +8,8 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.segment.ReadableSegment;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
+import dev.sbutler.bitflask.storage.segmentV1.ReadableSegment;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService;
 import java.io.IOException;
 import java.util.Optional;
 

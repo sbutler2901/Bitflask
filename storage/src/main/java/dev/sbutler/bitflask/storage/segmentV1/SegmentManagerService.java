@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segmentV1;
 
 import static java.util.function.Predicate.not;
 
@@ -10,8 +10,8 @@ import com.google.common.util.concurrent.AbstractService;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentCompactor.CompactionResults;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentDeleter.DeletionResults;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;

@@ -1,12 +1,12 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segmentV1;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import dev.sbutler.bitflask.storage.segment.Encoder.Header;
-import dev.sbutler.bitflask.storage.segment.Encoder.Offsets;
-import dev.sbutler.bitflask.storage.segment.Encoder.PartialOffsets;
+import dev.sbutler.bitflask.storage.segmentV1.Encoder.Header;
+import dev.sbutler.bitflask.storage.segmentV1.Encoder.Offsets;
+import dev.sbutler.bitflask.storage.segmentV1.Encoder.PartialOffsets;
 import org.junit.jupiter.api.Test;
 
 public class EncoderTest {

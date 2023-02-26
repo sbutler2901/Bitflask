@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segmentV1;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
@@ -10,8 +10,8 @@ import com.google.mu.util.stream.BiStream;
 import dev.sbutler.bitflask.common.concurrency.StructuredTaskScopeUtils;
 import dev.sbutler.bitflask.common.io.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentFile.Header;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
@@ -228,7 +228,7 @@ final class SegmentLoader {
 
   /**
    * Creates the final
-   * {@link dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments} after
+   * {@link dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService.ManagedSegments} after
    * loading any segments.
    *
    * <p>If the provided list of loaded segments is empty a segment will be created to populated the

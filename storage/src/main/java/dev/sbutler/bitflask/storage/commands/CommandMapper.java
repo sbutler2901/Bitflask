@@ -5,7 +5,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService;
 import javax.inject.Inject;
 
 /**

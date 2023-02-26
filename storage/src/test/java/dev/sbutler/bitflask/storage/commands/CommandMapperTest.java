@@ -6,7 +6,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

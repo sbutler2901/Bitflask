@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segmentV1;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,9 +16,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.segment.SegmentCompactor.CompactionResults;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerService.ManagedSegments;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentCompactor.CompactionResults;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentDeleter.DeletionResults;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService.ManagedSegments;
 import java.io.IOException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;

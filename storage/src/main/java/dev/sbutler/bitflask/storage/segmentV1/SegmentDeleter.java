@@ -1,10 +1,10 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segmentV1;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedGeneral;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.FailedSegments;
-import dev.sbutler.bitflask.storage.segment.SegmentDeleter.DeletionResults.Success;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentDeleter.DeletionResults.FailedGeneral;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentDeleter.DeletionResults.FailedSegments;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentDeleter.DeletionResults.Success;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;

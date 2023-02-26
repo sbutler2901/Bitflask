@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.segmentV1;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -9,8 +9,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.storage.segment.SegmentFile.Factory;
-import dev.sbutler.bitflask.storage.segment.SegmentFile.Header;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentFile.Factory;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentFile.Header;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;

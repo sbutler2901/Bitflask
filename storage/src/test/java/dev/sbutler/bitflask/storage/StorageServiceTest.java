@@ -17,7 +17,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.segment.SegmentManagerService;
+import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
