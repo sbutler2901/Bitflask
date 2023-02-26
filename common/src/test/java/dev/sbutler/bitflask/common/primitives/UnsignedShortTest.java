@@ -12,6 +12,37 @@ public class UnsignedShortTest {
   private static final byte[] MAX_VALUE_BYTES = new byte[]{UnsignedBytes.checkedCast(255),
       UnsignedBytes.checkedCast(255)};
 
+  @Test
+  public void identityConversion_fromBytes_minValue() {
+    byte[] bytes = UnsignedShort.fromBytes(MIN_VALUE_BYTES).getBytes();
+
+    assertThat(bytes).isEqualTo(MIN_VALUE_BYTES);
+  }
+
+  @Test
+  public void identityConversion_fromBytes_maxValue() {
+    byte[] bytes = UnsignedShort.fromBytes(MAX_VALUE_BYTES).getBytes();
+
+    assertThat(bytes).isEqualTo(MAX_VALUE_BYTES);
+  }
+
+  @Test
+  public void identityConversion_getBytes_minValue() {
+    UnsignedShort expected = new UnsignedShort(UnsignedShort.MIN_VALUE);
+
+    UnsignedShort created = UnsignedShort.fromBytes(expected.getBytes());
+
+    assertThat(created).isEqualTo(expected);
+  }
+
+  @Test
+  public void identityConversion_getBytes_maxValue() {
+    UnsignedShort expected = new UnsignedShort(UnsignedShort.MAX_VALUE);
+
+    UnsignedShort created = UnsignedShort.fromBytes(expected.getBytes());
+
+    assertThat(created).isEqualTo(expected);
+  }
 
   @Test
   public void value_valid_minValue() {
@@ -78,19 +109,19 @@ public class UnsignedShortTest {
   }
 
   @Test
-  public void toByteArray_valid_minValue() {
+  public void getBytes_valid_minValue() {
     UnsignedShort unsignedShort = UnsignedShort.valueOf(UnsignedShort.MIN_VALUE);
 
-    byte[] bytes = unsignedShort.toByteArray();
+    byte[] bytes = unsignedShort.getBytes();
 
     assertThat(bytes).isEqualTo(MIN_VALUE_BYTES);
   }
 
   @Test
-  public void toByteArray_valid_maxValue() {
+  public void getBytes_valid_maxValue() {
     UnsignedShort unsignedShort = UnsignedShort.valueOf(UnsignedShort.MAX_VALUE);
 
-    byte[] bytes = unsignedShort.toByteArray();
+    byte[] bytes = unsignedShort.getBytes();
 
     assertThat(bytes).isEqualTo(MAX_VALUE_BYTES);
   }

@@ -75,7 +75,7 @@ public record UnsignedShort(int value) {
    * <p>The higher ordered byte will be in the 0th index with the lower ordered byte in the 1st
    * index.
    */
-  public byte[] toByteArray() {
+  public byte[] getBytes() {
     int higherOrderByteMasked = (value & HIGH_ORDER_BYTE_BITMASK) >> Byte.SIZE;
     int lowerOrderByteMasked = value & LOWER_ORDER_BYTE_BITMASK;
     byte higherOrderByte = UnsignedBytes.checkedCast(higherOrderByteMasked);
