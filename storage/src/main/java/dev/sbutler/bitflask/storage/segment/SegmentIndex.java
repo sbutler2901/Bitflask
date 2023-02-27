@@ -19,7 +19,8 @@ interface SegmentIndex {
   boolean mightContain(String key);
 
   /**
-   * Returns the file offset of the {@link dev.sbutler.bitflask.storage.entry.Entry}, if present.
+   * Returns the file offset to start searching for a
+   * {@link dev.sbutler.bitflask.storage.entry.Entry} in a {@link Segment}, if present.
    */
   Optional<Long> getKeyOffset(String key);
 

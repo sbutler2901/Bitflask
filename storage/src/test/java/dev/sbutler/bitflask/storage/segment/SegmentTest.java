@@ -7,9 +7,12 @@ import static org.junit.Assert.assertThrows;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
+import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import dev.sbutler.bitflask.storage.entry.Entry;
+import dev.sbutler.bitflask.storage.segment.Segment.Factory;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +28,9 @@ public class SegmentTest {
   SegmentIndex emptySegmentIndex = new SegmentIndexDense(
       new SegmentIndexMetadata(zeroUnsignedShort),
       ImmutableSortedMap.of());
+  Path filePath = Path.of("segment0" + Segment.FILE_EXTENSION);
+
+  private final Factory factory = new Factory(TestingExecutors.sameThreadScheduledExecutor());
 
   @Test
   public void construction_mismatchSegmentNumber_throwsIllegalArgumentException() {
@@ -34,7 +40,7 @@ public class SegmentTest {
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class,
-            () -> new Segment(metadata, keyFilter, segmentIndex));
+            () -> factory.create(metadata, keyFilter, segmentIndex, filePath));
 
     assertThat(e).hasMessageThat().ignoringCase()
         .contains("SegmentMetadata segmentNumber does not match SegmentIndex segmentNumber.");
@@ -42,14 +48,14 @@ public class SegmentTest {
 
   @Test
   public void getSegmentNumber_matchesSegmentMetadata() {
-    Segment segment = new Segment(metadata, keyFilter, emptySegmentIndex);
+    Segment segment = factory.create(metadata, keyFilter, emptySegmentIndex, filePath);
 
     assertThat(segment.getSegmentNumber()).isEqualTo(metadata.getSegmentNumber());
   }
 
   @Test
   public void getSegmentLevel_matchesSegmentMetadata() {
-    Segment segment = new Segment(metadata, keyFilter, emptySegmentIndex);
+    Segment segment = factory.create(metadata, keyFilter, emptySegmentIndex, filePath);
 
     assertThat(segment.getSegmentLevel()).isEqualTo(metadata.getSegmentLevel());
   }
@@ -58,7 +64,7 @@ public class SegmentTest {
   public void mightContain_absent_returnsFalse() {
     String key = "key";
 
-    Segment segment = new Segment(metadata, keyFilter, emptySegmentIndex);
+    Segment segment = factory.create(metadata, keyFilter, emptySegmentIndex, filePath);
 
     assertThat(segment.mightContain(key)).isFalse();
   }
@@ -68,7 +74,7 @@ public class SegmentTest {
     String key = "key";
     keyFilter.put(key);
 
-    Segment segment = new Segment(metadata, keyFilter, emptySegmentIndex);
+    Segment segment = factory.create(metadata, keyFilter, emptySegmentIndex, filePath);
 
     assertThat(segment.mightContain(key)).isTrue();
   }
@@ -80,7 +86,7 @@ public class SegmentTest {
         new SegmentIndexMetadata(zeroUnsignedShort),
         ImmutableSortedMap.of(key, 0L));
 
-    Segment segment = new Segment(metadata, keyFilter, segmentIndex);
+    Segment segment = factory.create(metadata, keyFilter, segmentIndex, filePath);
 
     assertThat(segment.mightContain(key)).isTrue();
   }
@@ -88,7 +94,7 @@ public class SegmentTest {
   @Test
   public void readEntry() throws Exception {
     String key = "key";
-    Segment segment = new Segment(metadata, keyFilter, emptySegmentIndex);
+    Segment segment = factory.create(metadata, keyFilter, emptySegmentIndex, filePath);
 
     Optional<Entry> entry = segment.readEntry(key).get();
 
