@@ -117,40 +117,35 @@ public final class Segment {
   private Optional<Entry> findEntry(String key, long startOffset) throws IOException {
     try (BufferedInputStream is =
         new BufferedInputStream(Files.newInputStream(filePath, StandardOpenOption.READ))) {
-      if (is.skip(startOffset) != startOffset) {
-        throw new IOException("Failure skipping to offset");
-      }
+      is.skipNBytes(startOffset);
 
       byte[] metadataBuffer = new byte[EntryMetadata.BYTE_ARRAY_LENGTH];
       while (is.read(metadataBuffer) != -1) {
         EntryMetadata entryMetadata = EntryMetadata.fromBytes(metadataBuffer);
 
         byte[] keyBuffer = is.readNBytes(entryMetadata.getKeyLength());
-        verifyNumReadOrThrow(keyBuffer.length, entryMetadata.getKeyLength());
+        if (keyBuffer.length != entryMetadata.getKeyLength()) {
+          throw new IOException(String.format(
+              "Read key length did not match entry. Read [%d], expected [%d].",
+              keyBuffer.length, entryMetadata.getKeyLength()));
+        }
         String readKey = new String(keyBuffer);
 
         if (key.equals(readKey)) {
           byte[] valueBuffer = is.readNBytes(entryMetadata.getValueLength());
-          verifyNumReadOrThrow(valueBuffer.length, entryMetadata.getValueLength());
+          if (valueBuffer.length != entryMetadata.getValueLength()) {
+            throw new IOException(String.format(
+                "Read value length did not match entry. Read [%d], expected [%d].",
+                valueBuffer.length, entryMetadata.getValueLength()));
+          }
           String value = new String(valueBuffer);
 
           return Optional.of(new Entry(entryMetadata.creationEpochSeconds(), key, value));
         }
 
-        if (is.skip(entryMetadata.getValueLength()) != entryMetadata.getValueLength()) {
-          throw new IOException("Failure skipping to next entry start");
-        }
+        is.skipNBytes(entryMetadata.getValueLength());
       }
     }
     return Optional.empty();
-  }
-
-  private static void verifyNumReadOrThrow(int numRead, int expected) throws IOException {
-    if (numRead == -1) {
-      throw new IOException("Unexpectedly reached end of file reached");
-    } else if (numRead != expected) {
-      throw new IOException(
-          String.format("Number read mismatch. Expected [%d], numRead [%d]", expected, numRead));
-    }
   }
 }
