@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.hash.BloomFilter;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -19,6 +21,10 @@ public final class Segment {
   private final SegmentIndex segmentIndex;
 
   Segment(SegmentMetadata metadata, BloomFilter<String> keyFilter, SegmentIndex segmentIndex) {
+    checkArgument(metadata.getSegmentNumber() == segmentIndex.getSegmentNumber(),
+        "SegmentMetadata segmentNumber does not match SegmentIndex segmentNumber. [%s], [%s]",
+        metadata.getSegmentNumber(), segmentIndex.getSegmentNumber());
+
     this.metadata = metadata;
     this.keyFilter = keyFilter;
     this.segmentIndex = segmentIndex;
