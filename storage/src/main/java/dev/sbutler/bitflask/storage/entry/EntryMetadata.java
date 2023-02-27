@@ -59,4 +59,12 @@ public record EntryMetadata(long creationEpochSeconds, UnsignedShort keyLength,
 
     return Bytes.concat(creationEpochSecondsBytes, keyLengthBytes, valueLengthBytes);
   }
+
+  public int getKeyLength() {
+    return keyLength.value();
+  }
+
+  public int getValueLength() {
+    return valueLength.value();
+  }
 }

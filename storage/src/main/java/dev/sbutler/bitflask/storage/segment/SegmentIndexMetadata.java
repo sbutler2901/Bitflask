@@ -38,4 +38,8 @@ record SegmentIndexMetadata(UnsignedShort segmentNumber) {
   byte[] getBytes() {
     return segmentNumber.getBytes();
   }
+
+  int getSegmentNumber() {
+    return segmentNumber.value();
+  }
 }

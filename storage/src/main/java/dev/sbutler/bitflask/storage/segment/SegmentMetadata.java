@@ -46,4 +46,12 @@ record SegmentMetadata(UnsignedShort segmentNumber, UnsignedShort segmentLevel) 
   byte[] getBytes() {
     return Bytes.concat(segmentNumber.getBytes(), segmentLevel.getBytes());
   }
+
+  int getSegmentNumber() {
+    return segmentNumber.value();
+  }
+
+  int getSegmentLevel() {
+    return segmentLevel.value();
+  }
 }

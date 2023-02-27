@@ -51,8 +51,8 @@ public class EntryMetadataTest {
     EntryMetadata metadata = EntryMetadata.fromBytes(bytes);
 
     assertThat(metadata.creationEpochSeconds()).isEqualTo(creationEpochSeconds);
-    assertThat(metadata.keyLength().value()).isEqualTo(keyLength.value());
-    assertThat(metadata.valueLength().value()).isEqualTo(valueLength.value());
+    assertThat(metadata.getKeyLength()).isEqualTo(keyLength.value());
+    assertThat(metadata.getValueLength()).isEqualTo(valueLength.value());
   }
 
   @Test

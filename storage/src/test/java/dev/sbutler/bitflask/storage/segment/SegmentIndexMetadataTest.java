@@ -35,7 +35,7 @@ public class SegmentIndexMetadataTest {
 
     SegmentIndexMetadata metadata = SegmentIndexMetadata.fromBytes(bytes);
 
-    assertThat(metadata.segmentNumber().value()).isEqualTo(UnsignedShort.MIN_VALUE);
+    assertThat(metadata.getSegmentNumber()).isEqualTo(UnsignedShort.MIN_VALUE);
   }
 
   @Test
@@ -45,7 +45,7 @@ public class SegmentIndexMetadataTest {
 
     SegmentIndexMetadata metadata = SegmentIndexMetadata.fromBytes(bytes);
 
-    assertThat(metadata.segmentNumber().value()).isEqualTo(UnsignedShort.MAX_VALUE);
+    assertThat(metadata.getSegmentNumber()).isEqualTo(UnsignedShort.MAX_VALUE);
   }
 
   @Test
