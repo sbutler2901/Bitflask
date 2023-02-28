@@ -7,6 +7,12 @@ import com.google.common.primitives.Longs;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import java.util.Arrays;
 
+/**
+ * The metadata for a single {@link Entry}.
+ *
+ * <p>The {@code creationEpochSeconds} cannot be negative and the {@code keyLength} must be
+ * non-empty.
+ */
 public record EntryMetadata(long creationEpochSeconds, UnsignedShort keyLength,
                             UnsignedShort valueLength) {
 
@@ -26,7 +32,7 @@ public record EntryMetadata(long creationEpochSeconds, UnsignedShort keyLength,
    * Creates a new EntryMetadata instance from the provided byte array.
    *
    * <p>The first 8 indices will be interpreted as an 8-byte long representing the
-   * creationEpochSeconds. The next two indices will be interpreted as a 16-bit unsigned short
+   * creationEpochSeconds. The next two indices will be interpreted as a 2-byte unsigned short
    * representing the key length. The final two indices will be interpreted as the value length.
    *
    * <p>An {@link IllegalArgumentException} will be thrown if the provided byte array's length is
