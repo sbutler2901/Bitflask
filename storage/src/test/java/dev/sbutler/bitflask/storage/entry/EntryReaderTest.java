@@ -145,4 +145,19 @@ public class EntryReaderTest {
       assertThat(entry).isEmpty();
     }
   }
+
+  @Test
+  public void findEntryFromOffset_notFound() throws Exception {
+    String key = "key";
+    String value = "value";
+
+    Entry storedEntry = new Entry(Instant.now().getEpochSecond(), key, value);
+    InputStream is = new ByteArrayInputStream(storedEntry.getBytes());
+
+    try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
+      Optional<Entry> entry = entryReader.findEntryFromOffset("absent-key", 0L).get();
+      assertThat(entry).isEmpty();
+    }
+  }
 }

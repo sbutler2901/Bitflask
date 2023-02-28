@@ -64,9 +64,9 @@ public final class EntryReader {
       byte[] metadataBuffer = new byte[EntryMetadata.BYTE_ARRAY_LENGTH];
       while (is.read(metadataBuffer) != -1) {
         EntryMetadata entryMetadata = EntryMetadata.fromBytes(metadataBuffer);
-        Optional<Entry> readEntry = readEntry(is, entryMetadata, key);
-        if (readEntry.isPresent()) {
-          return readEntry;
+        Optional<Entry> entry = readEntry(is, entryMetadata, key);
+        if (entry.isPresent()) {
+          return entry;
         }
       }
     }
@@ -76,6 +76,9 @@ public final class EntryReader {
   /**
    * Reads the {@link Entry} based on the provided {@link EntryMetadata} and returns it if the
    * {@code key} matches.
+   *
+   * <p>The provided {@link BufferedInputStream} will be in the correct position for reading the
+   * next entry after this method completes.
    */
   private Optional<Entry> readEntry(BufferedInputStream is, EntryMetadata entryMetadata, String key)
       throws IOException {
