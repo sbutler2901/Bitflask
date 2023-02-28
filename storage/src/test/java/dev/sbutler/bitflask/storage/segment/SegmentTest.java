@@ -17,7 +17,6 @@ import com.google.common.hash.Funnels;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import dev.sbutler.bitflask.storage.entry.Entry;
 import dev.sbutler.bitflask.storage.entry.EntryReader;
-import dev.sbutler.bitflask.storage.segment.Segment.Factory;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
@@ -37,8 +36,6 @@ public class SegmentTest {
       new SegmentIndexMetadata(zeroUnsignedShort),
       ImmutableSortedMap.of());
 
-  private final Factory factory = new Factory();
-
   @Test
   public void construction_mismatchSegmentNumber_throwsIllegalArgumentException() {
     SegmentIndex segmentIndex = new SegmentIndexDense(
@@ -47,7 +44,7 @@ public class SegmentTest {
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class,
-            () -> factory.create(metadata, entryReader, keyFilter, segmentIndex));
+            () -> Segment.create(metadata, entryReader, keyFilter, segmentIndex));
 
     assertThat(e).hasMessageThat().ignoringCase()
         .contains("SegmentMetadata segmentNumber does not match SegmentIndex segmentNumber.");
@@ -55,14 +52,14 @@ public class SegmentTest {
 
   @Test
   public void getSegmentNumber_matchesSegmentMetadata() {
-    Segment segment = factory.create(metadata, entryReader, keyFilter, emptySegmentIndex);
+    Segment segment = Segment.create(metadata, entryReader, keyFilter, emptySegmentIndex);
 
     assertThat(segment.getSegmentNumber()).isEqualTo(metadata.getSegmentNumber());
   }
 
   @Test
   public void getSegmentLevel_matchesSegmentMetadata() {
-    Segment segment = factory.create(metadata, entryReader, keyFilter, emptySegmentIndex);
+    Segment segment = Segment.create(metadata, entryReader, keyFilter, emptySegmentIndex);
 
     assertThat(segment.getSegmentLevel()).isEqualTo(metadata.getSegmentLevel());
   }
@@ -71,7 +68,7 @@ public class SegmentTest {
   public void mightContain_absent_returnsFalse() {
     String key = "key";
 
-    Segment segment = factory.create(metadata, entryReader, keyFilter, emptySegmentIndex);
+    Segment segment = Segment.create(metadata, entryReader, keyFilter, emptySegmentIndex);
 
     assertThat(segment.mightContain(key)).isFalse();
   }
@@ -81,7 +78,7 @@ public class SegmentTest {
     String key = "key";
     keyFilter.put(key);
 
-    Segment segment = factory.create(metadata, entryReader, keyFilter, emptySegmentIndex);
+    Segment segment = Segment.create(metadata, entryReader, keyFilter, emptySegmentIndex);
 
     assertThat(segment.mightContain(key)).isTrue();
   }
@@ -93,7 +90,7 @@ public class SegmentTest {
         new SegmentIndexMetadata(zeroUnsignedShort),
         ImmutableSortedMap.of(key, 0L));
 
-    Segment segment = factory.create(metadata, entryReader, keyFilter, segmentIndex);
+    Segment segment = Segment.create(metadata, entryReader, keyFilter, segmentIndex);
 
     assertThat(segment.mightContain(key)).isTrue();
   }
@@ -107,7 +104,7 @@ public class SegmentTest {
         new SegmentIndexMetadata(UnsignedShort.valueOf(0)),
         ImmutableSortedMap.of(key, 0L));
     Entry entry = new Entry(Instant.now().getEpochSecond(), key, value);
-    Segment segment = factory.create(metadata, entryReader, keyFilter, segmentIndex);
+    Segment segment = Segment.create(metadata, entryReader, keyFilter, segmentIndex);
     when(entryReader.findEntryFromOffset(anyString(), anyLong()))
         .thenReturn(immediateFuture(Optional.of(entry)));
 
@@ -120,7 +117,7 @@ public class SegmentTest {
   public void readEntry_offsetNotFound() throws Exception {
     String key = "key";
     keyFilter.put(key);
-    Segment segment = factory.create(metadata, entryReader, keyFilter, emptySegmentIndex);
+    Segment segment = Segment.create(metadata, entryReader, keyFilter, emptySegmentIndex);
 
     Optional<Entry> readEntry = segment.readEntry(key).get();
 

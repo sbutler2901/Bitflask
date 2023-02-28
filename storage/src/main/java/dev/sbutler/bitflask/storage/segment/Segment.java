@@ -8,7 +8,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import dev.sbutler.bitflask.storage.entry.Entry;
 import dev.sbutler.bitflask.storage.entry.EntryReader;
 import java.util.Optional;
-import javax.inject.Inject;
 
 /**
  * Represents a single set of {@link dev.sbutler.bitflask.storage.entry.Entry}s persisted to disk.
@@ -36,25 +35,15 @@ public final class Segment {
     this.segmentIndex = segmentIndex;
   }
 
-  /**
-   * A factory class for creating Segment instances.
-   */
-  static class Factory {
+  static Segment create(SegmentMetadata metadata,
+      EntryReader entryReader,
+      BloomFilter<String> keyFilter,
+      SegmentIndex segmentIndex) {
+    checkArgument(metadata.getSegmentNumber() == segmentIndex.getSegmentNumber(),
+        "SegmentMetadata segmentNumber does not match SegmentIndex segmentNumber. [%s], [%s]",
+        metadata.getSegmentNumber(), segmentIndex.getSegmentNumber());
 
-    @Inject
-    Factory() {
-    }
-
-    Segment create(SegmentMetadata metadata,
-        EntryReader entryReader,
-        BloomFilter<String> keyFilter,
-        SegmentIndex segmentIndex) {
-      checkArgument(metadata.getSegmentNumber() == segmentIndex.getSegmentNumber(),
-          "SegmentMetadata segmentNumber does not match SegmentIndex segmentNumber. [%s], [%s]",
-          metadata.getSegmentNumber(), segmentIndex.getSegmentNumber());
-
-      return new Segment(metadata, entryReader, keyFilter, segmentIndex);
-    }
+    return new Segment(metadata, entryReader, keyFilter, segmentIndex);
   }
 
   /**
