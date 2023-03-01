@@ -62,8 +62,10 @@ public record UnsignedShort(int value) {
    * not 2.
    */
   public static UnsignedShort fromBytes(byte[] bytes) {
-    checkArgument(bytes.length == 2, "Byte array length must be 2. Provided array's length [%d]",
-        bytes.length);
+    checkArgument(bytes.length == BYTES,
+        "Byte array length invalid. Provided [%s], expected [%s]",
+        bytes.length, BYTES);
+
     int higherOrderShifted = (UnsignedBytes.toInt(bytes[0]) << Byte.SIZE);
     int value = higherOrderShifted + UnsignedBytes.toInt(bytes[1]);
     return new UnsignedShort(value);

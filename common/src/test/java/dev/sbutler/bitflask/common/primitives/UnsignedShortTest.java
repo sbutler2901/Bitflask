@@ -96,7 +96,7 @@ public class UnsignedShortTest {
         assertThrows(IllegalArgumentException.class,
             () -> UnsignedShort.fromBytes(new byte[0]));
 
-    assertThat(e).hasMessageThat().ignoringCase().contains("Byte array length must be 2");
+    assertThat(e).hasMessageThat().ignoringCase().contains("Byte array length invalid.");
   }
 
   @Test
@@ -105,7 +105,7 @@ public class UnsignedShortTest {
         assertThrows(IllegalArgumentException.class,
             () -> UnsignedShort.fromBytes(new byte[3]));
 
-    assertThat(e).hasMessageThat().ignoringCase().contains("Byte array length must be 2");
+    assertThat(e).hasMessageThat().ignoringCase().contains("Byte array length invalid.");
   }
 
   @Test
