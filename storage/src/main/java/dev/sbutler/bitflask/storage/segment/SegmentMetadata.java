@@ -12,10 +12,13 @@ import java.util.Arrays;
 record SegmentMetadata(UnsignedShort segmentNumber, UnsignedShort segmentLevel) {
 
   /**
-   * The length of the byte array used to create a SegmentMetadata instance and when an instance is
-   * converted into a byte array.
+   * The number of bits used to represent a SegmentMetadata.
    */
-  static final int BYTE_ARRAY_LENGTH = 4;
+  static final int SIZE = UnsignedShort.SIZE * 2;
+  /**
+   * The number of bytes to represent a SegmentMetadata.
+   */
+  static final int BYTES = SIZE / Byte.SIZE;
 
   /**
    * Creates a new SegmentMetadata instance from the provided byte array.
@@ -28,9 +31,9 @@ record SegmentMetadata(UnsignedShort segmentNumber, UnsignedShort segmentLevel) 
    * not 4.
    */
   static SegmentMetadata fromBytes(byte[] bytes) {
-    checkArgument(bytes.length == BYTE_ARRAY_LENGTH,
+    checkArgument(bytes.length == BYTES,
         "Byte array length invalid. Provided [%s], expected [%s]",
-        bytes.length, BYTE_ARRAY_LENGTH);
+        bytes.length, BYTES);
 
     byte[] segmentNumberBytes = Arrays.copyOfRange(bytes, 0, 2);
     byte[] segmentLevelBytes = Arrays.copyOfRange(bytes, 2, 4);
