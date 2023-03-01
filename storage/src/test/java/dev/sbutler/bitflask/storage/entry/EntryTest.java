@@ -116,7 +116,7 @@ public class EntryTest {
 
   @Test
   public void fromBytes_arrayLengthLessThanMinimum_throwsIllegalArgumentException() {
-    byte[] bytes = new byte[Entry.BYTE_ARRAY_MIN_LENGTH - 1];
+    byte[] bytes = new byte[Entry.MIN_BYTES - 1];
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> Entry.fromBytes(bytes));
@@ -128,7 +128,7 @@ public class EntryTest {
   public void fromBytes_byteArrayHeaderMismatch_throwsIllegalArgumentException() {
     EntryMetadata metadata = new EntryMetadata(Instant.now().getEpochSecond(),
         UnsignedShort.valueOf(1), UnsignedShort.valueOf(0));
-    byte[] keyValueBytes = new byte[Entry.BYTE_ARRAY_MIN_LENGTH + 10];
+    byte[] keyValueBytes = new byte[Entry.MIN_BYTES + 10];
     byte[] bytes = Bytes.concat(metadata.getBytes(), keyValueBytes);
 
     IllegalArgumentException e =

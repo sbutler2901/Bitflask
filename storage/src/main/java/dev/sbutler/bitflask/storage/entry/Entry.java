@@ -9,14 +9,26 @@ import java.util.Arrays;
 
 /**
  * A single key:value entry with its creation time in epoch seconds.
+ *
+ * @param creationEpochSeconds creation time of this entry as the number of seconds since epoch.
+ *                             Cannot be negative.
+ * @param key                  the entry's key. Cannot be empty or longer than
+ *                             {@link #KEY_MAX_LENGTH}
+ * @param value                the entry's value. Cannot be longer than {@link #VALUE_MAX_LENGTH}
  */
 public record Entry(long creationEpochSeconds, String key, String value) {
 
   public static final int KEY_MAX_LENGTH = UnsignedShort.MAX_VALUE;
   public static final int VALUE_MAX_LENGTH = UnsignedShort.MAX_VALUE;
 
-  // Header and non-empty key
-  static final int BYTE_ARRAY_MIN_LENGTH = EntryMetadata.BYTES + 1;
+  /**
+   * The minimum number of bits used to represent an Entry.
+   */
+  static final int MIN_SIZE = EntryMetadata.SIZE + Byte.SIZE;
+  /**
+   * The minimum number of bytes to represent an Entry.
+   */
+  static final int MIN_BYTES = MIN_SIZE / Byte.SIZE;
 
   public Entry {
     checkArgument(creationEpochSeconds >= 0,
@@ -32,9 +44,9 @@ public record Entry(long creationEpochSeconds, String key, String value) {
   }
 
   public static Entry fromBytes(byte[] bytes) {
-    checkArgument(bytes.length >= BYTE_ARRAY_MIN_LENGTH,
+    checkArgument(bytes.length >= MIN_BYTES,
         "Byte array length invalid. Provided [%s], expected at least [%s]",
-        bytes.length, BYTE_ARRAY_MIN_LENGTH);
+        bytes.length, MIN_BYTES);
 
     byte[] metadataBytes = Arrays.copyOfRange(bytes, 0, EntryMetadata.BYTES);
     EntryMetadata decodedMetadata = EntryMetadata.fromBytes(metadataBytes);
