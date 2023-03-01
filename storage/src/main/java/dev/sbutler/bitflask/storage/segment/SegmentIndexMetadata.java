@@ -6,6 +6,9 @@ import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 
 /**
  * The metadata for a single {@link SegmentIndex} instance.
+ *
+ * @param segmentNumber the number of the {@link Segment} that the SegmentIndex will correspond
+ *                      with.
  */
 record SegmentIndexMetadata(UnsignedShort segmentNumber) {
 
@@ -31,6 +34,7 @@ record SegmentIndexMetadata(UnsignedShort segmentNumber) {
     checkArgument(bytes.length == BYTES,
         "Byte array length invalid. Provided [%s], expected [%s]",
         bytes.length, BYTES);
+
     UnsignedShort segmentNumber = UnsignedShort.fromBytes(bytes);
     return new SegmentIndexMetadata(segmentNumber);
   }
