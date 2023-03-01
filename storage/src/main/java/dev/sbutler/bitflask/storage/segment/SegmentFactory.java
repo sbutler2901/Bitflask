@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 
@@ -72,27 +73,38 @@ public final class SegmentFactory {
    * Creates a new Segment at segment level 0 and its associated index file.
    */
   public ListenableFuture<Segment> create(ImmutableSortedMap<String, Entry> keyEntryMap) {
-    return Futures.submit(() -> {
-      UnsignedShort segmentNumber = UnsignedShort.valueOf(nextSegmentNumber.getAndIncrement());
-
-      SegmentIndex segmentIndex = createSegmentIndex(keyEntryMap, segmentNumber);
-      return createSegment(keyEntryMap, segmentNumber, segmentIndex);
-    }, executorService);
+    return Futures.submit(() -> createSegmentAndIndex(keyEntryMap), executorService);
   }
 
-  /**
-   * Creates a new {@link Segment} at segment level 0.
-   */
-  Segment createSegment(ImmutableSortedMap<String, Entry> keyEntryMap,
-      UnsignedShort segmentNumber, SegmentIndex segmentIndex) throws IOException {
+  Segment createSegmentAndIndex(ImmutableSortedMap<String, Entry> keyEntryMap) throws IOException {
+    UnsignedShort segmentNumber = UnsignedShort.valueOf(nextSegmentNumber.getAndIncrement());
 
     SegmentMetadata segmentMetadata = new SegmentMetadata(
         segmentNumber, UnsignedShort.valueOf(0));
+    Path segmentPath = Path.of(configurations.getStorageStoreDirectoryPath().toString(),
+        Segment.createFileName(segmentNumber.value()));
     BloomFilter<String> keyFilter = BloomFilter.create(Funnels.stringFunnel(
         StandardCharsets.UTF_8), keyEntryMap.size());
 
-    Path segmentPath = Path.of(configurations.getStorageStoreDirectoryPath().toString(),
-        Segment.createFileName(segmentNumber.value()));
+    ImmutableSortedMap<String, Long> keyOffsetMap =
+        writeSegment(keyEntryMap, segmentMetadata, keyFilter, segmentPath);
+
+    SegmentIndex segmentIndex = createSegmentIndex(keyOffsetMap, segmentNumber);
+
+    return Segment.create(segmentMetadata, entryReaderFactory.create(segmentPath),
+        keyFilter, segmentIndex);
+  }
+
+  /**
+   * Writes a new {@link Segment} to disk.
+   *
+   * @return a key offset map for entries in the new Segment.
+   */
+  ImmutableSortedMap<String, Long> writeSegment(ImmutableSortedMap<String, Entry> keyEntryMap,
+      SegmentMetadata segmentMetadata, BloomFilter<String> keyFilter, Path segmentPath)
+      throws IOException {
+
+    ImmutableSortedMap.Builder<String, Long> keyOffsetMap = ImmutableSortedMap.naturalOrder();
 
     try (BufferedOutputStream segmentOutputStream = new BufferedOutputStream(
         Files.newOutputStream(segmentPath, StandardOpenOption.CREATE_NEW))) {
@@ -100,22 +112,25 @@ public final class SegmentFactory {
       byte[] segmentMetadataBytes = segmentMetadata.getBytes();
       segmentOutputStream.write(segmentMetadataBytes);
 
+      long entryOffset = segmentMetadataBytes.length;
       for (Entry entry : keyEntryMap.values()) {
-        segmentOutputStream.write(entry.getBytes());
-
+        keyOffsetMap.put(entry.key(), entryOffset);
         keyFilter.put(entry.key());
+
+        byte[] entryBytes = entry.getBytes();
+        segmentOutputStream.write(entryBytes);
+
+        entryOffset += entryBytes.length;
       }
     }
 
-    EntryReader entryReader = entryReaderFactory.create(segmentPath);
-
-    return Segment.create(segmentMetadata, entryReader, keyFilter, segmentIndex);
+    return keyOffsetMap.build();
   }
 
   /**
-   * Creates a new {@link SegmentIndex}.
+   * Creates a new {@link SegmentIndex} and writes it to disk.
    */
-  SegmentIndex createSegmentIndex(ImmutableSortedMap<String, Entry> keyEntryMap,
+  SegmentIndex createSegmentIndex(ImmutableSortedMap<String, Long> keyOffsetMap,
       UnsignedShort segmentNumber) throws IOException {
     SegmentIndexMetadata indexMetadata = new SegmentIndexMetadata(segmentNumber);
     ImmutableSortedMap.Builder<String, Long> indexKeyOffsetMap = ImmutableSortedMap.naturalOrder();
@@ -128,12 +143,10 @@ public final class SegmentFactory {
 
       indexOutputStream.write(indexMetadata.getBytes());
 
-      long segmentOffset = SegmentMetadata.BYTES;
-      for (Entry entry : keyEntryMap.values()) {
-        SegmentIndexEntry indexEntry = new SegmentIndexEntry(entry.key(), segmentOffset);
+      for (Map.Entry<String, Long> entry : keyOffsetMap.entrySet()) {
+        SegmentIndexEntry indexEntry = new SegmentIndexEntry(entry.getKey(), entry.getValue());
         indexOutputStream.write(indexEntry.getBytes());
-        indexKeyOffsetMap.put(entry.key(), segmentOffset);
-        segmentOffset += entry.getBytes().length;
+        indexKeyOffsetMap.put(indexEntry.key(), indexEntry.offset());
       }
     }
 
