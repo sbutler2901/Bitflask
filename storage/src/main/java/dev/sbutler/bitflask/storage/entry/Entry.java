@@ -16,7 +16,7 @@ public record Entry(long creationEpochSeconds, String key, String value) {
   public static final int VALUE_MAX_LENGTH = UnsignedShort.MAX_VALUE;
 
   // Header and non-empty key
-  static final int BYTE_ARRAY_MIN_LENGTH = EntryMetadata.BYTE_ARRAY_LENGTH + 1;
+  static final int BYTE_ARRAY_MIN_LENGTH = EntryMetadata.BYTES + 1;
 
   public Entry {
     checkArgument(creationEpochSeconds >= 0,
@@ -36,20 +36,20 @@ public record Entry(long creationEpochSeconds, String key, String value) {
         "Byte array length invalid. Provided [%s], expected at least [%s]",
         bytes.length, BYTE_ARRAY_MIN_LENGTH);
 
-    byte[] metadataBytes = Arrays.copyOfRange(bytes, 0, EntryMetadata.BYTE_ARRAY_LENGTH);
+    byte[] metadataBytes = Arrays.copyOfRange(bytes, 0, EntryMetadata.BYTES);
     EntryMetadata decodedMetadata = EntryMetadata.fromBytes(metadataBytes);
 
-    int expectedArrayLength = EntryMetadata.BYTE_ARRAY_LENGTH + decodedMetadata.keyLength().value()
+    int expectedArrayLength = EntryMetadata.BYTES + decodedMetadata.keyLength().value()
         + decodedMetadata.valueLength().value();
     checkArgument(bytes.length == expectedArrayLength,
         "Byte array length does not match decoded header. Provided [%s], expected [%s]",
         bytes.length,
         expectedArrayLength);
 
-    String decodedKey = new String(bytes, EntryMetadata.BYTE_ARRAY_LENGTH,
+    String decodedKey = new String(bytes, EntryMetadata.BYTES,
         decodedMetadata.keyLength().value(), StandardCharsets.UTF_8);
 
-    int valueOffset = EntryMetadata.BYTE_ARRAY_LENGTH + decodedMetadata.keyLength().value();
+    int valueOffset = EntryMetadata.BYTES + decodedMetadata.keyLength().value();
     String decodedValue = new String(bytes, valueOffset,
         decodedMetadata.valueLength().value(), StandardCharsets.UTF_8);
 

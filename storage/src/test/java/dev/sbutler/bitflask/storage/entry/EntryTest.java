@@ -150,15 +150,15 @@ public class EntryTest {
     byte[] bytes = entry.getBytes();
 
     // Assert
-    byte[] metadataBytes = Arrays.copyOfRange(bytes, 0, EntryMetadata.BYTE_ARRAY_LENGTH);
+    byte[] metadataBytes = Arrays.copyOfRange(bytes, 0, EntryMetadata.BYTES);
     EntryMetadata decodedMetadata = EntryMetadata.fromBytes(metadataBytes);
     assertThat(decodedMetadata).isEqualTo(entry.getMetaData());
 
-    String decodedKey = new String(bytes, EntryMetadata.BYTE_ARRAY_LENGTH,
+    String decodedKey = new String(bytes, EntryMetadata.BYTES,
         decodedMetadata.keyLength().value(), StandardCharsets.UTF_8);
     assertThat(decodedKey).isEqualTo(key);
 
-    int valueOffset = EntryMetadata.BYTE_ARRAY_LENGTH + decodedMetadata.keyLength().value();
+    int valueOffset = EntryMetadata.BYTES + decodedMetadata.keyLength().value();
     String decodedValue = new String(bytes, valueOffset,
         decodedMetadata.valueLength().value(), StandardCharsets.UTF_8);
 

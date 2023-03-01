@@ -17,10 +17,13 @@ public record EntryMetadata(long creationEpochSeconds, UnsignedShort keyLength,
                             UnsignedShort valueLength) {
 
   /**
-   * The length of the byte array used to create a SegmentEntryMetadata instance and when an
-   * instance is converted into a byte array.
+   * The number of bits used to represent a EntryMetadata.
    */
-  public static final int BYTE_ARRAY_LENGTH = 12;
+  static final int SIZE = Long.SIZE + UnsignedShort.SIZE * 2;
+  /**
+   * The number of bytes to represent a SegmentMetadata.
+   */
+  static final int BYTES = SIZE / Byte.SIZE;
 
   public EntryMetadata {
     checkArgument(creationEpochSeconds >= 0,
@@ -39,9 +42,9 @@ public record EntryMetadata(long creationEpochSeconds, UnsignedShort keyLength,
    * not 12.
    */
   public static EntryMetadata fromBytes(byte[] bytes) {
-    checkArgument(bytes.length == BYTE_ARRAY_LENGTH,
+    checkArgument(bytes.length == BYTES,
         "Byte array length invalid. Provided [%s], expected [%s]",
-        bytes.length, BYTE_ARRAY_LENGTH);
+        bytes.length, BYTES);
 
     int keyLengthOffsetEnd = Long.BYTES + UnsignedShort.BYTES;
     byte[] creationEpochSecondsBytes = Arrays.copyOfRange(bytes, 0, Long.BYTES);

@@ -91,7 +91,7 @@ public class EntryMetadataTest {
 
   @Test
   public void fromBytes_invalidLength_lessThan_throwsIllegalArgumentException() {
-    byte[] bytes = new byte[]{EntryMetadata.BYTE_ARRAY_LENGTH - 1};
+    byte[] bytes = new byte[]{EntryMetadata.BYTES - 1};
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> EntryMetadata.fromBytes(bytes));
@@ -101,7 +101,7 @@ public class EntryMetadataTest {
 
   @Test
   public void fromBytes_invalidLength_greaterThan_throwsIllegalArgumentException() {
-    byte[] bytes = new byte[]{EntryMetadata.BYTE_ARRAY_LENGTH + 1};
+    byte[] bytes = new byte[]{EntryMetadata.BYTES + 1};
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> EntryMetadata.fromBytes(bytes));

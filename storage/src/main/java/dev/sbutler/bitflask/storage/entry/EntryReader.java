@@ -61,7 +61,7 @@ public final class EntryReader {
         new BufferedInputStream(Files.newInputStream(filePath, StandardOpenOption.READ))) {
       is.skipNBytes(startOffset);
 
-      byte[] metadataBuffer = new byte[EntryMetadata.BYTE_ARRAY_LENGTH];
+      byte[] metadataBuffer = new byte[EntryMetadata.BYTES];
       while (is.read(metadataBuffer) != -1) {
         EntryMetadata entryMetadata = EntryMetadata.fromBytes(metadataBuffer);
         Optional<Entry> entry = readEntry(is, entryMetadata, key);
