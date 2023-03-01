@@ -16,7 +16,11 @@ import java.util.Optional;
 public final class Segment {
 
   /**
-   * The file extension of Segment files
+   * The prefix of Segment files.
+   */
+  public static final String FILE_PREFIX = "segment_";
+  /**
+   * The file extension of Segment files.
    */
   public static final String FILE_EXTENSION = ".seg";
 
@@ -85,5 +89,12 @@ public final class Segment {
     return segmentIndex.getKeyOffset(key)
         .map(startOffset -> entryReader.findEntryFromOffset(key, startOffset))
         .orElseGet(() -> immediateFuture(Optional.empty()));
+  }
+
+  /**
+   * Creates the file name for a Segment with {@code segmentNumber}.
+   */
+  public static String createFileName(int segmentNumber) {
+    return FILE_PREFIX + segmentNumber + FILE_EXTENSION;
   }
 }

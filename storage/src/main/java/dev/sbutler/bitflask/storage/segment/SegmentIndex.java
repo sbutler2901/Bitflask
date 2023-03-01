@@ -8,6 +8,10 @@ import java.util.Optional;
 interface SegmentIndex {
 
   /**
+   * The prefix of SegmentIndex files.
+   */
+  String FILE_PREFIX = "index_";
+  /**
    * The file extension used to identify index files.
    */
   String FILE_EXTENSION = ".idx";
@@ -29,4 +33,10 @@ interface SegmentIndex {
    */
   int getSegmentNumber();
 
+  /**
+   * Creates the file name for a SegmentIndex with {@code segmentNumber}.
+   */
+  static String createFileName(int segmentNumber) {
+    return FILE_PREFIX + segmentNumber + FILE_EXTENSION;
+  }
 }

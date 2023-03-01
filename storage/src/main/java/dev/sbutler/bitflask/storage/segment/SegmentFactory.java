@@ -25,7 +25,6 @@ import javax.inject.Inject;
 @SuppressWarnings("UnstableApiUsage")
 public final class SegmentFactory {
 
-
   private final ListeningExecutorService executorService;
   private final StorageConfigurations configurations;
   private final EntryReader.Factory entryReaderFactory;
@@ -84,10 +83,10 @@ public final class SegmentFactory {
         StandardCharsets.UTF_8), keyEntryMap.size());
 
     String storeDirectoryFilePath = configurations.getStorageStoreDirectoryPath().toString();
-    Path segmentPath = Path.of(storeDirectoryFilePath, "segment_",
-        String.valueOf(segmentNumber.value()), Segment.FILE_EXTENSION);
-    Path indexPath = Path.of(storeDirectoryFilePath, "index_",
-        String.valueOf(segmentNumber.value()), SegmentIndex.FILE_EXTENSION);
+    Path segmentPath = Path.of(storeDirectoryFilePath,
+        Segment.createFileName(segmentNumber.value()));
+    Path indexPath = Path.of(storeDirectoryFilePath,
+        SegmentIndex.createFileName(segmentNumber.value()));
 
     try (BufferedOutputStream segmentOutputStream = new BufferedOutputStream(
         Files.newOutputStream(segmentPath, StandardOpenOption.CREATE_NEW));
