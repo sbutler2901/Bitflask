@@ -10,10 +10,13 @@ import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 record SegmentIndexMetadata(UnsignedShort segmentNumber) {
 
   /**
-   * The length of the byte array used to create a SegmentMetadata instance and when an instance is
-   * converted into a byte array.
+   * The number of bits used to represent a SegmentMetadata.
    */
-  static final int BYTE_ARRAY_LENGTH = 2;
+  static final int SIZE = UnsignedShort.SIZE;
+  /**
+   * The number of bytes to represent a SegmentMetadata.
+   */
+  static final int BYTES = SIZE / Byte.SIZE;
 
   /**
    * Creates a new SegmentIndexMetadata instance from the provided byte array.
@@ -25,9 +28,9 @@ record SegmentIndexMetadata(UnsignedShort segmentNumber) {
    * not 2.
    */
   static SegmentIndexMetadata fromBytes(byte[] bytes) {
-    checkArgument(bytes.length == BYTE_ARRAY_LENGTH,
+    checkArgument(bytes.length == BYTES,
         "Byte array length invalid. Provided [%s], expected [%s]",
-        bytes.length, BYTE_ARRAY_LENGTH);
+        bytes.length, BYTES);
     UnsignedShort segmentNumber = UnsignedShort.fromBytes(bytes);
     return new SegmentIndexMetadata(segmentNumber);
   }

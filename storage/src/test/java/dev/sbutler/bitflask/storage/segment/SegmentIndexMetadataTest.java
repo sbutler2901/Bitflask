@@ -50,7 +50,7 @@ public class SegmentIndexMetadataTest {
 
   @Test
   public void fromBytes_invalidLength_lessThan_throwsIllegalArgumentException() {
-    byte[] bytes = new byte[]{SegmentIndexMetadata.BYTE_ARRAY_LENGTH - 1};
+    byte[] bytes = new byte[]{SegmentIndexMetadata.BYTES - 1};
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> SegmentIndexMetadata.fromBytes(bytes));
@@ -60,7 +60,7 @@ public class SegmentIndexMetadataTest {
 
   @Test
   public void fromBytes_invalidLength_greaterThan_throwsIllegalArgumentException() {
-    byte[] bytes = new byte[]{SegmentIndexMetadata.BYTE_ARRAY_LENGTH + 1};
+    byte[] bytes = new byte[]{SegmentIndexMetadata.BYTES + 1};
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> SegmentIndexMetadata.fromBytes(bytes));
