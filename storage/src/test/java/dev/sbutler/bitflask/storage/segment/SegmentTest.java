@@ -96,6 +96,18 @@ public class SegmentTest {
   }
 
   @Test
+  public void readEntry_notFound() throws Exception {
+    SegmentIndex segmentIndex = new SegmentIndexDense(
+        new SegmentIndexMetadata(UnsignedShort.valueOf(0)),
+        ImmutableSortedMap.of());
+    Segment segment = Segment.create(metadata, entryReader, keyFilter, segmentIndex);
+
+    Optional<Entry> readEntry = segment.readEntry("key").get();
+
+    assertThat(readEntry).isEmpty();
+  }
+
+  @Test
   public void readEntry_found() throws Exception {
     String key = "key";
     String value = "value";
