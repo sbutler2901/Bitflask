@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.segment;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -43,6 +44,18 @@ public class SegmentFactoryTest {
     when(config.getStorageStoreDirectoryPath()).thenReturn(testResourcePath);
     factory = new SegmentFactory.Factory(TestingExecutors.sameThreadScheduledExecutor(),
         config, entryReaderFactory).create(0);
+  }
+
+  @Test
+  public void create_emptyKeyEntryMap() {
+    ImmutableSortedMap<String, Entry> keyEntryMap = ImmutableSortedMap.<String, Entry>naturalOrder()
+        .build();
+
+    IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        () -> factory.create(keyEntryMap));
+
+    assertThat(e).hasMessageThat().ignoringCase()
+        .isEqualTo("keyEntryMap was negative.");
   }
 
   @Test

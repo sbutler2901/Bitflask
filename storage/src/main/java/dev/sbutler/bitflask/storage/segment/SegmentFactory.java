@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.storage.segment;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
@@ -71,8 +73,12 @@ public final class SegmentFactory {
 
   /**
    * Creates a new Segment at segment level 0 and its associated index file.
+   *
+   * <p>The provided {@code keyEntryMap} cannot be empty.
    */
   public ListenableFuture<Segment> create(ImmutableSortedMap<String, Entry> keyEntryMap) {
+    checkArgument(!keyEntryMap.isEmpty(), "keyEntryMap was negative.");
+
     return Futures.submit(() -> createSegmentAndIndex(keyEntryMap), executorService);
   }
 
