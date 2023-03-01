@@ -68,6 +68,11 @@ public final class SegmentFactory {
     }
   }
 
+  /**
+   * Creates a new Segment a segment level 0.
+   *
+   * <p>This includes creating the segment file and its associated index file.
+   */
   public ListenableFuture<Segment> create(ImmutableSortedMap<String, Entry> keyEntryMap) {
     return Futures.submit(() -> build(keyEntryMap), executorService);
   }
