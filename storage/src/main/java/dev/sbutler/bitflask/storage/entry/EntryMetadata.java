@@ -43,9 +43,11 @@ public record EntryMetadata(long creationEpochSeconds, UnsignedShort keyLength,
         "Byte array length invalid. Provided [%s], expected [%s]",
         bytes.length, BYTE_ARRAY_LENGTH);
 
-    byte[] creationEpochSecondsBytes = Arrays.copyOfRange(bytes, 0, 8);
-    byte[] keyLengthBytes = Arrays.copyOfRange(bytes, 8, 10);
-    byte[] valueLengthBytes = Arrays.copyOfRange(bytes, 10, 12);
+    int keyLengthOffsetEnd = Long.BYTES + UnsignedShort.BYTES;
+    byte[] creationEpochSecondsBytes = Arrays.copyOfRange(bytes, 0, Long.BYTES);
+    byte[] keyLengthBytes = Arrays.copyOfRange(bytes, Long.BYTES, keyLengthOffsetEnd);
+    byte[] valueLengthBytes = Arrays.copyOfRange(bytes, keyLengthOffsetEnd,
+        keyLengthOffsetEnd + UnsignedShort.BYTES);
 
     long creationEpochSeconds = Longs.fromByteArray(creationEpochSecondsBytes);
     UnsignedShort keyLength = UnsignedShort.fromBytes(keyLengthBytes);
