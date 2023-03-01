@@ -18,6 +18,16 @@ import java.util.Arrays;
  */
 record SegmentIndexEntry(String key, long offset) {
 
+  /**
+   * The minimum number of bits used to represent a SegmentIndexEntry.
+   */
+  static final int MIN_SIZE = UnsignedShort.SIZE + Long.SIZE + Byte.SIZE;
+
+  /**
+   * The minimum number of bytes to represent a SegmentIndexEntry.
+   */
+  static final int MIN_BYTES = MIN_SIZE / Byte.SIZE;
+
   SegmentIndexEntry {
     checkArgument(!key.isEmpty(), "Key must not be empty.");
     checkArgument(key.length() <= Entry.KEY_MAX_LENGTH,
@@ -28,13 +38,17 @@ record SegmentIndexEntry(String key, long offset) {
   }
 
   /**
-   * creates a new SegmentIndexEntry from the provided byte array.
+   * Creates a new SegmentIndexEntry from the provided byte array.
    *
    * <p>The first 2 indices will be interpreted as a 2-byte unsigned short representing the key
    * length. The next 8 indices will be interpreted as an 8-byte long representing the offset. The
    * derived key length will determine the amount of bytes for the key.
    */
   static SegmentIndexEntry fromBytes(byte[] bytes) {
+    checkArgument(bytes.length >= MIN_BYTES,
+        "Byte array length invalid. Provided [%s], expected at least [%s]",
+        bytes.length, MIN_BYTES);
+
     byte[] keyLengthBytes = Arrays.copyOfRange(bytes, 0, UnsignedShort.BYTES);
 
     int offsetEnd = Long.BYTES + UnsignedShort.BYTES;

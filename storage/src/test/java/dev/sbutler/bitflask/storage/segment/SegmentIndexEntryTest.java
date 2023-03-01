@@ -12,6 +12,17 @@ import org.junit.jupiter.api.Test;
 public class SegmentIndexEntryTest {
 
   @Test
+  public void constructor_emptyKey_throwsIllegalArgumentException() {
+    String key = "";
+    long offset = 0L;
+
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> new SegmentIndexEntry(key, offset));
+
+    assertThat(e).hasMessageThat().ignoringCase().contains("Key must not be empty.");
+  }
+
+  @Test
   public void fromBytes_valid() {
     String key = "key";
     long offset = 0L;
@@ -27,27 +38,22 @@ public class SegmentIndexEntryTest {
   }
 
   @Test
-  public void fromBytes_invalid_keyLength_zero_throwsIllegalArgumentException() {
-    long offset = 0L;
-    byte[] bytes = Bytes.concat(
-        UnsignedShort.valueOf(0).getBytes(),
-        Longs.toByteArray(offset),
-        "".getBytes(StandardCharsets.UTF_8));
+  public void fromBytes_invalidLength_lessThan_throwsIllegalArgumentException() {
+    byte[] bytes = new byte[SegmentIndexEntry.MIN_BYTES - 1];
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> SegmentIndexEntry.fromBytes(bytes));
 
-    assertThat(e).hasMessageThat().ignoringCase().contains("Key must not be empty.");
+    assertThat(e).hasMessageThat().ignoringCase().contains("Byte array length invalid.");
   }
 
   @Test
   public void fromBytes_invalid_keyLength_tooLarge_throwsIllegalArgumentException() {
-    String key = "key";
     long offset = 0L;
     byte[] bytes = Bytes.concat(
-        new byte[UnsignedShort.BYTES + 1],
+        new byte[UnsignedShort.BYTES],
         Longs.toByteArray(offset),
-        key.getBytes(StandardCharsets.UTF_8));
+        new byte[1]);
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> SegmentIndexEntry.fromBytes(bytes));
