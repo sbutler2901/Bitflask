@@ -8,6 +8,9 @@ import java.util.Arrays;
 
 /**
  * The metadata for a single {@link Segment} instance.
+ *
+ * @param segmentNumber the number of the Segment that this metadata is associated with
+ * @param segmentLevel  the level of the Segment that this metadata is associated with
  */
 record SegmentMetadata(UnsignedShort segmentNumber, UnsignedShort segmentLevel) {
 
