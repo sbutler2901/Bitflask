@@ -10,8 +10,10 @@ import java.util.Arrays;
 /**
  * The metadata for a single {@link Entry}.
  *
- * <p>The {@code creationEpochSeconds} cannot be negative and the {@code keyLength} must be
- * non-empty.
+ * @param creationEpochSeconds creation time of the associated Entry as the number of seconds since
+ *                             epoch. Cannot be negative.
+ * @param keyLength            the length of the associated Entry's key. Cannot be 0.
+ * @param valueLength          the length of the associated Entry's value.
  */
 public record EntryMetadata(long creationEpochSeconds, UnsignedShort keyLength,
                             UnsignedShort valueLength) {
