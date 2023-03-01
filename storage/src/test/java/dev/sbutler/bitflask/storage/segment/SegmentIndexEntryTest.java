@@ -23,6 +23,29 @@ public class SegmentIndexEntryTest {
   }
 
   @Test
+  public void identityConversion_fromBytes() {
+    String key = "key";
+    long offset = 0L;
+    byte[] expectedBytes = Bytes.concat(
+        UnsignedShort.valueOf(key.length()).getBytes(),
+        Longs.toByteArray(offset),
+        key.getBytes(StandardCharsets.UTF_8));
+
+    byte[] bytes = SegmentIndexEntry.fromBytes(expectedBytes).getBytes();
+
+    assertThat(bytes).isEqualTo(expectedBytes);
+  }
+
+  @Test
+  public void identityConversion_getBytes() {
+    SegmentIndexEntry expected = new SegmentIndexEntry("key", 0L);
+
+    SegmentIndexEntry created = SegmentIndexEntry.fromBytes(expected.getBytes());
+
+    assertThat(created).isEqualTo(expected);
+  }
+
+  @Test
   public void fromBytes_valid() {
     String key = "key";
     long offset = 0L;

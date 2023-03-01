@@ -13,8 +13,10 @@ import java.util.Arrays;
 /**
  * A single key:offset entry in a segment index.
  *
- * <p>The key cannot be empty and not greater than {@link Entry#KEY_MAX_LENGTH}. The offset cannot
- * be negative.
+ * @param key    the key for an associated Segment {@link Entry}. Cannot be empty or greater than
+ *               {@link Entry#KEY_MAX_LENGTH}.
+ * @param offset the offset of the associated Segment {@link Entry} in the Segment's file. Cannot be
+ *               negative.
  */
 record SegmentIndexEntry(String key, long offset) {
 
