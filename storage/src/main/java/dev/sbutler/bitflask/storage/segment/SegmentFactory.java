@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 
@@ -30,15 +29,18 @@ public final class SegmentFactory {
 
   private final ListeningExecutorService executorService;
   private final StorageConfigurations configurations;
+  private final SegmentIndexFactory indexFactory;
   private final EntryReader.Factory entryReaderFactory;
   private final AtomicInteger nextSegmentNumber;
 
   private SegmentFactory(ListeningExecutorService executorService,
       StorageConfigurations configurations,
+      SegmentIndexFactory indexFactory,
       EntryReader.Factory entryReaderFactory,
       int nextSegmentNumber) {
     this.executorService = executorService;
     this.configurations = configurations;
+    this.indexFactory = indexFactory;
     this.entryReaderFactory = entryReaderFactory;
     this.nextSegmentNumber = new AtomicInteger(nextSegmentNumber);
   }
@@ -50,14 +52,17 @@ public final class SegmentFactory {
 
     private final ListeningExecutorService executorService;
     private final StorageConfigurations configurations;
+    private final SegmentIndexFactory indexFactory;
     private final EntryReader.Factory entryReaderFactory;
 
     @Inject
     Factory(ListeningExecutorService executorService,
         StorageConfigurations configurations,
+        SegmentIndexFactory indexFactory,
         EntryReader.Factory entryReaderFactory) {
       this.executorService = executorService;
       this.configurations = configurations;
+      this.indexFactory = indexFactory;
       this.entryReaderFactory = entryReaderFactory;
     }
 
@@ -66,8 +71,11 @@ public final class SegmentFactory {
      * {@code segmentNumberStart}.
      */
     public SegmentFactory create(int segmentNumberStart) {
-      return new SegmentFactory(executorService, configurations,
-          entryReaderFactory, segmentNumberStart);
+      return new SegmentFactory(executorService,
+          configurations,
+          indexFactory,
+          entryReaderFactory,
+          segmentNumberStart);
     }
   }
 
@@ -95,7 +103,7 @@ public final class SegmentFactory {
     ImmutableSortedMap<String, Long> keyOffsetMap =
         writeSegment(keyEntryMap, segmentMetadata, keyFilter, segmentPath);
 
-    SegmentIndex segmentIndex = createSegmentIndex(keyOffsetMap, segmentNumber);
+    SegmentIndex segmentIndex = indexFactory.create(keyOffsetMap, segmentNumber);
 
     return Segment.create(segmentMetadata, entryReaderFactory.create(segmentPath),
         keyFilter, segmentIndex);
@@ -131,31 +139,5 @@ public final class SegmentFactory {
     }
 
     return keyOffsetMap.build();
-  }
-
-  /**
-   * Creates a new {@link SegmentIndex} and writes it to disk.
-   */
-  SegmentIndex createSegmentIndex(ImmutableSortedMap<String, Long> keyOffsetMap,
-      UnsignedShort segmentNumber) throws IOException {
-    SegmentIndexMetadata indexMetadata = new SegmentIndexMetadata(segmentNumber);
-    ImmutableSortedMap.Builder<String, Long> indexKeyOffsetMap = ImmutableSortedMap.naturalOrder();
-
-    Path indexPath = Path.of(configurations.getStorageStoreDirectoryPath().toString(),
-        SegmentIndex.createFileName(segmentNumber.value()));
-
-    try (BufferedOutputStream indexOutputStream = new BufferedOutputStream(
-        Files.newOutputStream(indexPath, StandardOpenOption.CREATE_NEW))) {
-
-      indexOutputStream.write(indexMetadata.getBytes());
-
-      for (Map.Entry<String, Long> entry : keyOffsetMap.entrySet()) {
-        SegmentIndexEntry indexEntry = new SegmentIndexEntry(entry.getKey(), entry.getValue());
-        indexOutputStream.write(indexEntry.getBytes());
-        indexKeyOffsetMap.put(indexEntry.key(), indexEntry.offset());
-      }
-    }
-
-    return new SegmentIndexDense(indexMetadata, indexKeyOffsetMap.build());
   }
 }

@@ -1,11 +1,12 @@
 package dev.sbutler.bitflask.storage.segment;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSortedMap;
@@ -28,60 +29,64 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-@SuppressWarnings({"resource", "UnstableApiUsage"})
+@SuppressWarnings({"UnstableApiUsage"})
 public class SegmentFactoryTest {
 
-  private final Path testResourcePath = Paths.get("src/test/resources/");
+  private final Path TEST_RESOURCE_PATH = Paths.get("src/test/resources/");
+
+  private final Entry ENTRY_0 = new Entry(Instant.now().getEpochSecond(), "key0", "value0");
+  private final Entry ENTRY_1 = new Entry(Instant.now().getEpochSecond(), "key1", "value1");
+
+  private final UnsignedShort SEGMENT_NUMBER = UnsignedShort.valueOf(0);
+  private final UnsignedShort SEGMENT_LEVEL = UnsignedShort.valueOf(0);
+
   private final StorageConfigurations config = mock(StorageConfigurations.class);
+  private final SegmentIndexFactory indexFactory = mock(SegmentIndexFactory.class);
   private final EntryReader.Factory entryReaderFactory = mock(EntryReader.Factory.class);
-
-  private final Entry entry0 = new Entry(Instant.now().getEpochSecond(), "key0", "value0");
-  private final Entry entry1 = new Entry(Instant.now().getEpochSecond(), "key1", "value1");
-
-  private final UnsignedShort segmentNumber = UnsignedShort.valueOf(0);
-  private final UnsignedShort segmentLevel = UnsignedShort.valueOf(0);
+  private final SegmentIndex segmentIndex = mock(SegmentIndex.class);
 
   private SegmentFactory factory;
 
   @BeforeEach
-  public void beforeEach() {
-    when(config.getStorageStoreDirectoryPath()).thenReturn(testResourcePath);
+  public void beforeEach() throws Exception {
+    when(indexFactory.create(any(), any())).thenReturn(segmentIndex);
+    when(segmentIndex.getSegmentNumber()).thenReturn(SEGMENT_NUMBER.value());
+    when(config.getStorageStoreDirectoryPath()).thenReturn(TEST_RESOURCE_PATH);
+
     factory = new SegmentFactory.Factory(TestingExecutors.sameThreadScheduledExecutor(),
-        config, entryReaderFactory).create(segmentNumber.value());
+        config, indexFactory, entryReaderFactory).create(SEGMENT_NUMBER.value());
   }
 
   @Test
   public void create() throws Exception {
     ImmutableSortedMap<String, Entry> keyEntryMap = ImmutableSortedMap.<String, Entry>naturalOrder()
-        .put("key0", entry0)
+        .put(ENTRY_0.key(), ENTRY_0)
         .build();
 
     Segment segment;
 
     ByteArrayOutputStream segmentOutputStream = new ByteArrayOutputStream();
-    ByteArrayOutputStream indexOutputStream = new ByteArrayOutputStream();
     try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class)) {
       fileMockedStatic.when(() -> Files.newOutputStream(
-              Path.of(testResourcePath.toString(), "segment_0.seg"), StandardOpenOption.CREATE_NEW))
+              Path.of(TEST_RESOURCE_PATH.toString(), "segment_0.seg"), StandardOpenOption.CREATE_NEW))
           .thenReturn(segmentOutputStream);
-      fileMockedStatic.when(() -> Files.newOutputStream(
-              Path.of(testResourcePath.toString(), "index_0.idx"), StandardOpenOption.CREATE_NEW))
-          .thenReturn(indexOutputStream);
 
       segment = factory.create(keyEntryMap).get();
     }
 
-    assertThat(segment.getSegmentNumber()).isEqualTo(segmentNumber.value());
-    assertThat(segment.getSegmentLevel()).isEqualTo(segmentLevel.value());
-    assertThat(segment.mightContain("key0")).isTrue();
+    assertThat(segment.getSegmentNumber()).isEqualTo(SEGMENT_NUMBER.value());
+    assertThat(segment.getSegmentLevel()).isEqualTo(SEGMENT_LEVEL.value());
+    assertThat(segment.mightContain(ENTRY_0.key())).isTrue();
 
     assertThat(segmentOutputStream.toByteArray()).isEqualTo(Bytes.concat(
-        new SegmentMetadata(segmentNumber, segmentLevel).getBytes(),
-        entry0.getBytes()));
+        new SegmentMetadata(SEGMENT_NUMBER, SEGMENT_LEVEL).getBytes(),
+        ENTRY_0.getBytes()));
 
-    assertThat(indexOutputStream.toByteArray()).isEqualTo(Bytes.concat(
-        new SegmentIndexMetadata(segmentNumber).getBytes(),
-        new SegmentIndexEntry("key0", SegmentMetadata.BYTES).getBytes()));
+    verify(indexFactory, times(1)).create(
+        ImmutableSortedMap.<String, Long>naturalOrder()
+            .put(ENTRY_0.key(), (long) SegmentMetadata.BYTES)
+            .build(),
+        SEGMENT_NUMBER);
   }
 
   @Test
@@ -99,10 +104,10 @@ public class SegmentFactoryTest {
   @Test
   public void writeSegment() throws Exception {
     ImmutableSortedMap<String, Entry> keyEntryMap = ImmutableSortedMap.<String, Entry>naturalOrder()
-        .put("key0", entry0)
-        .put("key1", entry1)
+        .put(ENTRY_0.key(), ENTRY_0)
+        .put(ENTRY_1.key(), ENTRY_1)
         .build();
-    SegmentMetadata metadata = new SegmentMetadata(segmentNumber, segmentLevel);
+    SegmentMetadata metadata = new SegmentMetadata(SEGMENT_NUMBER, SEGMENT_LEVEL);
     BloomFilter<String> keyFilter = BloomFilter.create(Funnels.stringFunnel(
         StandardCharsets.UTF_8), keyEntryMap.size());
 
@@ -112,45 +117,19 @@ public class SegmentFactoryTest {
     try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class)) {
       fileMockedStatic.when(() -> Files.newOutputStream(any(), any())).thenReturn(outputStream);
 
-      keyOffsetMap = factory.writeSegment(keyEntryMap, metadata, keyFilter, testResourcePath);
+      keyOffsetMap = factory.writeSegment(keyEntryMap, metadata, keyFilter, TEST_RESOURCE_PATH);
     }
 
-    assertThat(keyFilter.mightContain("key0")).isTrue();
-    assertThat(keyFilter.mightContain("key1")).isTrue();
+    assertThat(keyFilter.mightContain(ENTRY_0.key())).isTrue();
+    assertThat(keyFilter.mightContain(ENTRY_1.key())).isTrue();
 
     assertThat(outputStream.toByteArray()).isEqualTo(Bytes.concat(
         metadata.getBytes(),
-        entry0.getBytes(),
-        entry1.getBytes()));
+        ENTRY_0.getBytes(),
+        ENTRY_1.getBytes()));
 
-    assertThat(keyOffsetMap.get("key0")).isEqualTo(SegmentMetadata.BYTES);
-    assertThat(keyOffsetMap.get("key1")).isEqualTo(
-        SegmentMetadata.BYTES + entry0.getBytes().length);
-  }
-
-  @Test
-  public void createSegmentIndex() throws Exception {
-    long entryOffset0 = SegmentMetadata.BYTES;
-    long entryOffset1 = entryOffset0 + entry0.getBytes().length;
-    ImmutableSortedMap<String, Long> keyOffsetMap = ImmutableSortedMap.<String, Long>naturalOrder()
-        .put("key0", entryOffset0).put("key1", entryOffset1).build();
-
-    SegmentIndex segmentIndex;
-
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class)) {
-      fileMockedStatic.when(() -> Files.newOutputStream(any(), any())).thenReturn(outputStream);
-
-      segmentIndex = factory.createSegmentIndex(keyOffsetMap, segmentNumber);
-    }
-
-    assertThat(outputStream.toByteArray()).isEqualTo(Bytes.concat(
-        new SegmentIndexMetadata(segmentNumber).getBytes(),
-        new SegmentIndexEntry("key0", entryOffset0).getBytes(),
-        new SegmentIndexEntry("key1", entryOffset1).getBytes()));
-
-    assertThat(segmentIndex.getSegmentNumber()).isEqualTo(segmentNumber.value());
-    assertThat(segmentIndex.getKeyOffset("key0")).hasValue(entryOffset0);
-    assertThat(segmentIndex.getKeyOffset("key1")).hasValue(entryOffset1);
+    assertThat(keyOffsetMap.get(ENTRY_0.key())).isEqualTo(SegmentMetadata.BYTES);
+    assertThat(keyOffsetMap.get(ENTRY_1.key())).isEqualTo(
+        SegmentMetadata.BYTES + ENTRY_0.getBytes().length);
   }
 }
