@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,13 +38,50 @@ public class SegmentFactoryTest {
   private final Entry entry0 = new Entry(Instant.now().getEpochSecond(), "key0", "value0");
   private final Entry entry1 = new Entry(Instant.now().getEpochSecond(), "key1", "value1");
 
+  private final UnsignedShort segmentNumber = UnsignedShort.valueOf(0);
+  private final UnsignedShort segmentLevel = UnsignedShort.valueOf(0);
+
   private SegmentFactory factory;
 
   @BeforeEach
   public void beforeEach() {
     when(config.getStorageStoreDirectoryPath()).thenReturn(testResourcePath);
     factory = new SegmentFactory.Factory(TestingExecutors.sameThreadScheduledExecutor(),
-        config, entryReaderFactory).create(0);
+        config, entryReaderFactory).create(segmentNumber.value());
+  }
+
+  @Test
+  public void create() throws Exception {
+    ImmutableSortedMap<String, Entry> keyEntryMap = ImmutableSortedMap.<String, Entry>naturalOrder()
+        .put("key0", entry0)
+        .build();
+
+    Segment segment;
+
+    ByteArrayOutputStream segmentOutputStream = new ByteArrayOutputStream();
+    ByteArrayOutputStream indexOutputStream = new ByteArrayOutputStream();
+    try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class)) {
+      fileMockedStatic.when(() -> Files.newOutputStream(
+              Path.of(testResourcePath.toString(), "segment_0.seg"), StandardOpenOption.CREATE_NEW))
+          .thenReturn(segmentOutputStream);
+      fileMockedStatic.when(() -> Files.newOutputStream(
+              Path.of(testResourcePath.toString(), "index_0.idx"), StandardOpenOption.CREATE_NEW))
+          .thenReturn(indexOutputStream);
+
+      segment = factory.create(keyEntryMap).get();
+    }
+
+    assertThat(segment.getSegmentNumber()).isEqualTo(segmentNumber.value());
+    assertThat(segment.getSegmentLevel()).isEqualTo(segmentLevel.value());
+    assertThat(segment.mightContain("key0")).isTrue();
+
+    assertThat(segmentOutputStream.toByteArray()).isEqualTo(Bytes.concat(
+        new SegmentMetadata(segmentNumber, segmentLevel).getBytes(),
+        entry0.getBytes()));
+
+    assertThat(indexOutputStream.toByteArray()).isEqualTo(Bytes.concat(
+        new SegmentIndexMetadata(segmentNumber).getBytes(),
+        new SegmentIndexEntry("key0", SegmentMetadata.BYTES).getBytes()));
   }
 
   @Test
@@ -64,8 +102,7 @@ public class SegmentFactoryTest {
         .put("key0", entry0)
         .put("key1", entry1)
         .build();
-    SegmentMetadata metadata = new SegmentMetadata(
-        UnsignedShort.valueOf(0), UnsignedShort.valueOf(0));
+    SegmentMetadata metadata = new SegmentMetadata(segmentNumber, segmentLevel);
     BloomFilter<String> keyFilter = BloomFilter.create(Funnels.stringFunnel(
         StandardCharsets.UTF_8), keyEntryMap.size());
 
@@ -97,7 +134,6 @@ public class SegmentFactoryTest {
     long entryOffset1 = entryOffset0 + entry0.getBytes().length;
     ImmutableSortedMap<String, Long> keyOffsetMap = ImmutableSortedMap.<String, Long>naturalOrder()
         .put("key0", entryOffset0).put("key1", entryOffset1).build();
-    UnsignedShort segmentNumber = UnsignedShort.valueOf(0);
 
     SegmentIndex segmentIndex;
 
