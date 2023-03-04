@@ -88,10 +88,11 @@ public class MemtableTest {
 
   @Test
   public void flush() {
-    String key0 = "key0", key1 = "key1";
+    String key0 = "key0", key1 = "key1", deletedKey = "deleted";
     String value0 = "value0", value1 = "value1";
     memtable.write(key0, value0);
     memtable.write(key1, value1);
+    memtable.delete(deletedKey);
 
     ImmutableSortedMap<String, Entry> flushedKeyEntryMap = memtable.flush();
 
@@ -102,5 +103,10 @@ public class MemtableTest {
     assertThat(flushedKeyEntryMap.containsKey(key1)).isTrue();
     assertThat(flushedKeyEntryMap.get(key1).key()).isEqualTo(key1);
     assertThat(flushedKeyEntryMap.get(key1).value()).isEqualTo(value1);
+
+    assertThat(flushedKeyEntryMap.containsKey(deletedKey)).isTrue();
+    assertThat(flushedKeyEntryMap.get(deletedKey).key()).isEqualTo(deletedKey);
+    assertThat(flushedKeyEntryMap.get(deletedKey).value()).isEmpty();
+    assertThat(flushedKeyEntryMap.get(deletedKey).isDeleted()).isTrue();
   }
 }
