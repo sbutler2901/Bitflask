@@ -93,4 +93,11 @@ public record Entry(long creationEpochSeconds, String key, String value) {
         UnsignedShort.valueOf(key.length()),
         UnsignedShort.valueOf(value.length()));
   }
+
+  /**
+   * Returns true if this Entry represents a deleted one.
+   */
+  public boolean isDeleted() {
+    return value.isEmpty();
+  }
 }

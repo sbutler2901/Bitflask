@@ -164,4 +164,18 @@ public class EntryTest {
 
     assertThat(decodedValue).isEqualTo(value);
   }
+
+  @Test
+  public void isDeleted_deletedEntry_returnsTrue() {
+    Entry entry = new Entry(Instant.now().getEpochSecond(), "key", "");
+
+    assertThat(entry.isDeleted()).isTrue();
+  }
+
+  @Test
+  public void isDeleted_presentEntry_returnsFalse() {
+    Entry entry = new Entry(Instant.now().getEpochSecond(), "key", "value");
+
+    assertThat(entry.isDeleted()).isFalse();
+  }
 }
