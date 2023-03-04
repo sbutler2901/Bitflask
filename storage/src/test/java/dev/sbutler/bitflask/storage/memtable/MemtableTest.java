@@ -1,8 +1,8 @@
 package dev.sbutler.bitflask.storage.memtable;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -16,14 +16,27 @@ public class MemtableTest {
   }
 
   @Test
-  public void read() {
+  public void read_presentEntry_returnsValue() {
     String key = "key";
     String value = "value";
     memtable.write(key, value);
 
-    Optional<String> readValue = memtable.read(key);
+    assertThat(memtable.read(key)).hasValue(value);
+  }
 
-    assertThat(readValue).hasValue(value);
+  @Test
+  public void read_absentEntry_returnsEmpty() {
+    String key = "key";
+
+    assertThat(memtable.read(key)).isEmpty();
+  }
+
+  @Test
+  public void read_deletedEntry_returnsEmpty() {
+    String key = "key";
+    memtable.delete(key);
+
+    assertThat(memtable.read(key)).isEmpty();
   }
 
   @Test
@@ -34,6 +47,7 @@ public class MemtableTest {
     memtable.write(key, value);
 
     assertThat(memtable.read(key)).hasValue(value);
+    assertThat(memtable.contains(key)).isTrue();
   }
 
   @Test
@@ -43,5 +57,30 @@ public class MemtableTest {
     memtable.delete(key);
 
     assertThat(memtable.read(key)).isEmpty();
+    assertThat(memtable.contains(key)).isFalse();
+  }
+
+  @Test
+  public void contains_presentEntry_returnsTrue() {
+    String key = "key";
+    String value = "value";
+    memtable.write(key, value);
+
+    assertThat(memtable.contains(key)).isTrue();
+  }
+
+  @Test
+  public void contains_absentEntry_returnsFalse() {
+    String key = "key";
+
+    assertThat(memtable.contains(key)).isFalse();
+  }
+
+  @Test
+  public void contains_deletedEntry_returnsFalse() {
+    String key = "key";
+    memtable.delete(key);
+
+    assertThat(memtable.contains(key)).isFalse();
   }
 }
