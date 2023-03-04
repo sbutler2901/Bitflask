@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.memtable;
 
 import static java.util.function.Predicate.not;
 
+import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.storage.entry.Entry;
 import java.time.Instant;
 import java.util.Optional;
@@ -57,5 +58,17 @@ public final class Memtable {
    */
   public boolean contains(String key) {
     return read(key).isPresent();
+  }
+
+  /**
+   * Flushes all key:entry pairs contained within this Memtable.
+   */
+  public ImmutableSortedMap<String, Entry> flush() {
+    readWriteLock.readLock().lock();
+    try {
+      return ImmutableSortedMap.copyOfSorted(keyEntryMap);
+    } finally {
+      readWriteLock.readLock().unlock();
+    }
   }
 }

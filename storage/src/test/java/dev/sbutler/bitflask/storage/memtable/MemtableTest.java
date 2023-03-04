@@ -3,6 +3,8 @@ package dev.sbutler.bitflask.storage.memtable;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
+import com.google.common.collect.ImmutableSortedMap;
+import dev.sbutler.bitflask.storage.entry.Entry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -82,5 +84,23 @@ public class MemtableTest {
     memtable.delete(key);
 
     assertThat(memtable.contains(key)).isFalse();
+  }
+
+  @Test
+  public void flush() {
+    String key0 = "key0", key1 = "key1";
+    String value0 = "value0", value1 = "value1";
+    memtable.write(key0, value0);
+    memtable.write(key1, value1);
+
+    ImmutableSortedMap<String, Entry> flushedKeyEntryMap = memtable.flush();
+
+    assertThat(flushedKeyEntryMap.containsKey(key0)).isTrue();
+    assertThat(flushedKeyEntryMap.get(key0).key()).isEqualTo(key0);
+    assertThat(flushedKeyEntryMap.get(key0).value()).isEqualTo(value0);
+
+    assertThat(flushedKeyEntryMap.containsKey(key1)).isTrue();
+    assertThat(flushedKeyEntryMap.get(key1).key()).isEqualTo(key1);
+    assertThat(flushedKeyEntryMap.get(key1).value()).isEqualTo(value1);
   }
 }
