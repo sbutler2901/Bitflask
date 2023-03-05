@@ -5,6 +5,7 @@ import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,11 +20,11 @@ public class MemtableTest {
 
   @Test
   public void read_presentEntry_returnsValue() {
-    String key = "key";
-    String value = "value";
-    memtable.write(key, value);
+    Entry entry = new Entry(Instant.now().getEpochSecond(), "key", "value");
 
-    assertThat(memtable.read(key)).hasValue(value);
+    memtable.write(entry);
+
+    assertThat(memtable.read(entry.key())).hasValue(entry);
   }
 
   @Test
@@ -34,41 +35,21 @@ public class MemtableTest {
   }
 
   @Test
-  public void read_deletedEntry_returnsEmpty() {
-    String key = "key";
-    memtable.delete(key);
-
-    assertThat(memtable.read(key)).isEmpty();
-  }
-
-  @Test
   public void write() {
-    String key = "key";
-    String value = "value";
+    Entry entry = new Entry(Instant.now().getEpochSecond(), "key", "value");
 
-    memtable.write(key, value);
+    memtable.write(entry);
 
-    assertThat(memtable.read(key)).hasValue(value);
-    assertThat(memtable.contains(key)).isTrue();
-  }
-
-  @Test
-  public void delete() {
-    String key = "key";
-
-    memtable.delete(key);
-
-    assertThat(memtable.read(key)).isEmpty();
-    assertThat(memtable.contains(key)).isFalse();
+    assertThat(memtable.contains(entry.key())).isTrue();
+    assertThat(memtable.read(entry.key())).hasValue(entry);
   }
 
   @Test
   public void contains_presentEntry_returnsTrue() {
-    String key = "key";
-    String value = "value";
-    memtable.write(key, value);
+    Entry entry = new Entry(Instant.now().getEpochSecond(), "key", "value");
+    memtable.write(entry);
 
-    assertThat(memtable.contains(key)).isTrue();
+    assertThat(memtable.contains(entry.key())).isTrue();
   }
 
   @Test
@@ -79,34 +60,23 @@ public class MemtableTest {
   }
 
   @Test
-  public void contains_deletedEntry_returnsFalse() {
-    String key = "key";
-    memtable.delete(key);
-
-    assertThat(memtable.contains(key)).isFalse();
-  }
-
-  @Test
   public void flush() {
-    String key0 = "key0", key1 = "key1", deletedKey = "deleted";
-    String value0 = "value0", value1 = "value1";
-    memtable.write(key0, value0);
-    memtable.write(key1, value1);
-    memtable.delete(deletedKey);
+    Entry entry0 = new Entry(Instant.now().getEpochSecond(), "key0", "value0");
+    Entry entry1 = new Entry(Instant.now().getEpochSecond(), "key1", "value1");
+    Entry deletedEntry = new Entry(Instant.now().getEpochSecond(), "key", "");
+    memtable.write(entry0);
+    memtable.write(entry1);
+    memtable.write(deletedEntry);
 
     ImmutableSortedMap<String, Entry> flushedKeyEntryMap = memtable.flush();
 
-    assertThat(flushedKeyEntryMap.containsKey(key0)).isTrue();
-    assertThat(flushedKeyEntryMap.get(key0).key()).isEqualTo(key0);
-    assertThat(flushedKeyEntryMap.get(key0).value()).isEqualTo(value0);
+    assertThat(flushedKeyEntryMap.containsKey(entry0.key())).isTrue();
+    assertThat(flushedKeyEntryMap.get(entry0.key())).isEqualTo(entry0);
 
-    assertThat(flushedKeyEntryMap.containsKey(key1)).isTrue();
-    assertThat(flushedKeyEntryMap.get(key1).key()).isEqualTo(key1);
-    assertThat(flushedKeyEntryMap.get(key1).value()).isEqualTo(value1);
+    assertThat(flushedKeyEntryMap.containsKey(entry1.key())).isTrue();
+    assertThat(flushedKeyEntryMap.get(entry1.key())).isEqualTo(entry1);
 
-    assertThat(flushedKeyEntryMap.containsKey(deletedKey)).isTrue();
-    assertThat(flushedKeyEntryMap.get(deletedKey).key()).isEqualTo(deletedKey);
-    assertThat(flushedKeyEntryMap.get(deletedKey).value()).isEmpty();
-    assertThat(flushedKeyEntryMap.get(deletedKey).isDeleted()).isTrue();
+    assertThat(flushedKeyEntryMap.containsKey(deletedEntry.key())).isTrue();
+    assertThat(flushedKeyEntryMap.get(deletedEntry.key())).isEqualTo(deletedEntry);
   }
 }

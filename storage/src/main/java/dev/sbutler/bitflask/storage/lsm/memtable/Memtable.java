@@ -1,10 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm.memtable;
 
-import static java.util.function.Predicate.not;
-
 import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -22,35 +19,25 @@ public final class Memtable {
   /**
    * Reads the value corresponding to the provided key, if present.
    */
-  public Optional<String> read(String key) {
+  public Optional<Entry> read(String key) {
     readWriteLock.readLock().lock();
     try {
-      return Optional.ofNullable(keyEntryMap.get(key))
-          .map(Entry::value)
-          .filter(not(String::isEmpty));
+      return Optional.ofNullable(keyEntryMap.get(key));
     } finally {
       readWriteLock.readLock().unlock();
     }
   }
 
   /**
-   * Writes the provided key value pair.
+   * Writes the provided {@link Entry}.
    */
-  public void write(String key, String value) {
-    Entry entry = new Entry(Instant.now().getEpochSecond(), key, value);
+  public void write(Entry entry) {
     readWriteLock.writeLock().lock();
     try {
-      keyEntryMap.put(key, entry);
+      keyEntryMap.put(entry.key(), entry);
     } finally {
       readWriteLock.writeLock().unlock();
     }
-  }
-
-  /**
-   * Deletes the provided key and its associated value.
-   */
-  public void delete(String key) {
-    write(key, "");
   }
 
   /**
