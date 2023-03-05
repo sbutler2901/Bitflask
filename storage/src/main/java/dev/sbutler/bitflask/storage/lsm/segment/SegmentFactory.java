@@ -30,18 +30,15 @@ public final class SegmentFactory {
   private final ListeningExecutorService executorService;
   private final StorageConfigurations configurations;
   private final SegmentIndexFactory indexFactory;
-  private final EntryReader.Factory entryReaderFactory;
   private final AtomicInteger nextSegmentNumber;
 
   private SegmentFactory(ListeningExecutorService executorService,
       StorageConfigurations configurations,
       SegmentIndexFactory indexFactory,
-      EntryReader.Factory entryReaderFactory,
       int nextSegmentNumber) {
     this.executorService = executorService;
     this.configurations = configurations;
     this.indexFactory = indexFactory;
-    this.entryReaderFactory = entryReaderFactory;
     this.nextSegmentNumber = new AtomicInteger(nextSegmentNumber);
   }
 
@@ -53,17 +50,14 @@ public final class SegmentFactory {
     private final ListeningExecutorService executorService;
     private final StorageConfigurations configurations;
     private final SegmentIndexFactory indexFactory;
-    private final EntryReader.Factory entryReaderFactory;
 
     @Inject
     Factory(ListeningExecutorService executorService,
         StorageConfigurations configurations,
-        SegmentIndexFactory indexFactory,
-        EntryReader.Factory entryReaderFactory) {
+        SegmentIndexFactory indexFactory) {
       this.executorService = executorService;
       this.configurations = configurations;
       this.indexFactory = indexFactory;
-      this.entryReaderFactory = entryReaderFactory;
     }
 
     /**
@@ -74,7 +68,6 @@ public final class SegmentFactory {
       return new SegmentFactory(executorService,
           configurations,
           indexFactory,
-          entryReaderFactory,
           segmentNumberStart);
     }
   }
@@ -105,7 +98,7 @@ public final class SegmentFactory {
 
     SegmentIndex segmentIndex = indexFactory.create(keyOffsetMap, segmentNumber);
 
-    return Segment.create(segmentMetadata, entryReaderFactory.create(segmentPath),
+    return Segment.create(segmentMetadata, EntryReader.create(segmentPath),
         keyFilter, segmentIndex);
   }
 

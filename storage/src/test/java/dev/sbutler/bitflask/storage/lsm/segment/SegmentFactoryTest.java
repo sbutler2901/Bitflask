@@ -17,7 +17,6 @@ import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
-import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -42,7 +41,6 @@ public class SegmentFactoryTest {
 
   private final StorageConfigurations config = mock(StorageConfigurations.class);
   private final SegmentIndexFactory indexFactory = mock(SegmentIndexFactory.class);
-  private final EntryReader.Factory entryReaderFactory = mock(EntryReader.Factory.class);
   private final SegmentIndex segmentIndex = mock(SegmentIndex.class);
 
   private SegmentFactory factory;
@@ -54,7 +52,7 @@ public class SegmentFactoryTest {
     when(config.getStorageStoreDirectoryPath()).thenReturn(TEST_RESOURCE_PATH);
 
     factory = new SegmentFactory.Factory(TestingExecutors.sameThreadScheduledExecutor(),
-        config, indexFactory, entryReaderFactory).create(SEGMENT_NUMBER.value());
+        config, indexFactory).create(SEGMENT_NUMBER.value());
   }
 
   @Test

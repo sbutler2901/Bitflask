@@ -1,48 +1,29 @@
 package dev.sbutler.bitflask.storage.lsm.entry;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
-import javax.inject.Inject;
 
 /**
  * Enables reading {@link Entry}s from a provided file.
  */
 public final class EntryReader {
 
-  private final ListeningExecutorService executorService;
   private final Path filePath;
 
-  private EntryReader(ListeningExecutorService executorService, Path filePath) {
-    this.executorService = executorService;
+  private EntryReader(Path filePath) {
     this.filePath = filePath;
   }
 
   /**
-   * A factory for building an {@link EntryReader} instance.
+   * Creates an {@link EntryReader} for retrieving {@link Entry}s from the file located at the
+   * provided {@link Path}.
    */
-  public static class Factory {
-
-    private final ListeningExecutorService executorService;
-
-    @Inject
-    public Factory(ListeningExecutorService executorService) {
-      this.executorService = executorService;
-    }
-
-    /**
-     * Creates an {@link EntryReader} for retrieving {@link Entry}s from the file located at the
-     * provided {@link Path}.
-     */
-    public EntryReader create(Path filePath) {
-      return new EntryReader(executorService, filePath);
-    }
+  public static EntryReader create(Path filePath) {
+    return new EntryReader(filePath);
   }
 
   /**
@@ -52,11 +33,7 @@ public final class EntryReader {
    * <p>The future will fail with an {@link IOException} if there is an issue iterating the
    * entries.
    */
-  public ListenableFuture<Optional<Entry>> findEntryFromOffset(String key, long startOffset) {
-    return Futures.submit(() -> findEntryFromOffsetSync(key, startOffset), executorService);
-  }
-
-  private Optional<Entry> findEntryFromOffsetSync(String key, long startOffset) throws IOException {
+  public Optional<Entry> findEntryFromOffset(String key, long startOffset) throws IOException {
     try (BufferedInputStream is =
         new BufferedInputStream(Files.newInputStream(filePath, StandardOpenOption.READ))) {
       is.skipNBytes(startOffset);

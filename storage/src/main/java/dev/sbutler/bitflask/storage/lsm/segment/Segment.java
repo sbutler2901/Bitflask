@@ -1,12 +1,11 @@
 package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.util.concurrent.Futures.immediateFuture;
 
 import com.google.common.hash.BloomFilter;
-import com.google.common.util.concurrent.ListenableFuture;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
+import java.io.IOException;
 import java.util.Optional;
 
 /**
@@ -81,13 +80,15 @@ public final class Segment {
   /**
    * Reads the {@link Entry} contained by this Segment and returns it, if present.
    */
-  public ListenableFuture<Optional<Entry>> readEntry(String key) {
+  public Optional<Entry> readEntry(String key) throws IOException {
     if (!mightContain(key)) {
-      return immediateFuture(Optional.empty());
+      return Optional.empty();
     }
-    return segmentIndex.getKeyOffset(key)
-        .map(startOffset -> entryReader.findEntryFromOffset(key, startOffset))
-        .orElseGet(() -> immediateFuture(Optional.empty()));
+    Optional<Long> keyOffset = segmentIndex.getKeyOffset(key);
+    if (keyOffset.isEmpty()) {
+      return Optional.empty();
+    }
+    return entryReader.findEntryFromOffset(key, keyOffset.get());
   }
 
   /**

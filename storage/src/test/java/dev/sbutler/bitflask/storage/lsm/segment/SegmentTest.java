@@ -2,7 +2,6 @@ package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
-import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -102,7 +101,7 @@ public class SegmentTest {
         ImmutableSortedMap.of());
     Segment segment = Segment.create(metadata, entryReader, keyFilter, segmentIndex);
 
-    Optional<Entry> readEntry = segment.readEntry("key").get();
+    Optional<Entry> readEntry = segment.readEntry("key");
 
     assertThat(readEntry).isEmpty();
   }
@@ -118,9 +117,9 @@ public class SegmentTest {
     Entry entry = new Entry(Instant.now().getEpochSecond(), key, value);
     Segment segment = Segment.create(metadata, entryReader, keyFilter, segmentIndex);
     when(entryReader.findEntryFromOffset(anyString(), anyLong()))
-        .thenReturn(immediateFuture(Optional.of(entry)));
+        .thenReturn(Optional.of(entry));
 
-    Optional<Entry> readEntry = segment.readEntry(key).get();
+    Optional<Entry> readEntry = segment.readEntry(key);
 
     assertThat(readEntry).hasValue(entry);
   }
@@ -131,7 +130,7 @@ public class SegmentTest {
     keyFilter.put(key);
     Segment segment = Segment.create(metadata, entryReader, keyFilter, emptySegmentIndex);
 
-    Optional<Entry> readEntry = segment.readEntry(key).get();
+    Optional<Entry> readEntry = segment.readEntry(key);
 
     assertThat(readEntry).isEmpty();
     verify(entryReader, times(0)).findEntryFromOffset(anyString(), anyLong());
