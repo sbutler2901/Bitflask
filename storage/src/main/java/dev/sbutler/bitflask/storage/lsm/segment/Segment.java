@@ -1,16 +1,16 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 
 import com.google.common.hash.BloomFilter;
 import com.google.common.util.concurrent.ListenableFuture;
-import dev.sbutler.bitflask.storage.entry.Entry;
-import dev.sbutler.bitflask.storage.entry.EntryReader;
+import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
 import java.util.Optional;
 
 /**
- * Represents a single set of {@link dev.sbutler.bitflask.storage.entry.Entry}s persisted to disk.
+ * Represents a single set of {@link Entry}s persisted to disk.
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class Segment {
@@ -63,15 +63,15 @@ public final class Segment {
    * Returns the level of this Segment.
    *
    * <p>Higher numbers indicate more rounds of compaction performed on the contained
-   * {@link dev.sbutler.bitflask.storage.entry.Entry}s and therefore their age.
+   * {@link Entry}s and therefore their age.
    */
   public int getSegmentLevel() {
     return metadata.segmentLevel().value();
   }
 
   /**
-   * Returns true if this Segment <i>might</i> contain a
-   * {@link dev.sbutler.bitflask.storage.entry.Entry} for the provided key or false if it
+   * Returns true if this Segment <i>might</i> contain a {@link Entry} for the provided key or false
+   * if it
    * <i>definitely</i> does not.
    */
   public boolean mightContain(String key) {
@@ -79,8 +79,7 @@ public final class Segment {
   }
 
   /**
-   * Reads the {@link dev.sbutler.bitflask.storage.entry.Entry} contained by this Segment and
-   * returns it, if present.
+   * Reads the {@link Entry} contained by this Segment and returns it, if present.
    */
   public ListenableFuture<Optional<Entry>> readEntry(String key) {
     if (!mightContain(key)) {

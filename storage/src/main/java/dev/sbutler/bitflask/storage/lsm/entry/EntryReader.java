@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.entry;
+package dev.sbutler.bitflask.storage.lsm.entry;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;

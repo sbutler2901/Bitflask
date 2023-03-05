@@ -1,12 +1,13 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.lsm.segment;
 
 import com.google.common.collect.ImmutableSortedMap;
+import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import java.util.Optional;
 
 /**
  * A dense index implementation of {@link SegmentIndex}.
  *
- * <p>Every {@link dev.sbutler.bitflask.storage.entry.Entry} in a {@link Segment} will have its
+ * <p>Every {@link Entry} in a {@link Segment} will have its
  * key mapped to its corresponding file offset.
  */
 final class SegmentIndexDense implements SegmentIndex {

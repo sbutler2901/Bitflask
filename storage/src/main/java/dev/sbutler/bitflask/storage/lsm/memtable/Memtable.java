@@ -1,9 +1,9 @@
-package dev.sbutler.bitflask.storage.memtable;
+package dev.sbutler.bitflask.storage.lsm.memtable;
 
 import static java.util.function.Predicate.not;
 
 import com.google.common.collect.ImmutableSortedMap;
-import dev.sbutler.bitflask.storage.entry.Entry;
+import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.SortedMap;
@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * An in memory store of new or updated {@link dev.sbutler.bitflask.storage.entry.Entry}s.
+ * An in memory store of new or updated {@link Entry}s.
  */
 public final class Memtable {
 

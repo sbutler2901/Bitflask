@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.lsm.segment;
 
 import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;

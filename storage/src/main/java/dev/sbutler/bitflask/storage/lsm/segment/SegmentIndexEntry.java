@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.lsm.segment;
 
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -6,7 +6,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
-import dev.sbutler.bitflask.storage.entry.Entry;
+import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 

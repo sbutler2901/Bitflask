@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
@@ -15,8 +15,8 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
-import dev.sbutler.bitflask.storage.entry.Entry;
-import dev.sbutler.bitflask.storage.entry.EntryReader;
+import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;

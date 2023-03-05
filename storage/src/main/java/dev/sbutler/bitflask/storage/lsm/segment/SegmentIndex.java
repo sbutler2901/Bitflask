@@ -1,9 +1,10 @@
-package dev.sbutler.bitflask.storage.segment;
+package dev.sbutler.bitflask.storage.lsm.segment;
 
+import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import java.util.Optional;
 
 /**
- * An index of {@link dev.sbutler.bitflask.storage.entry.Entry} offsets for a {@link Segment}.
+ * An index of {@link Entry} offsets for a {@link Segment}.
  */
 interface SegmentIndex {
 
@@ -23,8 +24,8 @@ interface SegmentIndex {
   boolean mightContain(String key);
 
   /**
-   * Returns the file offset to start searching for a
-   * {@link dev.sbutler.bitflask.storage.entry.Entry} in a {@link Segment}, if present.
+   * Returns the file offset to start searching for a {@link Entry} in a {@link Segment}, if
+   * present.
    */
   Optional<Long> getKeyOffset(String key);
 

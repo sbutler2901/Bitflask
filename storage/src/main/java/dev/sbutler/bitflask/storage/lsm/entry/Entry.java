@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.entry;
+package dev.sbutler.bitflask.storage.lsm.entry;
 
 import static com.google.common.base.Preconditions.checkArgument;
 

@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.entry;
+package dev.sbutler.bitflask.storage.lsm.entry;
 
 import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.assertThrows;
@@ -9,8 +9,8 @@ import com.google.common.primitives.Bytes;
 import com.google.common.truth.Truth;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
-import dev.sbutler.bitflask.storage.entry.EntryReader.Factory;
-import dev.sbutler.bitflask.storage.segment.Segment;
+import dev.sbutler.bitflask.storage.lsm.entry.EntryReader.Factory;
+import dev.sbutler.bitflask.storage.lsm.segment.Segment;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;

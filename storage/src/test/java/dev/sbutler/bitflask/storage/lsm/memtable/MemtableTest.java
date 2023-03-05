@@ -1,10 +1,10 @@
-package dev.sbutler.bitflask.storage.memtable;
+package dev.sbutler.bitflask.storage.lsm.memtable;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.collect.ImmutableSortedMap;
-import dev.sbutler.bitflask.storage.entry.Entry;
+import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
