@@ -44,7 +44,12 @@ public final class Memtable {
    * Returns true if this Memtable contains an entry for the provided key.
    */
   public boolean contains(String key) {
-    return read(key).isPresent();
+    readWriteLock.readLock().lock();
+    try {
+      return keyEntryMap.containsKey(key);
+    } finally {
+      readWriteLock.readLock().unlock();
+    }
   }
 
   /**
