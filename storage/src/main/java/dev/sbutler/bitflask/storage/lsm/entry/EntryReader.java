@@ -30,8 +30,7 @@ public final class EntryReader {
    * Iterates the {@link Entry}s in the associated file until one with the provided key is found, or
    * the end of the segment file is reached.
    *
-   * <p>The future will fail with an {@link IOException} if there is an issue iterating the
-   * entries.
+   * <p>An {@link IOException} will be thrown if there is an issue iterating the entries.
    */
   public Optional<Entry> findEntryFromOffset(String key, long startOffset) throws IOException {
     try (BufferedInputStream is =
