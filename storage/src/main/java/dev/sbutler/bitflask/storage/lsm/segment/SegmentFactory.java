@@ -5,9 +5,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
@@ -27,16 +24,14 @@ import javax.inject.Inject;
 @SuppressWarnings("UnstableApiUsage")
 public final class SegmentFactory {
 
-  private final ListeningExecutorService executorService;
   private final StorageConfigurations configurations;
   private final SegmentIndexFactory indexFactory;
   private final AtomicInteger nextSegmentNumber;
 
-  private SegmentFactory(ListeningExecutorService executorService,
+  private SegmentFactory(
       StorageConfigurations configurations,
       SegmentIndexFactory indexFactory,
       int nextSegmentNumber) {
-    this.executorService = executorService;
     this.configurations = configurations;
     this.indexFactory = indexFactory;
     this.nextSegmentNumber = new AtomicInteger(nextSegmentNumber);
@@ -47,15 +42,11 @@ public final class SegmentFactory {
    */
   public static class Factory {
 
-    private final ListeningExecutorService executorService;
     private final StorageConfigurations configurations;
     private final SegmentIndexFactory indexFactory;
 
     @Inject
-    Factory(ListeningExecutorService executorService,
-        StorageConfigurations configurations,
-        SegmentIndexFactory indexFactory) {
-      this.executorService = executorService;
+    Factory(StorageConfigurations configurations, SegmentIndexFactory indexFactory) {
       this.configurations = configurations;
       this.indexFactory = indexFactory;
     }
@@ -65,10 +56,7 @@ public final class SegmentFactory {
      * {@code segmentNumberStart}.
      */
     public SegmentFactory create(int segmentNumberStart) {
-      return new SegmentFactory(executorService,
-          configurations,
-          indexFactory,
-          segmentNumberStart);
+      return new SegmentFactory(configurations, indexFactory, segmentNumberStart);
     }
   }
 
@@ -77,13 +65,9 @@ public final class SegmentFactory {
    *
    * <p>The provided {@code keyEntryMap} cannot be empty.
    */
-  public ListenableFuture<Segment> create(ImmutableSortedMap<String, Entry> keyEntryMap) {
-    checkArgument(!keyEntryMap.isEmpty(), "keyEntryMap was negative.");
+  Segment create(ImmutableSortedMap<String, Entry> keyEntryMap) throws IOException {
+    checkArgument(!keyEntryMap.isEmpty(), "keyEntryMap is empty.");
 
-    return Futures.submit(() -> createSegmentAndIndex(keyEntryMap), executorService);
-  }
-
-  Segment createSegmentAndIndex(ImmutableSortedMap<String, Entry> keyEntryMap) throws IOException {
     UnsignedShort segmentNumber = UnsignedShort.valueOf(nextSegmentNumber.getAndIncrement());
 
     SegmentMetadata segmentMetadata = new SegmentMetadata(

@@ -13,7 +13,6 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import com.google.common.primitives.Bytes;
-import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
@@ -51,8 +50,7 @@ public class SegmentFactoryTest {
     when(segmentIndex.getSegmentNumber()).thenReturn(SEGMENT_NUMBER.value());
     when(config.getStorageStoreDirectoryPath()).thenReturn(TEST_RESOURCE_PATH);
 
-    factory = new SegmentFactory.Factory(TestingExecutors.sameThreadScheduledExecutor(),
-        config, indexFactory).create(SEGMENT_NUMBER.value());
+    factory = new SegmentFactory.Factory(config, indexFactory).create(SEGMENT_NUMBER.value());
   }
 
   @Test
@@ -69,7 +67,7 @@ public class SegmentFactoryTest {
               Path.of(TEST_RESOURCE_PATH.toString(), "segment_0.seg"), StandardOpenOption.CREATE_NEW))
           .thenReturn(segmentOutputStream);
 
-      segment = factory.create(keyEntryMap).get();
+      segment = factory.create(keyEntryMap);
     }
 
     assertThat(segment.getSegmentNumber()).isEqualTo(SEGMENT_NUMBER.value());
@@ -95,8 +93,7 @@ public class SegmentFactoryTest {
     IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
         () -> factory.create(keyEntryMap));
 
-    assertThat(e).hasMessageThat().ignoringCase()
-        .isEqualTo("keyEntryMap was negative.");
+    assertThat(e).hasMessageThat().ignoringCase().isEqualTo("keyEntryMap is empty.");
   }
 
   @Test
