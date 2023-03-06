@@ -57,22 +57,28 @@ public class WriteAheadLog implements AutoCloseable {
       return new WriteAheadLog(
           Files.newOutputStream(
               getPath(),
-              StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
-              StandardOpenOption.WRITE, StandardOpenOption.DSYNC));
+              new StandardOpenOption[]{
+                  StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE,
+                  StandardOpenOption.WRITE, StandardOpenOption.DSYNC}));
     }
 
     /**
      * Creates a {@link WriteAheadLog} from a pre-existing file with new writes appending to it.
+     *
+     * <p>A file will be created if one does not already exist.
      */
     public WriteAheadLog createFromPreExisting() throws IOException {
       return new WriteAheadLog(
           Files.newOutputStream(
               getPath(),
-              StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.DSYNC));
+              new StandardOpenOption[]{
+                  StandardOpenOption.APPEND, StandardOpenOption.CREATE,
+                  StandardOpenOption.WRITE, StandardOpenOption.DSYNC}));
     }
 
     private Path getPath() {
-      return Path.of(configurations.getStorageStoreDirectoryPath().toString(),
+      return Path.of(
+          configurations.getStorageStoreDirectoryPath().toString(),
           FILE_NAME + FILE_EXTENSION);
     }
   }
