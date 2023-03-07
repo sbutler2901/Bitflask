@@ -44,7 +44,7 @@ final class LSMTreeReader {
     SegmentLevelMultiMap segmentLevelMultiMap = segmentLevelMultiMapProvider.get();
     for (var segmentLevel : segmentLevelMultiMap.getSegmentLevels()) {
       Optional<String> minEntryValue =
-          readMinEntryValueFromSegmentLevel(segmentLevelMultiMap, threadFactory, key, segmentLevel);
+          readMinEntryValueFromSegmentLevel(segmentLevelMultiMap, key, segmentLevel);
       if (minEntryValue.isPresent()) {
         return minEntryValue;
       }
@@ -52,9 +52,9 @@ final class LSMTreeReader {
     return Optional.empty();
   }
 
-  private static Optional<String> readMinEntryValueFromSegmentLevel(
+  private Optional<String> readMinEntryValueFromSegmentLevel(
       SegmentLevelMultiMap segmentLevelMultiMap,
-      ThreadFactory threadFactory, String key, int segmentLevel) {
+      String key, int segmentLevel) {
     try (var scope = new StructuredTaskScope.ShutdownOnFailure(
         "read-segments-scope", threadFactory)) {
       List<Future<Optional<Entry>>> segmentReadFutures = new ArrayList<>();
@@ -79,8 +79,7 @@ final class LSMTreeReader {
 
       return segmentReadFutures.stream()
           .map(Future::resultNow)
-          .filter(Optional::isPresent)
-          .map(Optional::get)
+          .flatMap(Optional::stream)
           .min(Comparator.comparingLong(Entry::creationEpochSeconds))
           .map(Entry::value);
     }
