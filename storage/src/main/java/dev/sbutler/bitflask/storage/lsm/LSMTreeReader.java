@@ -35,26 +35,16 @@ final class LSMTreeReader {
   }
 
   Optional<String> read(String key) {
-    Optional<String> memtableEntry = memtableProvider.get().read(key).map(Entry::value);
-    if (memtableEntry.isPresent()) {
-      return memtableEntry;
-    }
-    try {
-      return readFromSegments(key);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new StorageReadException(e);
-    } catch (ExecutionException e) {
-      throw new StorageReadException(e);
-    }
+    return memtableProvider.get().read(key)
+        .map(Entry::value)
+        .or(() -> readFromSegments(key));
   }
 
-  private Optional<String> readFromSegments(String key)
-      throws InterruptedException, ExecutionException {
+  private Optional<String> readFromSegments(String key) {
     SegmentLevelMultiMap segmentLevelMultiMap = segmentLevelMultiMapProvider.get();
     for (var segmentLevel : segmentLevelMultiMap.getSegmentLevels()) {
       Optional<String> minEntryValue =
-          readMinEntryValueFromSegmentLevel(segmentLevelMultiMap, key, segmentLevel);
+          readMinEntryValueFromSegmentLevel(segmentLevelMultiMap, threadFactory, key, segmentLevel);
       if (minEntryValue.isPresent()) {
         return minEntryValue;
       }
@@ -62,10 +52,9 @@ final class LSMTreeReader {
     return Optional.empty();
   }
 
-  private Optional<String> readMinEntryValueFromSegmentLevel(
+  private static Optional<String> readMinEntryValueFromSegmentLevel(
       SegmentLevelMultiMap segmentLevelMultiMap,
-      String key,
-      int segmentLevel) throws InterruptedException, ExecutionException {
+      ThreadFactory threadFactory, String key, int segmentLevel) {
     try (var scope = new StructuredTaskScope.ShutdownOnFailure(
         "read-segments-scope", threadFactory)) {
       List<Future<Optional<Entry>>> segmentReadFutures = new ArrayList<>();
@@ -78,8 +67,15 @@ final class LSMTreeReader {
         return Optional.empty();
       }
 
-      scope.join();
-      scope.throwIfFailed();
+      try {
+        scope.join();
+        scope.throwIfFailed();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new StorageReadException(e);
+      } catch (ExecutionException e) {
+        throw new StorageReadException(e);
+      }
 
       return segmentReadFutures.stream()
           .map(Future::resultNow)
