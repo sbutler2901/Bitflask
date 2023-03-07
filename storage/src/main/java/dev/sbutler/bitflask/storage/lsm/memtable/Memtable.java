@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.lsm.memtable;
 
 import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -9,12 +10,28 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * An in memory store of new or updated {@link Entry}s.
+ * An in memory store of new or updated {@link Entry}s with {@link WriteAheadLog} support.
+ *
+ * <p>Operations are synchronized and can be used in multiple threads concurrently.
  */
 public final class Memtable {
 
-  private final SortedMap<String, Entry> keyEntryMap = new TreeMap<>();
+  private final SortedMap<String, Entry> keyEntryMap;
+  private final WriteAheadLog writeAheadLog;
   private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+
+  private Memtable(SortedMap<String, Entry> keyEntryMap, WriteAheadLog writeAheadLog) {
+    this.keyEntryMap = keyEntryMap;
+    this.writeAheadLog = writeAheadLog;
+  }
+
+  public static Memtable create(WriteAheadLog writeAheadLog) {
+    return new Memtable(new TreeMap<>(), writeAheadLog);
+  }
+
+  public static Memtable create(SortedMap<String, Entry> keyEntryMap, WriteAheadLog writeAheadLog) {
+    return new Memtable(keyEntryMap, writeAheadLog);
+  }
 
   /**
    * Reads the value corresponding to the provided key, if present.
@@ -31,9 +48,10 @@ public final class Memtable {
   /**
    * Writes the provided {@link Entry}.
    */
-  public void write(Entry entry) {
+  public void write(Entry entry) throws IOException {
     readWriteLock.writeLock().lock();
     try {
+      writeAheadLog.append(entry);
       keyEntryMap.put(entry.key(), entry);
     } finally {
       readWriteLock.writeLock().unlock();

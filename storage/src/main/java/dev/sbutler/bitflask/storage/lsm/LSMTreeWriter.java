@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.storage.lsm;
 import dev.sbutler.bitflask.storage.exceptions.StorageWriteException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
-import dev.sbutler.bitflask.storage.lsm.memtable.WriteAheadLog;
 import java.io.IOException;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -14,21 +13,17 @@ import javax.inject.Provider;
 final class LSMTreeWriter {
 
   private final Provider<Memtable> memtableProvider;
-  private final Provider<WriteAheadLog> writeAheadLogProvider;
 
   @Inject
-  LSMTreeWriter(Provider<Memtable> memtableProvider,
-      Provider<WriteAheadLog> writeAheadLogProvider) {
+  LSMTreeWriter(Provider<Memtable> memtableProvider) {
     this.memtableProvider = memtableProvider;
-    this.writeAheadLogProvider = writeAheadLogProvider;
   }
 
   void write(Entry entry) {
     try {
-      writeAheadLogProvider.get().append(entry);
+      memtableProvider.get().write(entry);
     } catch (IOException e) {
       throw new StorageWriteException(e);
     }
-    memtableProvider.get().write(entry);
   }
 }

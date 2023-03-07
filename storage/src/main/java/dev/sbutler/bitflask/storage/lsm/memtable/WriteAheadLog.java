@@ -19,7 +19,7 @@ import javax.inject.Inject;
  * <p>It is expected that there is only a single WriteAheadLog file at a time which corresponds to
  * the current in memory Memtable.
  */
-public class WriteAheadLog implements AutoCloseable {
+final class WriteAheadLog implements AutoCloseable {
 
   /**
    * The filename of WriteHeadLog files.
