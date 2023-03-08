@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import javax.inject.Inject;
@@ -43,7 +42,7 @@ final class LSMTreeReader {
     SegmentLevelMultiMap segmentLevelMultiMap = segmentLevelMultiMapProvider.get();
     for (var segmentLevel : segmentLevelMultiMap.getSegmentLevels()) {
       Optional<Entry> minEntryValue =
-          readMinEntryValueFromSegmentLevel(segmentLevelMultiMap, key, segmentLevel);
+          readMinEntryAtSegmentLevel(segmentLevelMultiMap, key, segmentLevel);
       if (minEntryValue.isPresent()) {
         return minEntryValue;
       }
@@ -51,7 +50,7 @@ final class LSMTreeReader {
     return Optional.empty();
   }
 
-  private Optional<Entry> readMinEntryValueFromSegmentLevel(
+  private Optional<Entry> readMinEntryAtSegmentLevel(
       SegmentLevelMultiMap segmentLevelMultiMap,
       String key, int segmentLevel) {
     try (var scope = new StructuredTaskScope.ShutdownOnFailure(
@@ -68,11 +67,9 @@ final class LSMTreeReader {
 
       try {
         scope.join();
-        scope.throwIfFailed();
+        scope.throwIfFailed(StorageReadException::new);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new StorageReadException(e);
-      } catch (ExecutionException e) {
         throw new StorageReadException(e);
       }
 
