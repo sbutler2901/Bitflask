@@ -23,7 +23,7 @@ public final class LSMTree {
    * Reads the value of the provided key and returns it, if present.
    */
   public Optional<String> read(String key) {
-    return reader.read(key);
+    return reader.read(key).map(Entry::value);
   }
 
   /**

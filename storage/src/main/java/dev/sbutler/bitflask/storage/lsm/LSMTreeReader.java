@@ -34,16 +34,15 @@ final class LSMTreeReader {
     this.segmentLevelMultiMapProvider = segmentLevelMultiMapProvider;
   }
 
-  Optional<String> read(String key) {
+  Optional<Entry> read(String key) {
     return memtableProvider.get().read(key)
-        .map(Entry::value)
         .or(() -> readFromSegments(key));
   }
 
-  private Optional<String> readFromSegments(String key) {
+  private Optional<Entry> readFromSegments(String key) {
     SegmentLevelMultiMap segmentLevelMultiMap = segmentLevelMultiMapProvider.get();
     for (var segmentLevel : segmentLevelMultiMap.getSegmentLevels()) {
-      Optional<String> minEntryValue =
+      Optional<Entry> minEntryValue =
           readMinEntryValueFromSegmentLevel(segmentLevelMultiMap, key, segmentLevel);
       if (minEntryValue.isPresent()) {
         return minEntryValue;
@@ -52,7 +51,7 @@ final class LSMTreeReader {
     return Optional.empty();
   }
 
-  private Optional<String> readMinEntryValueFromSegmentLevel(
+  private Optional<Entry> readMinEntryValueFromSegmentLevel(
       SegmentLevelMultiMap segmentLevelMultiMap,
       String key, int segmentLevel) {
     try (var scope = new StructuredTaskScope.ShutdownOnFailure(
@@ -80,8 +79,7 @@ final class LSMTreeReader {
       return segmentReadFutures.stream()
           .map(Future::resultNow)
           .flatMap(Optional::stream)
-          .min(Comparator.comparingLong(Entry::creationEpochSeconds))
-          .map(Entry::value);
+          .min(Comparator.comparingLong(Entry::creationEpochSeconds));
     }
   }
 }
