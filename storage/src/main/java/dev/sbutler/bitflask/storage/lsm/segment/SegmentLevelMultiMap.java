@@ -16,7 +16,8 @@ public final class SegmentLevelMultiMap {
     this.segmentLevelMultiMap = segmentLevelMultiMap;
   }
 
-  public SegmentLevelMultiMap create(ImmutableListMultimap<Integer, Segment> segmentLevelMultiMap) {
+  public static SegmentLevelMultiMap create(
+      ImmutableListMultimap<Integer, Segment> segmentLevelMultiMap) {
     ImmutableListMultimap<Integer, Segment> sortedByKey =
         ImmutableListMultimap.<Integer, Segment>builder()
             .orderKeysBy(Integer::compare)
