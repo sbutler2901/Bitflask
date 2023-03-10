@@ -74,7 +74,7 @@ final class LSMTreeStateManager {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
       lock.unlock();
     }
   }
