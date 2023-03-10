@@ -16,6 +16,7 @@ import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class LSMTreeReaderTest {
@@ -28,10 +29,16 @@ public class LSMTreeReaderTest {
   SegmentLevelMultiMap MULTI_MAP = SegmentLevelMultiMap.create(
       ImmutableListMultimap.of(0, SEGMENT_0, 1, SEGMENT_1));
 
-  LSMTreeReader reader = new LSMTreeReader(
-      Thread.ofVirtual().factory(),
-      () -> MEMTABLE,
-      () -> MULTI_MAP);
+  LSMTreeStateManager stateManager = new LSMTreeStateManager();
+
+  LSMTreeReader reader = new LSMTreeReader(stateManager, Thread.ofVirtual().factory());
+
+  @BeforeEach
+  public void beforeEach() {
+    try (var ignored = stateManager.getAndLockCurrentState()) {
+      stateManager.updateCurrentState(MEMTABLE, MULTI_MAP);
+    }
+  }
 
   @Test
   public void read_entryNotFound() {

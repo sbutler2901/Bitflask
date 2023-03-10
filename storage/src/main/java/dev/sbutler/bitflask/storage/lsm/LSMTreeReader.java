@@ -2,7 +2,6 @@ package dev.sbutler.bitflask.storage.lsm;
 
 import dev.sbutler.bitflask.storage.exceptions.StorageReadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
-import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import dev.sbutler.bitflask.storage.lsm.segment.Segment;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import java.util.ArrayList;
@@ -12,7 +11,6 @@ import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import javax.inject.Inject;
-import javax.inject.Provider;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
 /**
@@ -20,26 +18,23 @@ import jdk.incubator.concurrent.StructuredTaskScope;
  */
 final class LSMTreeReader {
 
+  private final LSMTreeStateManager stateManager;
   private final ThreadFactory threadFactory;
-  private final Provider<Memtable> memtableProvider;
-  private final Provider<SegmentLevelMultiMap> segmentLevelMultiMapProvider;
 
   @Inject
-  LSMTreeReader(ThreadFactory threadFactory,
-      Provider<Memtable> memtableProvider,
-      Provider<SegmentLevelMultiMap> segmentLevelMultiMapProvider) {
+  LSMTreeReader(LSMTreeStateManager stateManager, ThreadFactory threadFactory) {
+    this.stateManager = stateManager;
     this.threadFactory = threadFactory;
-    this.memtableProvider = memtableProvider;
-    this.segmentLevelMultiMapProvider = segmentLevelMultiMapProvider;
   }
 
   Optional<Entry> read(String key) {
-    return memtableProvider.get().read(key)
-        .or(() -> readFromSegments(key));
+    try (var currentState = stateManager.getCurrentState()) {
+      return currentState.getMemtable().read(key)
+          .or(() -> readFromSegments(currentState.getSegmentLevelMultiMap(), key));
+    }
   }
 
-  private Optional<Entry> readFromSegments(String key) {
-    SegmentLevelMultiMap segmentLevelMultiMap = segmentLevelMultiMapProvider.get();
+  private Optional<Entry> readFromSegments(SegmentLevelMultiMap segmentLevelMultiMap, String key) {
     for (var segmentLevel : segmentLevelMultiMap.getSegmentLevels()) {
       Optional<Entry> minEntryValue =
           readMinEntryAtSegmentLevel(segmentLevelMultiMap, key, segmentLevel);

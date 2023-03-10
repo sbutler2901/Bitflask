@@ -2,28 +2,28 @@ package dev.sbutler.bitflask.storage.lsm;
 
 import dev.sbutler.bitflask.storage.exceptions.StorageWriteException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
-import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import java.io.IOException;
 import javax.inject.Inject;
-import javax.inject.Provider;
 
 /**
  * Handles write related tasks for the {@link LSMTree}.
  */
 final class LSMTreeWriter {
 
-  private final Provider<Memtable> memtableProvider;
+  private final LSMTreeStateManager stateManager;
 
   @Inject
-  LSMTreeWriter(Provider<Memtable> memtableProvider) {
-    this.memtableProvider = memtableProvider;
+  LSMTreeWriter(LSMTreeStateManager stateManager) {
+    this.stateManager = stateManager;
   }
 
   void write(Entry entry) {
-    try {
-      memtableProvider.get().write(entry);
-    } catch (IOException e) {
-      throw new StorageWriteException(e);
+    try (var currentState = stateManager.getCurrentState()) {
+      try {
+        currentState.getMemtable().write(entry);
+      } catch (IOException e) {
+        throw new StorageWriteException(e);
+      }
     }
   }
 }
