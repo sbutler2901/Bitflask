@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.lsm;
 
+import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import java.util.concurrent.locks.Lock;
@@ -43,6 +44,9 @@ final class LSMTreeStateManager {
    * Atomically updates the state contained within this.
    */
   void updateCurrentState(Memtable memtable, SegmentLevelMultiMap segmentLevelMultiMap) {
+    if (!lock.isWriteLockedByCurrentThread()) {
+      throw new StorageException("Attempted to update CurrentState without holding lock.");
+    }
     this.memtable = memtable;
     this.segmentLevelMultiMap = segmentLevelMultiMap;
   }
