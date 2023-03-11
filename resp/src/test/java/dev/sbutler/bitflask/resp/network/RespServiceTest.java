@@ -8,7 +8,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.resp.network.RespService.Factory;
 import dev.sbutler.bitflask.resp.types.RespElement;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,12 +32,11 @@ public class RespServiceTest {
     when(socket.getInputStream()).thenReturn(mock(InputStream.class));
     when(socket.getOutputStream()).thenReturn(mock(OutputStream.class));
 
-    RespService.Factory factory = new Factory(socketChannel);
     try (MockedConstruction<RespReader> readerMockedConstruction = mockConstruction(
         RespReader.class);
         MockedConstruction<RespWriter> writerMockedConstruction = mockConstruction(
             RespWriter.class)) {
-      respService = factory.create();
+      respService = RespService.create(socketChannel);
       respReader = readerMockedConstruction.constructed().get(0);
       respWriter = writerMockedConstruction.constructed().get(0);
     }

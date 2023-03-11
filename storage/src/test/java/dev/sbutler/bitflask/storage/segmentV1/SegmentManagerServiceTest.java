@@ -119,7 +119,7 @@ public class SegmentManagerServiceTest {
     IllegalStateException e = assertThrows(IllegalStateException.class,
         () -> segmentManagerService.stopAsync().awaitTerminated());
     // Assert
-    assertThat(e).hasCauseThat().isEqualTo(e);
+    assertThat(e).hasCauseThat().isEqualTo(runtimeException);
   }
 
   @Test

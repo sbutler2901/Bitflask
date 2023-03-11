@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.server.network_service;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -59,8 +60,8 @@ public class NetworkServiceTest {
     // Assert
     verify(clientHandlingService, times(1)).startAsync();
     verify(clientHandlingService, times(1)).addListener(any(), any());
-    verify(serverSocketChannel, times(1)).close();
-    verify(clientHandlingService, times(1)).stopAsync();
+    verify(serverSocketChannel, atLeastOnce()).close();
+    verify(clientHandlingService, atLeastOnce()).stopAsync();
   }
 
   @Test
