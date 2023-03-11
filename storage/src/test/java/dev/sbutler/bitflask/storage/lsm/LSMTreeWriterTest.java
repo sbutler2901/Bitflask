@@ -23,7 +23,7 @@ public class LSMTreeWriterTest {
   private final Memtable MEMTABLE = mock(Memtable.class);
   SegmentLevelMultiMap MULTI_MAP = SegmentLevelMultiMap.create(ImmutableListMultimap.of());
 
-  private final LSMTreeStateManager stateManager = new LSMTreeStateManager();
+  private final LSMTreeStateManager stateManager = new LSMTreeStateManager(MEMTABLE, MULTI_MAP);
 
   private final LSMTreeWriter writer = new LSMTreeWriter(stateManager);
 

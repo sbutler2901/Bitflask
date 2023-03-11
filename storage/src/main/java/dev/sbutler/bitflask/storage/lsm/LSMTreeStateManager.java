@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
@@ -17,6 +19,15 @@ final class LSMTreeStateManager {
   private volatile SegmentLevelMultiMap segmentLevelMultiMap = null;
 
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
+  LSMTreeStateManager() {
+  }
+
+  LSMTreeStateManager(Memtable memtable, SegmentLevelMultiMap segmentLevelMultiMap) {
+    this.memtable = memtable;
+    this.segmentLevelMultiMap = segmentLevelMultiMap;
+  }
+
 
   /**
    * Provides non-exclusive access to the {@link CurrentState}
@@ -47,6 +58,8 @@ final class LSMTreeStateManager {
     if (!lock.isWriteLockedByCurrentThread()) {
       throw new StorageException("Attempted to update CurrentState without holding lock.");
     }
+    checkNotNull(memtable, "Memtable was null.");
+    checkNotNull(segmentLevelMultiMap, "segmentLevelMultiMap was null.");
     this.memtable = memtable;
     this.segmentLevelMultiMap = segmentLevelMultiMap;
   }
@@ -64,6 +77,10 @@ final class LSMTreeStateManager {
     private final Lock lock;
 
     private CurrentState(Memtable memtable, SegmentLevelMultiMap segmentLevelMultiMap, Lock lock) {
+      checkNotNull(memtable, "Memtable was null.");
+      checkNotNull(segmentLevelMultiMap, "segmentLevelMultiMap was null.");
+      checkNotNull(lock, "lock was null.");
+
       this.memtable = memtable;
       this.segmentLevelMultiMap = segmentLevelMultiMap;
       this.lock = lock;

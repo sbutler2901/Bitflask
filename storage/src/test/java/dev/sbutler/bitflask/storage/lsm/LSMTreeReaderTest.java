@@ -29,7 +29,7 @@ public class LSMTreeReaderTest {
   SegmentLevelMultiMap MULTI_MAP = SegmentLevelMultiMap.create(
       ImmutableListMultimap.of(0, SEGMENT_0, 1, SEGMENT_1));
 
-  LSMTreeStateManager stateManager = new LSMTreeStateManager();
+  LSMTreeStateManager stateManager = new LSMTreeStateManager(MEMTABLE, MULTI_MAP);
 
   LSMTreeReader reader = new LSMTreeReader(stateManager, Thread.ofVirtual().factory());
 
