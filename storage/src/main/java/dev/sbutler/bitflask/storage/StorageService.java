@@ -10,6 +10,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
+import dev.sbutler.bitflask.storage.lsm.LSMTreeLoader;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
@@ -24,21 +25,24 @@ public final class StorageService extends AbstractExecutionThreadService {
   private final ListeningExecutorService executorService;
   private final StorageCommandDispatcher commandDispatcher;
   private final CommandMapper commandMapper;
+  private final LSMTreeLoader lsmTreeLoader;
 
   private volatile boolean isRunning = true;
 
   @Inject
   public StorageService(ListeningExecutorService executorService,
       StorageCommandDispatcher commandDispatcher,
-      CommandMapper commandMapper) {
+      CommandMapper commandMapper,
+      LSMTreeLoader lsmTreeLoader) {
     this.executorService = executorService;
     this.commandDispatcher = commandDispatcher;
     this.commandMapper = commandMapper;
+    this.lsmTreeLoader = lsmTreeLoader;
   }
 
   @Override
   protected void startUp() {
-    // TODO: load LSMTree
+    lsmTreeLoader.load();
   }
 
   @Override
