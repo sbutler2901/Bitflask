@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.storage.lsm;
 
-import dev.sbutler.bitflask.storage.exceptions.StorageException;
+import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.exceptions.StorageReadException;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import dev.sbutler.bitflask.storage.lsm.memtable.MemtableLoader;
@@ -38,7 +38,7 @@ public final class LSMTreeLoader {
         scope.throwIfFailed(StorageReadException::new);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new StorageException(e);
+        throw new StorageLoadException("Failed loading the LSMTree", e);
       }
 
       try (var ignored = stateManager.getAndLockCurrentState()) {
