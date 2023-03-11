@@ -1,11 +1,10 @@
 package dev.sbutler.bitflask.storage.commands;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
-import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService;
+import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import javax.inject.Inject;
 
 /**
@@ -13,25 +12,18 @@ import javax.inject.Inject;
  */
 public class CommandMapper {
 
-  private final ListeningExecutorService listeningExecutorService;
-  private final SegmentManagerService segmentManagerService;
+  private final LSMTree lsmTree;
 
   @Inject
-  public CommandMapper(ListeningExecutorService listeningExecutorService,
-      SegmentManagerService segmentManagerService) {
-    this.listeningExecutorService = listeningExecutorService;
-    this.segmentManagerService = segmentManagerService;
+  public CommandMapper(LSMTree lsmTree) {
+    this.lsmTree = lsmTree;
   }
 
   public StorageCommand mapToCommand(StorageCommandDTO commandDTO) {
-    // TODO: provide segment manager service to commands
     return switch (commandDTO) {
-      case ReadDTO readDTO ->
-          new ReadCommand(listeningExecutorService, segmentManagerService, readDTO);
-      case WriteDTO writeDTO ->
-          new WriteCommand(listeningExecutorService, segmentManagerService, writeDTO);
-      case DeleteDTO deleteDTO ->
-          new DeleteCommand(listeningExecutorService, segmentManagerService, deleteDTO);
+      case ReadDTO readDTO -> new ReadCommand(lsmTree, readDTO);
+      case WriteDTO writeDTO -> new WriteCommand(lsmTree, writeDTO);
+      case DeleteDTO deleteDTO -> new DeleteCommand(lsmTree, deleteDTO);
     };
   }
 }
