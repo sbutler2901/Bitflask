@@ -45,14 +45,14 @@ dependencies {
     testImplementation 'org.mockito:mockito-junit-jupiter:5.2.0'
 }
 
-tasks.withType(JavaCompile).all {
+tasks.withType(JavaCompile).configureEach {
     options.compilerArgs.addAll(['--enable-preview', '--add-modules', 'jdk.incubator.concurrent'])
 }
 
-tasks.withType(Test).all {
+tasks.withType(Test).configureEach {
     jvmArgs.addAll(['--enable-preview', '--add-modules', 'jdk.incubator.concurrent'])
 }
 
-tasks.withType(JavaExec) {
+tasks.withType(JavaExec).configureEach {
     jvmArgs.addAll(['--enable-preview', '--add-modules', 'jdk.incubator.concurrent'])
 }
