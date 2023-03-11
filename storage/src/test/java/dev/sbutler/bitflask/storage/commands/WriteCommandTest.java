@@ -1,64 +1,45 @@
 package dev.sbutler.bitflask.storage.commands;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.segmentV1.Segment;
-import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService;
-import java.io.IOException;
-import org.junit.jupiter.api.BeforeEach;
+import dev.sbutler.bitflask.storage.exceptions.StorageException;
+import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class WriteCommandTest {
 
-  WriteCommand command;
+  private final WriteDTO DTO = new WriteDTO("key", "value");
 
-  @Mock
-  SegmentManagerService segmentManagerService;
-  @SuppressWarnings("UnstableApiUsage")
-  ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
-  String key = "key", value = "value";
-  WriteDTO dto = new WriteDTO(key, value);
+  private final LSMTree lsmTree = mock(LSMTree.class);
 
-  @Mock
-  Segment writable;
+  private final WriteCommand command = new WriteCommand(lsmTree, DTO);
 
-  @BeforeEach
-  void beforeEach() {
-    when(segmentManagerService.getWritableSegment()).thenReturn(writable);
-    command = new WriteCommand(executorService, segmentManagerService, dto);
+  @Test
+  void writeSucceeds_returnsOk() {
+    StorageResponse response = command.execute();
+
+    assertThat(response).isInstanceOf(Success.class);
+    assertThat(((Success) response).message()).isEqualTo("OK");
   }
 
   @Test
-  void success() throws Exception {
-    // Act
-    ListenableFuture<StorageResponse> responseFuture = command.execute();
-    // Assert
-    assertThat(responseFuture.get()).isInstanceOf(Success.class);
-    Success response = (Success) responseFuture.get();
-    assertThat(response.message()).isEqualTo("OK");
-  }
+  void writeThrowsStorageException_returnsFailed() {
+    doThrow(StorageException.class).when(lsmTree).write(anyString(), anyString());
 
-  @Test
-  void failed() throws Exception {
-    doThrow(IOException.class).when(writable).write(key, value);
-    // Act
-    ListenableFuture<StorageResponse> responseFuture = command.execute();
-    // Assert
-    assertThat(responseFuture.get()).isInstanceOf(Failed.class);
-    Failed response = (Failed) responseFuture.get();
-    assertThat(response.message()).ignoringCase().contains("failure to write");
+    StorageResponse response = command.execute();
+
+    assertThat(response).isInstanceOf(Failed.class);
+    assertThat(((Failed) response).message())
+        .isEqualTo(String.format("Failed to write [%s]:[%s]", DTO.key(), DTO.value()));
   }
 }

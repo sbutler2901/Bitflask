@@ -1,15 +1,14 @@
 package dev.sbutler.bitflask.storage;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.common.dispatcher.DispatcherSubmission;
 import dev.sbutler.bitflask.storage.commands.CommandMapper;
 import dev.sbutler.bitflask.storage.commands.StorageCommand;
@@ -17,74 +16,50 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService;
+import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+@SuppressWarnings("UnstableApiUsage")
 class StorageServiceTest {
 
-  StorageService storageService;
-  @Mock
-  SegmentManagerService segmentManagerService;
-  @Mock
-  StorageCommandDispatcher storageCommandDispatcher;
-  @Mock
-  CommandMapper commandMapper;
+  private final StorageCommandDispatcher storageCommandDispatcher =
+      mock(StorageCommandDispatcher.class);
+  private final CommandMapper commandMapper = mock(CommandMapper.class);
 
-  @Test
-  void doStart() {
-    // Arrange
-    storageService = new StorageService(segmentManagerService, storageCommandDispatcher,
-        commandMapper);
-    // Act
-    storageService.startUp();
-    // Assert
-    verify(segmentManagerService).startAsync();
-    verify(segmentManagerService).awaitRunning();
-  }
+  private final StorageService storageService = new StorageService(
+      TestingExecutors.sameThreadScheduledExecutor(), storageCommandDispatcher, commandMapper);
 
-  @SuppressWarnings("unchecked")
   @Test
   void run() throws Exception {
     // Arrange
-    storageService = new StorageService(segmentManagerService,
-        storageCommandDispatcher, commandMapper);
     ReadDTO dto = new ReadDTO("key");
-    SettableFuture<StorageResponse> submissionResponseFuture = mock(SettableFuture.class);
+    SettableFuture<StorageResponse> submissionResponseFuture = SettableFuture.create();
     DispatcherSubmission<StorageCommandDTO, StorageResponse> submission =
         new DispatcherSubmission<>(dto, submissionResponseFuture);
-    doReturn(Optional.of(submission)).when(storageCommandDispatcher)
-        .poll(anyLong(), any(TimeUnit.class));
+    when(storageCommandDispatcher.poll(anyLong(), any(TimeUnit.class)))
+        .thenReturn(Optional.of(submission));
 
     StorageCommand command = mock(StorageCommand.class);
-    ListenableFuture<StorageResponse> commandResponseFuture = mock(ListenableFuture.class);
-    doReturn(commandResponseFuture).when(command).execute();
-    doReturn(command).when(commandMapper).mapToCommand(any(StorageCommandDTO.class));
+    StorageResponse response = new Success("value");
+    when(command.execute()).thenReturn(new Success("value"));
+    when(commandMapper.mapToCommand(any())).thenReturn(command);
 
-    when(segmentManagerService.isRunning()).thenReturn(true).thenReturn(false);
     // Act
-    storageService.run();
+    Thread serviceThread = Thread.ofVirtual().start(storageService::run);
+    Thread.sleep(100);
+    serviceThread.interrupt();
+
     // Assert
-    verify(commandMapper, atLeastOnce()).mapToCommand(dto);
-    verify(command, atLeastOnce()).execute();
-    verify(submissionResponseFuture, atLeastOnce()).setFuture(commandResponseFuture);
+    assertThat(submissionResponseFuture.isDone()).isTrue();
+    assertThat(submissionResponseFuture.get()).isEqualTo(response);
   }
 
   @Test
   void triggerShutdown() {
-    // Arrange
-    storageService = new StorageService(segmentManagerService,
-        storageCommandDispatcher, commandMapper);
-    // Act
     storageService.triggerShutdown();
-    // Assert
+
     verify(storageCommandDispatcher).closeAndDrain();
-    verify(segmentManagerService).stopAsync();
-    verify(segmentManagerService).awaitTerminated();
   }
 }

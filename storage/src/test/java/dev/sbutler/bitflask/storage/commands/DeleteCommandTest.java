@@ -1,65 +1,42 @@
 package dev.sbutler.bitflask.storage.commands;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.segmentV1.Segment;
-import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService;
-import java.io.IOException;
-import org.junit.jupiter.api.BeforeEach;
+import dev.sbutler.bitflask.storage.exceptions.StorageException;
+import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 public class DeleteCommandTest {
 
-  DeleteCommand command;
+  private final DeleteDTO DTO = new DeleteDTO("key");
 
-  @Mock
-  SegmentManagerService segmentManagerService;
-  @SuppressWarnings("UnstableApiUsage")
-  ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
-  String key = "key";
-  DeleteDTO dto = new DeleteDTO(key);
+  private final LSMTree lsmTree = mock(LSMTree.class);
 
-  @Mock
-  Segment writable;
+  private final DeleteCommand command = new DeleteCommand(lsmTree, DTO);
 
-  @BeforeEach
-  void beforeEach() {
-    when(segmentManagerService.getWritableSegment()).thenReturn(writable);
-    command = new DeleteCommand(executorService, segmentManagerService, dto);
+  @Test
+  void deleteSucceeds_returnsOk() {
+    StorageResponse response = command.execute();
+
+    assertThat(response).isInstanceOf(Success.class);
+    assertThat(((Success) response).message()).isEqualTo("OK");
   }
 
   @Test
-  void success() throws Exception {
-    // Act
-    ListenableFuture<StorageResponse> responseFuture = command.execute();
-    // Assert
-    assertThat(responseFuture.get()).isInstanceOf(Success.class);
-    Success response = (Success) responseFuture.get();
-    assertThat(response.message()).isEqualTo("OK");
-  }
+  void deleteThrowsStorageException_returnsFailed() {
+    doThrow(StorageException.class).when(lsmTree).delete(anyString());
 
-  @Test
-  void failed() throws Exception {
-    // Arrange
-    doThrow(IOException.class).when(writable).delete(key);
-    // Act
-    ListenableFuture<StorageResponse> responseFuture = command.execute();
-    // Assert
-    assertThat(responseFuture.get()).isInstanceOf(Failed.class);
-    Failed response = (Failed) responseFuture.get();
-    assertThat(response.message()).ignoringCase().contains("failure to delete");
+    StorageResponse response = command.execute();
+
+    assertThat(response).isInstanceOf(Failed.class);
+    assertThat(((Failed) response).message())
+        .isEqualTo(String.format("Failed to delete [%s]", DTO.key()));
   }
 }

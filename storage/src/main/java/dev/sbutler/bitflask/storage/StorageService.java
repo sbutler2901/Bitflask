@@ -9,6 +9,7 @@ import dev.sbutler.bitflask.storage.commands.StorageCommand;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
+import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
@@ -41,13 +42,16 @@ public final class StorageService extends AbstractExecutionThreadService {
   }
 
   @Override
-  public void run() throws Exception {
+  public void run() {
     try {
       while (isRunning && !Thread.currentThread().isInterrupted()) {
         Optional<DispatcherSubmission<StorageCommandDTO, StorageResponse>> submission =
             commandDispatcher.poll(1, TimeUnit.SECONDS);
         submission.ifPresent(this::processSubmission);
       }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new StorageException(e);
     } finally {
       triggerShutdown();
     }

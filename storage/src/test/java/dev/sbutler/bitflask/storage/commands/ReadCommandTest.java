@@ -2,101 +2,58 @@ package dev.sbutler.bitflask.storage.commands;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.segmentV1.Segment;
-import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService;
-import java.io.IOException;
+import dev.sbutler.bitflask.storage.exceptions.StorageException;
+import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class ReadCommandTest {
 
-  ReadCommand command;
+  private final ReadDTO DTO = new ReadDTO("key");
 
-  @Mock
-  SegmentManagerService segmentManagerService;
-  @SuppressWarnings("UnstableApiUsage")
-  ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
-  String key = "key", value = "value";
-  ReadDTO dto = new ReadDTO(key);
+  private final LSMTree lsmTree = mock(LSMTree.class);
 
-  @Mock
-  Segment writable;
-  @Mock
-  Segment frozen;
+  private final ReadCommand command = new ReadCommand(lsmTree, DTO);
 
-  @BeforeEach
-  void beforeEach() {
-    when(segmentManagerService.getReadableSegments())
-        .thenReturn(ImmutableList.of(writable, frozen));
-    command = new ReadCommand(executorService, segmentManagerService, dto);
+  @Test
+  public void valueFound() {
+    when(lsmTree.read(anyString())).thenReturn(Optional.of("value"));
+
+    StorageResponse response = command.execute();
+
+    assertThat(response).isInstanceOf(Success.class);
+    assertThat(((Success) response).message()).isEqualTo("value");
   }
 
   @Test
-  void keyFound_writeableSegment() throws Exception {
-    // Arrange
-    when(writable.containsKey(anyString())).thenReturn(true);
-    when(writable.read(anyString())).thenReturn(Optional.of(value));
-    // Act
-    ListenableFuture<StorageResponse> responseFuture = command.execute();
-    // Assert
-    assertThat(responseFuture.get()).isInstanceOf(Success.class);
-    Success response = (Success) responseFuture.get();
-    assertThat(response.message()).isEqualTo(value);
+  public void valueNotFound() {
+    when(lsmTree.read(anyString())).thenReturn(Optional.empty());
+
+    StorageResponse response = command.execute();
+
+    assertThat(response).isInstanceOf(Success.class);
+    assertThat(((Success) response).message())
+        .isEqualTo(String.format("[%s] not found", DTO.key()));
   }
 
   @Test
-  void keyFound_frozenSegments() throws Exception {
-    // Arrange
-    when(writable.containsKey(anyString())).thenReturn(false);
-    when(frozen.containsKey(anyString())).thenReturn(true);
-    when(frozen.read(anyString())).thenReturn(Optional.of(value));
-    // Act
-    ListenableFuture<StorageResponse> responseFuture = command.execute();
-    // Assert
-    assertThat(responseFuture.get()).isInstanceOf(Success.class);
-    Success response = (Success) responseFuture.get();
-    assertThat(response.message()).isEqualTo(value);
-  }
+  public void readThrowsStorageException_returnsFailed() {
+    when(lsmTree.read(anyString())).thenThrow(StorageException.class);
 
-  @Test
-  void keyNotFound() throws Exception {
-    // Arrange
-    when(writable.containsKey(anyString())).thenReturn(false);
-    when(frozen.containsKey(anyString())).thenReturn(false);
-    // Act
-    ListenableFuture<StorageResponse> responseFuture = command.execute();
-    // Assert
-    assertThat(responseFuture.get()).isInstanceOf(Success.class);
-    Success response = (Success) responseFuture.get();
-    assertThat(response.message()).ignoringCase().contains("not found");
-  }
+    StorageResponse response = command.execute();
 
-  @Test
-  void readException() throws Exception {
-    // Arrange
-    when(writable.containsKey(anyString())).thenReturn(true);
-    doThrow(IOException.class).when(writable).read(key);
-    // Act
-    ListenableFuture<StorageResponse> responseFuture = command.execute();
-    // Assert
-    assertThat(responseFuture.get()).isInstanceOf(Failed.class);
-    Failed response = (Failed) responseFuture.get();
-    assertThat(response.message()).ignoringCase().contains("failure to read");
+    assertThat(response).isInstanceOf(Failed.class);
+    assertThat(((Failed) response).message())
+        .isEqualTo(String.format("Failed to read [%s]", DTO.key()));
   }
 }
