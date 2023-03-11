@@ -41,7 +41,7 @@ public class WriteAheadLogTest {
     try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class)) {
       fileMockedStatic.when(() -> Files.newOutputStream(any(), any(StandardOpenOption[].class)))
           .thenReturn(outputStream);
-      writeAheadLog = new WriteAheadLog.Factory(config).create();
+      writeAheadLog = WriteAheadLog.create(TEST_RESOURCE_PATH);
     }
 
     // Act
@@ -63,7 +63,7 @@ public class WriteAheadLogTest {
     try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class)) {
       fileMockedStatic.when(() -> Files.newOutputStream(any(), any(StandardOpenOption[].class)))
           .thenReturn(outputStream);
-      writeAheadLog = new WriteAheadLog.Factory(config).createFromPreExisting();
+      writeAheadLog = WriteAheadLog.create(TEST_RESOURCE_PATH);
     }
 
     // Act
