@@ -1,9 +1,10 @@
 package dev.sbutler.bitflask.storage.lsm.memtable;
 
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.exceptions.StorageException;
+import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.TreeMap;
 import javax.inject.Inject;
 
 public final class MemtableLoader {
@@ -16,14 +17,28 @@ public final class MemtableLoader {
   }
 
   public Memtable load() {
-    // TODO: implement proper loading from disk
+    return switch (configurations.getStorageLoadingMode()) {
+      case TRUNCATE -> createMemtableWithTruncation();
+      case LOAD -> createMemtableWithLoading();
+    };
+  }
+
+  private Memtable createMemtableWithTruncation() {
     try {
-      // if truncate, load WAL w/o entries and create Memtable,
-      // otherwise, load WAL entries, and create Memtable
-      WriteAheadLog writeAheadLog = WriteAheadLog.createFromPreExisting(getWriteAheadLogPath());
+      WriteAheadLog writeAheadLog = WriteAheadLog.create(getWriteAheadLogPath());
       return Memtable.create(writeAheadLog);
     } catch (IOException e) {
-      throw new StorageException(e);
+      throw new StorageLoadException("Failed to create Memtable with truncation", e);
+    }
+  }
+
+  private Memtable createMemtableWithLoading() {
+    // TODO: load entries to populate Memtable
+    try {
+      WriteAheadLog writeAheadLog = WriteAheadLog.createFromPreExisting(getWriteAheadLogPath());
+      return Memtable.create(new TreeMap<>(), writeAheadLog);
+    } catch (IOException e) {
+      throw new StorageLoadException("Failed to create Memtable with loading", e);
     }
   }
 
