@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableListMultimap;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
-import dev.sbutler.bitflask.storage.lsm.memtable.WriteAheadLog;
+import dev.sbutler.bitflask.storage.lsm.memtable.MemtableTestHelper;
 import dev.sbutler.bitflask.storage.lsm.segment.Segment;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import java.io.IOException;
@@ -25,7 +25,7 @@ public class LSMTreeReaderTest {
   Segment SEGMENT_0 = mock(Segment.class);
   Segment SEGMENT_1 = mock(Segment.class);
 
-  Memtable MEMTABLE = Memtable.create(mock(WriteAheadLog.class));
+  Memtable MEMTABLE = MemtableTestHelper.createMemtableWithMockWriteAheadLog();
   SegmentLevelMultiMap MULTI_MAP = SegmentLevelMultiMap.create(
       ImmutableListMultimap.of(0, SEGMENT_0, 1, SEGMENT_1));
 
