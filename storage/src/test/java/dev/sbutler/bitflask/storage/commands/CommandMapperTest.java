@@ -1,27 +1,18 @@
 package dev.sbutler.bitflask.storage.commands;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.Mockito.mock;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
-import dev.sbutler.bitflask.storage.segmentV1.SegmentManagerService;
+import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 public class CommandMapperTest {
 
-  @InjectMocks
-  CommandMapper commandMapper;
-  @Mock
-  ListeningExecutorService executorService;
-  @Mock
-  SegmentManagerService segmentManagerService;
+  private final LSMTree lsmTree = mock(LSMTree.class);
+  private final CommandMapper commandMapper = new CommandMapper(lsmTree);
 
   @Test
   void readDTO() {

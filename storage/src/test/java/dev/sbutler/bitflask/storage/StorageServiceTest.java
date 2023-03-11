@@ -17,6 +17,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
+import dev.sbutler.bitflask.storage.lsm.LSMTreeLoader;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -27,9 +28,13 @@ class StorageServiceTest {
   private final StorageCommandDispatcher storageCommandDispatcher =
       mock(StorageCommandDispatcher.class);
   private final CommandMapper commandMapper = mock(CommandMapper.class);
+  private final LSMTreeLoader lsmTreeLoader = mock(LSMTreeLoader.class);
 
   private final StorageService storageService = new StorageService(
-      TestingExecutors.sameThreadScheduledExecutor(), storageCommandDispatcher, commandMapper);
+      TestingExecutors.sameThreadScheduledExecutor(),
+      storageCommandDispatcher,
+      commandMapper,
+      lsmTreeLoader);
 
   @Test
   void run() throws Exception {
@@ -50,6 +55,7 @@ class StorageServiceTest {
     Thread serviceThread = Thread.ofVirtual().start(storageService::run);
     Thread.sleep(100);
     serviceThread.interrupt();
+    serviceThread.join();
 
     // Assert
     assertThat(submissionResponseFuture.isDone()).isTrue();
