@@ -5,7 +5,6 @@ import dev.sbutler.bitflask.common.configuration.Configuration;
 import dev.sbutler.bitflask.common.configuration.ConfigurationFlagMap;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 
 public class StorageConfigurationsConstants {
 
@@ -37,30 +36,14 @@ public class StorageConfigurationsConstants {
       STORAGE_SEGMENT_SIZE_LIMIT_PROPERTY_KEY,
       STORAGE_SEGMENT_SIZE_LIMIT_DEFAULT);
 
-  // Storage Segment Creation Mode
-  enum StorageSegmentCreationModeArgs {
-    CREATE("create"),
-    TRUNCATE("truncate");
-
-    private final String rawArg;
-
-    StorageSegmentCreationModeArgs(String rawArg) {
-      this.rawArg = rawArg;
-    }
-
-    String getRawArg() {
-      return rawArg;
-    }
-  }
-
-  static final String STORAGE_SEGMENT_CREATION_MODE_NAME = "StorageSegmentCreationMode";
-  static final String STORAGE_SEGMENT_CREATION_MODE_FLAG = "--storageSegmentCreationMode";
-  static final String STORAGE_SEGMENT_CREATION_MODE_PROPERTY_KEY = "storage.segmentCreationMode";
-  static final StandardOpenOption STORAGE_SEGMENT_CREATION_MODE_DEFAULT = StandardOpenOption.CREATE;
-  static final Configuration STORAGE_SEGMENT_CREATION_MODE_CONFIGURATION = new Configuration(
-      ImmutableList.of(STORAGE_SEGMENT_CREATION_MODE_FLAG),
-      STORAGE_SEGMENT_CREATION_MODE_PROPERTY_KEY,
-      STORAGE_SEGMENT_CREATION_MODE_DEFAULT);
+  // Storage Loading Mode
+  static final String STORAGE_LOADING_MODE_FLAG = "--storageSegmentCreationMode";
+  static final String STORAGE_LOADING_MODE_PROPERTY_KEY = "storage.loadingMode";
+  static final StorageLoadingMode STORAGE_LOADING_MODE_DEFAULT = StorageLoadingMode.LOAD;
+  static final Configuration STORAGE_LOADING_MODE_CONFIGURATION = new Configuration(
+      ImmutableList.of(STORAGE_LOADING_MODE_FLAG),
+      STORAGE_LOADING_MODE_PROPERTY_KEY,
+      STORAGE_LOADING_MODE_DEFAULT);
 
   // Storage Compaction Threshold
   static final String STORAGE_COMPACTION_THRESHOLD_FLAG = "--storageCompactionThreshold";
@@ -76,7 +59,7 @@ public class StorageConfigurationsConstants {
           .put(STORAGE_DISPATCHER_CAPACITY_FLAG, STORAGE_DISPATCHER_CONFIGURATION)
           .put(STORAGE_STORE_DIRECTORY_PATH_FLAG, STORAGE_STORE_DIRECTORY_PATH_CONFIGURATION)
           .put(STORAGE_SEGMENT_SIZE_LIMIT_FLAG, STORAGE_SEGMENT_SIZE_LIMIT_CONFIGURATION)
-          .put(STORAGE_SEGMENT_CREATION_MODE_FLAG, STORAGE_SEGMENT_CREATION_MODE_CONFIGURATION)
+          .put(STORAGE_LOADING_MODE_FLAG, STORAGE_LOADING_MODE_CONFIGURATION)
           .put(STORAGE_COMPACTION_THRESHOLD_FLAG, STORAGE_COMPACTION_THRESHOLD_CONFIGURATION)
           .build();
 

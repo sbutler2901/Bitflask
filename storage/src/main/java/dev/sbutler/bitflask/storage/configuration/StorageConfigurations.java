@@ -6,7 +6,6 @@ import dev.sbutler.bitflask.common.configuration.validators.AbsolutePathValidato
 import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValidator;
 import dev.sbutler.bitflask.common.configuration.validators.PositiveLongValidator;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 /**
  * Provides access to the storage engine's runtime configurations.
@@ -28,11 +27,11 @@ public class StorageConfigurations implements Configurations {
       description = "The size limit of a segment before a new one will be created")
   private long storageSegmentSizeLimit;
 
-  @Parameter(names = StorageConfigurationsConstants.STORAGE_SEGMENT_CREATION_MODE_FLAG,
-      converter = SegmentOpenOptionsConverter.class,
+  @Parameter(names = StorageConfigurationsConstants.STORAGE_LOADING_MODE_FLAG,
+      converter = StorageLoadingModeConverter.class,
       description = "The method used for Segment creation. 'create' will reuse pre-existing segments, loading their content at start. 'truncate' will overwrite pre-exiting segments ignoring their contents."
   )
-  private StandardOpenOption storageSegmentCreationMode;
+  private StorageLoadingMode storageSegmentCreationMode;
 
   @Parameter(names = StorageConfigurationsConstants.STORAGE_COMPACTION_THRESHOLD_FLAG,
       validateWith = PositiveIntegerValidator.class,
@@ -52,7 +51,7 @@ public class StorageConfigurations implements Configurations {
     return storageSegmentSizeLimit;
   }
 
-  public StandardOpenOption getStorageSegmentCreationMode() {
+  public StorageLoadingMode getStorageLoadingMode() {
     return storageSegmentCreationMode;
   }
 
@@ -66,7 +65,7 @@ public class StorageConfigurations implements Configurations {
         "storageDispatcherCapacity=" + storageDispatcherCapacity +
         ", storageStoreDirectoryPath=" + storageStoreDirectoryPath +
         ", storageSegmentSizeLimit=" + storageSegmentSizeLimit +
-        ", storageSegmentCreationMode=" + storageSegmentCreationMode +
+        ", storageLoadingMode=" + storageSegmentCreationMode +
         ", storageCompactionThreshold=" + storageCompactionThreshold +
         '}';
   }
