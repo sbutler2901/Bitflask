@@ -6,6 +6,7 @@ import static org.junit.Assert.assertThrows;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
+import dev.sbutler.bitflask.storage.lsm.segment.SegmentIndexEntry.PartialEntry;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
@@ -27,8 +28,7 @@ public class SegmentIndexEntryTest {
     String key = "key";
     long offset = 0L;
     byte[] expectedBytes = Bytes.concat(
-        UnsignedShort.valueOf(key.length()).getBytes(),
-        Longs.toByteArray(offset),
+        new PartialEntry(new UnsignedShort(key.length()), offset).getBytes(),
         key.getBytes(StandardCharsets.UTF_8));
 
     byte[] bytes = SegmentIndexEntry.fromBytes(expectedBytes).getBytes();
@@ -50,8 +50,7 @@ public class SegmentIndexEntryTest {
     String key = "key";
     long offset = 0L;
     byte[] bytes = Bytes.concat(
-        UnsignedShort.valueOf(key.length()).getBytes(),
-        Longs.toByteArray(offset),
+        new PartialEntry(new UnsignedShort(key.length()), offset).getBytes(),
         key.getBytes(StandardCharsets.UTF_8));
 
     SegmentIndexEntry entry = SegmentIndexEntry.fromBytes(bytes);

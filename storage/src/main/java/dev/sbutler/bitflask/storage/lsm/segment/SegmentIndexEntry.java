@@ -51,22 +51,53 @@ record SegmentIndexEntry(String key, long offset) {
         "Byte array length invalid. Provided [%s], expected at least [%s]",
         bytes.length, MIN_BYTES);
 
-    byte[] keyLengthBytes = Arrays.copyOfRange(bytes, 0, UnsignedShort.BYTES);
+    PartialEntry partialEntry = PartialEntry.fromBytes(bytes);
 
-    int offsetEnd = Long.BYTES + UnsignedShort.BYTES;
-    byte[] offsetBytes = Arrays.copyOfRange(bytes, UnsignedShort.BYTES, offsetEnd);
+    byte[] keyBytes = Arrays.copyOfRange(
+        bytes,
+        PartialEntry.BYTES,
+        PartialEntry.BYTES + partialEntry.keyLength.value());
 
-    UnsignedShort keyLength = UnsignedShort.fromBytes(keyLengthBytes);
-    byte[] keyBytes = Arrays.copyOfRange(bytes, offsetEnd, offsetEnd + keyLength.value());
-
-    return new SegmentIndexEntry(new String(keyBytes), Longs.fromByteArray(offsetBytes));
+    return new SegmentIndexEntry(new String(keyBytes), partialEntry.offset());
   }
 
   byte[] getBytes() {
-    byte[] keyLengthBytes = UnsignedShort.valueOf(key.length()).getBytes();
-    byte[] offsetBytes = Longs.toByteArray(offset);
+    PartialEntry partialEntry = new PartialEntry(
+        new UnsignedShort(key.length()),
+        offset);
     byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
 
-    return Bytes.concat(keyLengthBytes, offsetBytes, keyBytes);
+    return Bytes.concat(partialEntry.getBytes(), keyBytes);
+  }
+
+  record PartialEntry(UnsignedShort keyLength, long offset) {
+
+    /**
+     * The minimum number of bits used to represent a PartialEntry.
+     */
+    static final int SIZE = UnsignedShort.SIZE + Long.SIZE;
+
+    /**
+     * The minimum number of bytes to represent a PartialEntry.
+     */
+    static final int BYTES = SIZE / Byte.SIZE;
+
+    static PartialEntry fromBytes(byte[] bytes) {
+      byte[] keyLengthBytes = Arrays.copyOfRange(bytes, 0, UnsignedShort.BYTES);
+      UnsignedShort keyLength = UnsignedShort.fromBytes(keyLengthBytes);
+
+      int offsetEnd = Long.BYTES + UnsignedShort.BYTES;
+      byte[] offsetBytes = Arrays.copyOfRange(bytes, UnsignedShort.BYTES, offsetEnd);
+      long offset = Longs.fromByteArray(offsetBytes);
+
+      return new PartialEntry(keyLength, offset);
+    }
+
+    byte[] getBytes() {
+      byte[] keyLengthBytes = keyLength.getBytes();
+      byte[] offsetBytes = Longs.toByteArray(offset);
+
+      return Bytes.concat(keyLengthBytes, offsetBytes);
+    }
   }
 }
