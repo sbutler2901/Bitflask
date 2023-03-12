@@ -1,10 +1,10 @@
 package dev.sbutler.bitflask.storage.lsm.segment;
 
 import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.primitives.Longs;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
+import dev.sbutler.bitflask.storage.lsm.segment.SegmentIndexEntry.PartialEntry;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
+import java.util.Optional;
 import javax.inject.Inject;
 
 /**
@@ -29,7 +30,7 @@ final class SegmentIndexFactory {
   /**
    * Creates a new {@link SegmentIndex} and writes it to disk.
    */
-  SegmentIndex create(
+  public SegmentIndex create(
       ImmutableSortedMap<String, Long> keyOffsetMap,
       UnsignedShort segmentNumber) throws IOException {
     SegmentIndexMetadata indexMetadata = new SegmentIndexMetadata(segmentNumber);
@@ -56,44 +57,42 @@ final class SegmentIndexFactory {
   /**
    * Loads a {@link SegmentIndex} from disk at the provided path.
    */
-  SegmentIndex loadFromPath(Path path) throws IOException {
+  public SegmentIndex loadFromPath(Path path) throws IOException {
     try (BufferedInputStream is = new BufferedInputStream(Files.newInputStream(path))) {
       SegmentIndexMetadata metadata =
           SegmentIndexMetadata.fromBytes(is.readNBytes(SegmentIndexMetadata.BYTES));
 
       ImmutableSortedMap.Builder<String, Long> indexKeyOffsetMap = ImmutableSortedMap.naturalOrder();
 
-      while (true) {
-        byte[] keyLengthBytes = is.readNBytes(UnsignedShort.BYTES);
-        if (keyLengthBytes.length == 0) {
-          break;
-        } else if (keyLengthBytes.length != UnsignedShort.BYTES) {
-          throw new StorageLoadException(String.format(
-              "SegmentIndex keyLength bytes read too short. Expected [%d], actual [%d]",
-              UnsignedShort.BYTES, keyLengthBytes.length));
-        }
-        UnsignedShort keyLength = UnsignedShort.fromBytes(keyLengthBytes);
-
-        byte[] offsetBytes = is.readNBytes(Long.BYTES);
-        if (offsetBytes.length != Long.BYTES) {
-          throw new StorageLoadException(String.format(
-              "SegmentIndex offset bytes read too short. Expected [%d], actual [%d]",
-              Long.BYTES, offsetBytes.length));
-        }
-        long offset = Longs.fromByteArray(offsetBytes);
-
-        byte[] keyBytes = is.readNBytes(keyLength.value());
-        if (keyBytes.length != keyLength.value()) {
-          throw new StorageLoadException(String.format(
-              "SegmentIndex key bytes read too short. Expected [%d], actual [%d]",
-              keyLength.value(), keyBytes.length));
-        }
-        String key = new String(keyBytes);
-
-        indexKeyOffsetMap.put(key, offset);
+      Optional<SegmentIndexEntry> nextEntry;
+      while ((nextEntry = readNextSegmentIndexEntry(is)).isPresent()) {
+        indexKeyOffsetMap.put(nextEntry.get().key(), nextEntry.get().offset());
       }
 
       return new SegmentIndexDense(metadata, indexKeyOffsetMap.build());
     }
+  }
+
+  private Optional<SegmentIndexEntry> readNextSegmentIndexEntry(
+      BufferedInputStream is) throws IOException {
+    byte[] partialEntryBytes = is.readNBytes(PartialEntry.BYTES);
+    if (partialEntryBytes.length == 0) {
+      return Optional.empty();
+    } else if (partialEntryBytes.length != PartialEntry.BYTES) {
+      throw new StorageLoadException(String.format(
+          "SegmentIndex PartialEntry bytes read too short. Expected [%d], actual [%d]",
+          PartialEntry.BYTES, partialEntryBytes.length));
+    }
+    PartialEntry partialEntry = PartialEntry.fromBytes(partialEntryBytes);
+
+    byte[] keyBytes = is.readNBytes(partialEntry.keyLength().value());
+    if (keyBytes.length != partialEntry.keyLength().value()) {
+      throw new StorageLoadException(String.format(
+          "SegmentIndex key bytes read too short. Expected [%d], actual [%d]",
+          partialEntry.keyLength().value(), keyBytes.length));
+    }
+    String key = new String(keyBytes);
+
+    return Optional.of(new SegmentIndexEntry(key, partialEntry.offset()));
   }
 }
