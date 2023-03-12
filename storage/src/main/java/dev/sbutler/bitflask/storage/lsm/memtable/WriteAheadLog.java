@@ -27,7 +27,7 @@ final class WriteAheadLog implements AutoCloseable {
   /**
    * The file extension of WriteAheadLog files.
    */
-  public static final String FILE_EXTENSION = ".wlog";
+  public static final String FILE_EXTENSION = "wlog";
 
   private final OutputStream logOutputStream;
 

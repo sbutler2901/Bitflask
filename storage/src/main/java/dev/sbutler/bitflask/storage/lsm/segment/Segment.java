@@ -21,7 +21,7 @@ public final class Segment {
   /**
    * The file extension of Segment files.
    */
-  public static final String FILE_EXTENSION = ".seg";
+  public static final String FILE_EXTENSION = "seg";
 
   private final SegmentMetadata metadata;
   private final EntryReader entryReader;

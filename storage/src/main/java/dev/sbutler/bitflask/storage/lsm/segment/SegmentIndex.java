@@ -15,7 +15,7 @@ interface SegmentIndex {
   /**
    * The file extension used to identify index files.
    */
-  String FILE_EXTENSION = ".idx";
+  String FILE_EXTENSION = "idx";
 
   /**
    * Returns true if the index <i>might</i> contain the provided key or false if it
