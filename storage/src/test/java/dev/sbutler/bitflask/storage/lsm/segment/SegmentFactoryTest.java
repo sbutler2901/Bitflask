@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,11 +60,9 @@ public class SegmentFactoryTest {
 
     Segment segment;
 
-    ByteArrayOutputStream segmentOutputStream = new ByteArrayOutputStream();
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class)) {
-      fileMockedStatic.when(() -> Files.newOutputStream(
-              Path.of(TEST_RESOURCE_PATH.toString(), "segment_0.seg"), StandardOpenOption.CREATE_NEW))
-          .thenReturn(segmentOutputStream);
+      fileMockedStatic.when(() -> Files.newOutputStream(any(), any())).thenReturn(outputStream);
 
       segment = factory.create(keyEntryMap);
     }
@@ -74,7 +71,7 @@ public class SegmentFactoryTest {
     assertThat(segment.getSegmentLevel()).isEqualTo(SEGMENT_LEVEL.value());
     assertThat(segment.mightContain(ENTRY_0.key())).isTrue();
 
-    assertThat(segmentOutputStream.toByteArray()).isEqualTo(Bytes.concat(
+    assertThat(outputStream.toByteArray()).isEqualTo(Bytes.concat(
         new SegmentMetadata(SEGMENT_NUMBER, SEGMENT_LEVEL).getBytes(),
         ENTRY_0.getBytes()));
 
