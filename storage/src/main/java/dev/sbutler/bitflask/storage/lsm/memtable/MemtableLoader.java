@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm.memtable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
@@ -16,6 +17,8 @@ import javax.inject.Inject;
  * {@link dev.sbutler.bitflask.storage.configuration.StorageLoadingMode} specified at startup.
  */
 public final class MemtableLoader {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final StorageConfigurations configurations;
 
@@ -38,6 +41,7 @@ public final class MemtableLoader {
   private Memtable createMemtableWithTruncation() {
     try {
       WriteAheadLog writeAheadLog = WriteAheadLog.create(getWriteAheadLogPath());
+      logger.atInfo().log("Created Memtable with write ahead log truncation.");
       return Memtable.create(writeAheadLog);
     } catch (IOException e) {
       throw new StorageLoadException("Failed to create Memtable with truncation", e);
@@ -48,6 +52,7 @@ public final class MemtableLoader {
     try {
       SortedMap<String, Entry> loadedKeyEntryMap = loadKeyEntryMap();
       WriteAheadLog writeAheadLog = WriteAheadLog.createFromPreExisting(getWriteAheadLogPath());
+      logger.atInfo().log("Loaded [%d] pre-existing Memtable entries.", loadedKeyEntryMap.size());
       return Memtable.create(loadedKeyEntryMap, writeAheadLog);
     } catch (IOException e) {
       throw new StorageLoadException("Failed to create Memtable with loading", e);
