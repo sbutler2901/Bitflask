@@ -49,4 +49,12 @@ final class SegmentIndexFactory {
 
     return new SegmentIndexDense(indexMetadata, indexKeyOffsetMap.build());
   }
+
+  /**
+   * Loads a {@link SegmentIndex} from disk at the provided path.
+   */
+  SegmentIndex loadFromPath(Path path) throws IOException {
+    // TODO: implement
+    return null;
+  }
 }
