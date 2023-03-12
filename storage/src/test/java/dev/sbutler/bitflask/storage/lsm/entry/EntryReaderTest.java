@@ -27,60 +27,49 @@ public class EntryReaderTest {
   private final static Path FILE_PATH = Paths.get(
       "src/test/resources/segment0" + Segment.FILE_EXTENSION);
 
+  private static final Entry ENTRY_0 =
+      new Entry(Instant.now().getEpochSecond(), "key0", "value0");
+  private static final Entry ENTRY_1 =
+      new Entry(Instant.now().getEpochSecond(), "key1", "value1");
+
   private final EntryReader entryReader = EntryReader.create(FILE_PATH);
 
   @Test
   public void findEntryFromOffset_found() throws Exception {
-    String key = "key";
-    String value = "value";
-
-    Entry storedEntry = new Entry(Instant.now().getEpochSecond(), key, value);
-    InputStream is = new ByteArrayInputStream(storedEntry.getBytes());
+    InputStream is = new ByteArrayInputStream(ENTRY_0.getBytes());
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
-      Optional<Entry> entry = entryReader.findEntryFromOffset(key, 0L);
-      assertThat(entry).hasValue(storedEntry);
+      Optional<Entry> entry = entryReader.findEntryFromOffset(ENTRY_0.key(), 0L);
+      assertThat(entry).hasValue(ENTRY_0);
     }
   }
 
   @Test
   public void findEntryFromOffset_found_noOffset() throws Exception {
-    String key0 = "key0", key1 = "key1";
-    String value0 = "value0", value1 = "value1";
-
-    Entry storedEntry0 = new Entry(Instant.now().getEpochSecond(), key0, value0);
-    Entry storedEntry1 = new Entry(Instant.now().getEpochSecond(), key1, value1);
-
     InputStream is = new ByteArrayInputStream(Bytes.concat(
-        storedEntry0.getBytes(),
-        storedEntry1.getBytes()));
+        ENTRY_0.getBytes(),
+        ENTRY_1.getBytes()));
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
-      Optional<Entry> entry = entryReader.
-          findEntryFromOffset(key1, storedEntry0.getBytes().length);
-      assertThat(entry).hasValue(storedEntry1);
+      Optional<Entry> entry = entryReader
+          .findEntryFromOffset(ENTRY_1.key(), ENTRY_0.getBytes().length);
+      assertThat(entry).hasValue(ENTRY_1);
     }
   }
 
   @Test
   public void findEntryFromOffset_found_skipToOffset() throws Exception {
-    String key0 = "key0", key1 = "key1";
-    String value0 = "value0", value1 = "value1";
-
-    Entry storedEntry0 = new Entry(Instant.now().getEpochSecond(), key0, value0);
-    Entry storedEntry1 = new Entry(Instant.now().getEpochSecond(), key1, value1);
-
     InputStream is = new ByteArrayInputStream(Bytes.concat(
-        storedEntry0.getBytes(),
-        storedEntry1.getBytes()));
+        ENTRY_0.getBytes(),
+        ENTRY_1.getBytes()));
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
-      Optional<Entry> entry = entryReader.
-          findEntryFromOffset(key1, storedEntry0.getBytes().length);
-      assertThat(entry).hasValue(storedEntry1);
+      Optional<Entry> entry = entryReader
+          .findEntryFromOffset(ENTRY_1.key(), ENTRY_0.getBytes().length);
+      assertThat(entry).hasValue(ENTRY_1);
     }
   }
 
