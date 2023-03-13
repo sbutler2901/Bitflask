@@ -100,7 +100,7 @@ final class SegmentFactory {
    */
   public Segment loadFromPath(Path path,
       ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap) throws IOException {
-    // TODO: implement;
+    // TODO: load metadata and bloom filter from entries
     return null;
   }
 }

@@ -43,17 +43,17 @@ final class SegmentIndexLoader {
         configurations.getStorageStoreDirectoryPath(), INDEX_GLOB);
 
     try (var scope = new StructuredTaskScope.ShutdownOnFailure("load-index-scope", threadFactory)) {
-      List<Future<SegmentIndex>> indexFutures = new ArrayList<>();
+      List<Future<SegmentIndex>> indexFutures = new ArrayList<>(indexPaths.size());
       for (var path : indexPaths) {
         indexFutures.add(scope.fork(() -> segmentIndexFactory.loadFromPath(path)));
       }
 
       try {
         scope.join();
-        scope.throwIfFailed(StorageLoadException::new);
+        scope.throwIfFailed(e -> new StorageLoadException("Failed loading SegmentIndexes", e));
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new StorageLoadException("Failed loading SegmentIndexes", e);
+        throw new StorageLoadException("Interrupted while loading SegmentIndexes", e);
       }
 
       return indexFutures.stream().map(Future::resultNow).collect(toImmutableList());
