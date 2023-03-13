@@ -123,6 +123,8 @@ final class SegmentFactory {
           metadata.getSegmentNumber()));
     }
 
+    nextSegmentNumber.getAndUpdate(current -> Math.max(1 + metadata.getSegmentNumber(), current));
+
     return Segment.create(metadata, entryReader, keyFilter, index);
   }
 }
