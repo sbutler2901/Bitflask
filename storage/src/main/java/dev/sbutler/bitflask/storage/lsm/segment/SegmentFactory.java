@@ -2,12 +2,14 @@ package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
 import java.io.BufferedOutputStream;
@@ -100,7 +102,27 @@ final class SegmentFactory {
    */
   public Segment loadFromPath(Path path,
       ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap) throws IOException {
-    // TODO: load metadata and bloom filter from entries
-    return null;
+
+    SegmentMetadata metadata;
+    try (var is = Files.newInputStream(path)) {
+      byte[] metadataBytes = is.readNBytes(SegmentMetadata.BYTES);
+      metadata = SegmentMetadata.fromBytes(metadataBytes);
+    }
+
+    EntryReader entryReader = EntryReader.create(path);
+    ImmutableList<Entry> entries = entryReader.readAllEntriesFromOffset(SegmentMetadata.BYTES);
+
+    BloomFilter<String> keyFilter = BloomFilter.create(Funnels.stringFunnel(
+        StandardCharsets.UTF_8), entries.size());
+    entries.stream().map(Entry::key).forEach(keyFilter::put);
+
+    SegmentIndex index = segmentNumberToIndexMap.get(metadata.getSegmentNumber());
+    if (index == null) {
+      throw new StorageLoadException(String.format(
+          "Could not find a SegmentIndex with expected segment number [%d]",
+          metadata.getSegmentNumber()));
+    }
+
+    return Segment.create(metadata, entryReader, keyFilter, index);
   }
 }
