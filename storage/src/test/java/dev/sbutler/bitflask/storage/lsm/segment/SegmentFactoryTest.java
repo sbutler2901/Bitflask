@@ -41,15 +41,13 @@ public class SegmentFactoryTest {
   private final SegmentIndexFactory indexFactory = mock(SegmentIndexFactory.class);
   private final SegmentIndex segmentIndex = mock(SegmentIndex.class);
 
-  private SegmentFactory factory;
+  private final SegmentFactory factory = new SegmentFactory(config, indexFactory);
 
   @BeforeEach
   public void beforeEach() throws Exception {
     when(indexFactory.create(any(), any())).thenReturn(segmentIndex);
     when(segmentIndex.getSegmentNumber()).thenReturn(SEGMENT_NUMBER.value());
     when(config.getStorageStoreDirectoryPath()).thenReturn(TEST_RESOURCE_PATH);
-
-    factory = new SegmentFactory.Factory(config, indexFactory).create(SEGMENT_NUMBER.value());
   }
 
   @Test

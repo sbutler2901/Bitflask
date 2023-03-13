@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
@@ -22,42 +23,17 @@ import javax.inject.Inject;
  * Handles the creation of a {@link Segment}.
  */
 @SuppressWarnings("UnstableApiUsage")
-public final class SegmentFactory {
+final class SegmentFactory {
+
+  private static final AtomicInteger nextSegmentNumber = new AtomicInteger(0);
 
   private final StorageConfigurations configurations;
   private final SegmentIndexFactory indexFactory;
-  private final AtomicInteger nextSegmentNumber;
 
-  private SegmentFactory(
-      StorageConfigurations configurations,
-      SegmentIndexFactory indexFactory,
-      int nextSegmentNumber) {
+  @Inject
+  SegmentFactory(StorageConfigurations configurations, SegmentIndexFactory indexFactory) {
     this.configurations = configurations;
     this.indexFactory = indexFactory;
-    this.nextSegmentNumber = new AtomicInteger(nextSegmentNumber);
-  }
-
-  /**
-   * A factory for creating {@link SegmentFactory instances}.
-   */
-  public static class Factory {
-
-    private final StorageConfigurations configurations;
-    private final SegmentIndexFactory indexFactory;
-
-    @Inject
-    Factory(StorageConfigurations configurations, SegmentIndexFactory indexFactory) {
-      this.configurations = configurations;
-      this.indexFactory = indexFactory;
-    }
-
-    /**
-     * Creates a {@link SegmentFactory} that will create new segments starting from the provided
-     * {@code segmentNumberStart}.
-     */
-    public SegmentFactory create(int segmentNumberStart) {
-      return new SegmentFactory(configurations, indexFactory, segmentNumberStart);
-    }
   }
 
   /**
@@ -65,7 +41,7 @@ public final class SegmentFactory {
    *
    * <p>The provided {@code keyEntryMap} cannot be empty.
    */
-  Segment create(ImmutableSortedMap<String, Entry> keyEntryMap) throws IOException {
+  public Segment create(ImmutableSortedMap<String, Entry> keyEntryMap) throws IOException {
     checkArgument(!keyEntryMap.isEmpty(), "keyEntryMap is empty.");
 
     UnsignedShort segmentNumber = UnsignedShort.valueOf(nextSegmentNumber.getAndIncrement());
@@ -116,5 +92,15 @@ public final class SegmentFactory {
     }
 
     return keyOffsetMap.build();
+  }
+
+  /**
+   * Loads a {@link Segment} from the path and finds its corresponding {@link SegmentIndex} from the
+   * segmentNumberToIndexMap.
+   */
+  public Segment loadFromPath(Path path,
+      ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap) throws IOException {
+    // TODO: implement;
+    return null;
   }
 }
