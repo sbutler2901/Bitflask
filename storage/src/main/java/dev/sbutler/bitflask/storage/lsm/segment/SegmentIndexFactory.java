@@ -59,8 +59,13 @@ final class SegmentIndexFactory {
    */
   public SegmentIndex loadFromPath(Path path) throws IOException {
     try (BufferedInputStream is = new BufferedInputStream(Files.newInputStream(path))) {
-      SegmentIndexMetadata metadata =
-          SegmentIndexMetadata.fromBytes(is.readNBytes(SegmentIndexMetadata.BYTES));
+      byte[] metadataBytes = is.readNBytes(SegmentIndexMetadata.BYTES);
+      if (metadataBytes.length != SegmentIndexMetadata.BYTES) {
+        throw new StorageLoadException(String.format(
+            "SegmentIndex SegmentIndexMetadata bytes read too short. Expected [%d], actual [%d]",
+            SegmentIndexMetadata.BYTES, metadataBytes.length));
+      }
+      SegmentIndexMetadata metadata = SegmentIndexMetadata.fromBytes(metadataBytes);
 
       ImmutableSortedMap.Builder<String, Long> indexKeyOffsetMap = ImmutableSortedMap.naturalOrder();
 
