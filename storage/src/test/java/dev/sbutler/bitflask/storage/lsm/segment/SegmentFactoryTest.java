@@ -9,13 +9,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import com.google.common.primitives.Bytes;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,9 +31,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-@SuppressWarnings({"UnstableApiUsage"})
+@SuppressWarnings({"resource", "UnstableApiUsage", "ResultOfMethodCallIgnored"})
 public class SegmentFactoryTest {
 
+  private final Path SEGMENT_PATH = Path.of("/tmp/segment_0.seg");
   private final Path TEST_RESOURCE_PATH = Paths.get("src/test/resources/");
 
   private final Entry ENTRY_0 = new Entry(Instant.now().getEpochSecond(), "key0", "value0");
@@ -36,6 +42,8 @@ public class SegmentFactoryTest {
 
   private final UnsignedShort SEGMENT_NUMBER = UnsignedShort.valueOf(0);
   private final UnsignedShort SEGMENT_LEVEL = UnsignedShort.valueOf(0);
+
+  private final SegmentMetadata METADATA = new SegmentMetadata(SEGMENT_NUMBER, SEGMENT_LEVEL);
 
   private final StorageConfigurations config = mock(StorageConfigurations.class);
   private final SegmentIndexFactory indexFactory = mock(SegmentIndexFactory.class);
@@ -70,7 +78,7 @@ public class SegmentFactoryTest {
     assertThat(segment.mightContain(ENTRY_0.key())).isTrue();
 
     assertThat(outputStream.toByteArray()).isEqualTo(Bytes.concat(
-        new SegmentMetadata(SEGMENT_NUMBER, SEGMENT_LEVEL).getBytes(),
+        METADATA.getBytes(),
         ENTRY_0.getBytes()));
 
     verify(indexFactory, times(1)).create(
@@ -97,7 +105,6 @@ public class SegmentFactoryTest {
         .put(ENTRY_0.key(), ENTRY_0)
         .put(ENTRY_1.key(), ENTRY_1)
         .build();
-    SegmentMetadata metadata = new SegmentMetadata(SEGMENT_NUMBER, SEGMENT_LEVEL);
     BloomFilter<String> keyFilter = BloomFilter.create(Funnels.stringFunnel(
         StandardCharsets.UTF_8), keyEntryMap.size());
 
@@ -107,19 +114,87 @@ public class SegmentFactoryTest {
     try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class)) {
       fileMockedStatic.when(() -> Files.newOutputStream(any(), any())).thenReturn(outputStream);
 
-      keyOffsetMap = factory.writeSegment(keyEntryMap, metadata, keyFilter, TEST_RESOURCE_PATH);
+      keyOffsetMap = factory.writeSegment(keyEntryMap, METADATA, keyFilter, TEST_RESOURCE_PATH);
     }
 
     assertThat(keyFilter.mightContain(ENTRY_0.key())).isTrue();
     assertThat(keyFilter.mightContain(ENTRY_1.key())).isTrue();
 
     assertThat(outputStream.toByteArray()).isEqualTo(Bytes.concat(
-        metadata.getBytes(),
+        METADATA.getBytes(),
         ENTRY_0.getBytes(),
         ENTRY_1.getBytes()));
 
     assertThat(keyOffsetMap.get(ENTRY_0.key())).isEqualTo(SegmentMetadata.BYTES);
     assertThat(keyOffsetMap.get(ENTRY_1.key())).isEqualTo(
         SegmentMetadata.BYTES + ENTRY_0.getBytes().length);
+  }
+
+  @Test
+  public void loadFromPath_success() throws Exception {
+    ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap =
+        ImmutableMap.of(METADATA.getSegmentNumber(), segmentIndex);
+    ByteArrayInputStream inputStream = new ByteArrayInputStream(METADATA.getBytes());
+    EntryReader entryReader = mock(EntryReader.class);
+    when(entryReader.readAllEntriesFromOffset(SegmentMetadata.BYTES))
+        .thenReturn(ImmutableList.of(ENTRY_0, ENTRY_1));
+
+    Segment segment;
+    try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class);
+        MockedStatic<EntryReader> entryReaderMockedStatic = mockStatic(EntryReader.class)) {
+      fileMockedStatic.when(() -> Files.newInputStream(any())).thenReturn(inputStream);
+      entryReaderMockedStatic.when(() -> EntryReader.create(any()))
+          .thenReturn(entryReader);
+
+      segment = factory.loadFromPath(SEGMENT_PATH, segmentNumberToIndexMap);
+    }
+
+    assertThat(segment.getSegmentNumber()).isEqualTo(METADATA.getSegmentNumber());
+    assertThat(segment.getSegmentLevel()).isEqualTo(METADATA.getSegmentLevel());
+
+    assertThat(segment.mightContain(ENTRY_0.key())).isTrue();
+    assertThat(segment.mightContain(ENTRY_1.key())).isTrue();
+  }
+
+  @Test
+  public void loadFromPath_emptyFile_throwsStorageLoadException() {
+    ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap = ImmutableMap.of();
+    ByteArrayInputStream is = new ByteArrayInputStream(new byte[]{});
+
+    StorageLoadException e;
+    try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      filesMockedStatic.when(() -> Files.newInputStream(any())).thenReturn(is);
+
+      e = assertThrows(StorageLoadException.class,
+          () -> factory.loadFromPath(SEGMENT_PATH, segmentNumberToIndexMap));
+    }
+
+    assertThat(e).hasMessageThat().isEqualTo(String.format(
+        "SegmentMetadata bytes read too short. Expected [%d], actual [%d]",
+        SegmentMetadata.BYTES, 0));
+  }
+
+  @Test
+  public void loadFromPath_matchingSegmentIndexNotFound_throwsStorageLoadException()
+      throws Exception {
+    ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap = ImmutableMap.of();
+    ByteArrayInputStream inputStream = new ByteArrayInputStream(METADATA.getBytes());
+    EntryReader entryReader = mock(EntryReader.class);
+    when(entryReader.readAllEntriesFromOffset(SegmentMetadata.BYTES))
+        .thenReturn(ImmutableList.of(ENTRY_0, ENTRY_1));
+
+    StorageLoadException e;
+    try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class);
+        MockedStatic<EntryReader> entryReaderMockedStatic = mockStatic(EntryReader.class)) {
+      fileMockedStatic.when(() -> Files.newInputStream(any())).thenReturn(inputStream);
+      entryReaderMockedStatic.when(() -> EntryReader.create(any())).thenReturn(entryReader);
+
+      e = assertThrows(StorageLoadException.class,
+          () -> factory.loadFromPath(SEGMENT_PATH, segmentNumberToIndexMap));
+    }
+
+    assertThat(e).hasMessageThat().isEqualTo(String.format(
+        "Could not find a SegmentIndex with expected segment number [%d]",
+        METADATA.getSegmentNumber()));
   }
 }

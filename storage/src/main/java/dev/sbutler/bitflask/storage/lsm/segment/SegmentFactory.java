@@ -106,6 +106,11 @@ final class SegmentFactory {
     SegmentMetadata metadata;
     try (var is = Files.newInputStream(path)) {
       byte[] metadataBytes = is.readNBytes(SegmentMetadata.BYTES);
+      if (metadataBytes.length != SegmentMetadata.BYTES) {
+        throw new StorageLoadException(String.format(
+            "SegmentMetadata bytes read too short. Expected [%d], actual [%d]",
+            SegmentMetadata.BYTES, metadataBytes.length));
+      }
       metadata = SegmentMetadata.fromBytes(metadataBytes);
     }
 
