@@ -20,14 +20,16 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Handles the creation of a {@link Segment}.
  */
 @SuppressWarnings("UnstableApiUsage")
+@Singleton
 final class SegmentFactory {
 
-  private static final AtomicInteger nextSegmentNumber = new AtomicInteger(0);
+  private final AtomicInteger nextSegmentNumber = new AtomicInteger(0);
 
   private final StorageConfigurations configurations;
   private final SegmentIndexFactory indexFactory;
