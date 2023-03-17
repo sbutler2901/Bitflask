@@ -28,6 +28,22 @@ public class LoaderUtils {
     return paths.build();
   }
 
+  /**
+   * Checks that number of loaded bytes equals the expected, or throws a
+   * {@link dev.sbutler.bitflask.storage.exceptions.StorageLoadException}.
+   */
+  public static <T> void checkLoadedBytesLength(
+      byte[] loadedBytes,
+      int expectedNumBytes,
+      Class<T> clazz) {
+    if (loadedBytes.length == expectedNumBytes) {
+      return;
+    }
+    throw new StorageLoadException(
+        String.format("%s bytes read too short. Expected [%d], actual [%d]",
+            clazz.getSimpleName(), expectedNumBytes, loadedBytes.length));
+  }
+
   private LoaderUtils() {
   }
 }
