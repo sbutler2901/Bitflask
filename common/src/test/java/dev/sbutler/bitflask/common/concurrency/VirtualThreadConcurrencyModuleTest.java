@@ -11,9 +11,9 @@ import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class ConcurrencyModuleTest {
+public class VirtualThreadConcurrencyModuleTest {
 
-  private final ConcurrencyModule concurrencyModule = new ConcurrencyModule();
+  private final VirtualThreadConcurrencyModule concurrencyModule = new VirtualThreadConcurrencyModule();
 
   @Test
   public void provideListeningExecutorService() {

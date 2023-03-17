@@ -10,7 +10,7 @@ import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import dev.sbutler.bitflask.common.concurrency.ConcurrencyModule;
+import dev.sbutler.bitflask.common.concurrency.VirtualThreadConcurrencyModule;
 import dev.sbutler.bitflask.common.configuration.ConfigurationsBuilder;
 import dev.sbutler.bitflask.server.configuration.ConfigurationsInitializer;
 import dev.sbutler.bitflask.server.configuration.ConfigurationsInitializer.InitializedConfigurations;
@@ -50,7 +50,7 @@ public final class Server {
 
       Injector injector = Guice.createInjector(
           ImmutableSet.of(
-              new ConcurrencyModule(),
+              new VirtualThreadConcurrencyModule(),
               new ServerModule(initializedConfigurations.serverConfigurations()),
               new StorageServiceModule(initializedConfigurations.storageConfigurations())));
 

@@ -8,7 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import javax.inject.Singleton;
 
-public final class ConcurrencyModule extends AbstractModule {
+public final class VirtualThreadConcurrencyModule extends AbstractModule {
 
   private ListeningExecutorService listeningExecutorService;
 
