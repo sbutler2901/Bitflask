@@ -30,7 +30,7 @@ final class SegmentIndexFactory {
   /**
    * Creates a new {@link SegmentIndex} and writes it to disk.
    */
-  public SegmentIndex create(
+  SegmentIndex create(
       ImmutableSortedMap<String, Long> keyOffsetMap,
       UnsignedShort segmentNumber) throws IOException {
     SegmentIndexMetadata indexMetadata = new SegmentIndexMetadata(segmentNumber);
@@ -57,7 +57,7 @@ final class SegmentIndexFactory {
   /**
    * Loads a {@link SegmentIndex} from disk at the provided path.
    */
-  public SegmentIndex loadFromPath(Path path) throws IOException {
+  SegmentIndex loadFromPath(Path path) throws IOException {
     try (BufferedInputStream is = new BufferedInputStream(Files.newInputStream(path))) {
       byte[] metadataBytes = is.readNBytes(SegmentIndexMetadata.BYTES);
       if (metadataBytes.length != SegmentIndexMetadata.BYTES) {

@@ -94,7 +94,7 @@ public final class Segment {
   /**
    * Creates the file name for a Segment with {@code segmentNumber}.
    */
-  public static String createFileName(int segmentNumber) {
+  static String createFileName(int segmentNumber) {
     return FILE_PREFIX + segmentNumber + FILE_EXTENSION;
   }
 }

@@ -11,6 +11,9 @@ import java.util.concurrent.ThreadFactory;
 import javax.inject.Inject;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
+/**
+ * Handles loading all necessary resources at start up for the {@link LSMTree}.
+ */
 public final class LSMTreeLoader {
 
   private final LSMTreeStateManager stateManager;
@@ -27,6 +30,9 @@ public final class LSMTreeLoader {
     this.threadFactory = threadFactory;
   }
 
+  /**
+   * Initiate loading of all {@link LSMTree} resources.
+   */
   public void load() {
     try (var scope = new StructuredTaskScope.ShutdownOnFailure(
         "lsm-tree-loader", threadFactory)) {

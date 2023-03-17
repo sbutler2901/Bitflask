@@ -16,10 +16,6 @@ public final class SegmentLevelMultiMap {
     this.segmentLevelMultiMap = segmentLevelMultiMap;
   }
 
-  public static SegmentLevelMultiMap create() {
-    return new SegmentLevelMultiMap(ImmutableListMultimap.of());
-  }
-
   public static SegmentLevelMultiMap create(
       ImmutableListMultimap<Integer, Segment> segmentLevelMultiMap) {
     ImmutableListMultimap<Integer, Segment> sortedByKey =

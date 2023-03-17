@@ -27,6 +27,10 @@ final class LSMTreeReader {
     this.threadFactory = threadFactory;
   }
 
+  /**
+   * Reads the {@link dev.sbutler.bitflask.storage.lsm.entry.Entry} associated with the key and
+   * returns it, if present.
+   */
   Optional<Entry> read(String key) {
     try (var currentState = stateManager.getCurrentState()) {
       return currentState.getMemtable().read(key)

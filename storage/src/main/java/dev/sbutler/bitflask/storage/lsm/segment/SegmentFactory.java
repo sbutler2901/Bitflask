@@ -43,7 +43,7 @@ final class SegmentFactory {
    *
    * <p>The provided {@code keyEntryMap} cannot be empty.
    */
-  public Segment create(ImmutableSortedMap<String, Entry> keyEntryMap) throws IOException {
+  Segment create(ImmutableSortedMap<String, Entry> keyEntryMap) throws IOException {
     checkArgument(!keyEntryMap.isEmpty(), "keyEntryMap is empty.");
 
     UnsignedShort segmentNumber = UnsignedShort.valueOf(nextSegmentNumber.getAndIncrement());
@@ -100,7 +100,7 @@ final class SegmentFactory {
    * Loads a {@link Segment} from the path and finds its corresponding {@link SegmentIndex} from the
    * segmentNumberToIndexMap.
    */
-  public Segment loadFromPath(Path path,
+  Segment loadFromPath(Path path,
       ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap) throws IOException {
 
     SegmentMetadata metadata;

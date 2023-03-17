@@ -10,7 +10,8 @@ public class SegmentLevelMultiMapTest {
 
   @Test
   public void empty() {
-    SegmentLevelMultiMap segmentLevelMultiMap = SegmentLevelMultiMap.create();
+    SegmentLevelMultiMap segmentLevelMultiMap = SegmentLevelMultiMap.create(
+        ImmutableListMultimap.of());
 
     assertThat(segmentLevelMultiMap.getSegmentLevels()).isEmpty();
     assertThat(segmentLevelMultiMap.getSegmentsInLevel(0)).isEmpty();

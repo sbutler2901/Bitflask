@@ -17,6 +17,9 @@ final class LSMTreeWriter {
     this.stateManager = stateManager;
   }
 
+  /**
+   * Writes the {@link dev.sbutler.bitflask.storage.lsm.entry.Entry}.
+   */
   void write(Entry entry) {
     try (var currentState = stateManager.getCurrentState()) {
       try {

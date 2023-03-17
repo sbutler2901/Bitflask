@@ -36,7 +36,10 @@ final class SegmentLoader {
     this.segmentFactory = segmentFactory;
   }
 
-  public ImmutableList<Segment> loadWithIndexes(
+  /**
+   * Loads existing {@link Segment}s and matches them with their corresponding index.
+   */
+  ImmutableList<Segment> loadWithIndexes(
       ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap) {
     ImmutableList<Path> segmentPaths = LoaderUtils.loadPathsInDirForGlob(
         configurations.getStorageStoreDirectoryPath(), SEGMENT_GLOB);

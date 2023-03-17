@@ -39,7 +39,7 @@ final class WriteAheadLog implements AutoCloseable {
   /**
    * Creates a new {@link WriteAheadLog} truncating any pre-existing WriteAheadLog file.
    */
-  public static WriteAheadLog create(Path path) throws IOException {
+  static WriteAheadLog create(Path path) throws IOException {
     return new WriteAheadLog(
         Files.newOutputStream(
             path,
@@ -53,7 +53,7 @@ final class WriteAheadLog implements AutoCloseable {
    *
    * <p>A file will be created if one does not already exist.
    */
-  public static WriteAheadLog createFromPreExisting(Path path) throws IOException {
+  static WriteAheadLog createFromPreExisting(Path path) throws IOException {
     return new WriteAheadLog(
         Files.newOutputStream(
             path,
@@ -62,11 +62,17 @@ final class WriteAheadLog implements AutoCloseable {
                 StandardOpenOption.WRITE, StandardOpenOption.DSYNC}));
   }
 
-  public void append(Entry entry) throws IOException {
+  /**
+   * Appends the entry to the {@link WriteAheadLog}.
+   */
+  void append(Entry entry) throws IOException {
     logOutputStream.write(entry.getBytes());
     logOutputStream.flush();
   }
 
+  /**
+   * Closes the {@link WriteAheadLog}.
+   */
   public void close() throws IOException {
     logOutputStream.close();
   }

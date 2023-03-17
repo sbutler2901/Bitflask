@@ -38,7 +38,7 @@ final class SegmentIndexLoader {
   /**
    * Load all {@link SegmentIndex} in the storage directory.
    */
-  public ImmutableList<SegmentIndex> load() {
+  ImmutableList<SegmentIndex> load() {
     ImmutableList<Path> indexPaths = LoaderUtils.loadPathsInDirForGlob(
         configurations.getStorageStoreDirectoryPath(), INDEX_GLOB);
 
