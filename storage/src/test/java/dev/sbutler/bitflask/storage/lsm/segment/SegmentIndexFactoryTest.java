@@ -116,7 +116,7 @@ public class SegmentIndexFactoryTest {
     }
 
     assertThat(e).hasMessageThat().isEqualTo(String.format(
-        "SegmentIndex SegmentIndexMetadata bytes read too short. Expected [%d], actual [%d]",
+        "SegmentIndexMetadata bytes read too short. Expected [%d], actual [%d]",
         SegmentIndexMetadata.BYTES, 0));
   }
 
@@ -134,7 +134,7 @@ public class SegmentIndexFactoryTest {
     }
 
     assertThat(e).hasMessageThat().isEqualTo(String.format(
-        "SegmentIndex PartialEntry bytes read too short. Expected [%d], actual [%d]",
+        "PartialEntry bytes read too short. Expected [%d], actual [%d]",
         PartialEntry.BYTES, PartialEntry.BYTES - 1));
   }
 
@@ -155,7 +155,7 @@ public class SegmentIndexFactoryTest {
     }
 
     assertThat(e).hasMessageThat().isEqualTo(String.format(
-        "SegmentIndex key bytes read too short. Expected [%d], actual [%d]",
+        "SegmentIndex bytes read too short. Expected [%d], actual [%d]",
         keyLength, keyBytes.length));
   }
 }

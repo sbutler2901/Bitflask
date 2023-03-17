@@ -1,12 +1,12 @@
 package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static dev.sbutler.bitflask.storage.lsm.utils.LoaderUtils.loadPathsInDirForGlob;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
-import dev.sbutler.bitflask.storage.lsm.utils.LoaderUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +41,7 @@ final class SegmentLoader {
    */
   ImmutableList<Segment> loadWithIndexes(
       ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap) {
-    ImmutableList<Path> segmentPaths = LoaderUtils.loadPathsInDirForGlob(
+    ImmutableList<Path> segmentPaths = loadPathsInDirForGlob(
         configurations.getStorageStoreDirectoryPath(), SEGMENT_GLOB);
     try (var scope =
         new StructuredTaskScope.ShutdownOnFailure("load-segment-scope", threadFactory)) {

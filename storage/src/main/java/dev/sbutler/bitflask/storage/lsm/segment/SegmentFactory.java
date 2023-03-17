@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static dev.sbutler.bitflask.storage.lsm.utils.LoaderUtils.checkLoadedBytesLength;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -108,11 +109,7 @@ final class SegmentFactory {
     SegmentMetadata metadata;
     try (var is = Files.newInputStream(path)) {
       byte[] metadataBytes = is.readNBytes(SegmentMetadata.BYTES);
-      if (metadataBytes.length != SegmentMetadata.BYTES) {
-        throw new StorageLoadException(String.format(
-            "SegmentMetadata bytes read too short. Expected [%d], actual [%d]",
-            SegmentMetadata.BYTES, metadataBytes.length));
-      }
+      checkLoadedBytesLength(metadataBytes, SegmentMetadata.BYTES, SegmentMetadata.class);
       metadata = SegmentMetadata.fromBytes(metadataBytes);
     }
 

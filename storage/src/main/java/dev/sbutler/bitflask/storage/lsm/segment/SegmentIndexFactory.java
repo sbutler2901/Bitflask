@@ -1,9 +1,10 @@
 package dev.sbutler.bitflask.storage.lsm.segment;
 
+import static dev.sbutler.bitflask.storage.lsm.utils.LoaderUtils.checkLoadedBytesLength;
+
 import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentIndexEntry.PartialEntry;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -60,11 +61,7 @@ final class SegmentIndexFactory {
   SegmentIndex loadFromPath(Path path) throws IOException {
     try (BufferedInputStream is = new BufferedInputStream(Files.newInputStream(path))) {
       byte[] metadataBytes = is.readNBytes(SegmentIndexMetadata.BYTES);
-      if (metadataBytes.length != SegmentIndexMetadata.BYTES) {
-        throw new StorageLoadException(String.format(
-            "SegmentIndex SegmentIndexMetadata bytes read too short. Expected [%d], actual [%d]",
-            SegmentIndexMetadata.BYTES, metadataBytes.length));
-      }
+      checkLoadedBytesLength(metadataBytes, SegmentIndexMetadata.BYTES, SegmentIndexMetadata.class);
       SegmentIndexMetadata metadata = SegmentIndexMetadata.fromBytes(metadataBytes);
 
       ImmutableSortedMap.Builder<String, Long> indexKeyOffsetMap = ImmutableSortedMap.naturalOrder();
@@ -83,19 +80,12 @@ final class SegmentIndexFactory {
     byte[] partialEntryBytes = is.readNBytes(PartialEntry.BYTES);
     if (partialEntryBytes.length == 0) {
       return Optional.empty();
-    } else if (partialEntryBytes.length != PartialEntry.BYTES) {
-      throw new StorageLoadException(String.format(
-          "SegmentIndex PartialEntry bytes read too short. Expected [%d], actual [%d]",
-          PartialEntry.BYTES, partialEntryBytes.length));
     }
+    checkLoadedBytesLength(partialEntryBytes, PartialEntry.BYTES, PartialEntry.class);
     PartialEntry partialEntry = PartialEntry.fromBytes(partialEntryBytes);
 
     byte[] keyBytes = is.readNBytes(partialEntry.keyLength().value());
-    if (keyBytes.length != partialEntry.keyLength().value()) {
-      throw new StorageLoadException(String.format(
-          "SegmentIndex key bytes read too short. Expected [%d], actual [%d]",
-          partialEntry.keyLength().value(), keyBytes.length));
-    }
+    checkLoadedBytesLength(keyBytes, partialEntry.keyLength().value(), SegmentIndex.class);
     String key = new String(keyBytes);
 
     return Optional.of(new SegmentIndexEntry(key, partialEntry.offset()));
