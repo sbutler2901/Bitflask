@@ -1,15 +1,14 @@
-package dev.sbutler.bitflask.server.configuration.concurrency;
+package dev.sbutler.bitflask.common.concurrency;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import dev.sbutler.bitflask.common.concurrency.VirtualThreadFactory;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import javax.inject.Singleton;
 
-public class ConcurrencyModule extends AbstractModule {
+public final class ConcurrencyModule extends AbstractModule {
 
   private ListeningExecutorService listeningExecutorService;
 
@@ -24,6 +23,7 @@ public class ConcurrencyModule extends AbstractModule {
   }
 
   @Provides
+  @Singleton
   ThreadFactory provideThreadFactory(VirtualThreadFactory virtualThreadFactory) {
     return virtualThreadFactory;
   }

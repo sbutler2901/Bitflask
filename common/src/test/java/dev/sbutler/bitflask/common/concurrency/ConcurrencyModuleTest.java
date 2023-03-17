@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.configuration.concurrency;
+package dev.sbutler.bitflask.common.concurrency;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.common.concurrency.VirtualThreadFactory;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.Test;
@@ -17,7 +16,7 @@ public class ConcurrencyModuleTest {
   private final ConcurrencyModule concurrencyModule = new ConcurrencyModule();
 
   @Test
-  void provideExecutorService() {
+  public void provideListeningExecutorService() {
     try (MockedStatic<Executors> executorsMockedStatic = mockStatic(Executors.class)) {
       ListeningExecutorService mockExecutorService = mock(ListeningExecutorService.class);
       VirtualThreadFactory virtualThreadFactory = mock(VirtualThreadFactory.class);
@@ -33,7 +32,7 @@ public class ConcurrencyModuleTest {
   }
 
   @Test
-  void provideThreadFactory() {
+  public void provideThreadFactory() {
     VirtualThreadFactory virtualThreadFactory = new VirtualThreadFactory();
 
     ThreadFactory threadFactory = concurrencyModule.provideThreadFactory(virtualThreadFactory);
