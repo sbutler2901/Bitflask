@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
+import dev.sbutler.bitflask.common.concurrency.VirtualThreadFactory;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.Test;
