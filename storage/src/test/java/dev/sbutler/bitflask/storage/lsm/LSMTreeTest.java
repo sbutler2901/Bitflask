@@ -3,12 +3,14 @@ package dev.sbutler.bitflask.storage.lsm;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import java.time.Instant;
@@ -18,11 +20,15 @@ import org.mockito.ArgumentCaptor;
 
 public class LSMTreeTest {
 
+  private final ListeningScheduledExecutorService scheduledExecutorService = mock(
+      ListeningScheduledExecutorService.class);
   private final LSMTreeReader reader = mock(LSMTreeReader.class);
   private final LSMTreeWriter writer = mock(LSMTreeWriter.class);
   private final LSMTreeLoader loader = mock(LSMTreeLoader.class);
+  private final LSMTreeCompactor compactor = mock(LSMTreeCompactor.class);
 
-  private final LSMTree lsmTree = new LSMTree(reader, writer, loader);
+  private final LSMTree lsmTree = new LSMTree(
+      scheduledExecutorService, reader, writer, loader, compactor);
 
   @Test
   public void read_entryFound_returnsValue() {
@@ -70,6 +76,7 @@ public class LSMTreeTest {
     lsmTree.load();
 
     verify(loader, times(1)).load();
+    verify(scheduledExecutorService, times(1)).scheduleWithFixedDelay(any(), any(), any());
   }
 
   @Test
@@ -79,5 +86,7 @@ public class LSMTreeTest {
     StorageLoadException e = assertThrows(StorageLoadException.class, lsmTree::load);
 
     assertThat(e).hasMessageThat().isEqualTo("LSMTree should only be loaded once at startup.");
+    verify(loader, times(1)).load();
+    verify(scheduledExecutorService, times(1)).scheduleWithFixedDelay(any(), any(), any());
   }
 }
