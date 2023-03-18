@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage;
 
+import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -9,7 +10,6 @@ import dev.sbutler.bitflask.storage.commands.StorageCommand;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -21,6 +21,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public final class StorageService extends AbstractExecutionThreadService {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
   private final StorageCommandDispatcher commandDispatcher;
@@ -49,13 +51,16 @@ public final class StorageService extends AbstractExecutionThreadService {
   public void run() {
     try {
       while (isRunning && !Thread.currentThread().isInterrupted()) {
-        Optional<DispatcherSubmission<StorageCommandDTO, StorageResponse>> submission =
-            commandDispatcher.poll(1, TimeUnit.SECONDS);
+        Optional<DispatcherSubmission<StorageCommandDTO, StorageResponse>> submission;
+        try {
+          submission = commandDispatcher.poll(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+          logger.atWarning().withCause(e)
+              .log("Interrupted while polling dispatcher. Shutting down");
+          break;
+        }
         submission.ifPresent(this::processSubmission);
       }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new StorageException(e);
     } finally {
       triggerShutdown();
     }

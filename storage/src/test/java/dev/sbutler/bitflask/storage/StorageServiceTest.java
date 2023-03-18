@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -19,6 +20,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -63,11 +65,28 @@ class StorageServiceTest {
     Thread serviceThread = Thread.ofVirtual().start(storageService::run);
     Thread.sleep(100);
     serviceThread.interrupt();
-    serviceThread.join();
+    assertTimeoutPreemptively(Duration.ofSeconds(5), () -> serviceThread.join());
 
     // Assert
+    assertThat(storageService.isRunning()).isFalse();
+    verify(storageCommandDispatcher, times(1)).closeAndDrain();
+
     assertThat(submissionResponseFuture.isDone()).isTrue();
     assertThat(submissionResponseFuture.get()).isEqualTo(response);
+  }
+
+  @Test
+  public void run_interruptedWhilePolling() throws Exception {
+    InterruptedException interruptedException = new InterruptedException("test");
+    when(storageCommandDispatcher.poll(anyLong(), any(TimeUnit.class)))
+        .thenThrow(interruptedException);
+
+    Thread serviceThread = Thread.ofVirtual().start(storageService::run);
+    Thread.sleep(100);
+    assertTimeoutPreemptively(Duration.ofSeconds(5), () -> serviceThread.join());
+
+    assertThat(storageService.isRunning()).isFalse();
+    verify(storageCommandDispatcher, times(1)).closeAndDrain();
   }
 
   @Test
