@@ -5,17 +5,24 @@ import com.google.inject.Provides;
 import dev.sbutler.bitflask.common.io.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
+import dev.sbutler.bitflask.storage.lsm.LSMTreeModule;
 import java.util.concurrent.ThreadFactory;
 import javax.inject.Singleton;
 
+/**
+ * The root Guice module for executing the StorageService
+ */
 public class StorageServiceModule extends AbstractModule {
 
   private final StorageConfigurations storageConfigurations;
 
-  private StorageCommandDispatcher storageCommandDispatcher = null;
-
   public StorageServiceModule(StorageConfigurations storageConfigurations) {
     this.storageConfigurations = storageConfigurations;
+  }
+
+  @Override
+  protected void configure() {
+    install(new LSMTreeModule());
   }
 
   @Provides
@@ -27,11 +34,8 @@ public class StorageServiceModule extends AbstractModule {
   @Singleton
   StorageCommandDispatcher provideStorageCommandDispatcher(
       StorageConfigurations storageConfigurations) {
-    if (storageCommandDispatcher == null) {
-      storageCommandDispatcher = new StorageCommandDispatcher(
-          storageConfigurations.getStorageDispatcherCapacity());
-    }
-    return storageCommandDispatcher;
+    return new StorageCommandDispatcher(
+        storageConfigurations.getStorageDispatcherCapacity());
   }
 
   @Provides
