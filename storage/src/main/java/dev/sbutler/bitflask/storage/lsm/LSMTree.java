@@ -1,7 +1,9 @@
 package dev.sbutler.bitflask.storage.lsm;
 
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -14,17 +16,27 @@ import javax.inject.Singleton;
 @Singleton
 public final class LSMTree {
 
+  private final ListeningScheduledExecutorService scheduledExecutorService;
   private final LSMTreeReader reader;
   private final LSMTreeWriter writer;
   private final LSMTreeLoader loader;
+  private final LSMTreeCompactor compactor;
 
   private final AtomicBoolean isLoaded = new AtomicBoolean(false);
 
   @Inject
-  LSMTree(LSMTreeReader reader, LSMTreeWriter writer, LSMTreeLoader loader) {
+  LSMTree(
+      @LSMTreeListeningScheduledExecutorService
+      ListeningScheduledExecutorService scheduledExecutorService,
+      LSMTreeReader reader,
+      LSMTreeWriter writer,
+      LSMTreeLoader loader,
+      LSMTreeCompactor compactor) {
+    this.scheduledExecutorService = scheduledExecutorService;
     this.reader = reader;
     this.writer = writer;
     this.loader = loader;
+    this.compactor = compactor;
   }
 
   /**
@@ -57,6 +69,8 @@ public final class LSMTree {
       throw new StorageLoadException("LSMTree should only be loaded once at startup.");
     }
     loader.load();
+    scheduledExecutorService.scheduleWithFixedDelay(
+        compactor, Duration.ofMinutes(0), Duration.ofMinutes(1));
   }
 
 }
