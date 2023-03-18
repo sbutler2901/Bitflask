@@ -86,6 +86,20 @@ public record Entry(long creationEpochSeconds, String key, String value) {
   }
 
   /**
+   * Returns true if this Entry represents a deleted one.
+   */
+  public boolean isDeleted() {
+    return value.isEmpty();
+  }
+
+  /**
+   * The number of bytes required to represent this Entry.
+   */
+  public int getNumBytesSize() {
+    return getBytes().length;
+  }
+
+  /**
    * Returns the {@link EntryMetadata} for this Entry.
    */
   public EntryMetadata getMetaData() {
@@ -94,10 +108,4 @@ public record Entry(long creationEpochSeconds, String key, String value) {
         UnsignedShort.valueOf(value.length()));
   }
 
-  /**
-   * Returns true if this Entry represents a deleted one.
-   */
-  public boolean isDeleted() {
-    return value.isEmpty();
-  }
 }

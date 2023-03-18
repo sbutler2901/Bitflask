@@ -178,4 +178,23 @@ public class EntryTest {
 
     assertThat(entry.isDeleted()).isFalse();
   }
+
+  @Test
+  public void getNumBytesSize() {
+    Entry entry = new Entry(Instant.now().getEpochSecond(), "key", "value");
+
+    assertThat(entry.getNumBytesSize()).isEqualTo(entry.getBytes().length);
+  }
+
+  @Test
+  public void getMetadata() {
+    long creationEpochSeconds = Instant.now().getEpochSecond();
+    Entry entry = new Entry(creationEpochSeconds, "key", "value");
+    EntryMetadata expectedMetadata =
+        new EntryMetadata(creationEpochSeconds, UnsignedShort.valueOf(3), UnsignedShort.valueOf(5));
+
+    EntryMetadata metadata = entry.getMetaData();
+
+    assertThat(metadata).isEqualTo(expectedMetadata);
+  }
 }
