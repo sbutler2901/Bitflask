@@ -26,11 +26,33 @@ public class LSMTreeStateManagerTest {
   }
 
   @Test
+  public void getCurrentState_uninitialized_throwsStorageException() {
+    LSMTreeStateManager uninitializedManager = new LSMTreeStateManager();
+
+    StorageException e =
+        assertThrows(StorageException.class, uninitializedManager::getCurrentState);
+
+    assertThat(e).hasMessageThat()
+        .isEqualTo("LSMTreeStateManager's state must be initialized before usage");
+  }
+
+  @Test
   public void getAndLockCurrentState() {
     try (var currentState = lsmTreeStateManager.getAndLockCurrentState()) {
       assertThat(currentState.getMemtable()).isEqualTo(MEMTABLE);
       assertThat(currentState.getSegmentLevelMultiMap()).isEqualTo(MULTI_MAP);
     }
+  }
+
+  @Test
+  public void getAndLockCurrentState_uninitialized_throwsStorageException() {
+    LSMTreeStateManager uninitializedManager = new LSMTreeStateManager();
+
+    StorageException e =
+        assertThrows(StorageException.class, uninitializedManager::getAndLockCurrentState);
+
+    assertThat(e).hasMessageThat()
+        .isEqualTo("LSMTreeStateManager's state must be initialized before usage");
   }
 
   @Test
