@@ -10,16 +10,11 @@ import javax.inject.Singleton;
 
 public final class VirtualThreadConcurrencyModule extends AbstractModule {
 
-  private ListeningExecutorService listeningExecutorService;
-
   @Provides
   @Singleton
   ListeningExecutorService provideExecutorService(VirtualThreadFactory virtualThreadFactory) {
-    if (listeningExecutorService == null) {
-      listeningExecutorService = MoreExecutors.listeningDecorator(
-          Executors.newThreadPerTaskExecutor(virtualThreadFactory));
-    }
-    return listeningExecutorService;
+    return MoreExecutors.listeningDecorator(
+        Executors.newThreadPerTaskExecutor(virtualThreadFactory));
   }
 
   @Provides
