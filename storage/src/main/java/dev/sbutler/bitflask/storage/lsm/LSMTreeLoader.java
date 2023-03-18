@@ -13,7 +13,7 @@ import jdk.incubator.concurrent.StructuredTaskScope;
 /**
  * Handles loading all necessary resources at start up for the {@link LSMTree}.
  */
-public final class LSMTreeLoader {
+final class LSMTreeLoader {
 
   private final LSMTreeStateManager stateManager;
   private final MemtableLoader memtableLoader;

@@ -1,22 +1,30 @@
 package dev.sbutler.bitflask.storage.lsm;
 
+import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * A Log Structured Merge Tree implementation for reading and writing key:value pairs.
  */
+@Singleton
 public final class LSMTree {
 
   private final LSMTreeReader reader;
   private final LSMTreeWriter writer;
+  private final LSMTreeLoader loader;
+
+  private final AtomicBoolean isLoaded = new AtomicBoolean(false);
 
   @Inject
-  LSMTree(LSMTreeReader reader, LSMTreeWriter writer) {
+  LSMTree(LSMTreeReader reader, LSMTreeWriter writer, LSMTreeLoader loader) {
     this.reader = reader;
     this.writer = writer;
+    this.loader = loader;
   }
 
   /**
@@ -40,4 +48,15 @@ public final class LSMTree {
   public void delete(String key) {
     write(key, "");
   }
+
+  /**
+   * Initiates loading of all LSMTree resources.
+   */
+  public void load() {
+    if (isLoaded.getAndSet(true)) {
+      throw new StorageLoadException("LSMTree should only be loaded once at startup.");
+    }
+    loader.load();
+  }
+
 }
