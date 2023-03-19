@@ -46,11 +46,36 @@ public final class SegmentFactory {
   /**
    * Creates a new Segment at segment level 0 and its associated index file.
    *
-   * <p>The provided {@code keyEntryMap} cannot be empty.
+   * <p>The provided {@link Memtable}'s {@code keyEntryMap} cannot be empty.
    */
   public Segment create(Memtable memtable) throws IOException {
-    SortedMap<String, Entry> keyEntryMap = memtable.flush();
+    return create(memtable.flush(), 0, memtable.getNumBytesSize());
+  }
+
+  /**
+   * Creates a new Segment and its associated index file at the specified segment level.
+   *
+   * <p>The provided {@code keyEntryMap} cannot be empty. The segmentLevel must be non-negative.
+   */
+  public Segment create(SortedMap<String, Entry> keyEntryMap, int segmentLevel) throws IOException {
+    long numBytesSize = keyEntryMap.values().stream()
+        .map(Entry::getNumBytesSize)
+        .mapToLong(Long::longValue)
+        .sum();
+    return create(keyEntryMap, segmentLevel, numBytesSize);
+  }
+
+  /**
+   * Creates a new Segment and its associated index file at the specified segment level.
+   *
+   * <p>The provided {@code keyEntryMap} cannot be empty. The segmentLevel and numBytesSize must be
+   * non-negative.
+   */
+  public Segment create(SortedMap<String, Entry> keyEntryMap, int segmentLevel, long numBytesSize)
+      throws IOException {
     checkArgument(!keyEntryMap.isEmpty(), "keyEntryMap is empty.");
+    checkArgument(segmentLevel >= 0, "segmentLevel must be non-negative");
+    checkArgument(numBytesSize >= 0, "numBytesSize must be non-negative");
 
     UnsignedShort segmentNumber = UnsignedShort.valueOf(nextSegmentNumber.getAndIncrement());
 
@@ -67,7 +92,7 @@ public final class SegmentFactory {
     SegmentIndex segmentIndex = indexFactory.create(keyOffsetMap, segmentNumber);
 
     return Segment.create(segmentMetadata, EntryReader.create(segmentPath),
-        keyFilter, segmentIndex, memtable.getNumBytesSize());
+        keyFilter, segmentIndex, numBytesSize);
   }
 
   /**
