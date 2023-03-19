@@ -92,6 +92,15 @@ public final class Segment {
   }
 
   /**
+   * Returns the number of bytes of all {@link Entry}s contained within the Memtable.
+   */
+  public int getSize() {
+    // TODO: implement
+    return 0;
+//    return currentSize.get();
+  }
+
+  /**
    * Creates the file name for a Segment with {@code segmentNumber}.
    */
   static String createFileName(int segmentNumber) {

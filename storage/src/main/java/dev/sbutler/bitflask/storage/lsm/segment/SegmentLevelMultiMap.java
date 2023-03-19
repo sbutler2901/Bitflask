@@ -34,6 +34,16 @@ public final class SegmentLevelMultiMap {
   }
 
   /**
+   * Returns the number of bytes of all {@link Segment}s contained within a level.
+   */
+  public int getSizeOfSegmentLevel(int segmentLevel) {
+    return getSegmentsInLevel(segmentLevel).stream()
+        .map(Segment::getSize)
+        .mapToInt(Integer::intValue)
+        .sum();
+  }
+
+  /**
    * Creates a new {@link Builder} populated with all entries contained within this.
    */
   public Builder toBuilder() {

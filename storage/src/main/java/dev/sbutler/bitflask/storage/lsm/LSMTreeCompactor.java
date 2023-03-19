@@ -12,6 +12,8 @@ import javax.inject.Inject;
 
 /**
  * Manages periodically compacting an {@link LSMTree}.
+ *
+ * <p><b>WARNING</b>: only a single instance of the compactor should be running at any given time.
  */
 final class LSMTreeCompactor implements Runnable {
 
@@ -34,14 +36,34 @@ final class LSMTreeCompactor implements Runnable {
 
   @Override
   public void run() {
+    if (flushMemtable()) {
+      compactSegmentLevels();
+    }
+  }
+
+  /**
+   * Returns true if the current {@link Memtable} was flushed to a {@link Segment}.
+   */
+  private boolean flushMemtable() {
     try (var currentState = stateManager.getAndLockCurrentState()) {
       if (currentState.getMemtable().getSize() < configurations.getMemtableFlushThresholdMB()) {
-        return;
+        return false;
       }
-      // flush memtable to segment
-      Segment segmentFromMemtable = flushMemtableToSegment(currentState.getMemtable());
-      // create new memtable w/ WriteAheadLog
-      Memtable newMemtable = createNewMemtable();
+
+      Segment segmentFromMemtable;
+      try {
+        segmentFromMemtable = segmentFactory.create(currentState.getMemtable().flush());
+      } catch (IOException e) {
+        throw new StorageCompactionException("Failed to create new Segment from Memtable", e);
+      }
+
+      Memtable newMemtable;
+      try {
+        newMemtable = memtableFactory.create();
+      } catch (IOException e) {
+        throw new StorageCompactionException("Failed creating new Memtable", e);
+      }
+
       // add memtable to segment level
       SegmentLevelMultiMap newMultiMap = currentState.getSegmentLevelMultiMap().toBuilder()
           .add(segmentFromMemtable)
@@ -50,22 +72,43 @@ final class LSMTreeCompactor implements Runnable {
       // update state and release lock
       stateManager.updateCurrentState(newMemtable, newMultiMap);
     }
-    // TODO: check segment level threshold, and start compaction. Repeat if necessary for next level
+    return true;
   }
 
-  private Segment flushMemtableToSegment(Memtable memtable) {
-    try {
-      return segmentFactory.create(memtable.flush());
-    } catch (IOException e) {
-      throw new StorageCompactionException("Failed to create new Segment from Memtable", e);
+  /**
+   * Iterates the current segment level's compacting each, if their threshold size has been reached,
+   * and updates the {@link LSMTreeStateManager} state accordingly.
+   */
+  private void compactSegmentLevels() {
+    // Assumes another compactor thread will not be altering state.
+    SegmentLevelMultiMap segmentLevelMultiMap;
+    try (var currentState = stateManager.getCurrentState()) {
+      segmentLevelMultiMap = currentState.getSegmentLevelMultiMap();
+    }
+
+    int segmentLevel = 0;
+    for (; segmentLevelMultiMap.getSizeOfSegmentLevel(segmentLevel)
+        >= configurations.getSegmentLevelFlushThresholdMB();
+        segmentLevel++) {
+      segmentLevelMultiMap = compactSegmentLevel(segmentLevelMultiMap, segmentLevel);
+    }
+    // Don't wait for lock if no compaction occurred
+    if (segmentLevel == 0) {
+      return;
+    }
+
+    try (var currentState = stateManager.getAndLockCurrentState()) {
+      stateManager.updateCurrentState(currentState.getMemtable(), segmentLevelMultiMap);
     }
   }
 
-  private Memtable createNewMemtable() {
-    try {
-      return memtableFactory.create();
-    } catch (IOException e) {
-      throw new StorageCompactionException("Failed creating new Memtable", e);
-    }
+  /**
+   * Compacts the provided segment level returning the updated
+   * {@link dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap}.
+   */
+  private SegmentLevelMultiMap compactSegmentLevel(
+      SegmentLevelMultiMap segmentLevelMultiMap, int segmentLevel) {
+    // TODO: implement
+    return segmentLevelMultiMap;
   }
 }
