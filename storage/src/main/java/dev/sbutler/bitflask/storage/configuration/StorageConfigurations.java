@@ -11,37 +11,39 @@ import java.nio.file.Path;
  */
 public class StorageConfigurations implements Configurations {
 
-  @Parameter(names = StorageConfigurationsConstants.STORAGE_DISPATCHER_CAPACITY_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.DISPATCHER_CAPACITY_FLAG,
       validateWith = PositiveIntegerValidator.class,
       description = "The maximum number of storage submissions that can be queued")
   private int dispatcherCapacity;
 
-  @Parameter(names = StorageConfigurationsConstants.STORAGE_STORE_DIRECTORY_PATH_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG,
       validateWith = AbsolutePathValidator.class,
-      description = "The directory path in which storage segments will be read & written. This must be an absolute path.")
+      description = "The directory path in which storage segments will be read & written."
+          + " This must be an absolute path.")
   private Path storeDirectoryPath;
 
-  @Parameter(names = StorageConfigurationsConstants.STORAGE_LOADING_MODE_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.LOADING_MODE_FLAG,
       converter = StorageLoadingModeConverter.class,
-      description = "The method used for Segment creation. 'create' will reuse pre-existing segments, loading their content at start. 'truncate' will overwrite pre-exiting segments ignoring their contents."
-  )
+      description = "The method used for Segment creation. 'create' will reuse pre-existing" +
+          " segments, loading their content at start. 'truncate' will overwrite pre-exiting" +
+          " segments ignoring their contents.")
   private StorageLoadingMode loadingMode;
 
-  @Parameter(names = StorageConfigurationsConstants.STORAGE_MEMTABLE_FLUSH_THRESHOLD_MB_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_MB_FLAG,
       validateWith = PositiveIntegerValidator.class,
       description = "The number of MBs the Memtable must exceed before being flushed to disk")
   private int memtableFlushThresholdMB;
 
-  @Parameter(names = StorageConfigurationsConstants.STORAGE_SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG,
       validateWith = PositiveIntegerValidator.class,
       description = "The number of MBs a Segment Level must exceed before being compacted")
   private int segmentLevelFlushThresholdMB;
 
-  public int getStorageDispatcherCapacity() {
+  public int getDispatcherCapacity() {
     return dispatcherCapacity;
   }
 
-  public Path getStorageStoreDirectoryPath() {
+  public Path getStoreDirectoryPath() {
     return storeDirectoryPath;
   }
 

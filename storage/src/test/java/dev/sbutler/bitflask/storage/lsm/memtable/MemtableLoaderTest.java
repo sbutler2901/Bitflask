@@ -41,7 +41,7 @@ public class MemtableLoaderTest {
 
   @BeforeEach
   public void beforeEach() {
-    when(config.getStorageStoreDirectoryPath()).thenReturn(DIR_PATH);
+    when(config.getStoreDirectoryPath()).thenReturn(DIR_PATH);
   }
 
   @Test

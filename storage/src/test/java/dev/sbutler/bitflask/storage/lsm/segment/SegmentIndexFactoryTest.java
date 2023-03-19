@@ -60,7 +60,7 @@ public class SegmentIndexFactoryTest {
 
   @BeforeEach
   public void beforeEach() {
-    when(config.getStorageStoreDirectoryPath()).thenReturn(TEST_RESOURCE_PATH);
+    when(config.getStoreDirectoryPath()).thenReturn(TEST_RESOURCE_PATH);
     indexFactory = new SegmentIndexFactory(config);
   }
 

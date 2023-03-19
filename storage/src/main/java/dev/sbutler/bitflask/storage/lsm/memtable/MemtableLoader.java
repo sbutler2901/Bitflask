@@ -81,7 +81,7 @@ public final class MemtableLoader {
 
   private Path getWriteAheadLogPath() {
     return Path.of(
-        configurations.getStorageStoreDirectoryPath().toString(),
+        configurations.getStoreDirectoryPath().toString(),
         String.format("%s.%s", WriteAheadLog.FILE_NAME, WriteAheadLog.FILE_EXTENSION));
   }
 }

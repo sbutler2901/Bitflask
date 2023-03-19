@@ -42,7 +42,7 @@ final class SegmentLoader {
   ImmutableList<Segment> loadWithIndexes(
       ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap) {
     ImmutableList<Path> segmentPaths = loadPathsInDirForGlob(
-        configurations.getStorageStoreDirectoryPath(), SEGMENT_GLOB);
+        configurations.getStoreDirectoryPath(), SEGMENT_GLOB);
     try (var scope =
         new StructuredTaskScope.ShutdownOnFailure("load-segment-scope", threadFactory)) {
       List<Future<Segment>> segmentFutures = new ArrayList<>(segmentPaths.size());

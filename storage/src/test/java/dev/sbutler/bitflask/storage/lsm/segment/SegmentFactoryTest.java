@@ -55,7 +55,7 @@ public class SegmentFactoryTest {
   public void beforeEach() throws Exception {
     when(indexFactory.create(any(), any())).thenReturn(segmentIndex);
     when(segmentIndex.getSegmentNumber()).thenReturn(SEGMENT_NUMBER.value());
-    when(config.getStorageStoreDirectoryPath()).thenReturn(TEST_RESOURCE_PATH);
+    when(config.getStoreDirectoryPath()).thenReturn(TEST_RESOURCE_PATH);
   }
 
   @Test

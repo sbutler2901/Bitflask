@@ -35,7 +35,7 @@ public class StorageServiceModule extends AbstractModule {
   StorageCommandDispatcher provideStorageCommandDispatcher(
       StorageConfigurations storageConfigurations) {
     return new StorageCommandDispatcher(
-        storageConfigurations.getStorageDispatcherCapacity());
+        storageConfigurations.getDispatcherCapacity());
   }
 
   @Provides

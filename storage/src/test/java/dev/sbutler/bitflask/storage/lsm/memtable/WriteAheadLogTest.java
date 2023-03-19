@@ -27,8 +27,8 @@ public class WriteAheadLogTest {
 
 
   @BeforeEach
-  public void beforeEach() throws Exception {
-    when(config.getStorageStoreDirectoryPath()).thenReturn(TEST_RESOURCE_PATH);
+  public void beforeEach() {
+    when(config.getStoreDirectoryPath()).thenReturn(TEST_RESOURCE_PATH);
   }
 
   @Test

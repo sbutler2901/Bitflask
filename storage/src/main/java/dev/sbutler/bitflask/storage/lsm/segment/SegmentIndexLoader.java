@@ -40,7 +40,7 @@ final class SegmentIndexLoader {
    */
   ImmutableList<SegmentIndex> load() {
     ImmutableList<Path> indexPaths = loadPathsInDirForGlob(
-        configurations.getStorageStoreDirectoryPath(), INDEX_GLOB);
+        configurations.getStoreDirectoryPath(), INDEX_GLOB);
 
     try (var scope = new StructuredTaskScope.ShutdownOnFailure("load-index-scope", threadFactory)) {
       List<Future<SegmentIndex>> indexFutures = new ArrayList<>(indexPaths.size());

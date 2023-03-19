@@ -37,7 +37,7 @@ final class SegmentIndexFactory {
     SegmentIndexMetadata indexMetadata = new SegmentIndexMetadata(segmentNumber);
     ImmutableSortedMap.Builder<String, Long> indexKeyOffsetMap = ImmutableSortedMap.naturalOrder();
 
-    Path indexPath = Path.of(configurations.getStorageStoreDirectoryPath().toString(),
+    Path indexPath = Path.of(configurations.getStoreDirectoryPath().toString(),
         SegmentIndex.createFileName(segmentNumber.value()));
 
     try (BufferedOutputStream indexOutputStream = new BufferedOutputStream(

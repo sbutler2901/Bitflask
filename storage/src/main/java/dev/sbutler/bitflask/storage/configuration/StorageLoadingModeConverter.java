@@ -15,7 +15,7 @@ final class StorageLoadingModeConverter implements IStringConverter<StorageLoadi
     } catch (IllegalArgumentException e) {
       throw new IllegalConfigurationException(
           String.format("Parameter %s was invalid (found %s)",
-              StorageConfigurationsConstants.STORAGE_LOADING_MODE_FLAG, value));
+              StorageConfigurationsConstants.LOADING_MODE_FLAG, value));
     }
   }
 }
