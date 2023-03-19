@@ -33,7 +33,6 @@ public final class Memtable {
   }
 
   static Memtable create(SortedMap<String, Entry> keyEntryMap, WriteAheadLog writeAheadLog) {
-    // TODO: update currentSize
     Memtable memtable = new Memtable(keyEntryMap, writeAheadLog);
     keyEntryMap.values().forEach(
         e -> memtable.updateSize(e, Optional.empty()));
