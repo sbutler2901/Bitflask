@@ -26,8 +26,8 @@ public class LSMTreeReaderTest {
   Segment SEGMENT_1 = mock(Segment.class);
 
   Memtable MEMTABLE = MemtableTestHelper.createMemtableWithMockWriteAheadLog();
-  SegmentLevelMultiMap MULTI_MAP = SegmentLevelMultiMap.create(
-      ImmutableListMultimap.of(0, SEGMENT_0, 1, SEGMENT_1));
+  SegmentLevelMultiMap MULTI_MAP = new SegmentLevelMultiMap.Builder(
+      ImmutableListMultimap.of(0, SEGMENT_0, 1, SEGMENT_1)).build();
 
   LSMTreeStateManager stateManager = new LSMTreeStateManager(MEMTABLE, MULTI_MAP);
 

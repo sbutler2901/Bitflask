@@ -30,7 +30,7 @@ public final class SegmentLevelMultiMapLoader {
     // Load Segments
     ImmutableList<Segment> segments = segmentLoader.loadWithIndexes(segmentNumberToIndexMap);
 
-    return SegmentLevelMultiMap.create(mapSegmentsBySegmentLevel(segments));
+    return new SegmentLevelMultiMap.Builder(mapSegmentsBySegmentLevel(segments)).build();
   }
 
   private ImmutableListMultimap<Integer, Segment> mapSegmentsBySegmentLevel(

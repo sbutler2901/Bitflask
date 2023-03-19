@@ -21,7 +21,8 @@ import org.junit.jupiter.api.Test;
 public class LSMTreeWriterTest {
 
   private final Memtable MEMTABLE = mock(Memtable.class);
-  SegmentLevelMultiMap MULTI_MAP = SegmentLevelMultiMap.create(ImmutableListMultimap.of());
+  SegmentLevelMultiMap MULTI_MAP = new SegmentLevelMultiMap.Builder(
+      ImmutableListMultimap.of()).build();
 
   private final LSMTreeStateManager stateManager = new LSMTreeStateManager(MEMTABLE, MULTI_MAP);
 

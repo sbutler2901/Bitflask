@@ -10,8 +10,8 @@ public class SegmentLevelMultiMapTest {
 
   @Test
   public void empty() {
-    SegmentLevelMultiMap segmentLevelMultiMap = SegmentLevelMultiMap.create(
-        ImmutableListMultimap.of());
+    SegmentLevelMultiMap segmentLevelMultiMap = new SegmentLevelMultiMap.Builder(
+        ImmutableListMultimap.of()).build();
 
     assertThat(segmentLevelMultiMap.getSegmentLevels()).isEmpty();
     assertThat(segmentLevelMultiMap.getSegmentsInLevel(0)).isEmpty();
@@ -19,8 +19,8 @@ public class SegmentLevelMultiMapTest {
 
   @Test
   public void getSegmentLevels_ascendingOrder() {
-    SegmentLevelMultiMap segmentLevelMultiMap = SegmentLevelMultiMap.create(
-        ImmutableListMultimap.of(1, mock(Segment.class), 0, mock(Segment.class)));
+    SegmentLevelMultiMap segmentLevelMultiMap = new SegmentLevelMultiMap.Builder(
+        ImmutableListMultimap.of(1, mock(Segment.class), 0, mock(Segment.class))).build();
 
     assertThat(segmentLevelMultiMap.getSegmentLevels()).isInOrder();
   }
@@ -29,8 +29,8 @@ public class SegmentLevelMultiMapTest {
   public void getSegmentsInLevel() {
     Segment segment0 = mock(Segment.class);
     Segment segment1 = mock(Segment.class);
-    SegmentLevelMultiMap segmentLevelMultiMap = SegmentLevelMultiMap.create(
-        ImmutableListMultimap.of(1, segment1, 0, segment0));
+    SegmentLevelMultiMap segmentLevelMultiMap = new SegmentLevelMultiMap.Builder(
+        ImmutableListMultimap.of(1, segment1, 0, segment0)).build();
 
     assertThat(segmentLevelMultiMap.getSegmentsInLevel(0)).containsExactly(segment0);
     assertThat(segmentLevelMultiMap.getSegmentsInLevel(1)).containsExactly(segment1);
