@@ -28,7 +28,7 @@ import javax.inject.Singleton;
  */
 @SuppressWarnings("UnstableApiUsage")
 @Singleton
-final class SegmentFactory {
+public final class SegmentFactory {
 
   private final AtomicInteger nextSegmentNumber = new AtomicInteger(0);
 
@@ -46,7 +46,7 @@ final class SegmentFactory {
    *
    * <p>The provided {@code keyEntryMap} cannot be empty.
    */
-  Segment create(ImmutableSortedMap<String, Entry> keyEntryMap) throws IOException {
+  public Segment create(ImmutableSortedMap<String, Entry> keyEntryMap) throws IOException {
     checkArgument(!keyEntryMap.isEmpty(), "keyEntryMap is empty.");
 
     UnsignedShort segmentNumber = UnsignedShort.valueOf(nextSegmentNumber.getAndIncrement());
