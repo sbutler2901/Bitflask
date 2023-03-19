@@ -48,7 +48,7 @@ public class StorageConfigurationsConstants {
   // Segment Level Flush Size
   static final String SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG = "--storageSegmentLevelCompactThresholdBytes";
   static final String SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_PROPERTY_KEY = "storage.segmentLevelCompactThresholdBytes";
-  static final int SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_DEFAULT = 5;
+  static final long SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_DEFAULT = 5242880L; // 5 MiB
   static final Configuration SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_CONFIGURATION = new Configuration(
       ImmutableList.of(SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG),
       SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_PROPERTY_KEY,

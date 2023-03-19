@@ -47,7 +47,7 @@ final class LSMTreeCompactor implements Runnable {
   boolean flushMemtable() {
     try (var currentState = stateManager.getAndLockCurrentState()) {
       if (currentState.getMemtable().getNumBytesSize()
-          < configurations.getMemtableFlushThresholdMB()) {
+          < configurations.getMemtableFlushThresholdBytes()) {
         return false;
       }
 
@@ -89,7 +89,7 @@ final class LSMTreeCompactor implements Runnable {
 
     int segmentLevel = 0;
     for (; segmentLevelMultiMap.getSizeOfSegmentLevel(segmentLevel)
-        >= configurations.getSegmentLevelFlushThresholdMB();
+        >= configurations.getSegmentLevelFlushThresholdBytes();
         segmentLevel++) {
       segmentLevelMultiMap = compactSegmentLevel(segmentLevelMultiMap, segmentLevel);
     }

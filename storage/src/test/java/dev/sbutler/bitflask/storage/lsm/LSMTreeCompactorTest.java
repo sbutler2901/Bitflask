@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 
 public class LSMTreeCompactorTest {
 
-  private final int MEMTABLE_FLUSH_THRESHOLD = 1;
-  private final int SEGMENT_LEVEL_FLUSH_THRESHOLD = 1;
+  private final long MEMTABLE_FLUSH_THRESHOLD = 1;
+  private final long SEGMENT_LEVEL_FLUSH_THRESHOLD = 1;
 
   private final Memtable memtable = mock(Memtable.class);
   private final SegmentLevelMultiMap segmentLevelMultiMap = mock(SegmentLevelMultiMap.class);
@@ -39,9 +39,9 @@ public class LSMTreeCompactorTest {
 
   @BeforeEach
   public void beforeEach() {
-    when(configurations.getMemtableFlushThresholdMB())
+    when(configurations.getMemtableFlushThresholdBytes())
         .thenReturn(MEMTABLE_FLUSH_THRESHOLD);
-    when(configurations.getSegmentLevelFlushThresholdMB()).thenReturn(
+    when(configurations.getSegmentLevelFlushThresholdBytes()).thenReturn(
         SEGMENT_LEVEL_FLUSH_THRESHOLD);
   }
 

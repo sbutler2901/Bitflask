@@ -22,9 +22,9 @@ public class StorageConfigurationsTest {
           Path.of("/tmp/random/absolute/path").toString(),
           StorageConfigurationsConstants.LOADING_MODE_FLAG,
           "load",
-          StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_MB_FLAG,
+          StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG,
           "1",
-          StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG,
+          StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG,
           "5");
 
   @Test
@@ -49,12 +49,12 @@ public class StorageConfigurationsTest {
             StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG)).toString());
     assertThat(storageConfigurations.getStorageLoadingMode())
         .isEqualTo(StorageLoadingMode.LOAD);
-    assertThat(storageConfigurations.getMemtableFlushThresholdMB())
+    assertThat(storageConfigurations.getMemtableFlushThresholdBytes())
         .isEqualTo(Integer.parseInt(defaultProvider.getDefaultValueFor(
-            StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_MB_FLAG)));
-    assertThat(storageConfigurations.getSegmentLevelFlushThresholdMB())
+            StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG)));
+    assertThat(storageConfigurations.getSegmentLevelFlushThresholdBytes())
         .isEqualTo(Integer.parseInt(defaultProvider.getDefaultValueFor(
-            StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG)));
+            StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG)));
   }
 
   @Test
@@ -135,7 +135,7 @@ public class StorageConfigurationsTest {
     ConfigurationDefaultProvider defaultProvider = mock(ConfigurationDefaultProvider.class);
     mockDefaultProvider(defaultProvider);
     when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_MB_FLAG))
+        .getDefaultValueFor(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG))
         .thenReturn("-1");
 
     StorageConfigurations storageConfigurations = new StorageConfigurations();
@@ -150,7 +150,7 @@ public class StorageConfigurationsTest {
                 .parse(argv));
     // Assert
     assertThat(exception).hasMessageThat()
-        .contains(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_MB_FLAG);
+        .contains(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG);
   }
 
   @Test
@@ -159,7 +159,8 @@ public class StorageConfigurationsTest {
     ConfigurationDefaultProvider defaultProvider = mock(ConfigurationDefaultProvider.class);
     mockDefaultProvider(defaultProvider);
     when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG))
+        .getDefaultValueFor(
+            StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG))
         .thenReturn("-1");
 
     StorageConfigurations storageConfigurations = new StorageConfigurations();
@@ -174,7 +175,7 @@ public class StorageConfigurationsTest {
                 .parse(argv));
     // Assert
     assertThat(exception).hasMessageThat()
-        .contains(StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG);
+        .contains(StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG);
   }
 
   @Test
@@ -197,9 +198,9 @@ public class StorageConfigurationsTest {
         .isEqualTo(CLI_ARG_LIST.get(3));
     assertThat(storageConfigurations.getStorageLoadingMode())
         .isEqualTo(StorageLoadingMode.LOAD);
-    assertThat(storageConfigurations.getMemtableFlushThresholdMB())
+    assertThat(storageConfigurations.getMemtableFlushThresholdBytes())
         .isEqualTo(1);
-    assertThat(storageConfigurations.getSegmentLevelFlushThresholdMB())
+    assertThat(storageConfigurations.getSegmentLevelFlushThresholdBytes())
         .isEqualTo(5);
   }
 
@@ -292,7 +293,7 @@ public class StorageConfigurationsTest {
                 .parse(argv));
     // Assert
     assertThat(exception).hasMessageThat()
-        .contains(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_MB_FLAG);
+        .contains(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG);
   }
 
   @Test
@@ -315,7 +316,7 @@ public class StorageConfigurationsTest {
                 .parse(argv));
     // Assert
     assertThat(exception).hasMessageThat()
-        .contains(StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG);
+        .contains(StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG);
   }
 
   private static void mockDefaultProvider(ConfigurationDefaultProvider defaultProvider) {
@@ -329,10 +330,11 @@ public class StorageConfigurationsTest {
         .getDefaultValueFor(StorageConfigurationsConstants.LOADING_MODE_FLAG))
         .thenReturn("load");
     when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_MB_FLAG))
+        .getDefaultValueFor(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG))
         .thenReturn("1");
     when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG))
+        .getDefaultValueFor(
+            StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG))
         .thenReturn("5");
   }
 }
