@@ -7,7 +7,6 @@ import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import javax.inject.Inject;
@@ -21,10 +20,14 @@ public final class MemtableLoader {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final StorageConfigurations configurations;
+  private final MemtableFactory memtableFactory;
 
   @Inject
-  MemtableLoader(StorageConfigurations configurations) {
+  MemtableLoader(
+      StorageConfigurations configurations,
+      MemtableFactory memtableFactory) {
     this.configurations = configurations;
+    this.memtableFactory = memtableFactory;
   }
 
   /**
@@ -40,9 +43,9 @@ public final class MemtableLoader {
 
   private Memtable createMemtableWithTruncation() {
     try {
-      WriteAheadLog writeAheadLog = WriteAheadLog.create(getWriteAheadLogPath());
+      Memtable memtable = memtableFactory.create();
       logger.atInfo().log("Created Memtable with write ahead log truncation.");
-      return Memtable.create(writeAheadLog);
+      return memtable;
     } catch (IOException e) {
       throw new StorageLoadException("Failed to create Memtable with truncation", e);
     }
@@ -51,16 +54,17 @@ public final class MemtableLoader {
   private Memtable createMemtableWithLoading() {
     try {
       SortedMap<String, Entry> loadedKeyEntryMap = loadKeyEntryMap();
-      WriteAheadLog writeAheadLog = WriteAheadLog.createFromPreExisting(getWriteAheadLogPath());
-      logger.atInfo().log("Loaded [%d] pre-existing Memtable entries.", loadedKeyEntryMap.size());
-      return Memtable.create(loadedKeyEntryMap, writeAheadLog);
+      Memtable memtable = memtableFactory.createWithLoading(loadedKeyEntryMap);
+      logger.atInfo()
+          .log("Created Memtable with [%d] pre-existing entries.", loadedKeyEntryMap.size());
+      return memtable;
     } catch (IOException e) {
       throw new StorageLoadException("Failed to create Memtable with loading", e);
     }
   }
 
   private SortedMap<String, Entry> loadKeyEntryMap() {
-    EntryReader entryReader = EntryReader.create(getWriteAheadLogPath());
+    EntryReader entryReader = EntryReader.create(memtableFactory.getWriteAheadLogPath());
     ImmutableList<Entry> entries;
     try {
       entries = entryReader.readAllEntriesFromOffset(0L);
@@ -77,11 +81,5 @@ public final class MemtableLoader {
       }
     }
     return keyEntryMap;
-  }
-
-  private Path getWriteAheadLogPath() {
-    return Path.of(
-        configurations.getStoreDirectoryPath().toString(),
-        String.format("%s.%s", WriteAheadLog.FILE_NAME, WriteAheadLog.FILE_EXTENSION));
   }
 }

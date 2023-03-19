@@ -28,11 +28,12 @@ public final class Memtable {
     this.writeAheadLog = writeAheadLog;
   }
 
-  public static Memtable create(WriteAheadLog writeAheadLog) {
+  static Memtable create(WriteAheadLog writeAheadLog) {
     return new Memtable(new TreeMap<>(), writeAheadLog);
   }
 
-  public static Memtable create(SortedMap<String, Entry> keyEntryMap, WriteAheadLog writeAheadLog) {
+  static Memtable create(SortedMap<String, Entry> keyEntryMap, WriteAheadLog writeAheadLog) {
+    // TODO: update currentSize
     return new Memtable(keyEntryMap, writeAheadLog);
   }
 
