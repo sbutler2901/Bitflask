@@ -29,15 +29,15 @@ public class StorageConfigurations implements Configurations {
           " segments ignoring their contents.")
   private StorageLoadingMode loadingMode;
 
-  @Parameter(names = StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_MB_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG,
       validateWith = PositiveIntegerValidator.class,
-      description = "The number of MBs the Memtable must exceed before being flushed to disk")
-  private int memtableFlushThresholdMB;
+      description = "The number of bytes the Memtable must exceed before being flushed to disk")
+  private int memtableFlushThresholdBytes;
 
-  @Parameter(names = StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG,
+  @Parameter(names = StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG,
       validateWith = PositiveIntegerValidator.class,
-      description = "The number of MBs a Segment Level must exceed before being compacted")
-  private int segmentLevelFlushThresholdMB;
+      description = "The number of bytes a Segment Level must exceed before being compacted")
+  private int segmentLevelFlushThresholdBytes;
 
   public int getDispatcherCapacity() {
     return dispatcherCapacity;
@@ -52,11 +52,11 @@ public class StorageConfigurations implements Configurations {
   }
 
   public int getMemtableFlushThresholdMB() {
-    return memtableFlushThresholdMB;
+    return memtableFlushThresholdBytes;
   }
 
   public int getSegmentLevelFlushThresholdMB() {
-    return segmentLevelFlushThresholdMB;
+    return segmentLevelFlushThresholdBytes;
   }
 
   @Override
@@ -65,8 +65,8 @@ public class StorageConfigurations implements Configurations {
         "storageDispatcherCapacity=" + dispatcherCapacity +
         ", storageStoreDirectoryPath=" + storeDirectoryPath +
         ", storageLoadingMode=" + loadingMode +
-        ", memtableFlushThresholdMB=" + memtableFlushThresholdMB +
-        ", segmentLevelFlushThresholdMB=" + segmentLevelFlushThresholdMB +
+        ", memtableFlushThresholdMB=" + memtableFlushThresholdBytes +
+        ", segmentLevelFlushThresholdMB=" + segmentLevelFlushThresholdBytes +
         '}';
   }
 }
