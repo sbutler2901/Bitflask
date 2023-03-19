@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.BloomFilter;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
@@ -93,6 +94,10 @@ public final class Segment {
       return Optional.empty();
     }
     return entryReader.findEntryFromOffset(key, keyOffset.get());
+  }
+
+  public ImmutableList<Entry> readAllEntries() throws IOException {
+    return entryReader.readAllEntriesFromOffset(SegmentMetadata.BYTES);
   }
 
   /**
