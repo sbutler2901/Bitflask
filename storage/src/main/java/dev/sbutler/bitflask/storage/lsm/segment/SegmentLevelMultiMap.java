@@ -34,17 +34,14 @@ public final class SegmentLevelMultiMap {
   }
 
   /**
-   * Returns the underlying {@link com.google.common.collect.Multimap} supporting this.
-   */
-  private Multimap<Integer, Segment> flush() {
-    return segmentLevelMultiMap;
-  }
-
-  /**
    * Creates a new {@link Builder} populated with all entries contained within this.
    */
   public Builder toBuilder() {
-    return new Builder(this);
+    return new Builder(segmentLevelMultiMap);
+  }
+
+  public static Builder builder() {
+    return new Builder();
   }
 
   /**
@@ -71,25 +68,18 @@ public final class SegmentLevelMultiMap {
     }
 
     /**
-     * Initializes a {@link Builder} with the provided {@link SegmentLevelMultiMap}'s entries.
+     * Adds the {@link Segment} to the {@link SegmentLevelMultiMap}.
      */
-    public Builder(SegmentLevelMultiMap segmentLevelMultiMap) {
-      this(segmentLevelMultiMap.flush());
-    }
-
-    /**
-     * Puts the Segment at the specified level.
-     */
-    public Builder put(int segmentLevel, Segment segment) {
-      segmentLevelMultiMapBuilder.put(segmentLevel, segment);
+    public Builder add(Segment segment) {
+      segmentLevelMultiMapBuilder.put(segment.getSegmentLevel(), segment);
       return this;
     }
 
     /**
      * Puts all entries of the {@link com.google.common.collect.Multimap} into the builder.
      */
-    public Builder putAll(Multimap<Integer, Segment> segmentLevelMultiMap) {
-      segmentLevelMultiMapBuilder.putAll(segmentLevelMultiMap);
+    public Builder addAll(Iterable<Segment> segments) {
+      segments.forEach(this::add);
       return this;
     }
 
