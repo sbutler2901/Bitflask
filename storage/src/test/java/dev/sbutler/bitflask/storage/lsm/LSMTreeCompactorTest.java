@@ -16,6 +16,7 @@ import dev.sbutler.bitflask.storage.lsm.segment.SegmentFactory;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap.Builder;
 import java.io.IOException;
+import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +29,7 @@ public class LSMTreeCompactorTest {
   private final SegmentLevelMultiMap segmentLevelMultiMap = mock(SegmentLevelMultiMap.class);
   private final Segment segment = mock(Segment.class);
 
+  private final ThreadFactory threadFactory = Thread.ofVirtual().factory();
   private final StorageConfigurations configurations = mock(StorageConfigurations.class);
   private final LSMTreeStateManager stateManager =
       new LSMTreeStateManager(memtable, segmentLevelMultiMap);
@@ -35,7 +37,7 @@ public class LSMTreeCompactorTest {
   private final SegmentFactory segmentFactory = mock(SegmentFactory.class);
 
   private final LSMTreeCompactor compactor = new LSMTreeCompactor(
-      configurations, stateManager, memtableFactory, segmentFactory);
+      threadFactory, configurations, stateManager, memtableFactory, segmentFactory);
 
   @BeforeEach
   public void beforeEach() {
