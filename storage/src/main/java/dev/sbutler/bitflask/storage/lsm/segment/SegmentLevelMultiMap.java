@@ -36,10 +36,10 @@ public final class SegmentLevelMultiMap {
   /**
    * Returns the number of bytes of all {@link Segment}s contained within a level.
    */
-  public int getSizeOfSegmentLevel(int segmentLevel) {
+  public long getNumBytesSizeOfSegmentLevel(int segmentLevel) {
     return getSegmentsInLevel(segmentLevel).stream()
         .map(Segment::getNumBytesSize)
-        .mapToInt(Integer::intValue)
+        .mapToLong(Long::longValue)
         .sum();
   }
 

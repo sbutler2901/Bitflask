@@ -47,7 +47,7 @@ public class LSMTreeCompactorTest {
 
   @Test
   public void flushMemtable_belowThreshold_returnsFalse() {
-    when(memtable.getNumBytesSize()).thenReturn(0);
+    when(memtable.getNumBytesSize()).thenReturn(0L);
 
     assertThat(compactor.flushMemtable()).isFalse();
   }

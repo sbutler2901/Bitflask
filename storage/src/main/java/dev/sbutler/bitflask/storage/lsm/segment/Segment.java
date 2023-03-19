@@ -27,13 +27,13 @@ public final class Segment {
   private final EntryReader entryReader;
   private final BloomFilter<String> keyFilter;
   private final SegmentIndex segmentIndex;
-  private final int numBytesSize;
+  private final long numBytesSize;
 
   private Segment(SegmentMetadata metadata,
       EntryReader entryReader,
       BloomFilter<String> keyFilter,
       SegmentIndex segmentIndex,
-      int size) {
+      long size) {
     this.metadata = metadata;
     this.entryReader = entryReader;
     this.keyFilter = keyFilter;
@@ -45,12 +45,12 @@ public final class Segment {
       EntryReader entryReader,
       BloomFilter<String> keyFilter,
       SegmentIndex segmentIndex,
-      int size) {
+      long numBytesSize) {
     checkArgument(metadata.getSegmentNumber() == segmentIndex.getSegmentNumber(),
         "SegmentMetadata segmentNumber does not match SegmentIndex segmentNumber. [%s], [%s]",
         metadata.getSegmentNumber(), segmentIndex.getSegmentNumber());
 
-    return new Segment(metadata, entryReader, keyFilter, segmentIndex, size);
+    return new Segment(metadata, entryReader, keyFilter, segmentIndex, numBytesSize);
   }
 
   /**
@@ -98,7 +98,7 @@ public final class Segment {
   /**
    * Returns the number of bytes of all {@link Entry}s contained within the Segment.
    */
-  public int getNumBytesSize() {
+  public long getNumBytesSize() {
     return numBytesSize;
   }
 

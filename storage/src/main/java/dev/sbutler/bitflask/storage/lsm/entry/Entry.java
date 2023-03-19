@@ -95,7 +95,7 @@ public record Entry(long creationEpochSeconds, String key, String value) {
   /**
    * The number of bytes required to represent this Entry.
    */
-  public int getNumBytesSize() {
+  public long getNumBytesSize() {
     return getBytes().length;
   }
 

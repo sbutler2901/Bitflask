@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -21,7 +21,7 @@ public final class Memtable {
   private final WriteAheadLog writeAheadLog;
   private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
-  private final AtomicInteger currentSize = new AtomicInteger(0);
+  private final AtomicLong currentSize = new AtomicLong(0);
 
   private Memtable(SortedMap<String, Entry> keyEntryMap, WriteAheadLog writeAheadLog) {
     this.keyEntryMap = keyEntryMap;
@@ -76,7 +76,7 @@ public final class Memtable {
   /**
    * Returns the number of bytes of all {@link Entry}s contained within the Memtable.
    */
-  public int getNumBytesSize() {
+  public long getNumBytesSize() {
     return currentSize.get();
   }
 

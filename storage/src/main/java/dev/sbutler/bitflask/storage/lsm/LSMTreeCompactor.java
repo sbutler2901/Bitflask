@@ -88,7 +88,7 @@ final class LSMTreeCompactor implements Runnable {
     }
 
     int segmentLevel = 0;
-    for (; segmentLevelMultiMap.getSizeOfSegmentLevel(segmentLevel)
+    for (; segmentLevelMultiMap.getNumBytesSizeOfSegmentLevel(segmentLevel)
         >= configurations.getSegmentLevelFlushThresholdBytes();
         segmentLevel++) {
       segmentLevelMultiMap = compactSegmentLevel(segmentLevelMultiMap, segmentLevel);

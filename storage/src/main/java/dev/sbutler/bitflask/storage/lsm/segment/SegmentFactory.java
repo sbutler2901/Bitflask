@@ -122,9 +122,9 @@ public final class SegmentFactory {
     BloomFilter<String> keyFilter = BloomFilter.create(Funnels.stringFunnel(
         StandardCharsets.UTF_8), entries.size());
     entries.stream().map(Entry::key).forEach(keyFilter::put);
-    int numBytesSize = entries.stream()
+    long numBytesSize = entries.stream()
         .map(Entry::getNumBytesSize)
-        .mapToInt(Integer::intValue)
+        .mapToLong(Long::longValue)
         .sum();
 
     SegmentIndex index = segmentNumberToIndexMap.get(metadata.getSegmentNumber());
