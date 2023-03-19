@@ -34,17 +34,17 @@ public final class SegmentLevelMultiMap {
   }
 
   /**
-   * Creates a new {@link Builder} populated with all entries contained within this.
-   */
-  public Builder toBuilder() {
-    return new Builder(this);
-  }
-
-  /**
    * Returns the underlying {@link com.google.common.collect.Multimap} supporting this.
    */
   private Multimap<Integer, Segment> flush() {
     return segmentLevelMultiMap;
+  }
+
+  /**
+   * Creates a new {@link Builder} populated with all entries contained within this.
+   */
+  public Builder toBuilder() {
+    return new Builder(this);
   }
 
   /**
@@ -74,8 +74,7 @@ public final class SegmentLevelMultiMap {
      * Initializes a {@link Builder} with the provided {@link SegmentLevelMultiMap}'s entries.
      */
     public Builder(SegmentLevelMultiMap segmentLevelMultiMap) {
-      this();
-      segmentLevelMultiMapBuilder.putAll(segmentLevelMultiMap.flush());
+      this(segmentLevelMultiMap.flush());
     }
 
     /**

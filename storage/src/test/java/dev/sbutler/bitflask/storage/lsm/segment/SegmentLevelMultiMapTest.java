@@ -3,10 +3,15 @@ package dev.sbutler.bitflask.storage.lsm.segment;
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableSet;
 import org.junit.jupiter.api.Test;
 
 public class SegmentLevelMultiMapTest {
+
+  private final Segment SEGMENT_0 = mock(Segment.class);
+  private final Segment SEGMENT_1 = mock(Segment.class);
 
   @Test
   public void empty() {
@@ -20,19 +25,84 @@ public class SegmentLevelMultiMapTest {
   @Test
   public void getSegmentLevels_ascendingOrder() {
     SegmentLevelMultiMap segmentLevelMultiMap = new SegmentLevelMultiMap.Builder(
-        ImmutableListMultimap.of(1, mock(Segment.class), 0, mock(Segment.class))).build();
+        ImmutableListMultimap.of(1, SEGMENT_1, 0, SEGMENT_0)).build();
 
     assertThat(segmentLevelMultiMap.getSegmentLevels()).isInOrder();
   }
 
   @Test
   public void getSegmentsInLevel() {
-    Segment segment0 = mock(Segment.class);
-    Segment segment1 = mock(Segment.class);
     SegmentLevelMultiMap segmentLevelMultiMap = new SegmentLevelMultiMap.Builder(
-        ImmutableListMultimap.of(1, segment1, 0, segment0)).build();
+        ImmutableListMultimap.of(1, SEGMENT_1, 0, SEGMENT_0)).build();
 
-    assertThat(segmentLevelMultiMap.getSegmentsInLevel(0)).containsExactly(segment0);
-    assertThat(segmentLevelMultiMap.getSegmentsInLevel(1)).containsExactly(segment1);
+    assertThat(segmentLevelMultiMap.getSegmentsInLevel(0)).containsExactly(SEGMENT_0);
+    assertThat(segmentLevelMultiMap.getSegmentsInLevel(1)).containsExactly(SEGMENT_1);
+  }
+
+  @Test
+  public void toBuilder() {
+    SegmentLevelMultiMap segmentLevelMultiMap = new SegmentLevelMultiMap.Builder(
+        ImmutableListMultimap.of(1, SEGMENT_1, 0, SEGMENT_0)).build();
+
+    SegmentLevelMultiMap newSegmentLevelMultiMap = segmentLevelMultiMap.toBuilder().build();
+
+    assertThat(newSegmentLevelMultiMap.getSegmentLevels()).isEqualTo(
+        segmentLevelMultiMap.getSegmentLevels());
+    assertThat(newSegmentLevelMultiMap.getSegmentsInLevel(0)).isEqualTo(
+        segmentLevelMultiMap.getSegmentsInLevel(0));
+    assertThat(newSegmentLevelMultiMap.getSegmentsInLevel(1)).isEqualTo(
+        segmentLevelMultiMap.getSegmentsInLevel(1));
+  }
+
+  @Test
+  public void builder_fromMultiMap() {
+    SegmentLevelMultiMap newSegmentLevelMultiMap = new SegmentLevelMultiMap.Builder(
+        ImmutableListMultimap.of(1, SEGMENT_1, 0, SEGMENT_0)).build();
+
+    assertThat(newSegmentLevelMultiMap.getSegmentLevels()).isEqualTo(
+        ImmutableSet.of(0, 1));
+    assertThat(newSegmentLevelMultiMap.getSegmentsInLevel(0)).isEqualTo(
+        ImmutableList.of(SEGMENT_0));
+    assertThat(newSegmentLevelMultiMap.getSegmentsInLevel(1)).isEqualTo(
+        ImmutableList.of(SEGMENT_1));
+  }
+
+  @Test
+  public void builder_fromSegmentLevelMultiMap() {
+    SegmentLevelMultiMap segmentLevelMultiMap = new SegmentLevelMultiMap.Builder(
+        ImmutableListMultimap.of(1, SEGMENT_1, 0, SEGMENT_0)).build();
+
+    SegmentLevelMultiMap newSegmentLevelMultiMap = new SegmentLevelMultiMap.Builder(
+        segmentLevelMultiMap).build();
+
+    assertThat(newSegmentLevelMultiMap.getSegmentLevels()).isEqualTo(
+        segmentLevelMultiMap.getSegmentLevels());
+    assertThat(newSegmentLevelMultiMap.getSegmentsInLevel(0)).isEqualTo(
+        segmentLevelMultiMap.getSegmentsInLevel(0));
+    assertThat(newSegmentLevelMultiMap.getSegmentsInLevel(1)).isEqualTo(
+        segmentLevelMultiMap.getSegmentsInLevel(1));
+  }
+
+  @Test
+  public void builder_put() {
+    SegmentLevelMultiMap segmentLevelMultiMap = new SegmentLevelMultiMap.Builder()
+        .put(1, SEGMENT_1)
+        .put(0, SEGMENT_0)
+        .build();
+
+    assertThat(segmentLevelMultiMap.getSegmentLevels()).isEqualTo(ImmutableSet.of(0, 1));
+    assertThat(segmentLevelMultiMap.getSegmentsInLevel(0)).containsExactly(SEGMENT_0);
+    assertThat(segmentLevelMultiMap.getSegmentsInLevel(1)).containsExactly(SEGMENT_1);
+  }
+
+  @Test
+  public void builder_putAll() {
+    SegmentLevelMultiMap segmentLevelMultiMap = new SegmentLevelMultiMap.Builder()
+        .putAll(ImmutableListMultimap.of(1, SEGMENT_1, 0, SEGMENT_0))
+        .build();
+
+    assertThat(segmentLevelMultiMap.getSegmentLevels()).isEqualTo(ImmutableSet.of(0, 1));
+    assertThat(segmentLevelMultiMap.getSegmentsInLevel(0)).containsExactly(SEGMENT_0);
+    assertThat(segmentLevelMultiMap.getSegmentsInLevel(1)).containsExactly(SEGMENT_1);
   }
 }
