@@ -27,15 +27,6 @@ public class StorageConfigurationsConstants {
       STORAGE_STORE_DIRECTORY_PATH_PROPERTY_KEY,
       STORAGE_STORE_DIRECTORY_PATH_DEFAULT);
 
-  // Storage Segment Size Limit
-  static final String STORAGE_SEGMENT_SIZE_LIMIT_FLAG = "--storageSegmentSizeLimit";
-  static final String STORAGE_SEGMENT_SIZE_LIMIT_PROPERTY_KEY = "storage.segmentSizeLimit";
-  static final long STORAGE_SEGMENT_SIZE_LIMIT_DEFAULT = 1048576L; // 1 MiB
-  static final Configuration STORAGE_SEGMENT_SIZE_LIMIT_CONFIGURATION = new Configuration(
-      ImmutableList.of(STORAGE_SEGMENT_SIZE_LIMIT_FLAG),
-      STORAGE_SEGMENT_SIZE_LIMIT_PROPERTY_KEY,
-      STORAGE_SEGMENT_SIZE_LIMIT_DEFAULT);
-
   // Storage Loading Mode
   static final String STORAGE_LOADING_MODE_FLAG = "--storageSegmentCreationMode";
   static final String STORAGE_LOADING_MODE_PROPERTY_KEY = "storage.loadingMode";
@@ -45,22 +36,33 @@ public class StorageConfigurationsConstants {
       STORAGE_LOADING_MODE_PROPERTY_KEY,
       STORAGE_LOADING_MODE_DEFAULT);
 
-  // Storage Compaction Threshold
-  static final String STORAGE_COMPACTION_THRESHOLD_FLAG = "--storageCompactionThreshold";
-  static final String STORAGE_COMPACTION_THRESHOLD_PROPERTY_KEY = "storage.compactionThreshold";
-  static final int STORAGE_COMPACTION_THRESHOLD_DEFAULT = 3;
-  static final Configuration STORAGE_COMPACTION_THRESHOLD_CONFIGURATION = new Configuration(
-      ImmutableList.of(STORAGE_COMPACTION_THRESHOLD_FLAG),
-      STORAGE_COMPACTION_THRESHOLD_PROPERTY_KEY,
-      STORAGE_COMPACTION_THRESHOLD_DEFAULT);
+  // Storage Memtable Flush Size
+  static final String STORAGE_MEMTABLE_FLUSH_THRESHOLD_MB_FLAG = "--storageMemtableFlushThresholdMB";
+  static final String STORAGE_MEMTABLE_FLUSH_THRESHOLD_MB_PROPERTY_KEY = "storage.memtableFlushThresholdMB";
+  static final int STORAGE_MEMTABLE_FLUSH_THRESHOLD_MB_DEFAULT = 1;
+  static final Configuration STORAGE_MEMTABLE_FLUSH_THRESHOLD_MB_CONFIGURATION = new Configuration(
+      ImmutableList.of(STORAGE_MEMTABLE_FLUSH_THRESHOLD_MB_FLAG),
+      STORAGE_MEMTABLE_FLUSH_THRESHOLD_MB_PROPERTY_KEY,
+      STORAGE_MEMTABLE_FLUSH_THRESHOLD_MB_DEFAULT);
+
+  // Storage Segment Level Flush Size
+  static final String STORAGE_SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG = "--storageMemtableCompactThresholdMB";
+  static final String STORAGE_SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_PROPERTY_KEY = "storage.memtableCompactThresholdMB";
+  static final int STORAGE_SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_DEFAULT = 5;
+  static final Configuration STORAGE_SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_CONFIGURATION = new Configuration(
+      ImmutableList.of(STORAGE_SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG),
+      STORAGE_SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_PROPERTY_KEY,
+      STORAGE_SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_DEFAULT);
 
   public static final ConfigurationFlagMap STORAGE_FLAG_TO_CONFIGURATION_MAP =
       new ConfigurationFlagMap.Builder()
           .put(STORAGE_DISPATCHER_CAPACITY_FLAG, STORAGE_DISPATCHER_CONFIGURATION)
           .put(STORAGE_STORE_DIRECTORY_PATH_FLAG, STORAGE_STORE_DIRECTORY_PATH_CONFIGURATION)
-          .put(STORAGE_SEGMENT_SIZE_LIMIT_FLAG, STORAGE_SEGMENT_SIZE_LIMIT_CONFIGURATION)
           .put(STORAGE_LOADING_MODE_FLAG, STORAGE_LOADING_MODE_CONFIGURATION)
-          .put(STORAGE_COMPACTION_THRESHOLD_FLAG, STORAGE_COMPACTION_THRESHOLD_CONFIGURATION)
+          .put(STORAGE_MEMTABLE_FLUSH_THRESHOLD_MB_FLAG,
+              STORAGE_MEMTABLE_FLUSH_THRESHOLD_MB_CONFIGURATION)
+          .put(STORAGE_SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_FLAG,
+              STORAGE_SEGMENT_LEVEL_COMPACT_THRESHOLD_MB_CONFIGURATION)
           .build();
 
   private StorageConfigurationsConstants() {
