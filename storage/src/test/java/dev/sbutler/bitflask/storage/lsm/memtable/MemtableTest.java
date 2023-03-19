@@ -45,7 +45,65 @@ public class MemtableTest {
 
     assertThat(memtable.contains(entry.key())).isTrue();
     assertThat(memtable.read(entry.key())).hasValue(entry);
+    assertThat(memtable.getSize()).isEqualTo(entry.getNumBytesSize());
     verify(writeAheadLog, times(1)).append(entry);
+  }
+
+  @Test
+  public void write_deletePreExistingEntry() throws Exception {
+    Entry entry0 = new Entry(Instant.now().getEpochSecond(), "key", "value");
+    Entry entry1 = new Entry(Instant.now().getEpochSecond(), "key", "");
+    Memtable memtable = Memtable.create(writeAheadLog);
+
+    memtable.write(entry0);
+    assertThat(memtable.getSize()).isEqualTo(entry0.getNumBytesSize());
+
+    memtable.write(entry1);
+
+    assertThat(memtable.contains(entry1.key())).isTrue();
+    assertThat(memtable.read(entry1.key())).hasValue(entry1);
+    assertThat(memtable.getSize()).isEqualTo(entry1.getNumBytesSize());
+
+    verify(writeAheadLog, times(1)).append(entry0);
+    verify(writeAheadLog, times(1)).append(entry1);
+  }
+
+  @Test
+  public void write_overwritePreExistingEntry() throws Exception {
+    Entry entry0 = new Entry(Instant.now().getEpochSecond(), "key", "value");
+    Entry entry1 = new Entry(Instant.now().getEpochSecond(), "key", "newValue");
+    Memtable memtable = Memtable.create(writeAheadLog);
+
+    memtable.write(entry0);
+    assertThat(memtable.getSize()).isEqualTo(entry0.getNumBytesSize());
+
+    memtable.write(entry1);
+
+    assertThat(memtable.contains(entry1.key())).isTrue();
+    assertThat(memtable.read(entry1.key())).hasValue(entry1);
+    assertThat(memtable.getSize()).isEqualTo(entry1.getNumBytesSize());
+
+    verify(writeAheadLog, times(1)).append(entry0);
+    verify(writeAheadLog, times(1)).append(entry1);
+  }
+
+  @Test
+  public void write_multipleUniqueEntries() throws Exception {
+    Entry entry0 = new Entry(Instant.now().getEpochSecond(), "key0", "value");
+    Entry entry1 = new Entry(Instant.now().getEpochSecond(), "key1", "value");
+    Memtable memtable = Memtable.create(writeAheadLog);
+
+    memtable.write(entry0);
+    memtable.write(entry1);
+
+    assertThat(memtable.contains(entry0.key())).isTrue();
+    assertThat(memtable.contains(entry1.key())).isTrue();
+    assertThat(memtable.read(entry0.key())).hasValue(entry0);
+    assertThat(memtable.read(entry1.key())).hasValue(entry1);
+    assertThat(memtable.getSize()).isEqualTo(entry0.getNumBytesSize() + entry1.getNumBytesSize());
+
+    verify(writeAheadLog, times(1)).append(entry0);
+    verify(writeAheadLog, times(1)).append(entry1);
   }
 
   @Test
