@@ -27,26 +27,30 @@ public final class Segment {
   private final EntryReader entryReader;
   private final BloomFilter<String> keyFilter;
   private final SegmentIndex segmentIndex;
+  private final int numBytesSize;
 
   private Segment(SegmentMetadata metadata,
       EntryReader entryReader,
       BloomFilter<String> keyFilter,
-      SegmentIndex segmentIndex) {
+      SegmentIndex segmentIndex,
+      int size) {
     this.metadata = metadata;
     this.entryReader = entryReader;
     this.keyFilter = keyFilter;
     this.segmentIndex = segmentIndex;
+    this.numBytesSize = size;
   }
 
   static Segment create(SegmentMetadata metadata,
       EntryReader entryReader,
       BloomFilter<String> keyFilter,
-      SegmentIndex segmentIndex) {
+      SegmentIndex segmentIndex,
+      int size) {
     checkArgument(metadata.getSegmentNumber() == segmentIndex.getSegmentNumber(),
         "SegmentMetadata segmentNumber does not match SegmentIndex segmentNumber. [%s], [%s]",
         metadata.getSegmentNumber(), segmentIndex.getSegmentNumber());
 
-    return new Segment(metadata, entryReader, keyFilter, segmentIndex);
+    return new Segment(metadata, entryReader, keyFilter, segmentIndex, size);
   }
 
   /**
@@ -92,12 +96,10 @@ public final class Segment {
   }
 
   /**
-   * Returns the number of bytes of all {@link Entry}s contained within the Memtable.
+   * Returns the number of bytes of all {@link Entry}s contained within the Segment.
    */
-  public int getSize() {
-    // TODO: implement
-    return 0;
-//    return currentSize.get();
+  public int getNumBytesSize() {
+    return numBytesSize;
   }
 
   /**

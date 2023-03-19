@@ -13,12 +13,14 @@ import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
+import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -46,7 +48,8 @@ public final class SegmentFactory {
    *
    * <p>The provided {@code keyEntryMap} cannot be empty.
    */
-  public Segment create(ImmutableSortedMap<String, Entry> keyEntryMap) throws IOException {
+  public Segment create(Memtable memtable) throws IOException {
+    SortedMap<String, Entry> keyEntryMap = memtable.flush();
     checkArgument(!keyEntryMap.isEmpty(), "keyEntryMap is empty.");
 
     UnsignedShort segmentNumber = UnsignedShort.valueOf(nextSegmentNumber.getAndIncrement());
@@ -58,13 +61,13 @@ public final class SegmentFactory {
     BloomFilter<String> keyFilter = BloomFilter.create(Funnels.stringFunnel(
         StandardCharsets.UTF_8), keyEntryMap.size());
 
-    ImmutableSortedMap<String, Long> keyOffsetMap =
+    SortedMap<String, Long> keyOffsetMap =
         writeSegment(keyEntryMap, segmentMetadata, keyFilter, segmentPath);
 
     SegmentIndex segmentIndex = indexFactory.create(keyOffsetMap, segmentNumber);
 
     return Segment.create(segmentMetadata, EntryReader.create(segmentPath),
-        keyFilter, segmentIndex);
+        keyFilter, segmentIndex, memtable.getNumBytesSize());
   }
 
   /**
@@ -72,7 +75,7 @@ public final class SegmentFactory {
    *
    * @return a key offset map for entries in the new Segment.
    */
-  ImmutableSortedMap<String, Long> writeSegment(ImmutableSortedMap<String, Entry> keyEntryMap,
+  SortedMap<String, Long> writeSegment(SortedMap<String, Entry> keyEntryMap,
       SegmentMetadata segmentMetadata, BloomFilter<String> keyFilter, Path segmentPath)
       throws IOException {
 
@@ -119,6 +122,10 @@ public final class SegmentFactory {
     BloomFilter<String> keyFilter = BloomFilter.create(Funnels.stringFunnel(
         StandardCharsets.UTF_8), entries.size());
     entries.stream().map(Entry::key).forEach(keyFilter::put);
+    int numBytesSize = entries.stream()
+        .map(Entry::getNumBytesSize)
+        .mapToInt(Integer::intValue)
+        .sum();
 
     SegmentIndex index = segmentNumberToIndexMap.get(metadata.getSegmentNumber());
     if (index == null) {
@@ -129,6 +136,6 @@ public final class SegmentFactory {
 
     nextSegmentNumber.getAndUpdate(current -> Math.max(1 + metadata.getSegmentNumber(), current));
 
-    return Segment.create(metadata, entryReader, keyFilter, index);
+    return Segment.create(metadata, entryReader, keyFilter, index, numBytesSize);
   }
 }

@@ -38,7 +38,7 @@ public final class SegmentLevelMultiMap {
    */
   public int getSizeOfSegmentLevel(int segmentLevel) {
     return getSegmentsInLevel(segmentLevel).stream()
-        .map(Segment::getSize)
+        .map(Segment::getNumBytesSize)
         .mapToInt(Integer::intValue)
         .sum();
   }

@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.SortedMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -39,7 +40,7 @@ public class SegmentIndexFactoryTest {
 
   private static final long ENTRY_0_OFFSET = SegmentMetadata.BYTES;
   private static final long ENTRY_1_OFFSET = SegmentMetadata.BYTES + ENTRY_0.getBytes().length;
-  private static final ImmutableSortedMap<String, Long> KEY_OFFSET_MAP =
+  private static final SortedMap<String, Long> KEY_OFFSET_MAP =
       ImmutableSortedMap.<String, Long>naturalOrder()
           .put(ENTRY_0.key(), ENTRY_0_OFFSET)
           .put(ENTRY_1.key(), ENTRY_1_OFFSET)

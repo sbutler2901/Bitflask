@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import java.time.Instant;
 import java.util.SortedMap;
@@ -36,7 +35,7 @@ public class MemtableTest {
   public void create() {
     Memtable memtable = Memtable.create(writeAheadLog);
 
-    assertThat(memtable.getSize()).isEqualTo(0);
+    assertThat(memtable.getNumBytesSize()).isEqualTo(0);
   }
 
   @Test
@@ -49,7 +48,7 @@ public class MemtableTest {
     assertThat(memtable.read(ENTRY_0.key())).hasValue(ENTRY_0);
     assertThat(memtable.read(ENTRY_1.key())).hasValue(ENTRY_1);
 
-    assertThat(memtable.getSize()).isEqualTo(
+    assertThat(memtable.getNumBytesSize()).isEqualTo(
         ENTRY_0.getNumBytesSize()
             + ENTRY_1.getNumBytesSize());
   }
@@ -79,7 +78,7 @@ public class MemtableTest {
 
     assertThat(memtable.contains(ENTRY_0.key())).isTrue();
     assertThat(memtable.read(ENTRY_0.key())).hasValue(ENTRY_0);
-    assertThat(memtable.getSize()).isEqualTo(ENTRY_0.getNumBytesSize());
+    assertThat(memtable.getNumBytesSize()).isEqualTo(ENTRY_0.getNumBytesSize());
     verify(writeAheadLog, times(1)).append(ENTRY_0);
   }
 
@@ -88,13 +87,13 @@ public class MemtableTest {
     Memtable memtable = Memtable.create(writeAheadLog);
 
     memtable.write(ENTRY_0);
-    assertThat(memtable.getSize()).isEqualTo(ENTRY_0.getNumBytesSize());
+    assertThat(memtable.getNumBytesSize()).isEqualTo(ENTRY_0.getNumBytesSize());
 
     memtable.write(ENTRY_0_DELETED);
 
     assertThat(memtable.contains(ENTRY_0_DELETED.key())).isTrue();
     assertThat(memtable.read(ENTRY_0_DELETED.key())).hasValue(ENTRY_0_DELETED);
-    assertThat(memtable.getSize()).isEqualTo(ENTRY_0_DELETED.getNumBytesSize());
+    assertThat(memtable.getNumBytesSize()).isEqualTo(ENTRY_0_DELETED.getNumBytesSize());
 
     verify(writeAheadLog, times(1)).append(ENTRY_0);
     verify(writeAheadLog, times(1)).append(ENTRY_0_DELETED);
@@ -105,13 +104,13 @@ public class MemtableTest {
     Memtable memtable = Memtable.create(writeAheadLog);
 
     memtable.write(ENTRY_1);
-    assertThat(memtable.getSize()).isEqualTo(ENTRY_0.getNumBytesSize());
+    assertThat(memtable.getNumBytesSize()).isEqualTo(ENTRY_0.getNumBytesSize());
 
     memtable.write(ENTRY_1_EXTENDED);
 
     assertThat(memtable.contains(ENTRY_1_EXTENDED.key())).isTrue();
     assertThat(memtable.read(ENTRY_1_EXTENDED.key())).hasValue(ENTRY_1_EXTENDED);
-    assertThat(memtable.getSize()).isEqualTo(ENTRY_1_EXTENDED.getNumBytesSize());
+    assertThat(memtable.getNumBytesSize()).isEqualTo(ENTRY_1_EXTENDED.getNumBytesSize());
 
     verify(writeAheadLog, times(1)).append(ENTRY_1);
     verify(writeAheadLog, times(1)).append(ENTRY_1_EXTENDED);
@@ -128,7 +127,8 @@ public class MemtableTest {
     assertThat(memtable.contains(ENTRY_1.key())).isTrue();
     assertThat(memtable.read(ENTRY_0.key())).hasValue(ENTRY_0);
     assertThat(memtable.read(ENTRY_1.key())).hasValue(ENTRY_1);
-    assertThat(memtable.getSize()).isEqualTo(ENTRY_0.getNumBytesSize() + ENTRY_1.getNumBytesSize());
+    assertThat(memtable.getNumBytesSize()).isEqualTo(
+        ENTRY_0.getNumBytesSize() + ENTRY_1.getNumBytesSize());
 
     verify(writeAheadLog, times(1)).append(ENTRY_0);
     verify(writeAheadLog, times(1)).append(ENTRY_1);
@@ -158,7 +158,7 @@ public class MemtableTest {
     keyEntryMap.put(ENTRY_1.key(), ENTRY_1);
     Memtable memtable = Memtable.create(keyEntryMap, writeAheadLog);
 
-    ImmutableSortedMap<String, Entry> flushedKeyEntryMap = memtable.flush();
+    SortedMap<String, Entry> flushedKeyEntryMap = memtable.flush();
 
     assertThat(flushedKeyEntryMap.containsKey(ENTRY_0.key())).isTrue();
     assertThat(flushedKeyEntryMap.get(ENTRY_0.key())).isEqualTo(ENTRY_0);

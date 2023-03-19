@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.Optional;
+import java.util.SortedMap;
 import javax.inject.Inject;
 
 /**
@@ -32,7 +33,7 @@ final class SegmentIndexFactory {
    * Creates a new {@link SegmentIndex} and writes it to disk.
    */
   SegmentIndex create(
-      ImmutableSortedMap<String, Long> keyOffsetMap,
+      SortedMap<String, Long> keyOffsetMap,
       UnsignedShort segmentNumber) throws IOException {
     SegmentIndexMetadata indexMetadata = new SegmentIndexMetadata(segmentNumber);
     ImmutableSortedMap.Builder<String, Long> indexKeyOffsetMap = ImmutableSortedMap.naturalOrder();

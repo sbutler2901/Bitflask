@@ -77,7 +77,7 @@ public final class Memtable {
   /**
    * Returns the number of bytes of all {@link Entry}s contained within the Memtable.
    */
-  public int getSize() {
+  public int getNumBytesSize() {
     return currentSize.get();
   }
 
@@ -96,7 +96,7 @@ public final class Memtable {
   /**
    * Flushes all key:entry pairs contained within this Memtable.
    */
-  public ImmutableSortedMap<String, Entry> flush() {
+  public SortedMap<String, Entry> flush() {
     readWriteLock.readLock().lock();
     try {
       return ImmutableSortedMap.copyOfSorted(keyEntryMap);

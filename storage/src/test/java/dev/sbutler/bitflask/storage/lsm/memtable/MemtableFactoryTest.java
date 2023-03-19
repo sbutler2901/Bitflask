@@ -43,7 +43,7 @@ public class MemtableFactoryTest {
 
       Memtable memtable = factory.create();
 
-      assertThat(memtable.getSize()).isEqualTo(0);
+      assertThat(memtable.getNumBytesSize()).isEqualTo(0);
     }
   }
 
