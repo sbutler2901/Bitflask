@@ -44,7 +44,7 @@ final class LSMTreeCompactor implements Runnable {
   /**
    * Returns true if the current {@link Memtable} was flushed to a {@link Segment}.
    */
-  private boolean flushMemtable() {
+  boolean flushMemtable() {
     try (var currentState = stateManager.getAndLockCurrentState()) {
       if (currentState.getMemtable().getNumBytesSize()
           < configurations.getMemtableFlushThresholdMB()) {
