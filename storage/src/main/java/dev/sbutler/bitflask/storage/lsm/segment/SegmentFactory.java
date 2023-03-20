@@ -13,7 +13,6 @@ import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
-import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -41,15 +40,6 @@ public final class SegmentFactory {
   SegmentFactory(StorageConfigurations configurations, SegmentIndexFactory indexFactory) {
     this.configurations = configurations;
     this.indexFactory = indexFactory;
-  }
-
-  /**
-   * Creates a new Segment at segment level 0 and its associated index file.
-   *
-   * <p>The provided {@link Memtable}'s {@code keyEntryMap} cannot be empty.
-   */
-  public Segment create(Memtable memtable) throws IOException {
-    return create(memtable.flush(), 0, memtable.getNumBytesSize());
   }
 
   /**

@@ -55,6 +55,12 @@ final class LSMTreeStateManager {
     return new CurrentState(memtable, segmentLevelMultiMap, lock.writeLock());
   }
 
+  private void checkStateInitialized() {
+    if (memtable == null || segmentLevelMultiMap == null) {
+      throw new StorageException("LSMTreeStateManager's state must be initialized before usage");
+    }
+  }
+
   /**
    * Atomically updates the state contained within this.
    */
@@ -62,14 +68,11 @@ final class LSMTreeStateManager {
     if (!lock.isWriteLockedByCurrentThread()) {
       throw new StorageException("Attempted to update CurrentState without holding lock.");
     }
+    if (memtable == null || segmentLevelMultiMap == null) {
+      throw new StorageException("LSMTreeStateManager's state cannot be set to null");
+    }
     this.memtable = memtable;
     this.segmentLevelMultiMap = segmentLevelMultiMap;
-  }
-
-  private void checkStateInitialized() {
-    if (memtable == null || segmentLevelMultiMap == null) {
-      throw new StorageException("LSMTreeStateManager's state must be initialized before usage");
-    }
   }
 
   /**

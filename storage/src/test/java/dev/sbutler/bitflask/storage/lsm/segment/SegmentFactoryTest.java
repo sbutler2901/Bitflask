@@ -20,7 +20,6 @@ import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
-import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +49,6 @@ public class SegmentFactoryTest {
   private final StorageConfigurations config = mock(StorageConfigurations.class);
   private final SegmentIndexFactory indexFactory = mock(SegmentIndexFactory.class);
   private final SegmentIndex segmentIndex = mock(SegmentIndex.class);
-  private final Memtable memtable = mock(Memtable.class);
 
   private final SegmentFactory factory = new SegmentFactory(config, indexFactory);
 
@@ -66,7 +64,6 @@ public class SegmentFactoryTest {
     ImmutableSortedMap<String, Entry> keyEntryMap = ImmutableSortedMap.<String, Entry>naturalOrder()
         .put(ENTRY_0.key(), ENTRY_0)
         .build();
-    when(memtable.flush()).thenReturn(keyEntryMap);
 
     Segment segment;
 
@@ -74,7 +71,7 @@ public class SegmentFactoryTest {
     try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class)) {
       fileMockedStatic.when(() -> Files.newOutputStream(any(), any())).thenReturn(outputStream);
 
-      segment = factory.create(memtable);
+      segment = factory.create(keyEntryMap, 0);
     }
 
     assertThat(segment.getSegmentNumber()).isEqualTo(SEGMENT_NUMBER.value());
@@ -96,10 +93,9 @@ public class SegmentFactoryTest {
   public void create_emptyKeyEntryMap() {
     ImmutableSortedMap<String, Entry> keyEntryMap = ImmutableSortedMap.<String, Entry>naturalOrder()
         .build();
-    when(memtable.flush()).thenReturn(keyEntryMap);
 
     IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-        () -> factory.create(memtable));
+        () -> factory.create(keyEntryMap, 0));
 
     assertThat(e).hasMessageThat().ignoringCase().isEqualTo("keyEntryMap is empty.");
   }

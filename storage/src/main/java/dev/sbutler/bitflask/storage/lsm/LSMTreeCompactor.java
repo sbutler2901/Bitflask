@@ -67,7 +67,10 @@ final class LSMTreeCompactor implements Runnable {
 
       Segment segmentFromMemtable;
       try {
-        segmentFromMemtable = segmentFactory.create(currentState.getMemtable());
+        segmentFromMemtable = segmentFactory.create(
+            currentState.getMemtable().flush(),
+            0,
+            currentState.getMemtable().getNumBytesSize());
       } catch (IOException e) {
         throw new StorageCompactionException("Failed to create new Segment from Memtable", e);
       }
