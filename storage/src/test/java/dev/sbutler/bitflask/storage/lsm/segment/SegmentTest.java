@@ -138,6 +138,16 @@ public class SegmentTest {
   }
 
   @Test
+  public void readAllEntries() throws Exception {
+    Segment segment = Segment.create(metadata, entryReader, keyFilter, emptySegmentIndex, 0);
+
+    segment.readAllEntries();
+
+    verify(entryReader, times(1))
+        .readAllEntriesFromOffset(SegmentMetadata.BYTES);
+  }
+
+  @Test
   public void getNumBytesSize() {
     Segment segment = Segment.create(metadata, entryReader, keyFilter, emptySegmentIndex, 0);
 
