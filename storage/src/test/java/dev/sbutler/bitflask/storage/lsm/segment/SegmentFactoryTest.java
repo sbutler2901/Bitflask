@@ -77,6 +77,7 @@ public class SegmentFactoryTest {
     assertThat(segment.getSegmentNumber()).isEqualTo(SEGMENT_NUMBER.value());
     assertThat(segment.getSegmentLevel()).isEqualTo(SEGMENT_LEVEL.value());
     assertThat(segment.mightContain(ENTRY_0.key())).isTrue();
+    assertThat(segment.getNumBytesSize()).isEqualTo(ENTRY_0.getNumBytesSize());
 
     assertThat(outputStream.toByteArray()).isEqualTo(Bytes.concat(
         METADATA.getBytes(),
