@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageCompactionException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import dev.sbutler.bitflask.storage.lsm.entry.EntryUtils;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import dev.sbutler.bitflask.storage.lsm.memtable.MemtableFactory;
 import dev.sbutler.bitflask.storage.lsm.segment.Segment;
@@ -15,8 +16,6 @@ import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import javax.inject.Inject;
@@ -127,7 +126,7 @@ final class LSMTreeCompactor implements Runnable {
     // TODO: evaluate performance
     ImmutableList<Segment> segmentsInLevel = segmentLevelMultiMap.getSegmentsInLevel(segmentLevel);
     ImmutableList<Entry> entriesInLevel = getAllEntriesInLevel(segmentsInLevel);
-    ImmutableSortedMap<String, Entry> keyEntryMap = getKeyEntryMap(entriesInLevel);
+    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildKeyEntryMap(entriesInLevel);
 
     Segment newSegment;
     try {
@@ -165,18 +164,5 @@ final class LSMTreeCompactor implements Runnable {
           .flatMap(ImmutableList::stream)
           .collect(toImmutableList());
     }
-  }
-
-  private ImmutableSortedMap<String, Entry> getKeyEntryMap(ImmutableList<Entry> entriesInLevel) {
-    SortedMap<String, Entry> keyEntryMap = new TreeMap<>();
-    for (var entry : entriesInLevel) {
-      Entry prevEntry = keyEntryMap.get(entry.key());
-      if (prevEntry == null) {
-        keyEntryMap.put(entry.key(), entry);
-      } else if (prevEntry.creationEpochSeconds() < entry.creationEpochSeconds()) {
-        keyEntryMap.put(entry.key(), entry);
-      }
-    }
-    return ImmutableSortedMap.copyOfSorted(keyEntryMap);
   }
 }

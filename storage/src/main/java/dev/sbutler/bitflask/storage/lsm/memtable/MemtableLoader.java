@@ -1,14 +1,14 @@
 package dev.sbutler.bitflask.storage.lsm.memtable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
+import dev.sbutler.bitflask.storage.lsm.entry.EntryUtils;
 import java.io.IOException;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import javax.inject.Inject;
 
 /**
@@ -52,34 +52,28 @@ public final class MemtableLoader {
   }
 
   private Memtable createMemtableWithLoading() {
+    ImmutableList<Entry> loadEntries = loadEntries();
+    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildKeyEntryMap(loadEntries);
+
     try {
-      SortedMap<String, Entry> loadedKeyEntryMap = loadKeyEntryMap();
-      Memtable memtable = memtableFactory.createWithLoading(loadedKeyEntryMap);
+      Memtable memtable = memtableFactory.createWithLoading(keyEntryMap);
       logger.atInfo()
-          .log("Created Memtable with [%d] pre-existing entries.", loadedKeyEntryMap.size());
+          .log("Created Memtable with [%d] pre-existing entries.", keyEntryMap.size());
       return memtable;
     } catch (IOException e) {
       throw new StorageLoadException("Failed to create Memtable with loading", e);
     }
   }
 
-  private SortedMap<String, Entry> loadKeyEntryMap() {
+  /**
+   * Loads all entries from the pre-existing {@link WriteAheadLog} file.
+   */
+  private ImmutableList<Entry> loadEntries() {
     EntryReader entryReader = EntryReader.create(memtableFactory.getWriteAheadLogPath());
-    ImmutableList<Entry> entries;
     try {
-      entries = entryReader.readAllEntriesFromOffset(0L);
+      return entryReader.readAllEntriesFromOffset(0L);
     } catch (IOException e) {
       throw new StorageLoadException("Failed to load entries from WriteAheadLog", e);
     }
-
-    SortedMap<String, Entry> keyEntryMap = new TreeMap<>();
-    for (var entry : entries) {
-      Entry previouslyStoredEntry = keyEntryMap.get(entry.key());
-      if (previouslyStoredEntry == null
-          || previouslyStoredEntry.creationEpochSeconds() <= entry.creationEpochSeconds()) {
-        keyEntryMap.put(entry.key(), entry);
-      }
-    }
-    return keyEntryMap;
   }
 }
