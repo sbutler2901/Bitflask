@@ -48,6 +48,17 @@ public class SegmentLevelMultiMapTest {
   }
 
   @Test
+  public void getNumBytesSizeOfSegmentLevel() {
+    SegmentLevelMultiMap segmentLevelMultiMap = new SegmentLevelMultiMap.Builder(
+        ImmutableListMultimap.of(1, SEGMENT_1, 0, SEGMENT_0)).build();
+
+    assertThat(segmentLevelMultiMap.getNumBytesSizeOfSegmentLevel(0))
+        .isEqualTo(SEGMENT_0.getNumBytesSize());
+    assertThat(segmentLevelMultiMap.getNumBytesSizeOfSegmentLevel(1))
+        .isEqualTo(SEGMENT_1.getNumBytesSize());
+  }
+
+  @Test
   public void toBuilder() {
     SegmentLevelMultiMap segmentLevelMultiMap = new SegmentLevelMultiMap.Builder(
         ImmutableListMultimap.of(1, SEGMENT_1, 0, SEGMENT_0)).build();
