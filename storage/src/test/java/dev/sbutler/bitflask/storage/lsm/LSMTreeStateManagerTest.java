@@ -69,6 +69,34 @@ public class LSMTreeStateManagerTest {
   }
 
   @Test
+  public void updateCurrentState_withLock_memtableNull_throwsStorageException() {
+    SegmentLevelMultiMap newMultiMap = mock(SegmentLevelMultiMap.class);
+
+    StorageException exception;
+    try (var ignored = lsmTreeStateManager.getAndLockCurrentState()) {
+      exception = assertThrows(StorageException.class,
+          () -> lsmTreeStateManager.updateCurrentState(null, newMultiMap));
+    }
+
+    assertThat(exception).hasMessageThat()
+        .isEqualTo("LSMTreeStateManager's state cannot be set to null");
+  }
+
+  @Test
+  public void updateCurrentState_withLock_egmentLevelMultiMapNull_throwsStorageException() {
+    Memtable newMemtable = mock(Memtable.class);
+
+    StorageException exception;
+    try (var ignored = lsmTreeStateManager.getAndLockCurrentState()) {
+      exception = assertThrows(StorageException.class,
+          () -> lsmTreeStateManager.updateCurrentState(newMemtable, null));
+    }
+
+    assertThat(exception).hasMessageThat()
+        .isEqualTo("LSMTreeStateManager's state cannot be set to null");
+  }
+
+  @Test
   public void updateCurrentState_withoutLock_throwsStorageException() {
     StorageException e = assertThrows(StorageException.class,
         () -> lsmTreeStateManager.updateCurrentState(MEMTABLE, MULTI_MAP));
