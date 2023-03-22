@@ -42,10 +42,12 @@ public class SegmentLevelCompactorTest {
 
   @BeforeEach
   public void beforeEach() throws Exception {
-    when(segment_0.getSegmentLevel()).thenReturn(0);
-    when(segment_1.getSegmentLevel()).thenReturn(1);
-
+    when(segment_0.getSegmentLevel()).thenReturn(SEGMENT_LEVEL);
+    when(segment_0.getSegmentNumber()).thenReturn(0);
     when(segment_0.readAllEntries()).thenReturn(ImmutableList.of(ENTRY_0));
+
+    when(segment_1.getSegmentLevel()).thenReturn(SEGMENT_LEVEL + 1);
+    when(segment_1.getSegmentNumber()).thenReturn(1);
     when(segment_1.readAllEntries()).thenReturn(ImmutableList.of(ENTRY_1));
 
     segmentLevelMultiMap = SegmentLevelMultiMap.builder()
@@ -56,19 +58,39 @@ public class SegmentLevelCompactorTest {
 
   @Test
   public void compactSegmentLevel_success() throws Exception {
-    when(newSegment.getSegmentLevel()).thenReturn(SEGMENT_LEVEL + 1);
+    int nextSegmentLevel = SEGMENT_LEVEL + 1;
+    when(newSegment.getSegmentLevel()).thenReturn(nextSegmentLevel);
+    when(newSegment.getSegmentNumber()).thenReturn(2);
     when(segmentFactory.create(any(), anyInt())).thenReturn(newSegment);
 
-    SegmentLevelMultiMap compactedMap = compactor.compactSegmentLevel(segmentLevelMultiMap, 0);
+    SegmentLevelMultiMap compactedMap = compactor.compactSegmentLevel(
+        segmentLevelMultiMap, SEGMENT_LEVEL);
 
-    assertThat(compactedMap.getSegmentLevels()).containsExactly(SEGMENT_LEVEL + 1);
-    assertThat(compactedMap.getSegmentsInLevel(SEGMENT_LEVEL + 1))
+    assertThat(compactedMap.getSegmentLevels()).containsExactly(nextSegmentLevel);
+    assertThat(compactedMap.getSegmentsInLevel(nextSegmentLevel))
         .containsExactly(segment_1, newSegment);
 
-    ArgumentCaptor<ImmutableSortedMap<String, Entry>> captor =
+    ArgumentCaptor<ImmutableSortedMap<String, Entry>> keyEntryMapCaptor =
         ArgumentCaptor.forClass(ImmutableSortedMap.class);
-    verify(segmentFactory, times(1)).create(captor.capture(), anyInt());
-    assertThat(captor.getValue()).isEqualTo(ImmutableSortedMap.of(ENTRY_0.key(), ENTRY_0));
+    ArgumentCaptor<Integer> segmentLevelCaptor = ArgumentCaptor.forClass(Integer.class);
+    verify(segmentFactory, times(1))
+        .create(keyEntryMapCaptor.capture(), segmentLevelCaptor.capture());
+    assertThat(keyEntryMapCaptor.getValue()).isEqualTo(
+        ImmutableSortedMap.of(ENTRY_0.key(), ENTRY_0));
+    assertThat(segmentLevelCaptor.getValue()).isEqualTo(nextSegmentLevel);
+  }
+
+  @Test
+  public void compactSegmentLevel_segmentReadAllEntriesThrowsException_throwStorageCompactionException()
+      throws Exception {
+    RuntimeException runtimeException = new RuntimeException("test");
+    when(segment_0.readAllEntries()).thenThrow(runtimeException);
+
+    StorageCompactionException exception = assertThrows(StorageCompactionException.class,
+        () -> compactor.compactSegmentLevel(segmentLevelMultiMap, SEGMENT_LEVEL));
+
+    assertThat(exception).hasCauseThat().isEqualTo(runtimeException);
+    assertThat(exception).hasMessageThat().isEqualTo("Failed getting all entries in segment level");
   }
 
   @Test

@@ -48,6 +48,7 @@ public final class SegmentLevelCompactor {
     }
 
     return segmentLevelMultiMap.toBuilder()
+        .clearSegmentLevel(segmentLevel)
         .add(newSegment)
         .build();
   }
@@ -65,7 +66,7 @@ public final class SegmentLevelCompactor {
       try {
         scope.join();
         scope.throwIfFailed(e ->
-            new StorageCompactionException("Failed getting all entries in segment leve", e));
+            new StorageCompactionException("Failed getting all entries in segment level", e));
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new StorageCompactionException("Interrupted while loading segment entries", e);
