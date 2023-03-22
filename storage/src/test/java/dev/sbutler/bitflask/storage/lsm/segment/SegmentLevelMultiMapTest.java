@@ -108,4 +108,15 @@ public class SegmentLevelMultiMapTest {
     assertThat(segmentLevelMultiMap.getSegmentsInLevel(0)).containsExactly(SEGMENT_0);
     assertThat(segmentLevelMultiMap.getSegmentsInLevel(1)).containsExactly(SEGMENT_1);
   }
+
+  @Test
+  public void builder_clearSegmentLevel() {
+    SegmentLevelMultiMap segmentLevelMultiMap = SegmentLevelMultiMap.builder()
+        .addAll(ImmutableList.of(SEGMENT_1, SEGMENT_0))
+        .clearSegmentLevel(0)
+        .build();
+
+    assertThat(segmentLevelMultiMap.getSegmentLevels()).isEqualTo(ImmutableSet.of(1));
+    assertThat(segmentLevelMultiMap.getSegmentsInLevel(1)).containsExactly(SEGMENT_1);
+  }
 }

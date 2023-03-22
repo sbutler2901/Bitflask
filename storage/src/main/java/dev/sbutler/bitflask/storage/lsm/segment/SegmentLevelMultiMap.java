@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
+import java.util.Comparator;
 
 /**
  * A {@link com.google.common.collect.Multimap} of segment levels to {@link Segment}s currently in
@@ -59,14 +61,14 @@ public final class SegmentLevelMultiMap {
    */
   public static class Builder {
 
-    private final ImmutableListMultimap.Builder<Integer, Segment> segmentLevelMultiMapBuilder;
+    private final TreeMultimap<Integer, Segment> segmentLevelMultiMapBuilder;
 
     /**
      * Initializes an empty {@link Builder}.
      */
     public Builder() {
-      segmentLevelMultiMapBuilder = ImmutableListMultimap.<Integer, Segment>builder()
-          .orderKeysBy(Integer::compare);
+      segmentLevelMultiMapBuilder = TreeMultimap.create(
+          Integer::compare, Comparator.comparingInt(Segment::getSegmentNumber));
     }
 
     /**
@@ -93,11 +95,16 @@ public final class SegmentLevelMultiMap {
       return this;
     }
 
+    public Builder clearSegmentLevel(int segmentLevel) {
+      segmentLevelMultiMapBuilder.removeAll(segmentLevel);
+      return this;
+    }
+
     /**
      * Creates a new {@link SegmentLevelMultiMap} with the values provided to this {@link Builder}.
      */
     public SegmentLevelMultiMap build() {
-      return new SegmentLevelMultiMap(segmentLevelMultiMapBuilder.build());
+      return new SegmentLevelMultiMap(ImmutableListMultimap.copyOf(segmentLevelMultiMapBuilder));
     }
   }
 }
