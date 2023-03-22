@@ -11,11 +11,11 @@ import java.util.TreeMap;
 public final class EntryUtils {
 
   /**
-   * Builds a map of {@link Entry}s by their key
+   * Builds a mutable {@link SortedMap} of {@link Entry}s by their key
    *
    * <p>The most recent {@link Entry} will be kept when duplicate keys are encountered.
    */
-  public static ImmutableSortedMap<String, Entry> buildKeyEntryMap(
+  public static SortedMap<String, Entry> buildKeyEntryMap(
       ImmutableList<Entry> entries) {
     SortedMap<String, Entry> keyEntryMap = new TreeMap<>();
     for (var entry : entries) {
@@ -25,7 +25,17 @@ public final class EntryUtils {
         keyEntryMap.put(entry.key(), entry);
       }
     }
-    return ImmutableSortedMap.copyOfSorted(keyEntryMap);
+    return keyEntryMap;
+  }
+
+  /**
+   * Builds an {@link ImmutableSortedMap} of {@link Entry}s by their key
+   *
+   * <p>The most recent {@link Entry} will be kept when duplicate keys are encountered.
+   */
+  public static ImmutableSortedMap<String, Entry> buildImmutableKeyEntryMap(
+      ImmutableList<Entry> entries) {
+    return ImmutableSortedMap.copyOfSorted(buildKeyEntryMap(entries));
   }
 
   private EntryUtils() {

@@ -38,7 +38,8 @@ public final class SegmentLevelCompactor {
     // TODO: evaluate performance
     ImmutableList<Segment> segmentsInLevel = segmentLevelMultiMap.getSegmentsInLevel(segmentLevel);
     ImmutableList<Entry> entriesInLevel = getAllEntriesInLevel(segmentsInLevel);
-    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildKeyEntryMap(entriesInLevel);
+    ImmutableSortedMap<String, Entry> keyEntryMap =
+        EntryUtils.buildImmutableKeyEntryMap(entriesInLevel);
 
     Segment newSegment;
     try {

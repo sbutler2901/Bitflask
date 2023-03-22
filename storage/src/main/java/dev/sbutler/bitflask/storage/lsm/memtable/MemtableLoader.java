@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.storage.lsm.memtable;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
@@ -9,6 +8,7 @@ import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryUtils;
 import java.io.IOException;
+import java.util.SortedMap;
 import javax.inject.Inject;
 
 /**
@@ -53,7 +53,7 @@ public final class MemtableLoader {
 
   private Memtable createMemtableWithLoading() {
     ImmutableList<Entry> loadEntries = loadEntries();
-    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildKeyEntryMap(loadEntries);
+    SortedMap<String, Entry> keyEntryMap = EntryUtils.buildKeyEntryMap(loadEntries);
 
     try {
       Memtable memtable = memtableFactory.createWithLoading(keyEntryMap);

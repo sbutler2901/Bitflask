@@ -5,6 +5,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import java.time.Instant;
+import java.util.SortedMap;
 import org.junit.jupiter.api.Test;
 
 public class EntryUtilsTest {
@@ -20,10 +21,24 @@ public class EntryUtilsTest {
       new Entry(EPOCH_SECONDS_0, ENTRY_1.key(), ENTRY_1.value());
 
   @Test
-  public void buildKeyEntryMap_allUnique_inOrder() {
+  public void buildImmutableKeyEntryMap_stillMutable() {
     ImmutableList<Entry> entries = ImmutableList.of(ENTRY_0, ENTRY_1);
 
-    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildKeyEntryMap(entries);
+    SortedMap<String, Entry> keyEntryMap = EntryUtils.buildKeyEntryMap(entries);
+
+    assertThat(keyEntryMap.values()).containsExactly(ENTRY_0, ENTRY_1).inOrder();
+    assertThat(keyEntryMap.get(ENTRY_0.key())).isEqualTo(ENTRY_0);
+    assertThat(keyEntryMap.get(ENTRY_1.key())).isEqualTo(ENTRY_1);
+
+    assertThat(keyEntryMap.put(ENTRY_0_DUPLICATE_NEWER.key(), ENTRY_0_DUPLICATE_NEWER))
+        .isEqualTo(ENTRY_0);
+  }
+
+  @Test
+  public void buildImmutableKeyEntryMap_allUnique_inOrder() {
+    ImmutableList<Entry> entries = ImmutableList.of(ENTRY_0, ENTRY_1);
+
+    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildImmutableKeyEntryMap(entries);
 
     assertThat(keyEntryMap.values()).containsExactly(ENTRY_0, ENTRY_1).inOrder();
     assertThat(keyEntryMap.get(ENTRY_0.key())).isEqualTo(ENTRY_0);
@@ -31,10 +46,10 @@ public class EntryUtilsTest {
   }
 
   @Test
-  public void buildKeyEntryMap_allUnique_reverseOrderOrder() {
+  public void buildImmutableKeyEntryMap_allUnique_reverseOrderOrder() {
     ImmutableList<Entry> entries = ImmutableList.of(ENTRY_1, ENTRY_0);
 
-    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildKeyEntryMap(entries);
+    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildImmutableKeyEntryMap(entries);
 
     assertThat(keyEntryMap.values()).containsExactly(ENTRY_0, ENTRY_1).inOrder();
     assertThat(keyEntryMap.get(ENTRY_0.key())).isEqualTo(ENTRY_0);
@@ -42,20 +57,20 @@ public class EntryUtilsTest {
   }
 
   @Test
-  public void buildKeyEntryMap_withNewerDuplicateFirst() {
+  public void buildImmutableKeyEntryMap_withNewerDuplicateFirst() {
     ImmutableList<Entry> entries = ImmutableList.of(ENTRY_0_DUPLICATE_NEWER, ENTRY_0);
 
-    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildKeyEntryMap(entries);
+    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildImmutableKeyEntryMap(entries);
 
     assertThat(keyEntryMap.values()).containsExactly(ENTRY_0_DUPLICATE_NEWER);
     assertThat(keyEntryMap.get(ENTRY_0_DUPLICATE_NEWER.key())).isEqualTo(ENTRY_0_DUPLICATE_NEWER);
   }
 
   @Test
-  public void buildKeyEntryMap_withOlderDuplicateFirst() {
+  public void buildImmutableKeyEntryMap_withOlderDuplicateFirst() {
     ImmutableList<Entry> entries = ImmutableList.of(ENTRY_1_DUPLICATE_OLDER, ENTRY_1);
 
-    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildKeyEntryMap(entries);
+    ImmutableSortedMap<String, Entry> keyEntryMap = EntryUtils.buildImmutableKeyEntryMap(entries);
 
     assertThat(keyEntryMap.values()).containsExactly(ENTRY_1);
     assertThat(keyEntryMap.get(ENTRY_1.key())).isEqualTo(ENTRY_1);
