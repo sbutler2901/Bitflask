@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSortedMap;
@@ -19,7 +21,6 @@ import dev.sbutler.bitflask.storage.lsm.segment.Segment;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentFactory;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelCompactor;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
-import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap.Builder;
 import java.io.IOException;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,29 +56,64 @@ public class LSMTreeCompactorTest {
   }
 
   @Test
+  public void run_memtableNotFlushed() {
+    when(memtable.getNumBytesSize()).thenReturn(0L);
+    mockFirstSegmentLevelOverThreshold(segmentLevelMultiMap, mock(SegmentLevelMultiMap.class));
+
+    compactor.run();
+
+    CurrentState currentState = stateManager.getCurrentState();
+    assertThat(currentState.getMemtable()).isEqualTo(memtable);
+    assertThat(currentState.getSegmentLevelMultiMap()).isEqualTo(segmentLevelMultiMap);
+
+    verify(segmentLevelCompactor, times(0))
+        .compactSegmentLevel(any(), anyInt());
+  }
+
+  @Test
+  public void run_memtableFlushed_firstSegmentLevelCompacted() throws Exception {
+    when(memtable.getNumBytesSize()).thenReturn(0L);
+    Memtable newMemtable = mock(Memtable.class);
+    SegmentLevelMultiMap firstNewSegmentLevelMultiMap = mock(SegmentLevelMultiMap.class);
+    mockMemtableFlushed(newMemtable, firstNewSegmentLevelMultiMap);
+
+    SegmentLevelMultiMap secondNewSegmentLevelMultiMap = mock(SegmentLevelMultiMap.class);
+    mockFirstSegmentLevelOverThreshold(firstNewSegmentLevelMultiMap, secondNewSegmentLevelMultiMap);
+
+    compactor.run();
+
+    CurrentState currentState = stateManager.getCurrentState();
+    assertThat(currentState.getMemtable()).isEqualTo(newMemtable);
+    assertThat(currentState.getSegmentLevelMultiMap()).isEqualTo(secondNewSegmentLevelMultiMap);
+
+    verify(segmentLevelCompactor, times(1))
+        .compactSegmentLevel(any(), anyInt());
+  }
+
+  @Test
   public void flushMemtable_belowThreshold_returnsFalse() {
-    when(memtable.flush()).thenReturn(ImmutableSortedMap.of(ENTRY_0.key(), ENTRY_0));
     when(memtable.getNumBytesSize()).thenReturn(0L);
 
     assertThat(compactor.flushMemtable()).isFalse();
+
+    CurrentState currentState = stateManager.getCurrentState();
+    assertThat(currentState.getMemtable()).isEqualTo(memtable);
+    assertThat(currentState.getSegmentLevelMultiMap()).isEqualTo(segmentLevelMultiMap);
   }
 
   @Test
   public void flushMemtable_segmentCreated_returnsTrue() throws Exception {
-    when(memtable.flush()).thenReturn(ImmutableSortedMap.of(ENTRY_0.key(), ENTRY_0));
-    when(memtable.getNumBytesSize()).thenReturn(MEMTABLE_FLUSH_THRESHOLD);
-    when(memtableFactory.create()).thenReturn(memtable);
-    when(segmentFactory.create(any(), anyInt(), anyLong())).thenReturn(segment);
-    when(segmentLevelMultiMap.toBuilder()).thenReturn(new Builder());
+    Memtable newMemtable = mock(Memtable.class);
+    SegmentLevelMultiMap newSegmentLevelMultiMap = mock(SegmentLevelMultiMap.class);
+    mockMemtableFlushed(newMemtable, newSegmentLevelMultiMap);
 
     boolean memtableFlushed = compactor.flushMemtable();
 
     assertThat(memtableFlushed).isTrue();
 
     CurrentState currentState = stateManager.getCurrentState();
-    assertThat(currentState.getMemtable()).isEqualTo(memtable);
-    assertThat(currentState.getSegmentLevelMultiMap().getSegmentsInLevel(0))
-        .containsExactly(segment);
+    assertThat(currentState.getMemtable()).isEqualTo(newMemtable);
+    assertThat(currentState.getSegmentLevelMultiMap()).isEqualTo(newSegmentLevelMultiMap);
   }
 
   @Test
@@ -108,5 +144,58 @@ public class LSMTreeCompactorTest {
 
     assertThat(exception).hasCauseThat().isEqualTo(ioException);
     assertThat(exception).hasMessageThat().isEqualTo("Failed creating new Memtable");
+  }
+
+  @Test
+  public void compactSegmentLevels_firstLevelUnderThreshold_noCompactionPerformed() {
+    when(segmentLevelMultiMap.getNumBytesSizeOfSegmentLevel(anyInt()))
+        .thenReturn(SEGMENT_LEVEL_FLUSH_THRESHOLD - 1);
+
+    compactor.compactSegmentLevels();
+
+    verify(segmentLevelCompactor, times(0))
+        .compactSegmentLevel(any(), anyInt());
+
+    CurrentState currentState = stateManager.getCurrentState();
+    assertThat(currentState.getMemtable()).isEqualTo(memtable);
+    assertThat(currentState.getSegmentLevelMultiMap()).isEqualTo(segmentLevelMultiMap);
+  }
+
+  @Test
+  public void compactSegmentLevels_firstLevelOverThreshold_compactionPerformed() {
+    SegmentLevelMultiMap newSegmentLevelMultiMap = mock(SegmentLevelMultiMap.class);
+    mockFirstSegmentLevelOverThreshold(segmentLevelMultiMap, newSegmentLevelMultiMap);
+
+    compactor.compactSegmentLevels();
+
+    verify(segmentLevelCompactor, times(1))
+        .compactSegmentLevel(any(), anyInt());
+
+    CurrentState currentState = stateManager.getCurrentState();
+    assertThat(currentState.getMemtable()).isEqualTo(memtable);
+    assertThat(currentState.getSegmentLevelMultiMap()).isEqualTo(newSegmentLevelMultiMap);
+  }
+
+  private void mockMemtableFlushed(Memtable newMemtable,
+      SegmentLevelMultiMap newSegmentLevelMultiMap) throws Exception {
+    when(memtable.flush()).thenReturn(ImmutableSortedMap.of(ENTRY_0.key(), ENTRY_0));
+    when(memtable.getNumBytesSize()).thenReturn(MEMTABLE_FLUSH_THRESHOLD);
+    when(segmentFactory.create(any(), anyInt(), anyLong())).thenReturn(segment);
+    when(memtableFactory.create()).thenReturn(newMemtable);
+    SegmentLevelMultiMap.Builder builder = mock(SegmentLevelMultiMap.Builder.class);
+    when(builder.add(any())).thenReturn(builder);
+    when(builder.build()).thenReturn(newSegmentLevelMultiMap);
+    when(segmentLevelMultiMap.toBuilder()).thenReturn(builder);
+  }
+
+  private void mockFirstSegmentLevelOverThreshold(SegmentLevelMultiMap overThresholdMap,
+      SegmentLevelMultiMap newMap) {
+    when(overThresholdMap.getNumBytesSizeOfSegmentLevel(anyInt()))
+        .thenReturn(SEGMENT_LEVEL_FLUSH_THRESHOLD);
+
+    when(newMap.getNumBytesSizeOfSegmentLevel(anyInt()))
+        .thenReturn(SEGMENT_LEVEL_FLUSH_THRESHOLD - 1);
+    when(segmentLevelCompactor.compactSegmentLevel(any(), anyInt()))
+        .thenReturn(newMap);
   }
 }
