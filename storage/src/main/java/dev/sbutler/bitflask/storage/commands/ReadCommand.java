@@ -44,7 +44,7 @@ final class ReadCommand implements StorageCommand {
     }
 
     logger.atInfo()
-        .log("Found value for [%s]: [%s]", readDTO.key(), readValue.get());
+        .log("Found value for [%s]:[%s]", readDTO.key(), readValue.get());
     return new Success(readValue.get());
   }
 }
