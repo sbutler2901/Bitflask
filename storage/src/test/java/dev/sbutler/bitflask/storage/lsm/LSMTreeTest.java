@@ -20,6 +20,9 @@ import org.mockito.ArgumentCaptor;
 
 public class LSMTreeTest {
 
+  private final static Entry ENTRY = new Entry(Instant.now().getEpochSecond(), "key", "value");
+  private final static Entry DELETED_ENTRY = new Entry(Instant.now().getEpochSecond(), "key", "");
+
   private final ListeningScheduledExecutorService scheduledExecutorService = mock(
       ListeningScheduledExecutorService.class);
   private final LSMTreeReader reader = mock(LSMTreeReader.class);
@@ -32,18 +35,27 @@ public class LSMTreeTest {
 
   @Test
   public void read_entryFound_returnsValue() {
-    Entry entry = new Entry(Instant.now().getEpochSecond(), "key", "value");
-    when(reader.read(anyString())).thenReturn(Optional.of(entry));
+    when(reader.read(anyString())).thenReturn(Optional.of(ENTRY));
 
     Optional<String> readValue = lsmTree.read("key");
 
-    assertThat(readValue).hasValue(entry.value());
+    assertThat(readValue).hasValue(ENTRY.value());
     verify(reader, times(1)).read("key");
   }
 
   @Test
   public void read_entryNotFound_returnsEmpty() {
     when(reader.read(anyString())).thenReturn(Optional.empty());
+
+    Optional<String> readValue = lsmTree.read("key");
+
+    assertThat(readValue).isEmpty();
+    verify(reader, times(1)).read("key");
+  }
+
+  @Test
+  public void read_entryDeleted_returnsEmpty() {
+    when(reader.read(anyString())).thenReturn(Optional.of(DELETED_ENTRY));
 
     Optional<String> readValue = lsmTree.read("key");
 

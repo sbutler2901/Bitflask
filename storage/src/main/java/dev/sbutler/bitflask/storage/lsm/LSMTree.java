@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -43,7 +44,7 @@ public final class LSMTree {
    * Reads the value of the provided key and returns it, if present.
    */
   public Optional<String> read(String key) {
-    return reader.read(key).map(Entry::value);
+    return reader.read(key).filter(Predicate.not(Entry::isDeleted)).map(Entry::value);
   }
 
   /**
