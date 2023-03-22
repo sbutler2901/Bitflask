@@ -45,17 +45,6 @@ public class LSMTreeStateManagerTest {
   }
 
   @Test
-  public void getAndLockCurrentState_uninitialized_throwsStorageException() {
-    LSMTreeStateManager uninitializedManager = new LSMTreeStateManager();
-
-    StorageException e =
-        assertThrows(StorageException.class, uninitializedManager::getAndLockCurrentState);
-
-    assertThat(e).hasMessageThat()
-        .isEqualTo("LSMTreeStateManager's state must be initialized before usage");
-  }
-
-  @Test
   public void updateCurrentState_withLock() {
     Memtable newMemtable = mock(Memtable.class);
     SegmentLevelMultiMap newMultiMap = mock(SegmentLevelMultiMap.class);

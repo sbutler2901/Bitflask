@@ -39,7 +39,9 @@ final class LSMTreeStateManager {
    */
   CurrentState getCurrentState() {
     lock.readLock().lock();
-    checkStateInitialized();
+    if (memtable == null || segmentLevelMultiMap == null) {
+      throw new StorageException("LSMTreeStateManager's state must be initialized before usage");
+    }
     return new CurrentState(memtable, segmentLevelMultiMap, lock.readLock());
   }
 
@@ -51,14 +53,7 @@ final class LSMTreeStateManager {
    */
   CurrentState getAndLockCurrentState() {
     lock.writeLock().lock();
-    checkStateInitialized();
     return new CurrentState(memtable, segmentLevelMultiMap, lock.writeLock());
-  }
-
-  private void checkStateInitialized() {
-    if (memtable == null || segmentLevelMultiMap == null) {
-      throw new StorageException("LSMTreeStateManager's state must be initialized before usage");
-    }
   }
 
   /**
