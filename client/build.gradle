@@ -11,7 +11,8 @@ application {
     // Define the main class for the application.
     mainClass.set('dev.sbutler.bitflask.client.Client')
 
-    applicationDefaultJvmArgs = ['--enable-preview']
+    applicationDefaultJvmArgs = ['--enable-preview',
+                                 '--add-modules', 'jdk.incubator.concurrent']
 }
 
 run {
