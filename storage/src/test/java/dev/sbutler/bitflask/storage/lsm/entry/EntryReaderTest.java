@@ -42,6 +42,7 @@ public class EntryReaderTest {
         ENTRY_1.getBytes()));
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      filesMockedStatic.when(() -> Files.exists(any(), any())).thenReturn(true);
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
       ImmutableList<Entry> entries = entryReader.readAllEntriesFromOffset(0L);
       assertThat(entries).containsExactly(ENTRY_0, ENTRY_1);
@@ -55,6 +56,7 @@ public class EntryReaderTest {
         ENTRY_1.getBytes()));
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      filesMockedStatic.when(() -> Files.exists(any(), any())).thenReturn(true);
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
       ImmutableList<Entry> entries =
           entryReader.readAllEntriesFromOffset(ENTRY_0.getBytes().length);
@@ -74,6 +76,7 @@ public class EntryReaderTest {
     InputStream is = new ByteArrayInputStream(storedMetadata.getBytes());
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      filesMockedStatic.when(() -> Files.exists(any(), any())).thenReturn(true);
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
       IOException e =
           assertThrows(IOException.class,
@@ -98,6 +101,7 @@ public class EntryReaderTest {
         key.getBytes(StandardCharsets.UTF_8)));
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      filesMockedStatic.when(() -> Files.exists(any(), any())).thenReturn(true);
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
       IOException e =
           assertThrows(IOException.class,
@@ -115,6 +119,17 @@ public class EntryReaderTest {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
       ImmutableList<Entry> entries = entryReader.readAllEntriesFromOffset(0L);
+      assertThat(entries).isEmpty();
+    }
+  }
+
+  @Test
+  public void readAllEntriesFromOffset_fileNonexistent() throws Exception {
+    try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      filesMockedStatic.when(() -> Files.exists(any(), any())).thenReturn(false);
+
+      ImmutableList<Entry> entries = entryReader.readAllEntriesFromOffset(0L);
+
       assertThat(entries).isEmpty();
     }
   }

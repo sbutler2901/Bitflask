@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList.Builder;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
@@ -34,6 +35,10 @@ public final class EntryReader {
    * <p>An {@link IOException} will be thrown if there is an issue iterating the entries.
    */
   public ImmutableList<Entry> readAllEntriesFromOffset(long startOffset) throws IOException {
+    if (!Files.exists(filePath, LinkOption.NOFOLLOW_LINKS)) {
+      return ImmutableList.of();
+    }
+
     Builder<Entry> entryListBuilder = ImmutableList.builder();
     try (BufferedInputStream is =
         new BufferedInputStream(Files.newInputStream(filePath, StandardOpenOption.READ))) {
