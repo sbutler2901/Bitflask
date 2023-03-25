@@ -1,6 +1,9 @@
 package dev.sbutler.bitflask.storage.testing;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -8,7 +11,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import java.util.List;
+import dev.sbutler.bitflask.storage.testing.StorageTester.Result.Failed;
+import dev.sbutler.bitflask.storage.testing.StorageTester.Result.Success;
 import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,22 +37,99 @@ final class StorageTester implements Runnable {
   public void run() {
     logger.atInfo().log("Starting testing");
 
-    StorageCommandDTO writeDto = new StorageCommandDTO.WriteDTO("key", "value");
-    StorageCommandDTO readDto = new StorageCommandDTO.ReadDTO("key");
+    ImmutableList<StorageCommandDTO> storageCommands = getStorageCommands();
+    ImmutableList<ListenableFuture<StorageResponse>> responseFutures =
+        submitStorageCommandsSequentially(storageCommands);
+    ListenableFuture<ImmutableList<Result>> resultsFuture =
+        combineResponseFutures(responseFutures);
 
-    ListenableFuture<List<StorageResponse>> results = Futures.successfulAsList(ImmutableList.of(
-        storageCommandDispatcher.put(writeDto),
-        storageCommandDispatcher.put(readDto)));
-
+    ImmutableList<Result> results;
     try {
-      results.get();
+      results = resultsFuture.get();
     } catch (ExecutionException e) {
       logger.atSevere().withCause(e).log("Failed to get results");
+      return;
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       logger.atSevere().withCause(e).log("Interrupted while getting results");
+      return;
     }
 
+    ImmutableMap<StorageCommandDTO, Result> mappedResults =
+        mapCommandsToResults(storageCommands, results);
+
+    logResults(mappedResults);
+
     logger.atInfo().log("Completed testing");
+  }
+
+  private ImmutableList<StorageCommandDTO> getStorageCommands() {
+    return ImmutableList.of(
+        new StorageCommandDTO.WriteDTO("key", "value"),
+        new StorageCommandDTO.ReadDTO("key"));
+  }
+
+  private ImmutableList<ListenableFuture<StorageResponse>> submitStorageCommandsSequentially(
+      ImmutableList<StorageCommandDTO> commands) {
+    return commands.stream().map(storageCommandDispatcher::put).collect(toImmutableList());
+  }
+
+  private ListenableFuture<ImmutableList<Result>> combineResponseFutures(
+      ImmutableList<ListenableFuture<StorageResponse>> responseFutures) {
+    return Futures.whenAllComplete(responseFutures)
+        .call(() -> responseFutures.stream()
+                .map(this::mapDoneResponseFutureToResult)
+                .collect(toImmutableList()),
+            listeningExecutorService);
+  }
+
+  private Result mapDoneResponseFutureToResult(ListenableFuture<StorageResponse> responseFuture) {
+    try {
+      return new Result.Success(Futures.getDone(responseFuture));
+    } catch (Exception e) {
+      return new Result.Failed(e.getCause());
+    }
+  }
+
+  private ImmutableMap<StorageCommandDTO, Result> mapCommandsToResults(
+      ImmutableList<StorageCommandDTO> commands,
+      ImmutableList<Result> results) {
+    if (commands.size() != results.size()) {
+      throw new RuntimeException(String.format("Command size [%d] did not match results size [%d]",
+          commands.size(), results.size()));
+    }
+
+    ImmutableMap.Builder<StorageCommandDTO, Result> mappedResults = ImmutableMap.builder();
+
+    for (int i = 0; i < commands.size(); i++) {
+      mappedResults.put(commands.get(i), results.get(i));
+    }
+
+    return mappedResults.buildOrThrow();
+  }
+
+  private void logResults(ImmutableMap<StorageCommandDTO, Result> mappedResults) {
+    for (var entry : mappedResults.entrySet()) {
+      switch (entry.getValue()) {
+        case Success success ->
+            logger.atInfo().log("[%s]:[%s]", entry.getKey(), success.storageResponse());
+        case Failed failed ->
+            logger.atWarning().log("[%s]:[%s]", entry.getKey(), failed.failure().getMessage());
+      }
+    }
+  }
+
+  /**
+   * The result of a test storage submission future.
+   */
+  sealed interface Result {
+
+    record Success(StorageResponse storageResponse) implements Result {
+
+    }
+
+    record Failed(Throwable failure) implements Result {
+
+    }
   }
 }
