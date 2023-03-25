@@ -19,7 +19,6 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -31,19 +30,19 @@ class StorageServiceTest {
   private final StorageCommandDispatcher storageCommandDispatcher =
       mock(StorageCommandDispatcher.class);
   private final CommandMapper commandMapper = mock(CommandMapper.class);
-  private final LSMTree lsmTree = mock(LSMTree.class);
+  private final StorageLoader storageLoader = mock(StorageLoader.class);
 
   private final StorageService storageService = new StorageService(
       TestingExecutors.sameThreadScheduledExecutor(),
       storageCommandDispatcher,
       commandMapper,
-      lsmTree);
+      storageLoader);
 
   @Test
   public void startUp() {
     storageService.startUp();
 
-    verify(lsmTree, times(1)).load();
+    verify(storageLoader, times(1)).load();
   }
 
   @Test
