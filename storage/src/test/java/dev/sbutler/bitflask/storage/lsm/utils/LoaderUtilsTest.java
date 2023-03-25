@@ -25,6 +25,7 @@ public class LoaderUtilsTest {
     Path segPath = Path.of("/tmp/test.seg");
     DirectoryStream<Path> dirStream = mock(DirectoryStream.class);
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      filesMockedStatic.when(() -> Files.exists(any())).thenReturn(true);
       filesMockedStatic.when(() -> Files.newDirectoryStream(any(), anyString()))
           .thenReturn(dirStream);
       when(dirStream.iterator()).thenReturn(ImmutableList.of(segPath).iterator());
@@ -35,8 +36,22 @@ public class LoaderUtilsTest {
   }
 
   @Test
+  public void loadPathsInDirForGlob_dirDoesNotExist_throwsStorageLoadException() {
+    try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      filesMockedStatic.when(() -> Files.exists(any())).thenReturn(false);
+
+      StorageLoadException e =
+          assertThrows(StorageLoadException.class,
+              () -> loadPathsInDirForGlob(Path.of("/tmp"), "*.seg"));
+
+      assertThat(e).hasMessageThat().isEqualTo("Directory does not exist [/tmp]");
+    }
+  }
+
+  @Test
   public void loadPathsInDirForGlob_ioException_throwsStorageLoadException() {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+      filesMockedStatic.when(() -> Files.exists(any())).thenReturn(true);
       IOException ioException = new IOException("test");
       filesMockedStatic.when(() -> Files.newDirectoryStream(any(), anyString()))
           .thenThrow(ioException);

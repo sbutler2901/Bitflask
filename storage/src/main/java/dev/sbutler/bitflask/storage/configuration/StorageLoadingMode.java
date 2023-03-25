@@ -5,7 +5,13 @@ package dev.sbutler.bitflask.storage.configuration;
  */
 public enum StorageLoadingMode {
 
+  /**
+   * Loads any data found in pre-existing files.
+   */
   LOAD,
+  /**
+   * Overwrites any data found in pre-existing files without loading.
+   */
   TRUNCATE;
 
   static String normalizeValue(String value) {

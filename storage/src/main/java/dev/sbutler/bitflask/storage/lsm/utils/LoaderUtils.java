@@ -16,6 +16,10 @@ public class LoaderUtils {
    * Loads the paths of all files in the directory that match the glob.
    */
   public static ImmutableList<Path> loadPathsInDirForGlob(Path dirPath, String glob) {
+    if (!Files.exists(dirPath)) {
+      throw new StorageLoadException(String.format("Directory does not exist [%s]", dirPath));
+    }
+
     ImmutableList.Builder<Path> paths = ImmutableList.builder();
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(dirPath, glob)) {
       for (var path : stream) {
