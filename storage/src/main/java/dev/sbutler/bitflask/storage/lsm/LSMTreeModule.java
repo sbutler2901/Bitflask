@@ -16,6 +16,7 @@ public class LSMTreeModule extends AbstractModule {
   @Singleton
   @LSMTreeListeningScheduledExecutorService
   ListeningScheduledExecutorService provideListeningExecutorService() {
-    return MoreExecutors.listeningDecorator(Executors.newSingleThreadScheduledExecutor());
+    return MoreExecutors.listeningDecorator(Executors.newSingleThreadScheduledExecutor(
+        r -> Thread.ofPlatform().name("lsm-scheduled").unstarted(r)));
   }
 }

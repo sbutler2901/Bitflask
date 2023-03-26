@@ -9,7 +9,7 @@ import javax.annotation.Nonnull;
  */
 public final class VirtualThreadFactory implements ThreadFactory {
 
-  public static final String DEFAULT_THREAD_NAME = "virtual-pool-";
+  public static final String DEFAULT_THREAD_NAME = "vir-pool-";
 
   private final String threadNamePrefix;
   private final AtomicInteger threadNum = new AtomicInteger();
