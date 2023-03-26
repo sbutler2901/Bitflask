@@ -5,12 +5,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.lsm.memtable.MemtableLoader;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMapLoader;
 import java.time.Duration;
 import java.util.concurrent.ThreadFactory;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class LSMTreeLoaderTest {
@@ -18,6 +21,7 @@ public class LSMTreeLoaderTest {
   private final ListeningScheduledExecutorService scheduledExecutorService =
       mock(ListeningScheduledExecutorService.class);
   private final ThreadFactory threadFactory = Thread.ofVirtual().factory();
+  private final StorageConfigurations configurations = mock(StorageConfigurations.class);
   private final LSMTreeStateManager stateManager = mock(LSMTreeStateManager.class);
   private final LSMTreeCompactor compactor = mock(LSMTreeCompactor.class);
   private final MemtableLoader memtableLoader = mock(MemtableLoader.class);
@@ -27,10 +31,16 @@ public class LSMTreeLoaderTest {
   private final LSMTreeLoader loader = new LSMTreeLoader(
       scheduledExecutorService,
       threadFactory,
+      configurations,
       stateManager,
       compactor,
       memtableLoader,
       segmentLevelMultiMapLoader);
+
+  @BeforeEach
+  public void beforeEach() {
+    when(configurations.getCompactorExecDelayMilliseconds()).thenReturn(5000L);
+  }
 
   @Test
   public void load_success() {
