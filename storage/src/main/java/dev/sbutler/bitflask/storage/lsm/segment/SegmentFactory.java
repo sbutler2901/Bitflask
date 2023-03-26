@@ -70,7 +70,7 @@ public final class SegmentFactory {
     UnsignedShort segmentNumber = UnsignedShort.valueOf(nextSegmentNumber.getAndIncrement());
 
     SegmentMetadata segmentMetadata = new SegmentMetadata(
-        segmentNumber, UnsignedShort.valueOf(0));
+        segmentNumber, UnsignedShort.valueOf(segmentLevel));
     Path segmentPath = Path.of(configurations.getStoreDirectoryPath().toString(),
         Segment.createFileName(segmentNumber.value()));
     BloomFilter<String> keyFilter = BloomFilter.create(Funnels.stringFunnel(
