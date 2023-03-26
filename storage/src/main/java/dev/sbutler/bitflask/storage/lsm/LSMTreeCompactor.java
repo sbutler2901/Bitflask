@@ -51,8 +51,8 @@ final class LSMTreeCompactor implements Runnable {
     if (flushMemtable()) {
       int numLevelsCompacted = compactSegmentLevels();
       logger.atInfo()
-          .log("Compacted Memtable & [%d] segment levels in [%d]millis", numLevelsCompacted,
-              Duration.between(startInstant, Instant.now()));
+          .log("Compacted Memtable & [%d] segment level(s) in [%d]millis", numLevelsCompacted,
+              Duration.between(startInstant, Instant.now()).toMillis());
     } else {
       logger.atInfo().log("Ending compaction without flushing Memtable");
     }
