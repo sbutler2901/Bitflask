@@ -9,6 +9,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.testing.StorageTester.Result.Failed;
@@ -64,9 +67,17 @@ final class StorageTester implements Runnable {
   }
 
   private ImmutableList<StorageCommandDTO> getStorageCommands() {
-    return ImmutableList.of(
-        new StorageCommandDTO.WriteDTO("key", "value"),
-        new StorageCommandDTO.ReadDTO("key"));
+    ImmutableList.Builder<StorageCommandDTO> commands = ImmutableList.builder();
+    for (int i = 0; i < 50; i++) {
+      commands.add(new WriteDTO("key_" + i, "value_" + i));
+    }
+    for (int i = 0; i < 20; i++) {
+      commands.add(new DeleteDTO("key_" + i));
+    }
+    for (int i = 0; i < 50; i++) {
+      commands.add(new ReadDTO("key_" + i));
+    }
+    return commands.build();
   }
 
   private ImmutableList<ListenableFuture<StorageResponse>> submitStorageCommandsSequentially(
