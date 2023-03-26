@@ -4,6 +4,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.exceptions.StorageCompactionException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryUtils;
@@ -19,6 +20,8 @@ import jdk.incubator.concurrent.StructuredTaskScope;
  * Handles compacting all {@link Segment}s in a level.
  */
 public final class SegmentLevelCompactor {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ThreadFactory threadFactory;
   private final SegmentFactory segmentFactory;
@@ -47,6 +50,10 @@ public final class SegmentLevelCompactor {
     } catch (IOException e) {
       throw new StorageCompactionException("Failed creating new segment", e);
     }
+
+    logger.atInfo().log("Compacted segment level [%d] removing [%d] duplicate Entries",
+        segmentLevel,
+        entriesInLevel.size() - keyEntryMap.size());
 
     return segmentLevelMultiMap.toBuilder()
         .clearSegmentLevel(segmentLevel)

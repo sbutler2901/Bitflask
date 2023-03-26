@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.storage.lsm;
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageCompactionException;
+import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import dev.sbutler.bitflask.storage.lsm.memtable.MemtableFactory;
 import dev.sbutler.bitflask.storage.lsm.segment.Segment;
@@ -12,6 +13,7 @@ import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.SortedMap;
 import javax.inject.Inject;
 
 /**
@@ -68,10 +70,11 @@ final class LSMTreeCompactor implements Runnable {
         return false;
       }
 
+      SortedMap<String, Entry> flushedMemtable = currentState.getMemtable().flush();
       Segment segmentFromMemtable;
       try {
         segmentFromMemtable = segmentFactory.create(
-            currentState.getMemtable().flush(),
+            flushedMemtable,
             0,
             currentState.getMemtable().getNumBytesSize());
       } catch (IOException e) {
@@ -94,7 +97,9 @@ final class LSMTreeCompactor implements Runnable {
       stateManager.updateCurrentState(newMemtable, newMultiMap);
 
       logger.atInfo()
-          .log("Flushed Memtable to Segment [%d]", segmentFromMemtable.getSegmentNumber());
+          .log("Flushed Memtable with [%d] Entries to Segment [%d]",
+              flushedMemtable.size(),
+              segmentFromMemtable.getSegmentNumber());
     }
     return true;
   }
@@ -118,7 +123,6 @@ final class LSMTreeCompactor implements Runnable {
         segmentLevel++) {
       segmentLevelMultiMap = segmentLevelCompactor
           .compactSegmentLevel(segmentLevelMultiMap, segmentLevel);
-      logger.atInfo().log("Compacted segment level [%d]", segmentLevel);
     }
 
     // Only wait for lock if compaction occurred
