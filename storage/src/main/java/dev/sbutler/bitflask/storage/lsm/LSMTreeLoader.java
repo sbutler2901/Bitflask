@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.lsm;
 
+import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
@@ -7,6 +8,7 @@ import dev.sbutler.bitflask.storage.lsm.memtable.MemtableLoader;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMapLoader;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import javax.inject.Inject;
@@ -16,6 +18,8 @@ import jdk.incubator.concurrent.StructuredTaskScope;
  * Handles loading all necessary resources at start up for the {@link LSMTree}.
  */
 public final class LSMTreeLoader {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningScheduledExecutorService scheduledExecutorService;
   private final ThreadFactory threadFactory;
@@ -45,7 +49,10 @@ public final class LSMTreeLoader {
    * Initiate loading of all {@link LSMTree} resources.
    */
   public void load() {
+    Instant startInstant = Instant.now();
     loadMemtableAndSegmentLevelMultiMap();
+    logger.atInfo().log("Loaded Memtable & SegmentLevel MultiMap in [%d]ms",
+        Duration.between(startInstant, Instant.now()).toMillis());
     scheduleCompactor();
   }
 
@@ -71,6 +78,6 @@ public final class LSMTreeLoader {
 
   private void scheduleCompactor() {
     scheduledExecutorService.scheduleWithFixedDelay(
-        compactor, Duration.ofMinutes(0), Duration.ofMinutes(1));
+        compactor, Duration.ofMinutes(0), Duration.ofSeconds(5));
   }
 }
