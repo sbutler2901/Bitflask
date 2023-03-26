@@ -46,6 +46,7 @@ public final class StorageRunner {
       System.exit(0);
     } catch (Exception e) {
       logger.atSevere().withCause(e).log("Catastrophic error starting StorageRunner");
+      System.exit(1);
     }
   }
 
