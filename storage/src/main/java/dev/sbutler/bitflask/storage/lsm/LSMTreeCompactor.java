@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.lsm;
 
+import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageCompactionException;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
@@ -9,6 +10,8 @@ import dev.sbutler.bitflask.storage.lsm.segment.SegmentFactory;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelCompactor;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import javax.inject.Inject;
 
 /**
@@ -17,6 +20,8 @@ import javax.inject.Inject;
  * <p><b>WARNING</b>: only a single instance of the compactor should be running at any given time.
  */
 final class LSMTreeCompactor implements Runnable {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final StorageConfigurations configurations;
   private final LSMTreeStateManager stateManager;
@@ -40,8 +45,16 @@ final class LSMTreeCompactor implements Runnable {
 
   @Override
   public void run() {
+    logger.atInfo().log("Starting compaction");
+
+    Instant startInstant = Instant.now();
     if (flushMemtable()) {
-      compactSegmentLevels();
+      int numLevelsCompacted = compactSegmentLevels();
+      logger.atInfo()
+          .log("Compacted Memtable & [%d] segment levels in [%d]millis", numLevelsCompacted,
+              Duration.between(startInstant, Instant.now()));
+    } else {
+      logger.atInfo().log("Ending compaction without flushing Memtable");
     }
   }
 
@@ -79,6 +92,9 @@ final class LSMTreeCompactor implements Runnable {
 
       // update state and release lock
       stateManager.updateCurrentState(newMemtable, newMultiMap);
+
+      logger.atInfo()
+          .log("Flushed Memtable to Segment [%d]", segmentFromMemtable.getSegmentNumber());
     }
     return true;
   }
@@ -86,8 +102,10 @@ final class LSMTreeCompactor implements Runnable {
   /**
    * Iterates the current segment level's compacting each, if their threshold size has been reached,
    * and updates the {@link LSMTreeStateManager} state accordingly.
+   *
+   * @return the number of segment levels compacted
    */
-  void compactSegmentLevels() {
+  int compactSegmentLevels() {
     // Assumes another compactor thread will not be altering state.
     SegmentLevelMultiMap segmentLevelMultiMap;
     try (var currentState = stateManager.getCurrentState()) {
@@ -100,14 +118,15 @@ final class LSMTreeCompactor implements Runnable {
         segmentLevel++) {
       segmentLevelMultiMap = segmentLevelCompactor
           .compactSegmentLevel(segmentLevelMultiMap, segmentLevel);
-    }
-    // Don't wait for lock if no compaction occurred
-    if (segmentLevel == 0) {
-      return;
+      logger.atInfo().log("Compacted segment level [%d]", segmentLevel);
     }
 
-    try (var currentState = stateManager.getAndLockCurrentState()) {
-      stateManager.updateCurrentState(currentState.getMemtable(), segmentLevelMultiMap);
+    // Only wait for lock if compaction occurred
+    if (segmentLevel > 0) {
+      try (var currentState = stateManager.getAndLockCurrentState()) {
+        stateManager.updateCurrentState(currentState.getMemtable(), segmentLevelMultiMap);
+      }
     }
+    return segmentLevel;
   }
 }
