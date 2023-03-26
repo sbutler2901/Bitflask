@@ -8,6 +8,7 @@ import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
@@ -28,12 +29,15 @@ final class StorageTester implements Runnable {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService listeningExecutorService;
+  private final StorageConfigurations configurations;
   private final StorageCommandDispatcher storageCommandDispatcher;
 
   @Inject
   StorageTester(ListeningExecutorService listeningExecutorService,
+      StorageConfigurations configurations,
       StorageCommandDispatcher storageCommandDispatcher) {
     this.listeningExecutorService = listeningExecutorService;
+    this.configurations = configurations;
     this.storageCommandDispatcher = storageCommandDispatcher;
   }
 
@@ -49,7 +53,7 @@ final class StorageTester implements Runnable {
 
     ImmutableList<Result> results;
     try {
-      Thread.sleep(Duration.ofSeconds(10));
+      Thread.sleep(Duration.ofMillis(1000 + configurations.getCompactorExecDelayMilliseconds()));
       results = resultsFuture.get();
     } catch (ExecutionException e) {
       logger.atSevere().withCause(e).log("Failed to get results");
