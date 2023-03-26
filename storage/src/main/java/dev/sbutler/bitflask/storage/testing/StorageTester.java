@@ -16,6 +16,7 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.testing.StorageTester.Result.Failed;
 import dev.sbutler.bitflask.storage.testing.StorageTester.Result.Success;
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -48,6 +49,7 @@ final class StorageTester implements Runnable {
 
     ImmutableList<Result> results;
     try {
+      Thread.sleep(Duration.ofSeconds(10));
       results = resultsFuture.get();
     } catch (ExecutionException e) {
       logger.atSevere().withCause(e).log("Failed to get results");
