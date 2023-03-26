@@ -14,18 +14,28 @@ import org.junit.jupiter.api.Test;
 
 public class StorageConfigurationsTest {
 
+  private static final int DISPATCHER_CAPACITY_DEFAULT = 100;
+  private static final Path STORE_DIRECTORY_PATH_DEFAULT = Path.of("/tmp/.bitflask");
+  private static final StorageLoadingMode LOADING_MODE_DEFAULT = StorageLoadingMode.LOAD;
+  private static final long MEMTABLE_FLUSH_BYTES_DEFAULT = 1;
+  private static final long SEGMENT_LEVEL_FLUSH_BYTES_DEFAULT = 5;
+  private static final long COMPACTOR_DELAY_DEFAULT = 5000;
+
+
   private static final ImmutableList<String> CLI_ARG_LIST =
       ImmutableList.of(
           StorageConfigurationsConstants.DISPATCHER_CAPACITY_FLAG,
-          "100",
+          String.valueOf(DISPATCHER_CAPACITY_DEFAULT),
           StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG,
-          Path.of("/tmp/random/absolute/path").toString(),
+          STORE_DIRECTORY_PATH_DEFAULT.toString(),
           StorageConfigurationsConstants.LOADING_MODE_FLAG,
-          "load",
+          LOADING_MODE_DEFAULT.toString(),
           StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG,
-          "1",
+          String.valueOf(MEMTABLE_FLUSH_BYTES_DEFAULT),
           StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG,
-          "5");
+          String.valueOf(SEGMENT_LEVEL_FLUSH_BYTES_DEFAULT),
+          StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG,
+          String.valueOf(COMPACTOR_DELAY_DEFAULT));
 
   @Test
   void propertyFile_defaults() {
@@ -50,11 +60,14 @@ public class StorageConfigurationsTest {
     assertThat(storageConfigurations.getStorageLoadingMode())
         .isEqualTo(StorageLoadingMode.LOAD);
     assertThat(storageConfigurations.getMemtableFlushThresholdBytes())
-        .isEqualTo(Integer.parseInt(defaultProvider.getDefaultValueFor(
+        .isEqualTo(Long.parseLong(defaultProvider.getDefaultValueFor(
             StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG)));
     assertThat(storageConfigurations.getSegmentLevelFlushThresholdBytes())
-        .isEqualTo(Integer.parseInt(defaultProvider.getDefaultValueFor(
+        .isEqualTo(Long.parseLong(defaultProvider.getDefaultValueFor(
             StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG)));
+    assertThat(storageConfigurations.getCompactorExecDelayMilliseconds())
+        .isEqualTo(Long.parseLong(defaultProvider.getDefaultValueFor(
+            StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG)));
   }
 
   @Test
@@ -179,6 +192,31 @@ public class StorageConfigurationsTest {
   }
 
   @Test
+  void propertyFile_compactorExecDelayMilliseconds_throwsIllegalConfigurationException() {
+    // Arrange
+    ConfigurationDefaultProvider defaultProvider = mock(ConfigurationDefaultProvider.class);
+    mockDefaultProvider(defaultProvider);
+    when(defaultProvider
+        .getDefaultValueFor(
+            StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG))
+        .thenReturn("-1");
+
+    StorageConfigurations storageConfigurations = new StorageConfigurations();
+    String[] argv = new String[]{};
+    // Act
+    IllegalConfigurationException exception =
+        assertThrows(IllegalConfigurationException.class, () ->
+            JCommander.newBuilder()
+                .addObject(storageConfigurations)
+                .defaultProvider(defaultProvider)
+                .build()
+                .parse(argv));
+    // Assert
+    assertThat(exception).hasMessageThat()
+        .contains(StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG);
+  }
+
+  @Test
   void commandLineFlags() {
     // Arrange
     ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
@@ -193,15 +231,18 @@ public class StorageConfigurationsTest {
         .build()
         .parse(argv);
     // Assert
-    assertThat(storageConfigurations.getDispatcherCapacity()).isEqualTo(100);
+    assertThat(storageConfigurations.getDispatcherCapacity())
+        .isEqualTo(DISPATCHER_CAPACITY_DEFAULT);
     assertThat(storageConfigurations.getStoreDirectoryPath().toString())
-        .isEqualTo(CLI_ARG_LIST.get(3));
+        .isEqualTo(STORE_DIRECTORY_PATH_DEFAULT.toString());
     assertThat(storageConfigurations.getStorageLoadingMode())
-        .isEqualTo(StorageLoadingMode.LOAD);
+        .isEqualTo(LOADING_MODE_DEFAULT);
     assertThat(storageConfigurations.getMemtableFlushThresholdBytes())
-        .isEqualTo(1);
+        .isEqualTo(MEMTABLE_FLUSH_BYTES_DEFAULT);
     assertThat(storageConfigurations.getSegmentLevelFlushThresholdBytes())
-        .isEqualTo(5);
+        .isEqualTo(SEGMENT_LEVEL_FLUSH_BYTES_DEFAULT);
+    assertThat(storageConfigurations.getCompactorExecDelayMilliseconds())
+        .isEqualTo(COMPACTOR_DELAY_DEFAULT);
   }
 
   @Test
@@ -319,22 +360,48 @@ public class StorageConfigurationsTest {
         .contains(StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG);
   }
 
+  @Test
+  void commandLineFlags_compactorExecDelayMilliseconds_throwsIllegalConfigurationException() {
+    // Arrange
+    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
+        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
+    StorageConfigurations storageConfigurations = new StorageConfigurations();
+
+    String[] argv = CLI_ARG_LIST.toArray(new String[0]);
+    argv[11] = "-1";
+
+    // Act
+    IllegalConfigurationException exception =
+        assertThrows(IllegalConfigurationException.class,
+            () -> JCommander.newBuilder()
+                .addObject(storageConfigurations)
+                .defaultProvider(defaultProvider)
+                .build()
+                .parse(argv));
+    // Assert
+    assertThat(exception).hasMessageThat()
+        .contains(StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG);
+  }
+
   private static void mockDefaultProvider(ConfigurationDefaultProvider defaultProvider) {
     when(defaultProvider
         .getDefaultValueFor(StorageConfigurationsConstants.DISPATCHER_CAPACITY_FLAG))
-        .thenReturn("1");
+        .thenReturn(String.valueOf(DISPATCHER_CAPACITY_DEFAULT));
     when(defaultProvider
         .getDefaultValueFor(StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG))
-        .thenReturn("/tmp/.bitflask");
+        .thenReturn(STORE_DIRECTORY_PATH_DEFAULT.toString());
     when(defaultProvider
         .getDefaultValueFor(StorageConfigurationsConstants.LOADING_MODE_FLAG))
-        .thenReturn("load");
+        .thenReturn(LOADING_MODE_DEFAULT.toString());
     when(defaultProvider
         .getDefaultValueFor(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG))
-        .thenReturn("1");
+        .thenReturn(String.valueOf(MEMTABLE_FLUSH_BYTES_DEFAULT));
     when(defaultProvider
         .getDefaultValueFor(
             StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG))
-        .thenReturn("5");
+        .thenReturn(String.valueOf(SEGMENT_LEVEL_FLUSH_BYTES_DEFAULT));
+    when(defaultProvider
+        .getDefaultValueFor(StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG))
+        .thenReturn(String.valueOf(COMPACTOR_DELAY_DEFAULT));
   }
 }

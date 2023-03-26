@@ -40,6 +40,11 @@ public class StorageConfigurations implements Configurations {
       description = "The number of bytes a Segment Level must exceed before being compacted")
   private long segmentLevelFlushThresholdBytes;
 
+  @Parameter(names = StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG,
+      validateWith = PositiveLongValidator.class,
+      description = "The number of milliseconds to delay between completed compactor executions")
+  private long compactorExecDelayMilliseconds;
+
   public int getDispatcherCapacity() {
     return dispatcherCapacity;
   }
@@ -60,6 +65,10 @@ public class StorageConfigurations implements Configurations {
     return segmentLevelFlushThresholdBytes;
   }
 
+  public long getCompactorExecDelayMilliseconds() {
+    return compactorExecDelayMilliseconds;
+  }
+
   @Override
   public String toString() {
     return "StorageConfigurations{" +
@@ -68,6 +77,7 @@ public class StorageConfigurations implements Configurations {
         ", storageLoadingMode=" + loadingMode +
         ", memtableFlushThresholdBytes=" + memtableFlushThresholdBytes +
         ", segmentLevelFlushThresholdBytes=" + segmentLevelFlushThresholdBytes +
+        ", compactorExecDelayMilliseconds=" + compactorExecDelayMilliseconds +
         '}';
   }
 }

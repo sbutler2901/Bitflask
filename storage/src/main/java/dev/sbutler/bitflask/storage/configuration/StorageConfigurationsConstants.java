@@ -54,6 +54,15 @@ public class StorageConfigurationsConstants {
       SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_PROPERTY_KEY,
       SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_DEFAULT);
 
+  // Compactor Execution Frequency
+  static final String COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG = "--storageCompactorExecDelayMilliSeconds";
+  static final String COMPACTOR_EXEC_DELAY_MILLISECONDS_PROPERTY_KEY = "storage.compactorExecDelayMilliSeconds";
+  static final long COMPACTOR_EXEC_DELAY_MILLISECONDS_DEFAULT = 5000; // 5 second
+  static final Configuration COMPACTOR_EXEC_DELAY_MILLISECONDS_CONFIGURATION = new Configuration(
+      ImmutableList.of(COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG),
+      COMPACTOR_EXEC_DELAY_MILLISECONDS_PROPERTY_KEY,
+      COMPACTOR_EXEC_DELAY_MILLISECONDS_DEFAULT);
+
   public static final ConfigurationFlagMap STORAGE_FLAG_TO_CONFIGURATION_MAP =
       new ConfigurationFlagMap.Builder()
           .put(DISPATCHER_CAPACITY_FLAG, DISPATCHER_CONFIGURATION)
@@ -62,6 +71,8 @@ public class StorageConfigurationsConstants {
           .put(MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG, MEMTABLE_FLUSH_THRESHOLD_BYTES_CONFIGURATION)
           .put(SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG,
               SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_CONFIGURATION)
+          .put(COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG,
+              COMPACTOR_EXEC_DELAY_MILLISECONDS_CONFIGURATION)
           .build();
 
   private StorageConfigurationsConstants() {
