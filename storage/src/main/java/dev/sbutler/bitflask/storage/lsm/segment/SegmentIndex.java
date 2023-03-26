@@ -38,6 +38,6 @@ interface SegmentIndex {
    * Creates the file name for a SegmentIndex with {@code segmentNumber}.
    */
   static String createFileName(int segmentNumber) {
-    return FILE_PREFIX + segmentNumber + FILE_EXTENSION;
+    return FILE_PREFIX + segmentNumber + "." + FILE_EXTENSION;
   }
 }
