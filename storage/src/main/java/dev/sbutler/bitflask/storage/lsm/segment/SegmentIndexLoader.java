@@ -1,11 +1,11 @@
 package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static dev.sbutler.bitflask.storage.lsm.utils.LoaderUtils.loadPathsInDirForGlob;
 
 import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
+import dev.sbutler.bitflask.storage.lsm.utils.LoaderUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,10 +36,10 @@ final class SegmentIndexLoader {
   }
 
   /**
-   * Load all {@link SegmentIndex} in the storage directory.
+   * Loads existing {@link SegmentIndex} in the storage directory.
    */
   ImmutableList<SegmentIndex> load() {
-    ImmutableList<Path> indexPaths = loadPathsInDirForGlob(
+    ImmutableList<Path> indexPaths = LoaderUtils.loadPathsInDirForGlob(
         configurations.getStoreDirectoryPath(), INDEX_GLOB);
 
     try (var scope = new StructuredTaskScope.ShutdownOnFailure("load-index-scope", threadFactory)) {
@@ -58,5 +58,12 @@ final class SegmentIndexLoader {
 
       return indexFutures.stream().map(Future::resultNow).collect(toImmutableList());
     }
+  }
+
+  /**
+   * Deletes all existing {@link SegmentIndex}s in the storage directory.
+   */
+  void truncate() {
+    LoaderUtils.deletePathsInDirForGlob(configurations.getStoreDirectoryPath(), INDEX_GLOB);
   }
 }

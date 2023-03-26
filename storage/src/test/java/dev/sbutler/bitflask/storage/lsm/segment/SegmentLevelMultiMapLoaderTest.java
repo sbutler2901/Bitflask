@@ -4,9 +4,13 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.storage.configuration.StorageLoadingMode;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,14 +23,17 @@ public class SegmentLevelMultiMapLoaderTest {
   private final Segment SEGMENT_0 = mock(Segment.class);
   private final Segment SEGMENT_1 = mock(Segment.class);
 
+  private final StorageConfigurations configurations = mock(StorageConfigurations.class);
   private final SegmentLoader segmentLoader = mock(SegmentLoader.class);
   private final SegmentIndexLoader segmentIndexLoader = mock(SegmentIndexLoader.class);
 
   private final SegmentLevelMultiMapLoader loader =
-      new SegmentLevelMultiMapLoader(segmentLoader, segmentIndexLoader);
+      new SegmentLevelMultiMapLoader(configurations, segmentLoader, segmentIndexLoader);
 
   @BeforeEach
   public void beforeEach() {
+    when(configurations.getStorageLoadingMode()).thenReturn(StorageLoadingMode.LOAD);
+
     when(SEGMENT_INDEX_0.getSegmentNumber()).thenReturn(0);
     when(SEGMENT_INDEX_1.getSegmentNumber()).thenReturn(1);
 
@@ -58,5 +65,16 @@ public class SegmentLevelMultiMapLoaderTest {
         .isEqualTo(
             String.format("Duplicate segment number [%d] for SegmentIndexes found",
                 SEGMENT_INDEX_0.getSegmentNumber()));
+  }
+
+  @Test
+  public void load_withTruncation() {
+    when(configurations.getStorageLoadingMode()).thenReturn(StorageLoadingMode.TRUNCATE);
+
+    SegmentLevelMultiMap levelMultiMap = loader.load();
+
+    assertThat(levelMultiMap.getSegmentLevels()).isEmpty();
+    verify(segmentIndexLoader, times(1)).truncate();
+    verify(segmentLoader, times(1)).truncate();
   }
 }

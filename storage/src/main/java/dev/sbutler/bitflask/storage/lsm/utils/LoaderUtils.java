@@ -33,6 +33,20 @@ public class LoaderUtils {
   }
 
   /**
+   * Deletes all files in the directory that match the glob.
+   */
+  public static void deletePathsInDirForGlob(Path dirPath, String glob) {
+    ImmutableList<Path> paths = loadPathsInDirForGlob(dirPath, glob);
+    for (var path : paths) {
+      try {
+        Files.delete(path);
+      } catch (IOException e) {
+        throw new StorageLoadException(String.format("Failed to delete [%s]", path), e);
+      }
+    }
+  }
+
+  /**
    * Checks that number of loaded bytes equals the expected, or throws a
    * {@link dev.sbutler.bitflask.storage.exceptions.StorageLoadException}.
    */

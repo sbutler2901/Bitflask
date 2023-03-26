@@ -5,6 +5,7 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
@@ -58,6 +59,17 @@ public class SegmentIndexLoaderTest {
 
       assertThat(e).hasCauseThat().isEqualTo(ioException);
       assertThat(e).hasMessageThat().isEqualTo("Failed loading SegmentIndexes");
+    }
+  }
+
+  @Test
+  public void truncate() {
+    try (MockedStatic<LoaderUtils> loaderUtilsMockedStatic = mockStatic(LoaderUtils.class)) {
+      loader.truncate();
+
+      loaderUtilsMockedStatic.verify(
+          () -> LoaderUtils.deletePathsInDirForGlob(any(), any()),
+          times(1));
     }
   }
 }

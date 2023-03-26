@@ -23,9 +23,7 @@ public final class MemtableLoader {
   private final MemtableFactory memtableFactory;
 
   @Inject
-  MemtableLoader(
-      StorageConfigurations configurations,
-      MemtableFactory memtableFactory) {
+  MemtableLoader(StorageConfigurations configurations, MemtableFactory memtableFactory) {
     this.configurations = configurations;
     this.memtableFactory = memtableFactory;
   }
@@ -36,12 +34,12 @@ public final class MemtableLoader {
    */
   public Memtable load() {
     return switch (configurations.getStorageLoadingMode()) {
-      case TRUNCATE -> createMemtableWithTruncation();
-      case LOAD -> createMemtableWithLoading();
+      case TRUNCATE -> createWithTruncation();
+      case LOAD -> createWithLoading();
     };
   }
 
-  private Memtable createMemtableWithTruncation() {
+  private Memtable createWithTruncation() {
     try {
       Memtable memtable = memtableFactory.create();
       logger.atInfo().log("Created Memtable with write ahead log truncation.");
@@ -51,7 +49,7 @@ public final class MemtableLoader {
     }
   }
 
-  private Memtable createMemtableWithLoading() {
+  private Memtable createWithLoading() {
     ImmutableList<Entry> loadEntries = loadEntries();
     SortedMap<String, Entry> keyEntryMap = EntryUtils.buildKeyEntryMap(loadEntries);
 

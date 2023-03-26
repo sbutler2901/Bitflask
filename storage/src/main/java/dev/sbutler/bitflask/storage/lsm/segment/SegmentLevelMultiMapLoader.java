@@ -7,21 +7,40 @@ import static java.util.function.Function.identity;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
+import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import javax.inject.Inject;
 
 public final class SegmentLevelMultiMapLoader {
 
+  private final StorageConfigurations configurations;
   private final SegmentLoader segmentLoader;
   private final SegmentIndexLoader segmentIndexLoader;
 
   @Inject
-  SegmentLevelMultiMapLoader(SegmentLoader segmentLoader, SegmentIndexLoader segmentIndexLoader) {
+  SegmentLevelMultiMapLoader(
+      StorageConfigurations configurations,
+      SegmentLoader segmentLoader,
+      SegmentIndexLoader segmentIndexLoader) {
+    this.configurations = configurations;
     this.segmentLoader = segmentLoader;
     this.segmentIndexLoader = segmentIndexLoader;
   }
 
   public SegmentLevelMultiMap load() {
+    return switch (configurations.getStorageLoadingMode()) {
+      case TRUNCATE -> createWithTruncation();
+      case LOAD -> createWithLoading();
+    };
+  }
+
+  private SegmentLevelMultiMap createWithTruncation() {
+    segmentIndexLoader.truncate();
+    segmentLoader.truncate();
+    return SegmentLevelMultiMap.builder().build();
+  }
+
+  private SegmentLevelMultiMap createWithLoading() {
     // Load SegmentIndexes
     ImmutableList<SegmentIndex> indexes = segmentIndexLoader.load();
     ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap =
