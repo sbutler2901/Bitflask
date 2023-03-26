@@ -8,7 +8,9 @@ import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.exceptions.StorageCompactionException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryUtils;
+import dev.sbutler.bitflask.storage.lsm.segment.Segment.PathsForDeletion;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -51,9 +53,13 @@ public final class SegmentLevelCompactor {
       throw new StorageCompactionException("Failed creating new segment", e);
     }
 
-    logger.atInfo().log("Compacted segment level [%d] removing [%d] duplicate Entries",
-        segmentLevel,
-        entriesInLevel.size() - keyEntryMap.size());
+    deleteCompactedSegments(segmentsInLevel);
+
+    logger.atInfo()
+        .log("Compacted segment level [%d] into Segment [%d] removing [%d] duplicate Entries",
+            segmentLevel,
+            newSegment.getSegmentNumber(),
+            entriesInLevel.size() - keyEntryMap.size());
 
     return segmentLevelMultiMap.toBuilder()
         .clearSegmentLevel(segmentLevel)
@@ -84,6 +90,32 @@ public final class SegmentLevelCompactor {
           .map(Future::resultNow)
           .flatMap(ImmutableList::stream)
           .collect(toImmutableList());
+    }
+  }
+
+  /**
+   * Best effort deletion of all compacted {@link Segment}s and their {@link SegmentIndex}.
+   */
+  private void deleteCompactedSegments(ImmutableList<Segment> compactedSegments) {
+    for (var segment : compactedSegments) {
+      PathsForDeletion pathsForDeletion = segment.getPathsForDeletion();
+      try {
+        Files.delete(pathsForDeletion.segmentPath());
+        logger.atInfo().log(String.format("Deleted Segment [%s]", pathsForDeletion.segmentPath()));
+      } catch (IOException e) {
+        logger.atWarning().withCause(e)
+            .log(String.format("Failed to delete Segment [%s]", pathsForDeletion.segmentPath()));
+        // Don't delete index if Segment failed to be deleted
+        return;
+      }
+      try {
+        Files.delete(pathsForDeletion.indexPath());
+        logger.atInfo()
+            .log(String.format("Deleted SegmentIndex [%s]", pathsForDeletion.indexPath()));
+      } catch (IOException e) {
+        logger.atWarning().withCause(e)
+            .log(String.format("Failed to delete SegmentIndex [%s]", pathsForDeletion.indexPath()));
+      }
     }
   }
 }
