@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.storage.lsm;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -11,7 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
+import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import java.time.Instant;
 import java.util.Optional;
@@ -27,11 +26,9 @@ public class LSMTreeTest {
       ListeningScheduledExecutorService.class);
   private final LSMTreeReader reader = mock(LSMTreeReader.class);
   private final LSMTreeWriter writer = mock(LSMTreeWriter.class);
-  private final LSMTreeLoader loader = mock(LSMTreeLoader.class);
-  private final LSMTreeCompactor compactor = mock(LSMTreeCompactor.class);
 
-  private final LSMTree lsmTree = new LSMTree(
-      scheduledExecutorService, reader, writer, loader, compactor);
+  private final LSMTree lsmTree =
+      new LSMTree(scheduledExecutorService, reader, writer);
 
   @Test
   public void read_entryFound_returnsValue() {
@@ -84,21 +81,13 @@ public class LSMTreeTest {
   }
 
   @Test
-  public void load() {
-    lsmTree.load();
+  public void close() {
+    lsmTree.close();
 
-    verify(loader, times(1)).load();
-    verify(scheduledExecutorService, times(1)).scheduleWithFixedDelay(any(), any(), any());
-  }
+    assertThrows(StorageException.class, () -> lsmTree.read("key"));
+    assertThrows(StorageException.class, () -> lsmTree.write("key", "value"));
+    assertThrows(StorageException.class, () -> lsmTree.delete("key"));
 
-  @Test
-  public void load_multipleCalls_throwsStorageLoadException() {
-    lsmTree.load();
-
-    StorageLoadException e = assertThrows(StorageLoadException.class, lsmTree::load);
-
-    assertThat(e).hasMessageThat().isEqualTo("LSMTree should only be loaded once at startup.");
-    verify(loader, times(1)).load();
-    verify(scheduledExecutorService, times(1)).scheduleWithFixedDelay(any(), any(), any());
+    verify(scheduledExecutorService, times(1)).close();
   }
 }

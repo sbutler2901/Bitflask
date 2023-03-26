@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
-import dev.sbutler.bitflask.storage.lsm.LSMTree;
+import dev.sbutler.bitflask.storage.lsm.LSMTreeLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,9 +24,9 @@ public class StorageLoaderTest {
   private static final Path DIR_PATH = Path.of("/tmp/.bitflask");
 
   private final StorageConfigurations config = mock(StorageConfigurations.class);
-  private final LSMTree lsmTree = mock(LSMTree.class);
+  private final LSMTreeLoader lsmTreeLoader = mock(LSMTreeLoader.class);
 
-  private final StorageLoader storageLoader = new StorageLoader(config, lsmTree);
+  private final StorageLoader storageLoader = new StorageLoader(config, lsmTreeLoader);
 
   @BeforeEach
   public void beforeEach() {
@@ -40,7 +40,7 @@ public class StorageLoaderTest {
 
       filesMockedStatic.verify(() -> Files.createDirectories(any()), times(1));
 
-      verify(lsmTree, times(1)).load();
+      verify(lsmTreeLoader, times(1)).load();
     }
   }
 
@@ -57,7 +57,7 @@ public class StorageLoaderTest {
       assertThat(exception).hasMessageThat()
           .isEqualTo(String.format("Failed to create storage directory path [%s]", DIR_PATH));
 
-      verify(lsmTree, times(0)).load();
+      verify(lsmTreeLoader, times(0)).load();
     }
   }
 }

@@ -1,10 +1,12 @@
 package dev.sbutler.bitflask.storage.lsm;
 
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import dev.sbutler.bitflask.storage.lsm.memtable.MemtableLoader;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMapLoader;
+import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import javax.inject.Inject;
@@ -13,26 +15,41 @@ import jdk.incubator.concurrent.StructuredTaskScope;
 /**
  * Handles loading all necessary resources at start up for the {@link LSMTree}.
  */
-final class LSMTreeLoader {
+public final class LSMTreeLoader {
 
+  private final ListeningScheduledExecutorService scheduledExecutorService;
+  private final ThreadFactory threadFactory;
   private final LSMTreeStateManager stateManager;
+  private final LSMTreeCompactor compactor;
   private final MemtableLoader memtableLoader;
   private final SegmentLevelMultiMapLoader segmentLevelMultiMapLoader;
-  private final ThreadFactory threadFactory;
 
   @Inject
-  LSMTreeLoader(LSMTreeStateManager stateManager, MemtableLoader memtableLoader,
-      SegmentLevelMultiMapLoader segmentLevelMultiMapLoader, ThreadFactory threadFactory) {
+  LSMTreeLoader(
+      @LSMTreeListeningScheduledExecutorService
+      ListeningScheduledExecutorService scheduledExecutorService,
+      ThreadFactory threadFactory,
+      LSMTreeStateManager stateManager,
+      LSMTreeCompactor compactor,
+      MemtableLoader memtableLoader,
+      SegmentLevelMultiMapLoader segmentLevelMultiMapLoader) {
+    this.scheduledExecutorService = scheduledExecutorService;
+    this.threadFactory = threadFactory;
     this.stateManager = stateManager;
+    this.compactor = compactor;
     this.memtableLoader = memtableLoader;
     this.segmentLevelMultiMapLoader = segmentLevelMultiMapLoader;
-    this.threadFactory = threadFactory;
   }
 
   /**
    * Initiate loading of all {@link LSMTree} resources.
    */
   public void load() {
+    loadMemtableAndSegmentLevelMultiMap();
+    scheduleCompactor();
+  }
+
+  private void loadMemtableAndSegmentLevelMultiMap() {
     try (var scope = new StructuredTaskScope.ShutdownOnFailure(
         "lsm-tree-loader", threadFactory)) {
       Future<Memtable> memtable = scope.fork(memtableLoader::load);
@@ -50,5 +67,10 @@ final class LSMTreeLoader {
         stateManager.updateCurrentState(memtable.resultNow(), multiMap.resultNow());
       }
     }
+  }
+
+  private void scheduleCompactor() {
+    scheduledExecutorService.scheduleWithFixedDelay(
+        compactor, Duration.ofMinutes(0), Duration.ofMinutes(1));
   }
 }

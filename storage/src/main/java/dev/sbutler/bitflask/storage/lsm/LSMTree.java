@@ -1,12 +1,10 @@
 package dev.sbutler.bitflask.storage.lsm;
 
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
+import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -20,30 +18,25 @@ public final class LSMTree {
   private final ListeningScheduledExecutorService scheduledExecutorService;
   private final LSMTreeReader reader;
   private final LSMTreeWriter writer;
-  private final LSMTreeLoader loader;
-  private final LSMTreeCompactor compactor;
 
-  private final AtomicBoolean isLoaded = new AtomicBoolean(false);
+  private volatile boolean isClosed = false;
 
   @Inject
   LSMTree(
       @LSMTreeListeningScheduledExecutorService
       ListeningScheduledExecutorService scheduledExecutorService,
       LSMTreeReader reader,
-      LSMTreeWriter writer,
-      LSMTreeLoader loader,
-      LSMTreeCompactor compactor) {
+      LSMTreeWriter writer) {
     this.scheduledExecutorService = scheduledExecutorService;
     this.reader = reader;
     this.writer = writer;
-    this.loader = loader;
-    this.compactor = compactor;
   }
 
   /**
    * Reads the value of the provided key and returns it, if present.
    */
   public Optional<String> read(String key) {
+    checkOpenOrThrow();
     return reader.read(key).filter(Predicate.not(Entry::isDeleted)).map(Entry::value);
   }
 
@@ -51,6 +44,7 @@ public final class LSMTree {
    * Writes the provided key:value pair.
    */
   public void write(String key, String value) {
+    checkOpenOrThrow();
     Entry entry = new Entry(Instant.now().getEpochSecond(), key, value);
     writer.write(entry);
   }
@@ -59,19 +53,24 @@ public final class LSMTree {
    * Deletes the key and any associated entry.
    */
   public void delete(String key) {
+    checkOpenOrThrow();
     write(key, "");
   }
 
-  /**
-   * Initiates loading of all LSMTree resources.
-   */
-  public void load() {
-    if (isLoaded.getAndSet(true)) {
-      throw new StorageLoadException("LSMTree should only be loaded once at startup.");
+  private void checkOpenOrThrow() {
+    if (isClosed) {
+      throw new StorageException("The LSMTree is closed");
     }
-    loader.load();
-    scheduledExecutorService.scheduleWithFixedDelay(
-        compactor, Duration.ofMinutes(0), Duration.ofMinutes(1));
   }
 
+  /**
+   * Closes the LSMTree and all dependencies.
+   *
+   * <p>Blocks until fully closed.
+   */
+  public void close() {
+    // TODO: implement fully.
+    isClosed = true;
+    scheduledExecutorService.close();
+  }
 }

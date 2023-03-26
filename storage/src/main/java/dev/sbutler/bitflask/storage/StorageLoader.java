@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.storage;
 
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
-import dev.sbutler.bitflask.storage.lsm.LSMTree;
+import dev.sbutler.bitflask.storage.lsm.LSMTreeLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import javax.inject.Inject;
@@ -13,18 +13,17 @@ import javax.inject.Inject;
 final class StorageLoader {
 
   private final StorageConfigurations configurations;
-  private final LSMTree lsmTree;
+  private final LSMTreeLoader lsmTreeLoader;
 
   @Inject
-  StorageLoader(StorageConfigurations configurations, LSMTree lsmTree) {
+  StorageLoader(StorageConfigurations configurations, LSMTreeLoader lsmTreeLoader) {
     this.configurations = configurations;
-    this.lsmTree = lsmTree;
+    this.lsmTreeLoader = lsmTreeLoader;
   }
 
-  void load() {
+  public void load() {
     createStorageDirectory();
-
-    lsmTree.load();
+    lsmTreeLoader.load();
   }
 
   /**
