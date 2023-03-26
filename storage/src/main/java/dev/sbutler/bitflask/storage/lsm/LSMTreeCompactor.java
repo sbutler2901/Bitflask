@@ -119,7 +119,7 @@ final class LSMTreeCompactor implements Runnable {
 
     int segmentLevel = 0;
     for (; segmentLevelMultiMap.getNumBytesSizeOfSegmentLevel(segmentLevel)
-        >= configurations.getSegmentLevelFlushThresholdBytes();
+        >= getSegmentLevelFlushThreshold(segmentLevel);
         segmentLevel++) {
       segmentLevelMultiMap = segmentLevelCompactor
           .compactSegmentLevel(segmentLevelMultiMap, segmentLevel);
@@ -132,5 +132,10 @@ final class LSMTreeCompactor implements Runnable {
       }
     }
     return segmentLevel;
+  }
+
+  private long getSegmentLevelFlushThreshold(int segmentLevel) {
+    return Math.round(
+        Math.pow(configurations.getSegmentLevelFlushThresholdBytes(), (segmentLevel + 1)));
   }
 }
