@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm.segment;
 
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import java.nio.file.Path;
 import java.util.Optional;
 
 /**
@@ -40,4 +41,9 @@ interface SegmentIndex {
   static String createFileName(int segmentNumber) {
     return FILE_PREFIX + segmentNumber + "." + FILE_EXTENSION;
   }
+
+  /**
+   * Gets the SegmentIndex's file path.
+   */
+  Path getFilePath();
 }

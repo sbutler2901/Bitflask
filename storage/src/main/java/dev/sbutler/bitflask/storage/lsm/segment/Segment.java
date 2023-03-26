@@ -7,6 +7,7 @@ import com.google.common.hash.BloomFilter;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Optional;
 
 /**
@@ -24,17 +25,21 @@ public final class Segment {
    */
   public static final String FILE_EXTENSION = "seg";
 
+  private final Path filePath;
   private final SegmentMetadata metadata;
   private final EntryReader entryReader;
   private final BloomFilter<String> keyFilter;
   private final SegmentIndex segmentIndex;
   private final long numBytesSize;
 
-  private Segment(SegmentMetadata metadata,
+  private Segment(
+      Path filePath,
+      SegmentMetadata metadata,
       EntryReader entryReader,
       BloomFilter<String> keyFilter,
       SegmentIndex segmentIndex,
       long size) {
+    this.filePath = filePath;
     this.metadata = metadata;
     this.entryReader = entryReader;
     this.keyFilter = keyFilter;
@@ -42,7 +47,9 @@ public final class Segment {
     this.numBytesSize = size;
   }
 
-  static Segment create(SegmentMetadata metadata,
+  static Segment create(
+      Path filePath,
+      SegmentMetadata metadata,
       EntryReader entryReader,
       BloomFilter<String> keyFilter,
       SegmentIndex segmentIndex,
@@ -51,7 +58,7 @@ public final class Segment {
         "SegmentMetadata segmentNumber does not match SegmentIndex segmentNumber. [%s], [%s]",
         metadata.getSegmentNumber(), segmentIndex.getSegmentNumber());
 
-    return new Segment(metadata, entryReader, keyFilter, segmentIndex, numBytesSize);
+    return new Segment(filePath, metadata, entryReader, keyFilter, segmentIndex, numBytesSize);
   }
 
   /**
@@ -112,5 +119,13 @@ public final class Segment {
    */
   static String createFileName(int segmentNumber) {
     return FILE_PREFIX + segmentNumber + "." + FILE_EXTENSION;
+  }
+
+  PathsForDeletion getPathsForDeletion() {
+    return new PathsForDeletion(filePath, segmentIndex.getFilePath());
+  }
+
+  record PathsForDeletion(Path segmentPath, Path indexPath) {
+
   }
 }

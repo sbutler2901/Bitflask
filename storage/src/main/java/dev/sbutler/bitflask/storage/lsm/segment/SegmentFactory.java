@@ -81,8 +81,13 @@ public final class SegmentFactory {
 
     SegmentIndex segmentIndex = indexFactory.create(keyOffsetMap, segmentNumber);
 
-    return Segment.create(segmentMetadata, EntryReader.create(segmentPath),
-        keyFilter, segmentIndex, numBytesSize);
+    return Segment.create(
+        segmentPath,
+        segmentMetadata,
+        EntryReader.create(segmentPath),
+        keyFilter,
+        segmentIndex,
+        numBytesSize);
   }
 
   /**
@@ -151,6 +156,6 @@ public final class SegmentFactory {
 
     nextSegmentNumber.getAndUpdate(current -> Math.max(1 + metadata.getSegmentNumber(), current));
 
-    return Segment.create(metadata, entryReader, keyFilter, index, numBytesSize);
+    return Segment.create(path, metadata, entryReader, keyFilter, index, numBytesSize);
   }
 }

@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.lsm.segment;
 
 import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import java.nio.file.Path;
 import java.util.Optional;
 
 /**
@@ -12,10 +13,15 @@ import java.util.Optional;
  */
 final class SegmentIndexDense implements SegmentIndex {
 
+  private final Path filePath;
   private final SegmentIndexMetadata metadata;
   private final ImmutableSortedMap<String, Long> keyOffsetMap;
 
-  SegmentIndexDense(SegmentIndexMetadata metadata, ImmutableSortedMap<String, Long> keyOffsetMap) {
+  SegmentIndexDense(
+      Path filePath,
+      SegmentIndexMetadata metadata,
+      ImmutableSortedMap<String, Long> keyOffsetMap) {
+    this.filePath = filePath;
     this.metadata = metadata;
     this.keyOffsetMap = keyOffsetMap;
   }
@@ -32,4 +38,7 @@ final class SegmentIndexDense implements SegmentIndex {
     return metadata.segmentNumber().value();
   }
 
+  public Path getFilePath() {
+    return filePath;
+  }
 }

@@ -53,7 +53,7 @@ final class SegmentIndexFactory {
       }
     }
 
-    return new SegmentIndexDense(indexMetadata, indexKeyOffsetMap.build());
+    return new SegmentIndexDense(indexPath, indexMetadata, indexKeyOffsetMap.build());
   }
 
   /**
@@ -72,7 +72,7 @@ final class SegmentIndexFactory {
         indexKeyOffsetMap.put(nextEntry.get().key(), nextEntry.get().offset());
       }
 
-      return new SegmentIndexDense(metadata, indexKeyOffsetMap.build());
+      return new SegmentIndexDense(path, metadata, indexKeyOffsetMap.build());
     }
   }
 
