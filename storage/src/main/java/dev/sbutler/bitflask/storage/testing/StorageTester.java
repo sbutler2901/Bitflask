@@ -47,7 +47,7 @@ final class StorageTester implements Runnable {
 
     ImmutableList<StorageCommandDTO> storageCommands = getStorageCommands();
     ImmutableList<ListenableFuture<StorageResponse>> responseFutures =
-        submitStorageCommandsSequentially(storageCommands);
+        submitStorageCommandsSequentiallyWithDelay(storageCommands, 10, Duration.ofMillis(500));
     ListenableFuture<ImmutableList<Result>> resultsFuture =
         combineResponseFutures(responseFutures);
 
@@ -89,6 +89,22 @@ final class StorageTester implements Runnable {
   private ImmutableList<ListenableFuture<StorageResponse>> submitStorageCommandsSequentially(
       ImmutableList<StorageCommandDTO> commands) {
     return commands.stream().map(storageCommandDispatcher::put).collect(toImmutableList());
+  }
+
+  private ImmutableList<ListenableFuture<StorageResponse>> submitStorageCommandsSequentiallyWithDelay(
+      ImmutableList<StorageCommandDTO> commands, int delayAfterNumSubmitted, Duration delay) {
+    ImmutableList.Builder<ListenableFuture<StorageResponse>> responses = ImmutableList.builder();
+    for (int i = 0; i < commands.size(); i++) {
+      responses.add(storageCommandDispatcher.put(commands.get(i)));
+      if (i % delayAfterNumSubmitted == 0) {
+        try {
+          Thread.sleep(delay);
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+    return responses.build();
   }
 
   private ListenableFuture<ImmutableList<Result>> combineResponseFutures(
