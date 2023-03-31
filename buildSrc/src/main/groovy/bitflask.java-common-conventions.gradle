@@ -15,8 +15,8 @@ repositories {
 }
 
 compileJava {
-    sourceCompatibility = '19'
-    targetCompatibility = '19'
+    sourceCompatibility = '20'
+    targetCompatibility = '20'
 }
 
 dependencies {
@@ -35,6 +35,7 @@ dependencies {
     implementation 'com.beust:jcommander:1.82'
 
     // Testing
+
     testImplementation 'com.google.guava:guava-testlib:31.1-jre'
 
     testImplementation "com.google.truth:truth:1.1.3"
@@ -46,13 +47,20 @@ dependencies {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.compilerArgs.addAll(['--enable-preview', '--add-modules', 'jdk.incubator.concurrent'])
+    options.compilerArgs.addAll(['--enable-preview'])
+    options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.concurrent'])
 }
 
 tasks.withType(Test).configureEach {
-    jvmArgs.addAll(['--enable-preview', '--add-modules', 'jdk.incubator.concurrent'])
+    // gradle-8.1-rc-2 throws when addAll() used
+    jvmArgs += "--enable-preview"
+    jvmArgs += "--add-modules"
+    jvmArgs += "jdk.incubator.concurrent"
 }
 
 tasks.withType(JavaExec).configureEach {
-    jvmArgs.addAll(['--enable-preview', '--add-modules', 'jdk.incubator.concurrent'])
+    // gradle-8.1-rc-2 throws when addAll() used
+    jvmArgs += "--enable-preview"
+    jvmArgs += "--add-modules"
+    jvmArgs += "jdk.incubator.concurrent"
 }
