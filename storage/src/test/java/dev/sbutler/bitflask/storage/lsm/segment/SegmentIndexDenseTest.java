@@ -5,16 +5,19 @@ import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 public class SegmentIndexDenseTest {
+
+  private static final Path PATH = Path.of("/tmp/index_0.idx");
 
   @Test
   public void mightContain_absent_false() {
     SegmentIndexMetadata metadata = new SegmentIndexMetadata(UnsignedShort.valueOf(0));
     ImmutableSortedMap<String, Long> keyOffsetMap =
         ImmutableSortedMap.<String, Long>naturalOrder().buildOrThrow();
-    SegmentIndexDense segmentIndex = new SegmentIndexDense(metadata, keyOffsetMap);
+    SegmentIndexDense segmentIndex = new SegmentIndexDense(PATH, metadata, keyOffsetMap);
 
     assertThat(segmentIndex.mightContain("key")).isFalse();
   }
@@ -25,7 +28,7 @@ public class SegmentIndexDenseTest {
     ImmutableSortedMap<String, Long> keyOffsetMap =
         ImmutableSortedMap.<String, Long>naturalOrder()
             .put("key", 0L).buildOrThrow();
-    SegmentIndexDense segmentIndex = new SegmentIndexDense(metadata, keyOffsetMap);
+    SegmentIndexDense segmentIndex = new SegmentIndexDense(PATH, metadata, keyOffsetMap);
 
     assertThat(segmentIndex.mightContain("key")).isTrue();
   }
@@ -35,7 +38,7 @@ public class SegmentIndexDenseTest {
     SegmentIndexMetadata metadata = new SegmentIndexMetadata(UnsignedShort.valueOf(0));
     ImmutableSortedMap<String, Long> keyOffsetMap =
         ImmutableSortedMap.<String, Long>naturalOrder().buildOrThrow();
-    SegmentIndexDense segmentIndex = new SegmentIndexDense(metadata, keyOffsetMap);
+    SegmentIndexDense segmentIndex = new SegmentIndexDense(PATH, metadata, keyOffsetMap);
 
     assertThat(segmentIndex.getKeyOffset("key")).isEmpty();
   }
@@ -46,7 +49,7 @@ public class SegmentIndexDenseTest {
     ImmutableSortedMap<String, Long> keyOffsetMap =
         ImmutableSortedMap.<String, Long>naturalOrder()
             .put("key", 0L).buildOrThrow();
-    SegmentIndexDense segmentIndex = new SegmentIndexDense(metadata, keyOffsetMap);
+    SegmentIndexDense segmentIndex = new SegmentIndexDense(PATH, metadata, keyOffsetMap);
 
     assertThat(segmentIndex.getKeyOffset("key")).hasValue(0L);
   }
@@ -56,7 +59,7 @@ public class SegmentIndexDenseTest {
     SegmentIndexMetadata metadata = new SegmentIndexMetadata(UnsignedShort.valueOf(0));
     ImmutableSortedMap<String, Long> keyOffsetMap =
         ImmutableSortedMap.<String, Long>naturalOrder().buildOrThrow();
-    SegmentIndexDense segmentIndex = new SegmentIndexDense(metadata, keyOffsetMap);
+    SegmentIndexDense segmentIndex = new SegmentIndexDense(PATH, metadata, keyOffsetMap);
 
     assertThat(segmentIndex.getSegmentNumber()).isEqualTo(0);
   }
