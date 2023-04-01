@@ -8,7 +8,7 @@ import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.exceptions.StorageCompactionException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryUtils;
-import dev.sbutler.bitflask.storage.lsm.segment.Segment.PathsForDeletion;
+import dev.sbutler.bitflask.storage.lsm.segment.Segment.SegmentRelatedPaths;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.concurrent.Future;
@@ -95,7 +95,7 @@ public final class SegmentLevelCompactor {
    */
   private void deleteCompactedSegments(ImmutableList<Segment> compactedSegments) {
     for (var segment : compactedSegments) {
-      PathsForDeletion pathsForDeletion = segment.getPathsForDeletion();
+      SegmentRelatedPaths pathsForDeletion = segment.getSegmentRelatedPaths();
       try {
         Files.delete(pathsForDeletion.segmentPath());
         logger.atInfo().log(String.format("Deleted Segment [%s]", pathsForDeletion.segmentPath()));

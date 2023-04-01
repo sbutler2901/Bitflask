@@ -15,7 +15,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.storage.exceptions.StorageCompactionException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
-import dev.sbutler.bitflask.storage.lsm.segment.Segment.PathsForDeletion;
+import dev.sbutler.bitflask.storage.lsm.segment.Segment.SegmentRelatedPaths;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,14 +56,14 @@ public class SegmentLevelCompactorTest {
     when(segment_0.getSegmentLevel()).thenReturn(SEGMENT_LEVEL);
     when(segment_0.getSegmentNumber()).thenReturn(0);
     when(segment_0.readAllEntries()).thenReturn(ImmutableList.of(ENTRY_0));
-    when(segment_0.getPathsForDeletion())
-        .thenReturn(new PathsForDeletion(SEGMENT_PATH_0, SEGMENT_INDEX_PATH_0));
+    when(segment_0.getSegmentRelatedPaths())
+        .thenReturn(new SegmentRelatedPaths(SEGMENT_PATH_0, SEGMENT_INDEX_PATH_0));
 
     when(segment_1.getSegmentLevel()).thenReturn(SEGMENT_LEVEL + 1);
     when(segment_1.getSegmentNumber()).thenReturn(1);
     when(segment_1.readAllEntries()).thenReturn(ImmutableList.of(ENTRY_1));
-    when(segment_1.getPathsForDeletion())
-        .thenReturn(new PathsForDeletion(SEGMENT_PATH_1, SEGMENT_INDEX_PATH_1));
+    when(segment_1.getSegmentRelatedPaths())
+        .thenReturn(new SegmentRelatedPaths(SEGMENT_PATH_1, SEGMENT_INDEX_PATH_1));
 
     segmentLevelMultiMap = SegmentLevelMultiMap.builder()
         .add(segment_0)

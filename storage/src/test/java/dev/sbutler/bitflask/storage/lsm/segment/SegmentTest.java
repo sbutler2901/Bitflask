@@ -16,7 +16,7 @@ import com.google.common.hash.Funnels;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
-import dev.sbutler.bitflask.storage.lsm.segment.Segment.PathsForDeletion;
+import dev.sbutler.bitflask.storage.lsm.segment.Segment.SegmentRelatedPaths;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -178,7 +178,7 @@ public class SegmentTest {
     Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter,
         emptySegmentIndex, 0);
 
-    PathsForDeletion pathsForDeletion = segment.getPathsForDeletion();
+    SegmentRelatedPaths pathsForDeletion = segment.getSegmentRelatedPaths();
 
     assertThat(pathsForDeletion.segmentPath()).isEqualTo(SEGMENT_PATH);
     assertThat(pathsForDeletion.indexPath()).isEqualTo(INDEX_PATH);

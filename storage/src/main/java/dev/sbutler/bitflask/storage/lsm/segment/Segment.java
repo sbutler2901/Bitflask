@@ -121,11 +121,17 @@ public final class Segment {
     return FILE_PREFIX + segmentNumber + "." + FILE_EXTENSION;
   }
 
-  PathsForDeletion getPathsForDeletion() {
-    return new PathsForDeletion(filePath, segmentIndex.getFilePath());
+  /**
+   * Gets the {@link SegmentRelatedPaths}.
+   */
+  SegmentRelatedPaths getSegmentRelatedPaths() {
+    return new SegmentRelatedPaths(filePath, segmentIndex.getFilePath());
   }
 
-  record PathsForDeletion(Path segmentPath, Path indexPath) {
+  /**
+   * The file paths related to a {@link Segment}.
+   */
+  record SegmentRelatedPaths(Path segmentPath, Path indexPath) {
 
   }
 }
