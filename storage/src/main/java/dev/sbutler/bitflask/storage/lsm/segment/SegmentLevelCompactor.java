@@ -11,8 +11,6 @@ import dev.sbutler.bitflask.storage.lsm.entry.EntryUtils;
 import dev.sbutler.bitflask.storage.lsm.segment.Segment.PathsForDeletion;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import javax.inject.Inject;
@@ -71,11 +69,10 @@ public final class SegmentLevelCompactor {
       ImmutableList<Segment> segmentsInLevel) {
     try (var scope = new StructuredTaskScope.ShutdownOnFailure("compact-segments-level-scope",
         threadFactory)) {
-      List<Future<ImmutableList<Entry>>> segmentEntriesFutures =
-          new ArrayList<>(segmentsInLevel.size());
-      for (var segment : segmentsInLevel) {
-        segmentEntriesFutures.add(scope.fork(segment::readAllEntries));
-      }
+      ImmutableList<Future<ImmutableList<Entry>>> segmentEntriesFutures =
+          segmentsInLevel.stream()
+              .map(segment -> scope.fork(segment::readAllEntries))
+              .collect(toImmutableList());
 
       try {
         scope.join();
@@ -103,17 +100,17 @@ public final class SegmentLevelCompactor {
         Files.delete(pathsForDeletion.segmentPath());
         logger.atInfo().log(String.format("Deleted Segment [%s]", pathsForDeletion.segmentPath()));
       } catch (IOException e) {
-        logger.atWarning().withCause(e)
+        logger.atSevere().withCause(e)
             .log(String.format("Failed to delete Segment [%s]", pathsForDeletion.segmentPath()));
         // Don't delete index if Segment failed to be deleted
-        return;
+        continue;
       }
       try {
         Files.delete(pathsForDeletion.indexPath());
         logger.atInfo()
             .log(String.format("Deleted SegmentIndex [%s]", pathsForDeletion.indexPath()));
       } catch (IOException e) {
-        logger.atWarning().withCause(e)
+        logger.atSevere().withCause(e)
             .log(String.format("Failed to delete SegmentIndex [%s]", pathsForDeletion.indexPath()));
       }
     }
