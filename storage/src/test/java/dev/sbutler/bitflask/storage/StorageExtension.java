@@ -12,6 +12,7 @@ import dev.sbutler.bitflask.common.concurrency.VirtualThreadConcurrencyModule;
 import dev.sbutler.bitflask.common.configuration.ConfigurationsBuilder;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurationsConstants;
+import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import java.time.Duration;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeoutException;
@@ -19,9 +20,12 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.junit.jupiter.api.extension.ParameterResolver;
 
 @SuppressWarnings("UnstableApiUsage")
-public class StorageExtension implements BeforeAllCallback, AfterAllCallback {
+public class StorageExtension implements ParameterResolver, BeforeAllCallback, AfterAllCallback {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -45,18 +49,15 @@ public class StorageExtension implements BeforeAllCallback, AfterAllCallback {
 
   @Override
   public void beforeAll(ExtensionContext context) {
-    Injector injector = Guice.createInjector(ImmutableSet.of(
+    var injector = Guice.createInjector(ImmutableSet.of(
         new VirtualThreadConcurrencyModule(),
         new StorageServiceModule(configurations)));
 
     var serviceManager = new ServiceManager(ImmutableSet.of(
         injector.getInstance(StorageService.class)));
-    var listeningExecutorService =
-        injector.getInstance(ListeningExecutorService.class);
 
-    context.getStore(NAMESPACE).put(ServiceManager.class.getName(), serviceManager);
-    context.getStore(NAMESPACE)
-        .put(ListeningExecutorService.class.getName(), listeningExecutorService);
+    putInStore(context, injector);
+    putInStore(context, serviceManager);
 
     printConfigInfo(configurations);
   }
@@ -64,15 +65,35 @@ public class StorageExtension implements BeforeAllCallback, AfterAllCallback {
   @Override
   public void afterAll(ExtensionContext context) {
     try {
-      var serviceManager = context.getStore(NAMESPACE)
-          .get(ServiceManager.class.getName(), ServiceManager.class);
+      var serviceManager = getFromStore(context, ServiceManager.class);
       serviceManager.stopAsync().awaitStopped(Duration.ofSeconds(5));
     } catch (TimeoutException timeout) {
       logger.atSevere().withCause(timeout).log("ServiceManager timed out while stopping");
     }
-    var listeningExecutorService = context.getStore(NAMESPACE)
-        .get(ListeningExecutorService.class.getName(), ListeningExecutorService.class);
+
+    var listeningExecutorService = getFromStore(context, Injector.class)
+        .getInstance(Injector.class).getInstance(ListeningExecutorService.class);
     shutdownAndAwaitTermination(listeningExecutorService, Duration.ofSeconds(5));
+  }
+
+  @Override
+  public boolean supportsParameter(ParameterContext parameterContext,
+      ExtensionContext extensionContext) throws ParameterResolutionException {
+    return StorageCommandDispatcher.class.equals(parameterContext.getParameter().getType());
+  }
+
+  @Override
+  public Object resolveParameter(ParameterContext parameterContext,
+      ExtensionContext extensionContext) throws ParameterResolutionException {
+    return getFromStore(extensionContext, extensionContext.getRequiredTestClass());
+  }
+
+  private void putInStore(ExtensionContext context, Object object) {
+    context.getStore(NAMESPACE).put(object.getClass().getName(), object);
+  }
+
+  private <T> T getFromStore(ExtensionContext context, Class<T> clazz) {
+    return context.getStore(NAMESPACE).get(clazz.getName(), clazz);
   }
 
   private static StorageConfigurations initializeConfiguration(String[] args) {
@@ -92,4 +113,5 @@ public class StorageExtension implements BeforeAllCallback, AfterAllCallback {
 
     logger.atInfo().log(storageConfigurations.toString());
   }
+
 }
