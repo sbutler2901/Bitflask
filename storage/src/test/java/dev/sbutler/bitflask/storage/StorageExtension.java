@@ -48,7 +48,7 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
   }
 
   @Override
-  public void beforeAll(ExtensionContext context) {
+  public void beforeAll(ExtensionContext extensionContext) throws Exception {
     var injector = Guice.createInjector(ImmutableSet.of(
         new VirtualThreadConcurrencyModule(),
         new StorageServiceModule(configurations)));
@@ -56,8 +56,10 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
     var serviceManager = new ServiceManager(ImmutableSet.of(
         injector.getInstance(StorageService.class)));
 
-    putInStore(context, injector);
-    putInStore(context, serviceManager);
+    serviceManager.startAsync().awaitHealthy(Duration.ofSeconds(5));
+
+    putInStore(extensionContext, Injector.class.getName(), injector);
+    putInStore(extensionContext, serviceManager);
 
     printConfigInfo(configurations);
   }
@@ -85,15 +87,24 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
   @Override
   public Object resolveParameter(ParameterContext parameterContext,
       ExtensionContext extensionContext) throws ParameterResolutionException {
-    return getFromStore(extensionContext, extensionContext.getRequiredTestClass());
+    return getFromStore(extensionContext, Injector.class)
+        .getInstance(parameterContext.getParameter().getType());
   }
 
-  private void putInStore(ExtensionContext context, Object object) {
-    context.getStore(NAMESPACE).put(object.getClass().getName(), object);
+  private void putInStore(ExtensionContext extensionContext, Object object) {
+    putInStore(extensionContext, object.getClass().getName(), object);
   }
 
-  private <T> T getFromStore(ExtensionContext context, Class<T> clazz) {
-    return context.getStore(NAMESPACE).get(clazz.getName(), clazz);
+  private void putInStore(ExtensionContext extensionContext, String key, Object object) {
+    extensionContext.getStore(NAMESPACE).put(key, object);
+  }
+
+  private <T> T getFromStore(ExtensionContext extensionContext, Class<T> clazz) {
+    return getFromStore(extensionContext, clazz.getName(), clazz);
+  }
+
+  private <T> T getFromStore(ExtensionContext extensionContext, String key, Class<T> clazz) {
+    return extensionContext.getStore(NAMESPACE).get(key, clazz);
   }
 
   private static StorageConfigurations initializeConfiguration(String[] args) {
