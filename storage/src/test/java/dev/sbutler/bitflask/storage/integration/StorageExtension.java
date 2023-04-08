@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage;
+package dev.sbutler.bitflask.storage.integration;
 
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 
@@ -10,6 +10,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.common.concurrency.VirtualThreadConcurrencyModule;
 import dev.sbutler.bitflask.common.configuration.ConfigurationsBuilder;
+import dev.sbutler.bitflask.storage.StorageService;
+import dev.sbutler.bitflask.storage.StorageServiceModule;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurationsConstants;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;

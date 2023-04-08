@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage;
+package dev.sbutler.bitflask.storage.integration;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
