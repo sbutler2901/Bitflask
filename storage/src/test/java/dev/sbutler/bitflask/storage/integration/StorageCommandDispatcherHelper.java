@@ -10,14 +10,14 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import java.time.Duration;
 
 /**
- * General utilities for interacting with a
+ * Helper for interacting with a
  * {@link dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher}.
  */
-public class StorageTestUtils {
+public class StorageCommandDispatcherHelper {
 
   private final StorageCommandDispatcher commandDispatcher;
 
-  public StorageTestUtils(StorageCommandDispatcher commandDispatcher) {
+  public StorageCommandDispatcherHelper(StorageCommandDispatcher commandDispatcher) {
     this.commandDispatcher = commandDispatcher;
   }
 
