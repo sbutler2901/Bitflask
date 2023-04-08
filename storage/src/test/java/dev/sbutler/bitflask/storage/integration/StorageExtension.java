@@ -37,6 +37,7 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
   private static final String TEST_RESOURCE_NAME = "test";
 
   private final StorageConfigurations configurations;
+  private ExtensionStoreHelper storeHelper;
 
   /**
    * Creates a new instance using the default testing properties file.
@@ -51,6 +52,8 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
 
   @Override
   public void beforeAll(ExtensionContext extensionContext) throws Exception {
+    storeHelper = new ExtensionStoreHelper(extensionContext.getStore(NAMESPACE));
+
     var injector = Guice.createInjector(ImmutableSet.of(
         new VirtualThreadConcurrencyModule(),
         new StorageServiceModule(configurations)));
@@ -60,8 +63,8 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
 
     serviceManager.startAsync().awaitHealthy(Duration.ofSeconds(5));
 
-    putInStore(extensionContext, Injector.class.getName(), injector);
-    putInStore(extensionContext, serviceManager);
+    storeHelper.putInStore(Injector.class.getName(), injector);
+    storeHelper.putInStore(serviceManager);
 
     printConfigInfo(configurations);
   }
@@ -69,13 +72,13 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
   @Override
   public void afterAll(ExtensionContext context) {
     try {
-      var serviceManager = getFromStore(context, ServiceManager.class);
+      var serviceManager = storeHelper.getFromStore(ServiceManager.class);
       serviceManager.stopAsync().awaitStopped(Duration.ofSeconds(5));
     } catch (TimeoutException timeout) {
       logger.atSevere().withCause(timeout).log("ServiceManager timed out while stopping");
     }
 
-    var listeningExecutorService = getFromStore(context, Injector.class)
+    var listeningExecutorService = storeHelper.getFromStore(Injector.class)
         .getInstance(Injector.class).getInstance(ListeningExecutorService.class);
     shutdownAndAwaitTermination(listeningExecutorService, Duration.ofSeconds(5));
   }
@@ -89,24 +92,8 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
   @Override
   public Object resolveParameter(ParameterContext parameterContext,
       ExtensionContext extensionContext) throws ParameterResolutionException {
-    return getFromStore(extensionContext, Injector.class)
+    return storeHelper.getFromStore(Injector.class)
         .getInstance(parameterContext.getParameter().getType());
-  }
-
-  private void putInStore(ExtensionContext extensionContext, Object object) {
-    putInStore(extensionContext, object.getClass().getName(), object);
-  }
-
-  private void putInStore(ExtensionContext extensionContext, String key, Object object) {
-    extensionContext.getStore(NAMESPACE).put(key, object);
-  }
-
-  private <T> T getFromStore(ExtensionContext extensionContext, Class<T> clazz) {
-    return getFromStore(extensionContext, clazz.getName(), clazz);
-  }
-
-  private <T> T getFromStore(ExtensionContext extensionContext, String key, Class<T> clazz) {
-    return extensionContext.getStore(NAMESPACE).get(key, clazz);
   }
 
   private static StorageConfigurations initializeConfiguration(String[] args) {
