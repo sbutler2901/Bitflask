@@ -1,10 +1,9 @@
 package dev.sbutler.bitflask.storage.integration.extensions;
 
-import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ServiceManager;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -52,6 +51,8 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
 
   @Override
   public void beforeAll(ExtensionContext extensionContext) throws Exception {
+    printConfigInfo(configurations);
+
     storeHelper = new ExtensionStoreHelper(extensionContext.getStore(NAMESPACE));
 
     var injector = Guice.createInjector(ImmutableSet.of(
@@ -66,7 +67,7 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
     storeHelper.putInStore(Injector.class, injector);
     storeHelper.putInStore(serviceManager);
 
-    printConfigInfo(configurations);
+    logger.atInfo().log("Storage initialized");
   }
 
   @Override
@@ -80,7 +81,9 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
 
     var listeningExecutorService = storeHelper.getFromStore(Injector.class)
         .getInstance(Injector.class).getInstance(ListeningExecutorService.class);
-    shutdownAndAwaitTermination(listeningExecutorService, Duration.ofSeconds(5));
+    MoreExecutors.shutdownAndAwaitTermination(listeningExecutorService, Duration.ofSeconds(5));
+
+    logger.atInfo().log("Storage terminated");
   }
 
   @Override

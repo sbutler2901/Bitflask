@@ -1,9 +1,12 @@
 package dev.sbutler.bitflask.storage.integration.extensions;
 
+import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.common.concurrency.VirtualThreadConcurrencyModule;
+import java.time.Duration;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -18,8 +21,11 @@ import org.junit.jupiter.api.extension.ParameterResolver;
  *
  * <p>The lifecycle of the ListeningExecutorService is managed by this extension.
  */
+@SuppressWarnings("UnstableApiUsage")
 public class ListeningExecutorServiceExtension implements ParameterResolver, BeforeAllCallback,
     AfterAllCallback {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private static final Namespace NAMESPACE = Namespace
       .create(ListeningExecutorServiceExtension.class);
@@ -34,11 +40,17 @@ public class ListeningExecutorServiceExtension implements ParameterResolver, Bef
 
     storeHelper.putInStore(ListeningExecutorService.class,
         injector.getInstance(ListeningExecutorService.class));
+
+    logger.atInfo().log("ListeningExecutorService initialized");
   }
 
   @Override
   public void afterAll(ExtensionContext context) {
-    storeHelper.getFromStore(ListeningExecutorService.class).close();
+    MoreExecutors.shutdownAndAwaitTermination(
+        storeHelper.getFromStore(ListeningExecutorService.class),
+        Duration.ofMillis(500));
+
+    logger.atInfo().log("ListeningExecutorService shutdown and terminated");
   }
 
   @Override
