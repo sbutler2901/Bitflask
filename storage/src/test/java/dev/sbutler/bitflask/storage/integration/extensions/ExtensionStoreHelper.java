@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.integration;
+package dev.sbutler.bitflask.storage.integration.extensions;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 

@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.integration;
+package dev.sbutler.bitflask.storage.integration.extensions;
 
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 

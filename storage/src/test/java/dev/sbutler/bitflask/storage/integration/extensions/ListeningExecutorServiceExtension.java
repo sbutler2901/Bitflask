@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage.integration;
+package dev.sbutler.bitflask.storage.integration.extensions;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Guice;
