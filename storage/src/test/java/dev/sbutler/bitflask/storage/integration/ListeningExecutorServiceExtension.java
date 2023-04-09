@@ -32,7 +32,8 @@ public class ListeningExecutorServiceExtension implements ParameterResolver, Bef
 
     Injector injector = Guice.createInjector(new VirtualThreadConcurrencyModule());
 
-    storeHelper.putInStore(injector.getInstance(ListeningExecutorService.class));
+    storeHelper.putInStore(ListeningExecutorService.class,
+        injector.getInstance(ListeningExecutorService.class));
   }
 
   @Override

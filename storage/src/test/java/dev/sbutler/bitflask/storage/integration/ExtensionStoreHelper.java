@@ -21,6 +21,13 @@ public class ExtensionStoreHelper {
   }
 
   /**
+   * Puts the object in the store deriving the key from the provided {@code clazz}.
+   */
+  public void putInStore(Class<?> clazz, Object object) {
+    putInStore(clazz.getName(), object);
+  }
+
+  /**
    * Puts the object in the store with the provided key.
    */
   public void putInStore(String key, Object object) {

@@ -63,7 +63,7 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
 
     serviceManager.startAsync().awaitHealthy(Duration.ofSeconds(5));
 
-    storeHelper.putInStore(Injector.class.getName(), injector);
+    storeHelper.putInStore(Injector.class, injector);
     storeHelper.putInStore(serviceManager);
 
     printConfigInfo(configurations);
