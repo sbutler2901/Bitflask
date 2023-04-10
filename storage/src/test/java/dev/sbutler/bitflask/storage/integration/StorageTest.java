@@ -15,7 +15,7 @@ import dev.sbutler.bitflask.storage.integration.extensions.StorageExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith({StorageExtension.class, ListeningExecutorServiceExtension.class})
+@ExtendWith({ListeningExecutorServiceExtension.class, StorageExtension.class})
 public class StorageTest {
 
   private final StorageCommandDispatcherHelper dispatcherHelper;

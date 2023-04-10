@@ -25,6 +25,18 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
+/**
+ * Sets up a functioning storage instance to interact with in an integration test class.
+ *
+ * <p>A {@link StorageCommandDispatcher} instance will injectable for a test class that is extended
+ * by this extension.
+ *
+ * <p>This extension can be programmatically added to a test class with the ability to specify
+ * custom {@link StorageConfigurations} for the service instance created.
+ *
+ * <p>The storage instance will exist for the life of the test class that is extended by this
+ * extension. Will the lifecycle of all resources managed by this extension.
+ */
 @SuppressWarnings("UnstableApiUsage")
 public class StorageExtension implements ParameterResolver, BeforeAllCallback, AfterAllCallback {
 
@@ -67,7 +79,7 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
     storeHelper.putInStore(Injector.class, injector);
     storeHelper.putInStore(serviceManager);
 
-    logger.atInfo().log("Storage initialized");
+    logger.atFine().log("Storage initialized");
   }
 
   @Override
@@ -83,7 +95,7 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
         .getInstance(Injector.class).getInstance(ListeningExecutorService.class);
     MoreExecutors.shutdownAndAwaitTermination(listeningExecutorService, Duration.ofSeconds(5));
 
-    logger.atInfo().log("Storage terminated");
+    logger.atFine().log("Storage terminated");
   }
 
   @Override
@@ -110,11 +122,11 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
   }
 
   private static void printConfigInfo(StorageConfigurations storageConfigurations) {
-    logger.atInfo().log("Using java version [%s]", System.getProperty("java.version"));
-    logger.atInfo()
+    logger.atFine().log("Using java version [%s]", System.getProperty("java.version"));
+    logger.atFine()
         .log("Runtime processors available [%d]", Runtime.getRuntime().availableProcessors());
 
-    logger.atInfo().log(storageConfigurations.toString());
+    logger.atFine().log(storageConfigurations.toString());
   }
 
 }

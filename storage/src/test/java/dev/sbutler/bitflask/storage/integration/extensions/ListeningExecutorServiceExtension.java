@@ -19,7 +19,8 @@ import org.junit.jupiter.api.extension.ParameterResolver;
  * Provides a dedicated {@link com.google.common.util.concurrent.ListeningExecutorService} for usage
  * by tests.
  *
- * <p>The lifecycle of the ListeningExecutorService is managed by this extension.
+ * <p>The created ListeningExecutorService will exist for the life of the test class that is
+ * extended by this extension. With the lifecycle managed by this extension.
  */
 @SuppressWarnings("UnstableApiUsage")
 public class ListeningExecutorServiceExtension implements ParameterResolver, BeforeAllCallback,
@@ -41,7 +42,7 @@ public class ListeningExecutorServiceExtension implements ParameterResolver, Bef
     storeHelper.putInStore(ListeningExecutorService.class,
         injector.getInstance(ListeningExecutorService.class));
 
-    logger.atInfo().log("ListeningExecutorService initialized");
+    logger.atFine().log("ListeningExecutorService initialized");
   }
 
   @Override
@@ -50,7 +51,7 @@ public class ListeningExecutorServiceExtension implements ParameterResolver, Bef
         storeHelper.getFromStore(ListeningExecutorService.class),
         Duration.ofMillis(500));
 
-    logger.atInfo().log("ListeningExecutorService shutdown and terminated");
+    logger.atFine().log("ListeningExecutorService shutdown and terminated");
   }
 
   @Override
