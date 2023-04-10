@@ -27,6 +27,10 @@ public class StorageCommandDispatcherHelper {
     this.listeningExecutorService = listeningExecutorService;
   }
 
+  public ListenableFuture<StorageResponse> submitStorageCommand(StorageCommandDTO command) {
+    return commandDispatcher.put(command);
+  }
+
   /**
    * Submits the provided {@link dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO}s, only
    * blocked by {@link dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher#put}.
@@ -56,34 +60,9 @@ public class StorageCommandDispatcherHelper {
     return responses.build();
   }
 
-  public ListenableFuture<ImmutableList<Result>> combineResponseFutures(
+  public ListenableFuture<ImmutableList<ListenableFuture<StorageResponse>>> combineResponseFutures(
       ImmutableList<ListenableFuture<StorageResponse>> responseFutures) {
     return Futures.whenAllComplete(responseFutures)
-        .call(() -> responseFutures.stream()
-                .map(this::mapDoneResponseFutureToResult)
-                .collect(toImmutableList()),
-            listeningExecutorService);
-  }
-
-  private Result mapDoneResponseFutureToResult(ListenableFuture<StorageResponse> responseFuture) {
-    return switch (responseFuture.state()) {
-      case SUCCESS -> new Result.Success(responseFuture.resultNow());
-      case FAILED -> new Result.Failed(responseFuture.exceptionNow());
-      default -> throw new RuntimeException("Storage was not SUCCESS or FAILED");
-    };
-  }
-
-  /**
-   * The result of a test storage submission future.
-   */
-  sealed interface Result {
-
-    record Success(StorageResponse storageResponse) implements Result {
-
-    }
-
-    record Failed(Throwable failure) implements Result {
-
-    }
+        .call(() -> responseFutures.stream().collect(toImmutableList()), listeningExecutorService);
   }
 }
