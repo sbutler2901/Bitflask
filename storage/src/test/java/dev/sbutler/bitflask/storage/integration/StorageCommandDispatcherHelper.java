@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.integration;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
@@ -64,5 +65,21 @@ public class StorageCommandDispatcherHelper {
       ImmutableList<ListenableFuture<StorageResponse>> responseFutures) {
     return Futures.whenAllComplete(responseFutures)
         .call(() -> responseFutures.stream().collect(toImmutableList()), listeningExecutorService);
+  }
+
+  public StorageResponse.Success getResponseAsSuccess(
+      ListenableFuture<StorageResponse> responseFuture) throws Exception {
+    StorageResponse response = responseFuture.get();
+
+    assertThat(response).isInstanceOf(StorageResponse.Success.class);
+    return (StorageResponse.Success) response;
+  }
+
+  public StorageResponse.Failed getResponseAsFailed(
+      ListenableFuture<StorageResponse> responseFuture) throws Exception {
+    StorageResponse response = responseFuture.get();
+
+    assertThat(response).isInstanceOf(StorageResponse.Failed.class);
+    return (StorageResponse.Failed) response;
   }
 }

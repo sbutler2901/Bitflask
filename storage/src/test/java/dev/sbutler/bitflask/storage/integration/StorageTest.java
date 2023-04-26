@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.storage.integration;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
@@ -30,7 +29,7 @@ public class StorageTest {
   public void write() throws Exception {
     var responseFuture = dispatcherHelper.submitStorageCommand(new WriteDTO("key", "value"));
 
-    StorageResponse.Success response = getResponseAsSuccess(responseFuture);
+    StorageResponse.Success response = dispatcherHelper.getResponseAsSuccess(responseFuture);
 
     assertThat(response.message()).isEqualTo("OK");
   }
@@ -39,7 +38,7 @@ public class StorageTest {
   public void read_notFound() throws Exception {
     var responseFuture = dispatcherHelper.submitStorageCommand(new ReadDTO("unknownKey"));
 
-    StorageResponse.Success response = getResponseAsSuccess(responseFuture);
+    StorageResponse.Success response = dispatcherHelper.getResponseAsSuccess(responseFuture);
 
     assertThat(response.message()).isEqualTo("[unknownKey] not found");
   }
@@ -52,8 +51,8 @@ public class StorageTest {
             dispatcherHelper.submitStorageCommand(new ReadDTO("key"))));
 
     var responses = responseFutures.get();
-    StorageResponse.Success writeResponse = getResponseAsSuccess(responses.get(0));
-    StorageResponse.Success readResponse = getResponseAsSuccess(responses.get(1));
+    StorageResponse.Success writeResponse = dispatcherHelper.getResponseAsSuccess(responses.get(0));
+    StorageResponse.Success readResponse = dispatcherHelper.getResponseAsSuccess(responses.get(1));
 
     assertThat(writeResponse.message()).isEqualTo("OK");
     assertThat(readResponse.message()).isEqualTo("value");
@@ -68,20 +67,13 @@ public class StorageTest {
             dispatcherHelper.submitStorageCommand(new ReadDTO("key"))));
 
     var responses = responseFutures.get();
-    StorageResponse.Success writeResponse = getResponseAsSuccess(responses.get(0));
-    StorageResponse.Success deleteResponse = getResponseAsSuccess(responses.get(1));
-    StorageResponse.Success readResponse = getResponseAsSuccess(responses.get(2));
+    StorageResponse.Success writeResponse = dispatcherHelper.getResponseAsSuccess(responses.get(0));
+    StorageResponse.Success deleteResponse = dispatcherHelper.getResponseAsSuccess(
+        responses.get(1));
+    StorageResponse.Success readResponse = dispatcherHelper.getResponseAsSuccess(responses.get(2));
 
     assertThat(writeResponse.message()).isEqualTo("OK");
     assertThat(deleteResponse.message()).isEqualTo("OK");
     assertThat(readResponse.message()).isEqualTo("[key] not found");
-  }
-
-  private static StorageResponse.Success getResponseAsSuccess(
-      ListenableFuture<StorageResponse> responseFuture) throws Exception {
-    StorageResponse response = responseFuture.get();
-
-    assertThat(response).isInstanceOf(StorageResponse.Success.class);
-    return (StorageResponse.Success) response;
   }
 }
