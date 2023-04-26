@@ -101,12 +101,16 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
   @Override
   public boolean supportsParameter(ParameterContext parameterContext,
       ExtensionContext extensionContext) throws ParameterResolutionException {
-    return StorageCommandDispatcher.class.equals(parameterContext.getParameter().getType());
+    return StorageCommandDispatcher.class.equals(parameterContext.getParameter().getType())
+        || StorageConfigurations.class.equals(parameterContext.getParameter().getType());
   }
 
   @Override
   public Object resolveParameter(ParameterContext parameterContext,
       ExtensionContext extensionContext) throws ParameterResolutionException {
+    if (StorageConfigurations.class.equals(parameterContext.getParameter().getType())) {
+      return configurations;
+    }
     return storeHelper.getFromStore(Injector.class)
         .getInstance(parameterContext.getParameter().getType());
   }
