@@ -46,7 +46,7 @@ public class StorageCommandDispatcherHelper {
    * blocking for {@code delay} each time {@code delayAfterNumSubmitted} is reached.
    */
   public ImmutableList<ListenableFuture<StorageResponse>> submitStorageCommandsSequentiallyWithDelay(
-      ImmutableList<StorageCommandDTO> commands, int delayAfterNumSubmitted, Duration delay) {
+      ImmutableList<StorageCommandDTO> commands, Duration delay, int delayAfterNumSubmitted) {
     ImmutableList.Builder<ListenableFuture<StorageResponse>> responses = ImmutableList.builder();
     for (int i = 0; i < commands.size(); i++) {
       responses.add(commandDispatcher.put(commands.get(i)));
