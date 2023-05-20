@@ -7,6 +7,7 @@ import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespElement;
+import dev.sbutler.bitflask.resp.types.RespError;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import java.io.EOFException;
 import java.io.IOException;
@@ -58,15 +59,35 @@ final class ClientMessageProcessor implements AutoCloseable {
     if (!respService.isOpen()) {
       return false;
     }
-    return readClientMessage()
-        .flatMap(this::parseClientMessage)
-        .map(commandProcessingService::processCommandMessage)
-        .flatMap(this::getServerResponseToClient)
-        .map(this::processServerResponse)
+
+    Optional<RespElement> rawClientMessage = readClientMessage();
+    if (rawClientMessage.isEmpty()) {
+      return false;
+    }
+
+    ParsedClientMessage parsedClientMessage = parseClientMessage(rawClientMessage.get());
+    return switch (parsedClientMessage) {
+      case ParsedClientMessage.Success success -> processClientMessage(success.clientMessage());
+      case ParsedClientMessage.Failure failure -> sendErrorToClient(failure.errorMessage());
+    };
+  }
+
+  private boolean processClientMessage(ImmutableList<String> clientMessage) {
+    ListenableFuture<String> processedResponse =
+        commandProcessingService.processCommandMessage(clientMessage);
+    return getServerResponseToClient(processedResponse)
+        .map(this::sendServerResponse)
         .orElse(false);
   }
 
-  private boolean processServerResponse(RespElement serverResponse) {
+  private boolean sendErrorToClient(String errorMessage) {
+    logger.atInfo().log("Client sent invalid message, responding with error [%s]", errorMessage);
+    RespError respError = new RespError(errorMessage);
+    sendServerResponse(respError);
+    return false;
+  }
+
+  private boolean sendServerResponse(RespElement serverResponse) {
     try {
       respService.write(serverResponse);
       return true;
@@ -89,20 +110,18 @@ final class ClientMessageProcessor implements AutoCloseable {
     return Optional.empty();
   }
 
-  private Optional<ImmutableList<String>> parseClientMessage(RespElement rawClientMessage) {
+  private ParsedClientMessage parseClientMessage(RespElement rawClientMessage) {
     ImmutableList.Builder<String> clientMessage = ImmutableList.builder();
     if (!(rawClientMessage instanceof RespArray clientMessageRespArray)) {
-      logger.atWarning().log("The client's raw message must be a RespArray");
-      return Optional.empty();
+      return new ParsedClientMessage.Failure("Message must be provided in a RespArray");
     }
     for (RespElement arg : clientMessageRespArray.getValue()) {
       if (!(arg instanceof RespBulkString argBulkString)) {
-        logger.atWarning().log("The arguments of the client's raw message must be RespBulkStrings");
-        return Optional.empty();
+        return new ParsedClientMessage.Failure("Message arguments must be RespBulkStrings");
       }
       clientMessage.add(argBulkString.getValue());
     }
-    return Optional.of(clientMessage.build());
+    return new ParsedClientMessage.Success(clientMessage.build());
   }
 
   private Optional<RespElement> readClientMessage() {
@@ -125,5 +144,19 @@ final class ClientMessageProcessor implements AutoCloseable {
   @Override
   public void close() throws IOException {
     respService.close();
+  }
+
+  /**
+   * Indicates the results of parsing a client's message.
+   */
+  private sealed interface ParsedClientMessage {
+
+    record Success(ImmutableList<String> clientMessage) implements ParsedClientMessage {
+
+    }
+
+    record Failure(String errorMessage) implements ParsedClientMessage {
+
+    }
   }
 }

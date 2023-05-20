@@ -18,6 +18,7 @@ import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespElement;
+import dev.sbutler.bitflask.resp.types.RespError;
 import dev.sbutler.bitflask.resp.types.RespInteger;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import java.io.EOFException;
@@ -176,7 +177,7 @@ public class ClientMessageProcessorTest {
     assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respService, times(0)).write(any(RespElement.class));
+    verify(respService, times(1)).write(any(RespError.class));
   }
 
   @Test
@@ -190,7 +191,7 @@ public class ClientMessageProcessorTest {
     assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respService, times(0)).write(any(RespElement.class));
+    verify(respService, times(1)).write(any(RespError.class));
   }
 
   @Test
