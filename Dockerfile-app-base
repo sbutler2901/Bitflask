@@ -1,3 +1,4 @@
+# App base docker file to include source code for building with custom Gradle image
 FROM gradle-jdk20:latest
 USER root
 WORKDIR /root/app

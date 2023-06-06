@@ -1,3 +1,4 @@
+# Builds and executes the Bitflask server
 FROM app-base:latest AS server-builder
 USER root
 WORKDIR /root/app

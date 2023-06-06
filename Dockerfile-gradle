@@ -1,3 +1,4 @@
+# Custom gradle docker file to support JDK 20 with Gradle 8.1.1
 FROM eclipse-temurin:20-jdk-jammy
 
 CMD ["gradle"]
