@@ -9,7 +9,7 @@ RUN ["mkdir", "./server-untar"]
 RUN tar -xf ./server-*.tar -C ./server-untar --strip-components=1
 
 # Executable
-FROM eclipse-temurin:19_36-jre-jammy
+FROM eclipse-temurin:20-jre-jammy
 USER root
 WORKDIR /root/app
 COPY --from=server-builder /root/app/server-untar/ ./

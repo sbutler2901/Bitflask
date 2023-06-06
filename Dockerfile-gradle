@@ -1,4 +1,4 @@
-FROM eclipse-temurin:19_36-jdk-jammy
+FROM eclipse-temurin:20-jdk-jammy
 
 CMD ["gradle"]
 
@@ -39,7 +39,7 @@ RUN set -o errexit -o nounset \
     && which hg \
     && which svn
 
-ENV GRADLE_VERSION 7.6.1
+ENV GRADLE_VERSION 8.1.1
 RUN set -o errexit -o nounset \
     && echo "Downloading Gradle" \
     && wget --no-verbose --output-document=gradle.zip "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
