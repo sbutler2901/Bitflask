@@ -1,8 +1,9 @@
 # Bitflask
 
-A log-structured database implementation exposed by a server that accepts
-the [Redis Protocal Specification](https://redis.io/topics/protocol). A client REPL implementation
-for users to interact with the database.
+A log-structured merge tree based database implementation.
+
+Client to server communication is providing a custom implementation of
+the [Redis Protocal Specification](https://redis.io/topics/protocol).
 
 ## Gradle CLI Execution
 
