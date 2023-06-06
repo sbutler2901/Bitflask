@@ -48,4 +48,13 @@ public class ClientConfigurations implements Configurations {
   public boolean getUsePrompt() {
     return inlineCommand.size() == 0;
   }
+
+  @Override
+  public String toString() {
+    return "ClientConfigurations{" +
+        "host='" + host + '\'' +
+        ", port=" + port +
+        ", inlineCommand=" + inlineCommand +
+        '}';
+  }
 }

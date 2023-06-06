@@ -21,18 +21,22 @@ public class Client {
   public static void main(String[] args) {
     try {
       ClientConfigurations clientConfigurations = initializeConfiguration(args);
+      printConfigInfo(clientConfigurations);
+
       SocketChannel socketChannel = createSocketChannel(clientConfigurations);
       RespService respService = RespService.create(socketChannel);
 
-      ClientModule clientModule = new ClientModule.Builder()
-          .addRuntimeModule(new AbstractModule() {
-            @Override
-            protected void configure() {
-              super.configure();
-              bind(RespService.class).toInstance(respService);
-            }
-          })
-          .build();
+      ClientModule clientModule =
+          new ClientModule.Builder()
+              .addRuntimeModule(
+                  new AbstractModule() {
+                    @Override
+                    protected void configure() {
+                      super.configure();
+                      bind(RespService.class).toInstance(respService);
+                    }
+                  })
+              .build();
       Injector injector = Guice.createInjector(clientModule);
 
       ReplClientProcessorService replClientProcessorService =
@@ -52,8 +56,8 @@ public class Client {
 
   private static SocketChannel createSocketChannel(ClientConfigurations clientConfigurations)
       throws IOException {
-    SocketAddress socketAddress = new InetSocketAddress(
-        clientConfigurations.getHost(), clientConfigurations.getPort());
+    SocketAddress socketAddress =
+        new InetSocketAddress(clientConfigurations.getHost(), clientConfigurations.getPort());
     return SocketChannel.open(socketAddress);
   }
 
@@ -62,19 +66,22 @@ public class Client {
     ConfigurationsBuilder configsBuilder = new ConfigurationsBuilder(args, resourceBundle);
 
     ClientConfigurations clientConfigurations = new ClientConfigurations();
-    configsBuilder.build(clientConfigurations,
-        ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
+    configsBuilder.build(
+        clientConfigurations, ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
     return clientConfigurations;
   }
 
   private static void registerShutdownHook(
-      ReplClientProcessorService replClientProcessorService,
-      RespService respService) {
-    Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(() -> {
-      System.out.println("Exiting...");
-      replClientProcessorService.triggerShutdown();
-      closeConnection(respService);
-    }));
+      ReplClientProcessorService replClientProcessorService, RespService respService) {
+    Runtime.getRuntime()
+        .addShutdownHook(
+            Thread.ofVirtual()
+                .unstarted(
+                    () -> {
+                      System.out.println("Exiting...");
+                      replClientProcessorService.triggerShutdown();
+                      closeConnection(respService);
+                    }));
   }
 
   private static void closeConnection(RespService respService) {
@@ -83,5 +90,12 @@ public class Client {
     } catch (IOException e) {
       System.err.println("Issues closing connection " + e);
     }
+  }
+
+  private static void printConfigInfo(ClientConfigurations clientConfigurations) {
+    System.out.println("Using java version " + System.getProperty("java.version"));
+    System.out.println(
+        "Runtime processors available " + Runtime.getRuntime().availableProcessors());
+    System.out.println(clientConfigurations.toString());
   }
 }
