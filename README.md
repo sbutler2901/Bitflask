@@ -13,7 +13,7 @@ the [Redis Protocal Specification](https://redis.io/topics/protocol).
 
 ### Client
 
-- `./gradlew --console=plain :client:run`
+- `./gradlew --console=plain :client:run --args="--port 9090"`
 
 ## Docker
 
