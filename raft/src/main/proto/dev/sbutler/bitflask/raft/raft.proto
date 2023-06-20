@@ -63,6 +63,7 @@ message Entry {
   // Used by a leader at the start of its term to ensure it has the latest
   // information on which entries are committed
   message EmptyCommand {}
+  // TODO: Consider using Any to make Entries generic
   // A command for setting a key:value pair
   message SetCommand {
     string key = 1;
