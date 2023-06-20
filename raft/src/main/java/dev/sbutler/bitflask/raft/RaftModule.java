@@ -24,4 +24,9 @@ public class RaftModule extends AbstractModule {
   RaftClusterConfiguration provideRaftClusterConfiguration() {
     return raftClusterConfiguration;
   }
+
+  @Provides
+  RaftServer provideRaftServer(RaftServer raftServer) {
+    return raftServer;
+  }
 }
