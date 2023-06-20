@@ -5,3 +5,77 @@ option java_package = "dev.sbutler.bitflask.raft";
 option java_outer_classname = "RaftProto";
 
 package raft;
+
+// Service for accepting Raft protocol requests
+service Raft {
+  // Invoked by a candidate to gather votes
+  rpc requestVote(RequestVoteRequest) returns (RequestVoteResponse);
+  // Invoked by leader to replicate log entries; also used as heartbeat;
+  rpc appendEntries(AppendEntriesRequest) returns (AppendEntriesResponse);
+}
+
+// Sent by a candidate who is requesting to become leader
+message RequestVoteRequest {
+  // candidate’s term
+  uint64 term = 1;
+  // candidate requesting vote
+  uint64 candidateId = 2;
+  // index of candidate’s last log entry
+  uint64 lastLogIndex = 3;
+  // term of candidate’s last log entry
+  uint64 lastLogTerm = 4;
+}
+
+// Response to a candidate's request for vote
+message RequestVoteResponse {
+  // current term, for candidate to update itself
+  uint64 term = 1;
+  // true means candidate received vote
+  bool voteGranted = 2;
+}
+
+// Sent by the leader to replicate log entries, or as a heartbeat
+message AppendEntriesRequest {
+  // leader's term
+  uint64 term = 1;
+  // so follower can redirect clients
+  uint64 leaderId = 2;
+  // index of log entry immediately preceding new ones
+  uint64 prevLogIndex = 3;
+  // term of prevLogIndex entry
+  uint64 prevLogTerm = 4;
+  // log entries to store (empty for heartbeat; may send more than one for efficiency
+  repeated Entry entries = 5;
+  // leader's commitIndex
+  uint64 leaderCommit = 6;
+}
+
+// The response from a follower
+message AppendEntriesResponse {
+  // current term, for leader to update itself
+  uint64 term = 1;
+  // true if follower contained entry matching prevLogIndex and prevLogTerm
+  bool success = 2;
+}
+
+// A Raft log entry
+message Entry {
+  // Used by a leader at the start of its term to ensure it has the latest
+  // information on which entries are committed
+  message EmptyCommand {}
+  // A command for setting a key:value pair
+  message SetCommand {
+    string key = 1;
+    string value = 2;
+  }
+  // A command for deleting a key's mapping
+  message DeleteCommand {
+    string key = 1;
+  }
+  // The type of command an entry is appending to the log
+  oneof command {
+    EmptyCommand empty_command = 1;
+    SetCommand set_command = 2;
+    DeleteCommand delete_command = 3;
+  }
+}
