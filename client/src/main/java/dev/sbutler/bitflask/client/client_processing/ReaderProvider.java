@@ -2,11 +2,11 @@ package dev.sbutler.bitflask.client.client_processing;
 
 import com.google.common.base.Joiner;
 import dev.sbutler.bitflask.client.configuration.ClientConfigurations;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 class ReaderProvider implements Provider<Reader> {
 

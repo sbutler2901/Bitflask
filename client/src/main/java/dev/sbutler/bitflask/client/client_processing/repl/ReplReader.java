@@ -6,12 +6,12 @@ import com.google.common.primitives.Longs;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplInteger;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplString;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Optional;
 import java.util.function.Supplier;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Core implementation that reads Repl input data and converts it into usable {@link ReplElement}

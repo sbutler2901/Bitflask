@@ -8,9 +8,9 @@ import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplSyntaxException;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
 import dev.sbutler.bitflask.client.configuration.ClientConfigurations;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.Optional;
-import javax.inject.Inject;
 
 /**
  * Handles getting and submitting client Repl input for processing.

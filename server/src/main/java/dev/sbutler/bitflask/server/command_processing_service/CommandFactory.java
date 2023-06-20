@@ -3,12 +3,10 @@ package dev.sbutler.bitflask.server.command_processing_service;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
+import jakarta.inject.Inject;
 import java.util.List;
-import javax.inject.Inject;
 
-/**
- * Handles creating {@link ServerCommand}s.
- */
+/** Handles creating {@link ServerCommand}s. */
 final class CommandFactory {
 
   private final ListeningExecutorService listeningExecutorService;
@@ -22,9 +20,7 @@ final class CommandFactory {
     this.storageCommandDispatcher = storageCommandDispatcher;
   }
 
-  /**
-   *
-   */
+  /** */
   ServerCommand createCommand(CommandType commandType, ImmutableList<String> args) {
     if (!isValidCommandArgs(commandType, args)) {
       throw new InvalidCommandArgumentsException(

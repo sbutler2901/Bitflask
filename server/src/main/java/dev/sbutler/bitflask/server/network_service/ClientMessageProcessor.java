@@ -9,12 +9,12 @@ import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespError;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
+import jakarta.inject.Inject;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.ProtocolException;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import javax.inject.Inject;
 
 /**
  * Handles receiving a client's incoming messages, parsing them, submitting them for processing, and
@@ -41,8 +41,8 @@ final class ClientMessageProcessor implements AutoCloseable {
   private final CommandProcessingService commandProcessingService;
   private final RespService respService;
 
-  private ClientMessageProcessor(CommandProcessingService commandProcessingService,
-      RespService respService) {
+  private ClientMessageProcessor(
+      CommandProcessingService commandProcessingService, RespService respService) {
     this.commandProcessingService = commandProcessingService;
     this.respService = respService;
   }
@@ -50,8 +50,8 @@ final class ClientMessageProcessor implements AutoCloseable {
   /**
    * Reads, processes, and responds to the client's message
    *
-   * <p>Errors or issues that occur during processing which are unrecoverable will be handled.
-   * These cases will result in false being returned by this function.
+   * <p>Errors or issues that occur during processing which are unrecoverable will be handled. These
+   * cases will result in false being returned by this function.
    *
    * @return true if processing can continue, false otherwise
    */
@@ -75,9 +75,7 @@ final class ClientMessageProcessor implements AutoCloseable {
   private boolean processClientMessage(ImmutableList<String> clientMessage) {
     ListenableFuture<String> processedResponse =
         commandProcessingService.processCommandMessage(clientMessage);
-    return getServerResponseToClient(processedResponse)
-        .map(this::sendServerResponse)
-        .orElse(false);
+    return getServerResponseToClient(processedResponse).map(this::sendServerResponse).orElse(false);
   }
 
   private boolean sendErrorToClient(String errorMessage) {
@@ -97,8 +95,7 @@ final class ClientMessageProcessor implements AutoCloseable {
     return false;
   }
 
-  private Optional<RespElement> getServerResponseToClient(
-      ListenableFuture<String> responseFuture) {
+  private Optional<RespElement> getServerResponseToClient(ListenableFuture<String> responseFuture) {
     try {
       return Optional.of(new RespBulkString(responseFuture.get()));
     } catch (InterruptedException e) {
@@ -146,17 +143,11 @@ final class ClientMessageProcessor implements AutoCloseable {
     respService.close();
   }
 
-  /**
-   * Indicates the results of parsing a client's message.
-   */
+  /** Indicates the results of parsing a client's message. */
   private sealed interface ParsedClientMessage {
 
-    record Success(ImmutableList<String> clientMessage) implements ParsedClientMessage {
+    record Success(ImmutableList<String> clientMessage) implements ParsedClientMessage {}
 
-    }
-
-    record Failure(String errorMessage) implements ParsedClientMessage {
-
-    }
+    record Failure(String errorMessage) implements ParsedClientMessage {}
   }
 }

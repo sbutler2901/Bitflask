@@ -6,12 +6,12 @@ import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.utils.LoaderUtils;
+import jakarta.inject.Inject;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
-import javax.inject.Inject;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
 /**

@@ -9,11 +9,11 @@ import dev.sbutler.bitflask.storage.exceptions.StorageCompactionException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryUtils;
 import dev.sbutler.bitflask.storage.lsm.segment.Segment.SegmentRelatedPaths;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
-import javax.inject.Inject;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
 /**

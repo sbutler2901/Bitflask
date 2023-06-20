@@ -7,9 +7,9 @@ import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryUtils;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.SortedMap;
-import javax.inject.Inject;
 
 /**
  * Creates a Memtable by loading or truncating previous values based on the

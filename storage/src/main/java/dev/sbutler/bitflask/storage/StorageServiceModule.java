@@ -6,12 +6,10 @@ import dev.sbutler.bitflask.common.io.FilesHelper;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.lsm.LSMTreeModule;
+import jakarta.inject.Singleton;
 import java.util.concurrent.ThreadFactory;
-import javax.inject.Singleton;
 
-/**
- * The root Guice module for executing the StorageService
- */
+/** The root Guice module for executing the StorageService */
 public class StorageServiceModule extends AbstractModule {
 
   private final StorageConfigurations storageConfigurations;
@@ -34,8 +32,7 @@ public class StorageServiceModule extends AbstractModule {
   @Singleton
   StorageCommandDispatcher provideStorageCommandDispatcher(
       StorageConfigurations storageConfigurations) {
-    return new StorageCommandDispatcher(
-        storageConfigurations.getDispatcherCapacity());
+    return new StorageCommandDispatcher(storageConfigurations.getDispatcherCapacity());
   }
 
   @Provides

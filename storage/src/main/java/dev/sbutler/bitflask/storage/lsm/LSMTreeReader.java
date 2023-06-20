@@ -4,18 +4,16 @@ import dev.sbutler.bitflask.storage.exceptions.StorageReadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.segment.Segment;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
+import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
-import javax.inject.Inject;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
-/**
- * Handles read related tasks for the {@link LSMTree}.
- */
+/** Handles read related tasks for the {@link LSMTree}. */
 final class LSMTreeReader {
 
   private final LSMTreeStateManager stateManager;
@@ -33,7 +31,9 @@ final class LSMTreeReader {
    */
   Optional<Entry> read(String key) {
     try (var currentState = stateManager.getCurrentState()) {
-      return currentState.getMemtable().read(key)
+      return currentState
+          .getMemtable()
+          .read(key)
           .or(() -> readFromSegments(currentState.getSegmentLevelMultiMap(), key));
     }
   }
@@ -50,10 +50,9 @@ final class LSMTreeReader {
   }
 
   private Optional<Entry> readMinEntryAtSegmentLevel(
-      SegmentLevelMultiMap segmentLevelMultiMap,
-      String key, int segmentLevel) {
-    try (var scope = new StructuredTaskScope.ShutdownOnFailure(
-        "read-segments-scope", threadFactory)) {
+      SegmentLevelMultiMap segmentLevelMultiMap, String key, int segmentLevel) {
+    try (var scope =
+        new StructuredTaskScope.ShutdownOnFailure("read-segments-scope", threadFactory)) {
       List<Future<Optional<Entry>>> segmentReadFutures = new ArrayList<>();
       for (Segment segment : segmentLevelMultiMap.getSegmentsInLevel(segmentLevel)) {
         if (segment.mightContain(key)) {

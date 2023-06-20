@@ -13,6 +13,8 @@ import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -21,8 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Handles the creation of a {@link Segment}.

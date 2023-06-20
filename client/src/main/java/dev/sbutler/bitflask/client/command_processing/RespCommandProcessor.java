@@ -1,8 +1,8 @@
 package dev.sbutler.bitflask.client.command_processing;
 
 import dev.sbutler.bitflask.resp.network.RespService;
+import jakarta.inject.Inject;
 import java.io.IOException;
-import javax.inject.Inject;
 
 /**
  * Handles processing commands via communication with a remote server using the RESP protocol.

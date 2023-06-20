@@ -2,10 +2,10 @@ package dev.sbutler.bitflask.storage.lsm.memtable;
 
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.SortedMap;
-import javax.inject.Inject;
 
 /**
  * Factory for creating {@link Memtable}s and their associated {@link WriteAheadLog}.

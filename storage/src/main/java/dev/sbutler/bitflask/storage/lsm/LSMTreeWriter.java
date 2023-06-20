@@ -2,8 +2,8 @@ package dev.sbutler.bitflask.storage.lsm;
 
 import dev.sbutler.bitflask.storage.exceptions.StorageWriteException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import jakarta.inject.Inject;
 import java.io.IOException;
-import javax.inject.Inject;
 
 /**
  * Handles write related tasks for the {@link LSMTree}.

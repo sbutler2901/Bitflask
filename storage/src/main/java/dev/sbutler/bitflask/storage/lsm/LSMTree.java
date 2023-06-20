@@ -3,15 +3,13 @@ package dev.sbutler.bitflask.storage.lsm;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Predicate;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
-/**
- * A Log Structured Merge Tree implementation for reading and writing key:value pairs.
- */
+/** A Log Structured Merge Tree implementation for reading and writing key:value pairs. */
 @Singleton
 public final class LSMTree {
 
@@ -24,7 +22,7 @@ public final class LSMTree {
   @Inject
   LSMTree(
       @LSMTreeListeningScheduledExecutorService
-      ListeningScheduledExecutorService scheduledExecutorService,
+          ListeningScheduledExecutorService scheduledExecutorService,
       LSMTreeReader reader,
       LSMTreeWriter writer) {
     this.scheduledExecutorService = scheduledExecutorService;
@@ -32,26 +30,20 @@ public final class LSMTree {
     this.writer = writer;
   }
 
-  /**
-   * Reads the value of the provided key and returns it, if present.
-   */
+  /** Reads the value of the provided key and returns it, if present. */
   public Optional<String> read(String key) {
     checkOpenOrThrow();
     return reader.read(key).filter(Predicate.not(Entry::isDeleted)).map(Entry::value);
   }
 
-  /**
-   * Writes the provided key:value pair.
-   */
+  /** Writes the provided key:value pair. */
   public void write(String key, String value) {
     checkOpenOrThrow();
     Entry entry = new Entry(Instant.now().getEpochSecond(), key, value);
     writer.write(entry);
   }
 
-  /**
-   * Deletes the key and any associated entry.
-   */
+  /** Deletes the key and any associated entry. */
   public void delete(String key) {
     checkOpenOrThrow();
     write(key, "");

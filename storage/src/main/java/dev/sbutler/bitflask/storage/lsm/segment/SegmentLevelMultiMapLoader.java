@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public final class SegmentLevelMultiMapLoader {
 

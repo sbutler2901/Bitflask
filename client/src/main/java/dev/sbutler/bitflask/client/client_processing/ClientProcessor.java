@@ -12,7 +12,7 @@ import dev.sbutler.bitflask.client.command_processing.LocalCommand.Help;
 import dev.sbutler.bitflask.client.command_processing.ProcessingException;
 import dev.sbutler.bitflask.client.command_processing.RemoteCommand;
 import dev.sbutler.bitflask.client.command_processing.RespCommandProcessor;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 /**
  * Handles accepting client input, submitting it for processing, and writing a response to the
@@ -27,15 +27,12 @@ public class ClientProcessor {
   private final OutputWriter outputWriter;
 
   @Inject
-  ClientProcessor(RespCommandProcessor respCommandProcessor,
-      OutputWriter outputWriter) {
+  ClientProcessor(RespCommandProcessor respCommandProcessor, OutputWriter outputWriter) {
     this.respCommandProcessor = respCommandProcessor;
     this.outputWriter = outputWriter;
   }
 
-  /**
-   * Processing the provided client input returning whether processing should continue.
-   */
+  /** Processing the provided client input returning whether processing should continue. */
   public boolean processClientInput(ImmutableList<ReplElement> clientInput) {
     ClientCommand clientCommand = mapClientInputToCommand(clientInput);
     return switch (clientCommand) {

@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentIndexEntry.PartialEntry;
+import jakarta.inject.Inject;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -15,7 +16,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SortedMap;
-import javax.inject.Inject;
 
 /**
  * Handles the creation of a {@link SegmentIndex}.

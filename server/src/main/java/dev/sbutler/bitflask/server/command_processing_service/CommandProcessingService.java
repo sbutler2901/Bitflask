@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.server.command_processing_service;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 /**
  * Handles interpreting command messages, processing server specific commands or dispatching storage
@@ -32,8 +32,7 @@ public final class CommandProcessingService {
     try {
       commandType = CommandType.valueOf(messageCommand.toUpperCase());
     } catch (IllegalArgumentException e) {
-      return createFailureFuture(
-          String.format("Invalid command [%s]", messageCommand));
+      return createFailureFuture(String.format("Invalid command [%s]", messageCommand));
     }
 
     ImmutableList<String> args = commandMessage.subList(1, commandMessage.size());

@@ -10,11 +10,11 @@ import dev.sbutler.bitflask.storage.lsm.segment.Segment;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentFactory;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelCompactor;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.SortedMap;
-import javax.inject.Inject;
 
 /**
  * Manages periodically compacting an {@link LSMTree}.

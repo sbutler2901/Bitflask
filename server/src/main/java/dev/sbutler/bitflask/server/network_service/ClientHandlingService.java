@@ -5,13 +5,11 @@ import com.google.common.util.concurrent.AbstractService;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.resp.network.RespService;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-import javax.inject.Inject;
 
-/**
- * Handles the processing of a specific client including messages and network resources.
- */
+/** Handles the processing of a specific client including messages and network resources. */
 final class ClientHandlingService extends AbstractService implements Runnable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -22,7 +20,8 @@ final class ClientHandlingService extends AbstractService implements Runnable {
     private final ClientMessageProcessor.Factory clientMessageProcessorFactory;
 
     @Inject
-    Factory(ListeningExecutorService listeningExecutorService,
+    Factory(
+        ListeningExecutorService listeningExecutorService,
         ClientMessageProcessor.Factory clientMessageProcessorFactory) {
       this.listeningExecutorService = listeningExecutorService;
       this.clientMessageProcessorFactory = clientMessageProcessorFactory;
@@ -39,7 +38,8 @@ final class ClientHandlingService extends AbstractService implements Runnable {
   private final ListeningExecutorService listeningExecutorService;
   private final ClientMessageProcessor clientMessageProcessor;
 
-  private ClientHandlingService(ListeningExecutorService listeningExecutorService,
+  private ClientHandlingService(
+      ListeningExecutorService listeningExecutorService,
       ClientMessageProcessor clientMessageProcessor) {
     this.listeningExecutorService = listeningExecutorService;
     this.clientMessageProcessor = clientMessageProcessor;
@@ -53,7 +53,8 @@ final class ClientHandlingService extends AbstractService implements Runnable {
   public void run() {
     notifyStarted();
     try {
-      while (isRunning() && clientMessageProcessor.isOpen()
+      while (isRunning()
+          && clientMessageProcessor.isOpen()
           && !Thread.currentThread().isInterrupted()) {
         boolean shouldContinueRunning = clientMessageProcessor.processNextMessage();
         if (!shouldContinueRunning) {

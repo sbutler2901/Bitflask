@@ -5,11 +5,9 @@ import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-/**
- * Maps incoming {@link StorageCommandDTO}s into executable {@link StorageCommand}s.
- */
+/** Maps incoming {@link StorageCommandDTO}s into executable {@link StorageCommand}s. */
 public class CommandMapper {
 
   private final LSMTree lsmTree;

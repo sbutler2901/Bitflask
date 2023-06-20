@@ -8,16 +8,14 @@ import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import dev.sbutler.bitflask.storage.lsm.memtable.MemtableLoader;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMapLoader;
+import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
-import javax.inject.Inject;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
-/**
- * Handles loading all necessary resources at start up for the {@link LSMTree}.
- */
+/** Handles loading all necessary resources at start up for the {@link LSMTree}. */
 public final class LSMTreeLoader {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -33,7 +31,7 @@ public final class LSMTreeLoader {
   @Inject
   LSMTreeLoader(
       @LSMTreeListeningScheduledExecutorService
-      ListeningScheduledExecutorService scheduledExecutorService,
+          ListeningScheduledExecutorService scheduledExecutorService,
       ThreadFactory threadFactory,
       StorageConfigurations configurations,
       LSMTreeStateManager stateManager,
@@ -49,20 +47,18 @@ public final class LSMTreeLoader {
     this.segmentLevelMultiMapLoader = segmentLevelMultiMapLoader;
   }
 
-  /**
-   * Initiate loading of all {@link LSMTree} resources.
-   */
+  /** Initiate loading of all {@link LSMTree} resources. */
   public void load() {
     Instant startInstant = Instant.now();
     loadMemtableAndSegmentLevelMultiMap();
-    logger.atInfo().log("Loaded Memtable & SegmentLevel MultiMap in [%d]ms",
+    logger.atInfo().log(
+        "Loaded Memtable & SegmentLevel MultiMap in [%d]ms",
         Duration.between(startInstant, Instant.now()).toMillis());
     scheduleCompactor();
   }
 
   private void loadMemtableAndSegmentLevelMultiMap() {
-    try (var scope = new StructuredTaskScope.ShutdownOnFailure(
-        "lsm-tree-loader", threadFactory)) {
+    try (var scope = new StructuredTaskScope.ShutdownOnFailure("lsm-tree-loader", threadFactory)) {
       Future<Memtable> memtable = scope.fork(memtableLoader::load);
       Future<SegmentLevelMultiMap> multiMap = scope.fork(segmentLevelMultiMapLoader::load);
 
@@ -81,7 +77,8 @@ public final class LSMTreeLoader {
   }
 
   private void scheduleCompactor() {
-    scheduledExecutorService.scheduleWithFixedDelay(compactor,
+    scheduledExecutorService.scheduleWithFixedDelay(
+        compactor,
         Duration.ofMinutes(0),
         Duration.ofMillis(configurations.getCompactorExecDelayMilliseconds()));
   }

@@ -3,10 +3,10 @@ package dev.sbutler.bitflask.storage.lsm;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Manages the state of the {@link LSMTree}.
@@ -22,14 +22,12 @@ final class LSMTreeStateManager {
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
   @Inject
-  LSMTreeStateManager() {
-  }
+  LSMTreeStateManager() {}
 
   LSMTreeStateManager(Memtable memtable, SegmentLevelMultiMap segmentLevelMultiMap) {
     this.memtable = memtable;
     this.segmentLevelMultiMap = segmentLevelMultiMap;
   }
-
 
   /**
    * Provides non-exclusive access to the {@link CurrentState}
@@ -56,9 +54,7 @@ final class LSMTreeStateManager {
     return new CurrentState(memtable, segmentLevelMultiMap, lock.writeLock());
   }
 
-  /**
-   * Atomically updates the state contained within this.
-   */
+  /** Atomically updates the state contained within this. */
   void updateCurrentState(Memtable memtable, SegmentLevelMultiMap segmentLevelMultiMap) {
     if (!lock.isWriteLockedByCurrentThread()) {
       throw new StorageException("Attempted to update CurrentState without holding lock.");
@@ -73,8 +69,8 @@ final class LSMTreeStateManager {
   /**
    * The current state of an {@link LSMTree}.
    *
-   * <p>Access to this state was acquired with a lock which must be released using the
-   * {@link #close()} method.
+   * <p>Access to this state was acquired with a lock which must be released using the {@link
+   * #close()} method.
    */
   static class CurrentState implements AutoCloseable {
 
