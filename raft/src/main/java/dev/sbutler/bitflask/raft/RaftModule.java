@@ -6,18 +6,22 @@ import com.google.inject.Provides;
 /** Module for using the Raft Consensus protocol. */
 public class RaftModule extends AbstractModule {
 
-  private final RaftServerInfo raftServerInfo;
+  private final RaftServerId raftServerId;
   private final RaftClusterConfiguration raftClusterConfiguration;
 
-  public RaftModule(
-      RaftServerInfo raftServerInfo, RaftClusterConfiguration raftClusterConfiguration) {
-    this.raftServerInfo = raftServerInfo;
+  public RaftModule(RaftServerId raftServerId, RaftClusterConfiguration raftClusterConfiguration) {
+    this.raftServerId = raftServerId;
     this.raftClusterConfiguration = raftClusterConfiguration;
   }
 
   @Provides
+  RaftServerId provideRaftServerId() {
+    return this.raftServerId;
+  }
+
+  @Provides
   RaftServerInfo provideRaftServerInfo() {
-    return raftServerInfo;
+    return raftClusterConfiguration.clusterServers().get(raftServerId);
   }
 
   @Provides
