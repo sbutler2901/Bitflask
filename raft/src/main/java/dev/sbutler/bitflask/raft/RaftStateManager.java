@@ -57,6 +57,11 @@ final class RaftStateManager {
     return raftStateProcessor;
   }
 
+  /** Updates the Raft's server state as a result of an election timer timeout. */
+  void handleElectionTimeout() {
+    // TODO: implement various transitions.
+  }
+
   /** Transitions the server to the {@link RaftServerState#FOLLOWER} state. */
   void transitionToFollowerState() {
     Preconditions.checkState(

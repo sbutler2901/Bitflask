@@ -12,20 +12,27 @@ final class RaftElectionTimer {
   private final RaftStateManager raftStateManager;
   private final Timer timer = new Timer("raft-election-timer", true);
 
-  private volatile RaftTimerTask currentTimerTask;
+  private volatile TimerTask currentTimerTask;
 
   @Inject
   RaftElectionTimer(
       RaftClusterConfiguration raftClusterConfiguration, RaftStateManager raftStateManager) {
     this.raftTimerInterval = raftClusterConfiguration.raftTimerInterval();
     this.raftStateManager = raftStateManager;
-    this.currentTimerTask = new RaftTimerTask();
   }
 
   /** Cancels the current timer and starts a new one. */
   void restart() {
     cancel();
-    currentTimerTask = new RaftTimerTask();
+
+    currentTimerTask =
+        new TimerTask() {
+          @Override
+          public void run() {
+            raftStateManager.handleElectionTimeout();
+          }
+        };
+
     timer.schedule(
         currentTimerTask,
         ThreadLocalRandom.current()
@@ -39,15 +46,6 @@ final class RaftElectionTimer {
     if (currentTimerTask != null) {
       currentTimerTask.cancel();
       currentTimerTask = null;
-    }
-  }
-
-  /** The task to execute once the {@link RaftElectionTimer} has expired. */
-  static final class RaftTimerTask extends TimerTask {
-
-    @Override
-    public void run() {
-      // TODO: decide how to handle state changes.
     }
   }
 }
