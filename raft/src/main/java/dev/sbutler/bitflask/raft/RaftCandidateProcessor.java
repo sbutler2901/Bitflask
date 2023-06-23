@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.raft;
 
 import jakarta.inject.Inject;
 
-final class RaftCandidateProcessor implements RaftModeProcessor, Runnable {
+final class RaftCandidateProcessor implements RaftModeProcessor {
 
   private final RaftModeManager raftModeManager;
   private final RaftElectionTimer raftElectionTimer;
@@ -23,13 +23,13 @@ final class RaftCandidateProcessor implements RaftModeProcessor, Runnable {
     return AppendEntriesResponse.getDefaultInstance();
   }
 
-  @Override
-  public void run() {
+  public void handleElectionTimeout() {
+    cancelCurrentElection();
     startNewElection();
   }
 
-  public void handleElectionTimeout() {
-    cancelCurrentElection();
+  @Override
+  public void run() {
     startNewElection();
   }
 

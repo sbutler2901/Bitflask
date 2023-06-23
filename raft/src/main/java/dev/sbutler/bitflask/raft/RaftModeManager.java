@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.raft;
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -17,15 +18,16 @@ final class RaftModeManager implements HandlesElectionTimeout {
 
   private final ListeningExecutorService executorService =
       MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
-  private final ReentrantLock stateLock = new ReentrantLock();
+  private final ReentrantLock transitionLock = new ReentrantLock();
 
   private volatile RaftModeProcessor raftModeProcessor;
-  private volatile ListenableFuture<?> runningProcessorFuture = null;
+  private volatile ListenableFuture<?> runningProcessorFuture = Futures.immediateVoidFuture();
 
   @Inject
   RaftModeManager(RaftModeProcessorFactory raftModeProcessorFactory) {
     this.raftModeProcessorFactory = raftModeProcessorFactory;
-    transitionToFollowerState();
+    // TODO: handle starting from persisted state
+    transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
   }
 
   /** Returns the current {@link RaftMode} of the server. */
@@ -45,19 +47,23 @@ final class RaftModeManager implements HandlesElectionTimeout {
     return raftModeProcessor;
   }
 
+  /** Updates the Raft's server state as a result of an election timer timeout. */
+  public void handleElectionTimeout() {
+    transitionLock.lock();
+    try {
+      raftModeProcessor.handleElectionTimeout();
+    } finally {
+      transitionLock.unlock();
+    }
+  }
+
   /** Transitions the server to the {@link RaftMode#FOLLOWER} state. */
   void transitionToFollowerState() {
     Preconditions.checkState(
         !RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
         "The Raft server must be in the CANDIDATE or LEADER state to transition to the FOLLOWER state.");
 
-    stateLock.lock();
-    try {
-      cancelRunningProcessor();
-      raftModeProcessor = raftModeProcessorFactory.createRaftFollowerProcessor();
-    } finally {
-      stateLock.unlock();
-    }
+    transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
   }
 
   /** Transitions the server to the {@link RaftMode#CANDIDATE} state. */
@@ -66,16 +72,7 @@ final class RaftModeManager implements HandlesElectionTimeout {
         RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
         "The Raft server must be in the FOLLOWER state to transition to the CANDIDATE state.");
 
-    stateLock.lock();
-    try {
-      cancelRunningProcessor();
-      RaftCandidateProcessor candidateProcessor =
-          raftModeProcessorFactory.createRaftCandidateProcessor();
-      raftModeProcessor = candidateProcessor;
-      runningProcessorFuture = executorService.submit(candidateProcessor);
-    } finally {
-      stateLock.unlock();
-    }
+    transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftCandidateProcessor());
   }
 
   /** Transitions the server to the {@link RaftMode#LEADER} state. */
@@ -84,28 +81,17 @@ final class RaftModeManager implements HandlesElectionTimeout {
         RaftMode.CANDIDATE.equals(getCurrentRaftMode()),
         "The Raft server must be in the CANDIDATE state to transition to the LEADER state.");
 
-    stateLock.lock();
-    try {
-      cancelRunningProcessor();
-      raftModeProcessor = raftModeProcessorFactory.createRaftLeaderProcessor();
-    } finally {
-      stateLock.unlock();
-    }
+    transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftLeaderProcessor());
   }
 
-  /** Updates the Raft's server state as a result of an election timer timeout. */
-  public void handleElectionTimeout() {
-    raftModeProcessor.handleElectionTimeout();
-  }
-
-  private void cancelRunningProcessor() {
-    stateLock.lock();
+  private void transitionToNewRaftModeProcessor(RaftModeProcessor newRaftModeProcessor) {
+    transitionLock.lock();
     try {
-      if (runningProcessorFuture != null) {
-        runningProcessorFuture.cancel(false);
-      }
+      runningProcessorFuture.cancel(false);
+      raftModeProcessor = newRaftModeProcessor;
+      runningProcessorFuture = executorService.submit(raftModeProcessor);
     } finally {
-      stateLock.unlock();
+      transitionLock.unlock();
     }
   }
 

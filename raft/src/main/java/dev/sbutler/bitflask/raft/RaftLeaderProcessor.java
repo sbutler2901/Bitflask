@@ -22,4 +22,7 @@ final class RaftLeaderProcessor implements RaftModeProcessor {
     throw new IllegalStateException(
         "Raft in LEADER mode should not have an election timer running");
   }
+
+  @Override
+  public void run() {}
 }

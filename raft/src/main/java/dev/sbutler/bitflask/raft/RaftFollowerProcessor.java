@@ -26,6 +26,9 @@ final class RaftFollowerProcessor implements RaftModeProcessor {
   }
 
   @Override
+  public void run() {}
+
+  @Override
   public void handleElectionTimeout() {
     raftModeManager.transitionToCandidateState();
   }
