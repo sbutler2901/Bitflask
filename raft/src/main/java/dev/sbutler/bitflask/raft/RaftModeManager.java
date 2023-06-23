@@ -1,19 +1,26 @@
 package dev.sbutler.bitflask.raft;
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 /** Handles Raft's server mode and transitioning between them. */
 @Singleton
 final class RaftModeManager {
 
+  private final ListeningExecutorService executorService =
+      MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
   private final RaftElectionTimer raftElectionTimer;
 
   private final ReentrantLock stateLock = new ReentrantLock();
 
   private volatile RaftModeProcessor raftModeProcessor;
+  private volatile ListenableFuture<?> runningProcessorFuture = null;
 
   @Inject
   RaftModeManager(RaftElectionTimer raftElectionTimer) {
@@ -46,6 +53,7 @@ final class RaftModeManager {
 
     stateLock.lock();
     try {
+      cancelRunningProcessor();
       raftModeProcessor = new RaftFollowerProcessor();
     } finally {
       stateLock.unlock();
@@ -60,7 +68,10 @@ final class RaftModeManager {
 
     stateLock.lock();
     try {
-      raftModeProcessor = new RaftCandidateProcessor();
+      cancelRunningProcessor();
+      RaftCandidateProcessor candidateProcessor = new RaftCandidateProcessor();
+      raftModeProcessor = candidateProcessor;
+      runningProcessorFuture = executorService.submit(candidateProcessor);
     } finally {
       stateLock.unlock();
     }
@@ -74,6 +85,7 @@ final class RaftModeManager {
 
     stateLock.lock();
     try {
+      cancelRunningProcessor();
       raftModeProcessor = new RaftLeaderProcessor();
     } finally {
       stateLock.unlock();
@@ -86,9 +98,20 @@ final class RaftModeManager {
     try {
       switch (getCurrentRaftMode()) {
         case FOLLOWER -> transitionToCandidateState();
-        case CANDIDATE -> transitionToLeaderState();
+        case CANDIDATE -> ((RaftCandidateProcessor) raftModeProcessor).handleElectionTimeout();
         case LEADER -> throw new IllegalStateException(
             "Raft in LEADER mode should not have an election timer running");
+      }
+    } finally {
+      stateLock.unlock();
+    }
+  }
+
+  private void cancelRunningProcessor() {
+    stateLock.lock();
+    try {
+      if (runningProcessorFuture != null) {
+        runningProcessorFuture.cancel(false);
       }
     } finally {
       stateLock.unlock();
