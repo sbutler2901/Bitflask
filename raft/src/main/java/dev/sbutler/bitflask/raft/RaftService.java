@@ -10,11 +10,11 @@ import jakarta.inject.Inject;
 /** The service implementing Raft RPC endpoints. */
 final class RaftService extends RaftGrpc.RaftImplBase {
 
-  private final RaftStateManager raftStateManager;
+  private final RaftModeManager raftModeManager;
 
   @Inject
-  RaftService(RaftStateManager raftStateManager) {
-    this.raftStateManager = raftStateManager;
+  RaftService(RaftModeManager raftModeManager) {
+    this.raftModeManager = raftModeManager;
   }
 
   @Override
@@ -22,7 +22,7 @@ final class RaftService extends RaftGrpc.RaftImplBase {
       RequestVoteRequest request, StreamObserver<RequestVoteResponse> responseObserver) {
     try {
       RequestVoteResponse response =
-          raftStateManager.getRaftStateProcessor().processRequestVoteRequest(request);
+          raftModeManager.getRaftStateProcessor().processRequestVoteRequest(request);
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     } catch (StatusRuntimeException e) {
@@ -40,7 +40,7 @@ final class RaftService extends RaftGrpc.RaftImplBase {
       AppendEntriesRequest request, StreamObserver<AppendEntriesResponse> responseObserver) {
     try {
       AppendEntriesResponse response =
-          raftStateManager.getRaftStateProcessor().processAppendEntriesRequest(request);
+          raftModeManager.getRaftStateProcessor().processAppendEntriesRequest(request);
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     } catch (StatusRuntimeException e) {
