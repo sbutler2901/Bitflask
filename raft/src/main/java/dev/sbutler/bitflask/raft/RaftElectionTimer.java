@@ -9,16 +9,16 @@ import java.util.concurrent.ThreadLocalRandom;
 final class RaftElectionTimer {
 
   private final RaftTimerInterval raftTimerInterval;
-  private final RaftStateManager raftStateManager;
+  private final RaftModeManager raftModeManager;
   private final Timer timer = new Timer("raft-election-timer", true);
 
   private volatile TimerTask currentTimerTask;
 
   @Inject
   RaftElectionTimer(
-      RaftClusterConfiguration raftClusterConfiguration, RaftStateManager raftStateManager) {
+      RaftClusterConfiguration raftClusterConfiguration, RaftModeManager raftModeManager) {
     this.raftTimerInterval = raftClusterConfiguration.raftTimerInterval();
-    this.raftStateManager = raftStateManager;
+    this.raftModeManager = raftModeManager;
   }
 
   /** Cancels the current timer and starts a new one. */
@@ -29,7 +29,7 @@ final class RaftElectionTimer {
         new TimerTask() {
           @Override
           public void run() {
-            raftStateManager.handleElectionTimeout();
+            raftModeManager.handleElectionTimeout();
           }
         };
 
