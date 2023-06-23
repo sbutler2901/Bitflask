@@ -14,7 +14,7 @@ final class RaftModeManager {
   private final ReentrantLock stateLock = new ReentrantLock();
 
   private volatile RaftStateProcessor raftStateProcessor;
-  private volatile RaftServerState raftServerState;
+  private volatile RaftMode raftMode;
 
   @Inject
   RaftModeManager(RaftElectionTimer raftElectionTimer) {
@@ -22,14 +22,14 @@ final class RaftModeManager {
     transitionToFollowerState();
   }
 
-  /** Returns the current {@link RaftServerState} of the server. */
-  RaftServerState getCurrentRaftServerState() {
-    return raftServerState;
+  /** Returns the current {@link RaftMode} of the server. */
+  RaftMode getCurrentRaftMode() {
+    return raftMode;
   }
 
   /**
-   * Returns the current {@link RaftStateProcessor} based on the current {@link RaftServerState} of
-   * the server.
+   * Returns the current {@link RaftStateProcessor} based on the current {@link RaftMode} of the
+   * server.
    */
   RaftStateProcessor getRaftStateProcessor() {
     return raftStateProcessor;
@@ -40,48 +40,58 @@ final class RaftModeManager {
     // TODO: implement various transitions.
   }
 
-  /** Transitions the server to the {@link RaftServerState#FOLLOWER} state. */
+  /** Transitions the server to the {@link RaftMode#FOLLOWER} state. */
   void transitionToFollowerState() {
     Preconditions.checkState(
-        !RaftServerState.FOLLOWER.equals(raftServerState),
+        !RaftMode.FOLLOWER.equals(raftMode),
         "The Raft server must be in the CANDIDATE or LEADER state to transition to the FOLLOWER state.");
 
     stateLock.lock();
     try {
-      raftServerState = RaftServerState.FOLLOWER;
+      raftMode = RaftMode.FOLLOWER;
       raftStateProcessor = new RaftFollowerProcessor();
     } finally {
       stateLock.unlock();
     }
   }
 
-  /** Transitions the server to the {@link RaftServerState#CANDIDATE} state. */
+  /** Transitions the server to the {@link RaftMode#CANDIDATE} state. */
   void transitionToCandidateState() {
     Preconditions.checkState(
-        RaftServerState.FOLLOWER.equals(raftServerState),
+        RaftMode.FOLLOWER.equals(raftMode),
         "The Raft server must be in the FOLLOWER state to transition to the CANDIDATE state.");
 
     stateLock.lock();
     try {
-      raftServerState = RaftServerState.CANDIDATE;
+      raftMode = RaftMode.CANDIDATE;
       raftStateProcessor = new RaftCandidateProcessor();
     } finally {
       stateLock.unlock();
     }
   }
 
-  /** Transitions the server to the {@link RaftServerState#LEADER} state. */
+  /** Transitions the server to the {@link RaftMode#LEADER} state. */
   void transitionToLeaderState() {
     Preconditions.checkState(
-        RaftServerState.CANDIDATE.equals(raftServerState),
+        RaftMode.CANDIDATE.equals(raftMode),
         "The Raft server must be in the CANDIDATE state to transition to the LEADER state.");
 
     stateLock.lock();
     try {
-      raftServerState = RaftServerState.LEADER;
+      raftMode = RaftMode.LEADER;
       raftStateProcessor = new RaftLeaderProcessor();
     } finally {
       stateLock.unlock();
     }
+  }
+
+  /** Represents the modes a Raft server can be in. */
+  enum RaftMode {
+    /** The server is only listening from incoming RPCs. */
+    FOLLOWER,
+    /** The server is attempting to become the leader of the cluster. */
+    CANDIDATE,
+    /** The server is receiving client requests and replicating across the cluster. */
+    LEADER
   }
 }
