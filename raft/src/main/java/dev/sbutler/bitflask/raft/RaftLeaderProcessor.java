@@ -1,6 +1,11 @@
 package dev.sbutler.bitflask.raft;
 
+import jakarta.inject.Inject;
+
 final class RaftLeaderProcessor implements RaftModeProcessor {
+
+  @Inject
+  RaftLeaderProcessor() {}
 
   @Override
   public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {

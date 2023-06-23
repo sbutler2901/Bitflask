@@ -13,18 +13,18 @@ import java.util.concurrent.locks.ReentrantLock;
 @Singleton
 final class RaftModeManager implements HandlesElectionTimeout {
 
+  private final RaftModeProcessorFactory raftModeProcessorFactory;
+
   private final ListeningExecutorService executorService =
       MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
-  private final RaftElectionTimer raftElectionTimer;
-
   private final ReentrantLock stateLock = new ReentrantLock();
 
   private volatile RaftModeProcessor raftModeProcessor;
   private volatile ListenableFuture<?> runningProcessorFuture = null;
 
   @Inject
-  RaftModeManager(RaftElectionTimer raftElectionTimer) {
-    this.raftElectionTimer = raftElectionTimer;
+  RaftModeManager(RaftModeProcessorFactory raftModeProcessorFactory) {
+    this.raftModeProcessorFactory = raftModeProcessorFactory;
     transitionToFollowerState();
   }
 
@@ -54,7 +54,7 @@ final class RaftModeManager implements HandlesElectionTimeout {
     stateLock.lock();
     try {
       cancelRunningProcessor();
-      raftModeProcessor = new RaftFollowerProcessor();
+      raftModeProcessor = raftModeProcessorFactory.createRaftFollowerProcessor();
     } finally {
       stateLock.unlock();
     }
@@ -69,7 +69,8 @@ final class RaftModeManager implements HandlesElectionTimeout {
     stateLock.lock();
     try {
       cancelRunningProcessor();
-      RaftCandidateProcessor candidateProcessor = new RaftCandidateProcessor();
+      RaftCandidateProcessor candidateProcessor =
+          raftModeProcessorFactory.createRaftCandidateProcessor();
       raftModeProcessor = candidateProcessor;
       runningProcessorFuture = executorService.submit(candidateProcessor);
     } finally {
@@ -86,7 +87,7 @@ final class RaftModeManager implements HandlesElectionTimeout {
     stateLock.lock();
     try {
       cancelRunningProcessor();
-      raftModeProcessor = new RaftLeaderProcessor();
+      raftModeProcessor = raftModeProcessorFactory.createRaftLeaderProcessor();
     } finally {
       stateLock.unlock();
     }
@@ -94,15 +95,7 @@ final class RaftModeManager implements HandlesElectionTimeout {
 
   /** Updates the Raft's server state as a result of an election timer timeout. */
   public void handleElectionTimeout() {
-    stateLock.lock();
-    try {
-      switch (getCurrentRaftMode()) {
-        case FOLLOWER -> transitionToCandidateState();
-        case CANDIDATE, LEADER -> raftModeProcessor.handleElectionTimeout();
-      }
-    } finally {
-      stateLock.unlock();
-    }
+    raftModeProcessor.handleElectionTimeout();
   }
 
   private void cancelRunningProcessor() {
