@@ -14,7 +14,6 @@ final class RaftModeManager {
   private final ReentrantLock stateLock = new ReentrantLock();
 
   private volatile RaftStateProcessor raftStateProcessor;
-  private volatile RaftMode raftMode;
 
   @Inject
   RaftModeManager(RaftElectionTimer raftElectionTimer) {
@@ -24,7 +23,11 @@ final class RaftModeManager {
 
   /** Returns the current {@link RaftMode} of the server. */
   RaftMode getCurrentRaftMode() {
-    return raftMode;
+    return switch (raftStateProcessor) {
+      case RaftFollowerProcessor _unused -> RaftMode.FOLLOWER;
+      case RaftCandidateProcessor _unused -> RaftMode.CANDIDATE;
+      case RaftLeaderProcessor _unused -> RaftMode.LEADER;
+    };
   }
 
   /**
@@ -35,20 +38,14 @@ final class RaftModeManager {
     return raftStateProcessor;
   }
 
-  /** Updates the Raft's server state as a result of an election timer timeout. */
-  void handleElectionTimeout() {
-    // TODO: implement various transitions.
-  }
-
   /** Transitions the server to the {@link RaftMode#FOLLOWER} state. */
   void transitionToFollowerState() {
     Preconditions.checkState(
-        !RaftMode.FOLLOWER.equals(raftMode),
+        !RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
         "The Raft server must be in the CANDIDATE or LEADER state to transition to the FOLLOWER state.");
 
     stateLock.lock();
     try {
-      raftMode = RaftMode.FOLLOWER;
       raftStateProcessor = new RaftFollowerProcessor();
     } finally {
       stateLock.unlock();
@@ -58,12 +55,11 @@ final class RaftModeManager {
   /** Transitions the server to the {@link RaftMode#CANDIDATE} state. */
   void transitionToCandidateState() {
     Preconditions.checkState(
-        RaftMode.FOLLOWER.equals(raftMode),
+        RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
         "The Raft server must be in the FOLLOWER state to transition to the CANDIDATE state.");
 
     stateLock.lock();
     try {
-      raftMode = RaftMode.CANDIDATE;
       raftStateProcessor = new RaftCandidateProcessor();
     } finally {
       stateLock.unlock();
@@ -73,13 +69,27 @@ final class RaftModeManager {
   /** Transitions the server to the {@link RaftMode#LEADER} state. */
   void transitionToLeaderState() {
     Preconditions.checkState(
-        RaftMode.CANDIDATE.equals(raftMode),
+        RaftMode.CANDIDATE.equals(getCurrentRaftMode()),
         "The Raft server must be in the CANDIDATE state to transition to the LEADER state.");
 
     stateLock.lock();
     try {
-      raftMode = RaftMode.LEADER;
       raftStateProcessor = new RaftLeaderProcessor();
+    } finally {
+      stateLock.unlock();
+    }
+  }
+
+  /** Updates the Raft's server state as a result of an election timer timeout. */
+  void handleElectionTimeout() {
+    stateLock.lock();
+    try {
+      switch (getCurrentRaftMode()) {
+        case FOLLOWER -> transitionToCandidateState();
+        case CANDIDATE -> transitionToLeaderState();
+        case LEADER -> throw new IllegalStateException(
+            "Raft in LEADER mode should not have an election timer running");
+      }
     } finally {
       stateLock.unlock();
     }
