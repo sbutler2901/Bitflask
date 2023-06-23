@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.raft;
 
-final class RaftCandidateProcessor implements RaftStateProcessor {
+final class RaftCandidateProcessor implements RaftModeProcessor {
 
   @Override
   public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {

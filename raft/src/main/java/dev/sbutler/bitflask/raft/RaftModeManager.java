@@ -13,7 +13,7 @@ final class RaftModeManager {
 
   private final ReentrantLock stateLock = new ReentrantLock();
 
-  private volatile RaftStateProcessor raftStateProcessor;
+  private volatile RaftModeProcessor raftModeProcessor;
 
   @Inject
   RaftModeManager(RaftElectionTimer raftElectionTimer) {
@@ -23,7 +23,7 @@ final class RaftModeManager {
 
   /** Returns the current {@link RaftMode} of the server. */
   RaftMode getCurrentRaftMode() {
-    return switch (raftStateProcessor) {
+    return switch (raftModeProcessor) {
       case RaftFollowerProcessor _unused -> RaftMode.FOLLOWER;
       case RaftCandidateProcessor _unused -> RaftMode.CANDIDATE;
       case RaftLeaderProcessor _unused -> RaftMode.LEADER;
@@ -31,11 +31,11 @@ final class RaftModeManager {
   }
 
   /**
-   * Returns the current {@link RaftStateProcessor} based on the current {@link RaftMode} of the
+   * Returns the current {@link RaftModeProcessor} based on the current {@link RaftMode} of the
    * server.
    */
-  RaftStateProcessor getRaftStateProcessor() {
-    return raftStateProcessor;
+  RaftModeProcessor getRaftStateProcessor() {
+    return raftModeProcessor;
   }
 
   /** Transitions the server to the {@link RaftMode#FOLLOWER} state. */
@@ -46,7 +46,7 @@ final class RaftModeManager {
 
     stateLock.lock();
     try {
-      raftStateProcessor = new RaftFollowerProcessor();
+      raftModeProcessor = new RaftFollowerProcessor();
     } finally {
       stateLock.unlock();
     }
@@ -60,7 +60,7 @@ final class RaftModeManager {
 
     stateLock.lock();
     try {
-      raftStateProcessor = new RaftCandidateProcessor();
+      raftModeProcessor = new RaftCandidateProcessor();
     } finally {
       stateLock.unlock();
     }
@@ -74,7 +74,7 @@ final class RaftModeManager {
 
     stateLock.lock();
     try {
-      raftStateProcessor = new RaftLeaderProcessor();
+      raftModeProcessor = new RaftLeaderProcessor();
     } finally {
       stateLock.unlock();
     }
