@@ -17,7 +17,7 @@ final class RaftCandidateProcessor implements RaftModeProcessor, Runnable {
     startNewElection();
   }
 
-  void handleElectionTimeout() {
+  public void handleElectionTimeout() {
     cancelCurrentElection();
     startNewElection();
   }

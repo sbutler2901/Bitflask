@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /** Handles Raft's server mode and transitioning between them. */
 @Singleton
-final class RaftModeManager {
+final class RaftModeManager implements HandlesElectionTimeout {
 
   private final ListeningExecutorService executorService =
       MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
@@ -93,14 +93,12 @@ final class RaftModeManager {
   }
 
   /** Updates the Raft's server state as a result of an election timer timeout. */
-  void handleElectionTimeout() {
+  public void handleElectionTimeout() {
     stateLock.lock();
     try {
       switch (getCurrentRaftMode()) {
         case FOLLOWER -> transitionToCandidateState();
-        case CANDIDATE -> ((RaftCandidateProcessor) raftModeProcessor).handleElectionTimeout();
-        case LEADER -> throw new IllegalStateException(
-            "Raft in LEADER mode should not have an election timer running");
+        case CANDIDATE, LEADER -> raftModeProcessor.handleElectionTimeout();
       }
     } finally {
       stateLock.unlock();

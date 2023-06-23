@@ -11,4 +11,7 @@ final class RaftFollowerProcessor implements RaftModeProcessor {
   public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
     return AppendEntriesResponse.getDefaultInstance();
   }
+
+  @Override
+  public void handleElectionTimeout() {}
 }
