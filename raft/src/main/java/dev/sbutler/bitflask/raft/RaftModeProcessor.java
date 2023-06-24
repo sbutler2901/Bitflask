@@ -9,4 +9,13 @@ sealed interface RaftModeProcessor extends HandlesElectionTimeout, Runnable
 
   /** Processes a {@link AppendEntriesRequest} based on the current state of the server. */
   AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request);
+
+  interface Factory {
+
+    RaftFollowerProcessor createRaftFollowerProcessor();
+
+    RaftCandidateProcessor createRaftCandidateProcessor();
+
+    RaftLeaderProcessor createRaftLeaderProcessor();
+  }
 }

@@ -17,7 +17,7 @@ public class RaftModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    install(new FactoryModuleBuilder().build(RaftModeProcessorFactory.class));
+    install(new FactoryModuleBuilder().build(RaftModeProcessor.Factory.class));
   }
 
   @Provides

@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Singleton
 final class RaftModeManager implements HandlesElectionTimeout {
 
-  private final RaftModeProcessorFactory raftModeProcessorFactory;
+  private final RaftModeProcessor.Factory raftModeProcessorFactory;
 
   private final ListeningExecutorService executorService =
       MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
@@ -24,7 +24,7 @@ final class RaftModeManager implements HandlesElectionTimeout {
   private volatile ListenableFuture<?> runningProcessorFuture = Futures.immediateVoidFuture();
 
   @Inject
-  RaftModeManager(RaftModeProcessorFactory raftModeProcessorFactory) {
+  RaftModeManager(RaftModeProcessor.Factory raftModeProcessorFactory) {
     this.raftModeProcessorFactory = raftModeProcessorFactory;
     // TODO: handle starting from persisted state
     transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
