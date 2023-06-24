@@ -50,20 +50,13 @@ final class RaftClusterCandidateRpcClient {
     responseFutures = responseFuturesBuilder.build();
   }
 
-  int getNumberRequestsSent() {
-    return responseFutures.size();
-  }
-
-  int getNumberResponsesReceived() {
-    return responsesReceived.get();
-  }
-
-  int getNumberVotesReceived() {
-    return votesReceived.get();
-  }
-
-  long getLargestTermSeen() {
-    return largestTermSeen.get();
+  /** Gets the current results of all RequestVotes RPCs. */
+  RequestVotesResults getCurrentRequestVotesResults() {
+    return new RequestVotesResults(
+        responseFutures.size(),
+        responsesReceived.get(),
+        votesReceived.get(),
+        largestTermSeen.get());
   }
 
   /** Cancels all pending requests, if any. */
@@ -73,6 +66,12 @@ final class RaftClusterCandidateRpcClient {
         .filter(Predicate.not(Future::isCancelled))
         .forEach(future -> future.cancel(true));
   }
+
+  record RequestVotesResults(
+      int numberRequestsSent,
+      int numberResponsesReceived,
+      int numberVotesReceived,
+      long largestTermSeen) {}
 
   /** Handles a single cluster's {@link RequestVoteResponse}. */
   private final class RequestVoteFutureCallback implements FutureCallback<RequestVoteResponse> {
