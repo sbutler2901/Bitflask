@@ -14,26 +14,25 @@ import java.util.concurrent.locks.ReentrantLock;
 @Singleton
 final class RaftPersistentState {
 
-  /** The RaftServerId for this server. */
-  @ThisRaftServerId private final RaftServerId thisRaftServiceId;
+  // Persisted fields
   /** The RaftLog for this server. */
   private final RaftLog raftLog;
   /** Latest term server has seen. */
   private final AtomicLong currentTerm = new AtomicLong(0);
-
-  private final ReentrantLock voteLock = new ReentrantLock();
-
   /** Candidate ID that received vote in current term (or null if none). */
   private volatile RaftServerId votedForCandidateId = null;
 
+  // Helper fields
+  private final RaftClusterConfiguration raftClusterConfiguration;
+  private final ReentrantLock voteLock = new ReentrantLock();
   private volatile long termWhenVotedForCandidate = 0L;
 
   RaftPersistentState(
-      @ThisRaftServerId RaftServerId thisRaftServiceId,
+      RaftClusterConfiguration raftClusterConfiguration,
       RaftLog raftLog,
       long latestTermSeen,
       RaftServerId votedForCandidateId) {
-    this.thisRaftServiceId = thisRaftServiceId;
+    this.raftClusterConfiguration = raftClusterConfiguration;
     this.raftLog = raftLog;
     this.currentTerm.set(latestTermSeen);
     this.votedForCandidateId = votedForCandidateId;
@@ -86,7 +85,7 @@ final class RaftPersistentState {
     voteLock.lock();
     try {
       currentTerm.getAndIncrement();
-      votedForCandidateId = thisRaftServiceId;
+      votedForCandidateId = raftClusterConfiguration.thisRaftServerId();
       termWhenVotedForCandidate = currentTerm.get();
     } finally {
       voteLock.unlock();

@@ -7,28 +7,15 @@ import com.google.inject.assistedinject.FactoryModuleBuilder;
 /** Module for using the Raft Consensus protocol. */
 public class RaftModule extends AbstractModule {
 
-  private final RaftServerId raftServerId;
   private final RaftClusterConfiguration raftClusterConfiguration;
 
-  public RaftModule(RaftServerId raftServerId, RaftClusterConfiguration raftClusterConfiguration) {
-    this.raftServerId = raftServerId;
+  public RaftModule(RaftClusterConfiguration raftClusterConfiguration) {
     this.raftClusterConfiguration = raftClusterConfiguration;
   }
 
   @Override
   protected void configure() {
     install(new FactoryModuleBuilder().build(RaftModeProcessor.Factory.class));
-  }
-
-  @Provides
-  @ThisRaftServerId
-  RaftServerId provideRaftServerId() {
-    return this.raftServerId;
-  }
-
-  @Provides
-  RaftServerInfo provideRaftServerInfo() {
-    return raftClusterConfiguration.clusterServers().get(raftServerId);
   }
 
   @Provides
