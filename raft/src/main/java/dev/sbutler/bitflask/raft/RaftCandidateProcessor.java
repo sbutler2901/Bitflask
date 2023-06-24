@@ -5,11 +5,16 @@ import jakarta.inject.Inject;
 final class RaftCandidateProcessor implements RaftModeProcessor {
 
   private final RaftModeManager raftModeManager;
+  private final RaftPersistentState raftPersistentState;
   private final RaftElectionTimer raftElectionTimer;
 
   @Inject
-  RaftCandidateProcessor(RaftModeManager raftModeManager, RaftElectionTimer raftElectionTimer) {
+  RaftCandidateProcessor(
+      RaftModeManager raftModeManager,
+      RaftPersistentState raftPersistentState,
+      RaftElectionTimer raftElectionTimer) {
     this.raftModeManager = raftModeManager;
+    this.raftPersistentState = raftPersistentState;
     this.raftElectionTimer = raftElectionTimer;
   }
 
@@ -34,8 +39,7 @@ final class RaftCandidateProcessor implements RaftModeProcessor {
   }
 
   private void startNewElection() {
-    // 1. increment current term
-    // 2. vote for self
+    raftPersistentState.incrementTermAndVoteForSelf();
     raftElectionTimer.restart();
     // 4. Send RequestVote RPCs to all other servers
   }
