@@ -8,10 +8,17 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.raft.RaftGrpc.RaftFutureStub;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 
-/** Utility class for handling rpc calls used by the {@link RaftCandidateProcessor}. */
+/**
+ * Utility class for handling rpc calls used by the {@link RaftCandidateProcessor}.
+ *
+ * <p>Note: this class should only be used for a single election cycle and clean up by calling
+ * {@link RaftClusterCandidateRpcClient#cancelRequests()}.
+ */
 final class RaftClusterCandidateRpcClient {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -61,9 +68,13 @@ final class RaftClusterCandidateRpcClient {
 
   /** Cancels all pending requests, if any. */
   void cancelRequests() {
-    responseFutures.forEach(future -> future.cancel(true));
+    responseFutures.stream()
+        .filter(Predicate.not(Future::isDone))
+        .filter(Predicate.not(Future::isCancelled))
+        .forEach(future -> future.cancel(true));
   }
 
+  /** Handles a single cluster's {@link RequestVoteResponse}. */
   private final class RequestVoteFutureCallback implements FutureCallback<RequestVoteResponse> {
     private final RaftServerId calledRaftServerId;
 
