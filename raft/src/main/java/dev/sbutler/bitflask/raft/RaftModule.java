@@ -21,6 +21,7 @@ public class RaftModule extends AbstractModule {
   }
 
   @Provides
+  @ThisRaftServerId
   RaftServerId provideRaftServerId() {
     return this.raftServerId;
   }
