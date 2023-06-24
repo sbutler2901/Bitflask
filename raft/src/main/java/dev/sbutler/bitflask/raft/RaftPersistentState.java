@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.raft;
 
+import jakarta.inject.Singleton;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -8,6 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * <p>Updated on stable storage before responding to RPCs
  */
+@Singleton
 final class RaftPersistentState {
 
   private final RaftLog raftLog;

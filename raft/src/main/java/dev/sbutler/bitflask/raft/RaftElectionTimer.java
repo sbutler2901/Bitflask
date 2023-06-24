@@ -1,11 +1,13 @@
 package dev.sbutler.bitflask.raft;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ThreadLocalRandom;
 
 /** The Raft timer used for managing election timeouts. */
+@Singleton
 final class RaftElectionTimer {
 
   private final RaftTimerInterval raftTimerInterval;

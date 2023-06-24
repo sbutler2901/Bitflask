@@ -1,11 +1,13 @@
 package dev.sbutler.bitflask.raft;
 
+import jakarta.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Volatile state that must be reinitialized each time a Raft server boots, unless it is the first
  * boot.
  */
+@Singleton
 final class RaftVolatileState {
 
   /** Index of highest log entry known to be committed. */
