@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.raft;
 
 import jakarta.inject.Inject;
 
-final class RaftFollowerProcessor implements RaftModeProcessor {
+final class RaftFollowerProcessor extends RaftModeProcessorBase {
 
   private final RaftModeManager raftModeManager;
   private final RaftElectionTimer raftElectionTimer;

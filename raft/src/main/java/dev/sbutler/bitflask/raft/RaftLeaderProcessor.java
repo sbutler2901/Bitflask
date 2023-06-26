@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.raft;
 
 import jakarta.inject.Inject;
 
-final class RaftLeaderProcessor implements RaftModeProcessor {
+final class RaftLeaderProcessor extends RaftModeProcessorBase {
 
   @Inject
   RaftLeaderProcessor() {}

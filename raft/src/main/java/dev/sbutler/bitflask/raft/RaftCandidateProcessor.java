@@ -10,7 +10,7 @@ import jakarta.inject.Inject;
  * <p>A new instance of this class should be created each time the server transitions to the
  * Candidate stage.
  */
-final class RaftCandidateProcessor implements RaftModeProcessor {
+final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   private final RaftClusterConfiguration raftClusterConfiguration;
   private final RaftModeManager raftModeManager;
