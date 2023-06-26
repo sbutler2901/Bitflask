@@ -4,6 +4,12 @@ import dev.sbutler.bitflask.raft.RaftClusterCandidateRpcClient.RequestVotesResul
 import dev.sbutler.bitflask.raft.RaftLog.LastLogDetails;
 import jakarta.inject.Inject;
 
+/**
+ * Handles the {@link RaftModeManager.RaftMode#CANDIDATE} stage of the Raft server.
+ *
+ * <p>A new instance of this class should be created each time the server transitions to the
+ * Candidate stage.
+ */
 final class RaftCandidateProcessor implements RaftModeProcessor {
 
   private final RaftClusterConfiguration raftClusterConfiguration;
@@ -13,8 +19,8 @@ final class RaftCandidateProcessor implements RaftModeProcessor {
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
   private final RaftLog raftLog;
 
-  private volatile boolean continueElections = true;
-  private volatile boolean cancelCurrentElection = false;
+  private volatile boolean shouldContinueElections = true;
+  private volatile boolean hasElectionTimeoutOccurred = false;
 
   @Inject
   RaftCandidateProcessor(
@@ -43,46 +49,48 @@ final class RaftCandidateProcessor implements RaftModeProcessor {
   }
 
   public void handleElectionTimeout() {
-    cancelCurrentElection = true;
+    hasElectionTimeoutOccurred = true;
   }
 
+  /**
+   * The main loop of this class that executes until the RequestVotes RPCs sent cause termination,
+   * or an RPC is received from another server that causes termination.
+   */
   @Override
   public void run() {
-    while (continueElections) {
-      boolean wonElection = startNewElection();
-      resetElectionTimerState();
-      if (wonElection) {
-        raftModeManager.transitionToLeaderState();
-        return;
+    while (shouldContinueElections) {
+      startNewElection();
+      // Do not start another election until election timer timeout
+      while (shouldContinueElections && !hasElectionTimeoutOccurred) {
+        Thread.onSpinWait();
       }
     }
-    raftModeManager.transitionToFollowerState();
   }
 
-  private void resetElectionTimerState() {
-    raftElectionTimer.cancel();
-    cancelCurrentElection = false;
-  }
-
-  private boolean startNewElection() {
+  /** Starts and handles a single election cycle. */
+  private void startNewElection() {
     raftPersistentState.incrementTermAndVoteForSelf();
     raftElectionTimer.restart();
-    RaftClusterCandidateRpcClient candidateRpcClient =
-        raftClusterRpcChannelManager.createRaftClusterCandidateRpcClient();
-    try {
-      return sendRequestVotesAndBlock(candidateRpcClient);
-    } finally {
-      candidateRpcClient.cancelRequests();
+    hasElectionTimeoutOccurred = false;
+    try (var candidateRpcClient =
+        raftClusterRpcChannelManager.createRaftClusterCandidateRpcClient()) {
+      sendRequestVotesAndWait(candidateRpcClient);
     }
   }
 
   /**
    * Requests a vote from all other Raft servers in the cluster and waits.
    *
-   * <p>This method blocks until the election has been won, the election timer expires, or is
-   * canceled by another thread.
+   * <p>This method waits until
+   *
+   * <ul>
+   *   <li>The election has been won.
+   *   <li>All responses have been received.
+   *   <li>A greater term is encountered in a {@link RequestVoteResponse}.
+   *   <li>An election timeout has occurred.
+   *   <li>The candidate is halted.
    */
-  private boolean sendRequestVotesAndBlock(RaftClusterCandidateRpcClient candidateRpcClient) {
+  private void sendRequestVotesAndWait(RaftClusterCandidateRpcClient candidateRpcClient) {
     LastLogDetails lastLogDetails = raftLog.getLastLogDetails();
     RequestVoteRequest request =
         RequestVoteRequest.newBuilder()
@@ -93,14 +101,40 @@ final class RaftCandidateProcessor implements RaftModeProcessor {
             .build();
     candidateRpcClient.requestVotes(request);
 
-    RequestVotesResults requestVotesResults;
-    do {
-      requestVotesResults = candidateRpcClient.getCurrentRequestVotesResults();
-      if (receivedMajorityVotes(requestVotesResults)) {
-        return true;
+    while (shouldContinueElections && !hasElectionTimeoutOccurred) {
+      RequestVotesResults requestVotesResults = candidateRpcClient.getCurrentRequestVotesResults();
+      if (requestVotesResults.largestTermSeen() > raftPersistentState.getCurrentTerm()) {
+        handleGreaterTermEncountered(requestVotesResults.largestTermSeen());
       }
-    } while (continueElections && !cancelCurrentElection);
-    return false;
+      if (receivedMajorityVotes(requestVotesResults)) {
+        handleWonElection();
+      }
+      if (requestVotesResults.allResponsesReceived()) {
+        break;
+      }
+    }
+  }
+
+  private void handleWonElection() {
+    haltCandidate();
+    raftModeManager.transitionToLeaderState();
+  }
+
+  private void handleAnotherLeaderEncountered() {
+    haltCandidate();
+    raftModeManager.transitionToFollowerState();
+  }
+
+  private void handleGreaterTermEncountered(long greaterTerm) {
+    haltCandidate();
+    raftPersistentState.setCurrentTermAndResetVote(greaterTerm);
+    raftModeManager.transitionToFollowerState();
+  }
+
+  /** Halts the candidate and election timer preventing anymore elections from occurring. */
+  private void haltCandidate() {
+    shouldContinueElections = false;
+    raftElectionTimer.cancel();
   }
 
   private boolean receivedMajorityVotes(RequestVotesResults requestVotesResults) {
