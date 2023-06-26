@@ -16,10 +16,9 @@ import java.util.function.Predicate;
 /**
  * Utility class for handling rpc calls used by the {@link RaftCandidateProcessor}.
  *
- * <p>Note: this class should only be used for a single election cycle and clean up by calling
- * {@link RaftClusterCandidateRpcClient#cancelRequests()}.
+ * <p>Note: this class should only be used for a single election cycle and used in a try/with.
  */
-final class RaftClusterCandidateRpcClient {
+final class RaftClusterCandidateRpcClient implements AutoCloseable {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
@@ -60,7 +59,8 @@ final class RaftClusterCandidateRpcClient {
   }
 
   /** Cancels all pending requests, if any. */
-  void cancelRequests() {
+  @Override
+  public void close() {
     responseFutures.stream()
         .filter(Predicate.not(Future::isDone))
         .filter(Predicate.not(Future::isCancelled))
