@@ -37,6 +37,13 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
     this.otherServerStubs = otherServerStubs;
   }
 
+  /**
+   * In parallel, asynchronously sends the {@link RequestVoteRequest} to all other servers in the
+   * Raft cluster.
+   *
+   * <p>The results of these calls can be polled by calling {@link
+   * RaftClusterCandidateRpcClient#getCurrentRequestVotesResults()};
+   */
   void requestVotes(RequestVoteRequest request) {
     ImmutableList.Builder<ListenableFuture<RequestVoteResponse>> responseFuturesBuilder =
         ImmutableList.builder();
@@ -49,7 +56,11 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
     responseFutures = responseFuturesBuilder.build();
   }
 
-  /** Gets the current results of all RequestVotes RPCs. */
+  /**
+   * Gets the current results of all RequestVotes RPCs.
+   *
+   * <p>The returned {@link RequestVotesResults} will vary until all responses have been received.
+   */
   RequestVotesResults getCurrentRequestVotesResults() {
     return new RequestVotesResults(
         responseFutures.size(),
@@ -67,11 +78,20 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
         .forEach(future -> future.cancel(true));
   }
 
+  /**
+   * A simplified snapshot of all of {@link RequestVoteResponse}s received from other clusters in
+   * the server.
+   */
   record RequestVotesResults(
       int numberRequestsSent,
       int numberResponsesReceived,
       int numberVotesReceived,
-      long largestTermSeen) {}
+      long largestTermSeen) {
+
+    boolean allResponsesReceived() {
+      return numberRequestsSent() == numberResponsesReceived();
+    }
+  }
 
   /** Handles a single cluster's {@link RequestVoteResponse}. */
   private final class RequestVoteFutureCallback implements FutureCallback<RequestVoteResponse> {
