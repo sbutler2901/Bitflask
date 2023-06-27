@@ -5,7 +5,9 @@ import jakarta.inject.Inject;
 final class RaftLeaderProcessor extends RaftModeProcessorBase {
 
   @Inject
-  RaftLeaderProcessor() {}
+  RaftLeaderProcessor(RaftModeManager raftModeManager, RaftPersistentState raftPersistentState) {
+    super(raftModeManager, raftPersistentState);
+  }
 
   @Override
   public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {

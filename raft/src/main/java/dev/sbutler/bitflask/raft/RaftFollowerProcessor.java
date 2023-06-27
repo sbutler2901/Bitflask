@@ -4,12 +4,14 @@ import jakarta.inject.Inject;
 
 final class RaftFollowerProcessor extends RaftModeProcessorBase {
 
-  private final RaftModeManager raftModeManager;
   private final RaftElectionTimer raftElectionTimer;
 
   @Inject
-  RaftFollowerProcessor(RaftModeManager raftModeManager, RaftElectionTimer raftElectionTimer) {
-    this.raftModeManager = raftModeManager;
+  RaftFollowerProcessor(
+      RaftModeManager raftModeManager,
+      RaftPersistentState raftPersistentState,
+      RaftElectionTimer raftElectionTimer) {
+    super(raftModeManager, raftPersistentState);
     this.raftElectionTimer = raftElectionTimer;
   }
 

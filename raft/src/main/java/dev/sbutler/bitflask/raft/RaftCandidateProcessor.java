@@ -14,7 +14,6 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   private final RaftClusterConfiguration raftClusterConfiguration;
   private final RaftModeManager raftModeManager;
-  private final RaftPersistentState raftPersistentState;
   private final RaftElectionTimer raftElectionTimer;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
   private final RaftLog raftLog;
@@ -30,9 +29,9 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
       RaftElectionTimer raftElectionTimer,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager,
       RaftLog raftLog) {
+    super(raftModeManager, raftPersistentState);
     this.raftClusterConfiguration = raftClusterConfiguration;
     this.raftModeManager = raftModeManager;
-    this.raftPersistentState = raftPersistentState;
     this.raftElectionTimer = raftElectionTimer;
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
     this.raftLog = raftLog;
@@ -40,7 +39,7 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   @Override
   public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
-    return RequestVoteResponse.getDefaultInstance();
+    return super.processRequestVoteRequest(request);
   }
 
   @Override
@@ -103,31 +102,20 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
     while (shouldContinueElections && !hasElectionTimeoutOccurred) {
       RequestVotesResults requestVotesResults = candidateRpcClient.getCurrentRequestVotesResults();
-      if (requestVotesResults.largestTermSeen() > raftPersistentState.getCurrentTerm()) {
-        handleGreaterTermEncountered(requestVotesResults.largestTermSeen());
-      }
-      if (receivedMajorityVotes(requestVotesResults)) {
-        handleWonElection();
-      }
-      if (requestVotesResults.allResponsesReceived()) {
+      if (shouldUpdateTermAndConvertToFollower(requestVotesResults.largestTermSeen())) {
+        haltCandidate();
+        updateTermAndConvertToFollower(requestVotesResults.largestTermSeen());
+      } else if (receivedMajorityVotes(requestVotesResults)) {
+        haltCandidate();
+        raftModeManager.transitionToLeaderState();
+      } else if (requestVotesResults.allResponsesReceived()) {
         break;
       }
     }
   }
 
-  private void handleWonElection() {
-    haltCandidate();
-    raftModeManager.transitionToLeaderState();
-  }
-
   private void handleAnotherLeaderEncountered() {
     haltCandidate();
-    raftModeManager.transitionToFollowerState();
-  }
-
-  private void handleGreaterTermEncountered(long greaterTerm) {
-    haltCandidate();
-    raftPersistentState.setCurrentTermAndResetVote(greaterTerm);
     raftModeManager.transitionToFollowerState();
   }
 
