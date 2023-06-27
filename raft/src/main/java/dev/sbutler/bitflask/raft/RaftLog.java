@@ -19,16 +19,16 @@ final class RaftLog {
     return entry.getTerm() == term;
   }
 
-  LastLogDetails getLastLogDetails() {
+  LastLogEntryDetails getLastLogDetails() {
     int lastEntryIndex = entries.size() - 1;
     Entry lastEntry = entries.get(lastEntryIndex);
-    return new LastLogDetails(lastEntry.getTerm(), lastEntryIndex);
+    return new LastLogEntryDetails(lastEntry.getTerm(), lastEntryIndex);
   }
 
-  record LastLogDetails(int term, int index) implements Comparable<LastLogDetails> {
+  record LastLogEntryDetails(int term, int index) implements Comparable<LastLogEntryDetails> {
 
     @Override
-    public int compareTo(LastLogDetails provided) {
+    public int compareTo(LastLogEntryDetails provided) {
       var termsCompared = Integer.compare(term(), provided.term());
       var indexesCompared = Integer.compare(index(), provided.index());
 
