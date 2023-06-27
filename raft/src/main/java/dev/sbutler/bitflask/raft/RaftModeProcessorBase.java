@@ -38,7 +38,12 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     raftModeManager.transitionToFollowerState();
   }
 
-  /** The base Raft logic for handling a {@link RequestVoteRequest}. */
+  /**
+   * The base Raft logic for handling a {@link RequestVoteRequest}.
+   *
+   * <p>If a processor must update the term and convert to a follower, this method should be called
+   * afterward since a vote will need to be cast.
+   */
   public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
     RequestVoteResponse.Builder response =
         RequestVoteResponse.newBuilder().setTerm(raftPersistentState.getCurrentTerm());
