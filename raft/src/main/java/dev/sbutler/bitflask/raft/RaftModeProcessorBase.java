@@ -21,7 +21,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
    * Used by subclasses to determine if a processor should update the server's current term and
    * convert to a follower, if not already one.
    *
-   * <p>This should be used when a term is received via a Raft RPC request or response.
+   * <p>This method should be used when a term is received via a Raft RPC request or response.
    */
   protected final boolean shouldUpdateTermAndConvertToFollower(long rpcTerm) {
     return rpcTerm > raftPersistentState.getCurrentTerm();
@@ -59,5 +59,10 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
       response.setVoteGranted(grantVote);
     }
     return response.build();
+  }
+
+  /** The base Raft logic for handling a {@link AppendEntriesRequest}. */
+  public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
+    return AppendEntriesResponse.getDefaultInstance();
   }
 }

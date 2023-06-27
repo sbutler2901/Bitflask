@@ -39,12 +39,20 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   @Override
   public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
+    if (shouldUpdateTermAndConvertToFollower(request.getTerm())) {
+      haltCandidate();
+      updateTermAndConvertToFollower(request.getTerm());
+    }
     return super.processRequestVoteRequest(request);
   }
 
   @Override
   public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
-    return AppendEntriesResponse.getDefaultInstance();
+    if (request.getTerm() >= raftPersistentState.getCurrentTerm()) {
+      haltCandidate();
+      updateTermAndConvertToFollower(request.getTerm());
+    }
+    return super.processAppendEntriesRequest(request);
   }
 
   public void handleElectionTimeout() {
@@ -112,11 +120,6 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
         break;
       }
     }
-  }
-
-  private void handleAnotherLeaderEncountered() {
-    haltCandidate();
-    raftModeManager.transitionToFollowerState();
   }
 
   /** Halts the candidate and election timer preventing anymore elections from occurring. */
