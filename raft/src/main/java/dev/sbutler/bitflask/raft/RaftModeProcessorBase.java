@@ -42,19 +42,21 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
     RequestVoteResponse.Builder response =
         RequestVoteResponse.newBuilder().setTerm(raftPersistentState.getCurrentTerm());
+    RaftServerId candidateRaftServerId = new RaftServerId(request.getCandidateId());
     if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
       response.setVoteGranted(false);
     } else if (raftPersistentState.getVotedForCandidateId().isPresent()
-        && !raftPersistentState
-            .getVotedForCandidateId()
-            .get()
-            .equals(new RaftServerId(request.getCandidateId()))) {
+        && !raftPersistentState.getVotedForCandidateId().get().equals(candidateRaftServerId)) {
       response.setVoteGranted(false);
     } else {
       LastLogDetails candidateLastLogDetails =
           new LastLogDetails(request.getLastLogTerm(), request.getLastLogIndex());
       LastLogDetails localLastLogDetails = raftPersistentState.getRaftLog().getLastLogDetails();
-      response.setVoteGranted(candidateLastLogDetails.compareTo(localLastLogDetails) >= 0);
+      boolean grantVote = candidateLastLogDetails.compareTo(localLastLogDetails) >= 0;
+      if (grantVote) {
+        raftPersistentState.setVotedForCandidateId(candidateRaftServerId);
+      }
+      response.setVoteGranted(grantVote);
     }
     return response.build();
   }
