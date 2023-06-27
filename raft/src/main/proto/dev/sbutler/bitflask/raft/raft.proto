@@ -47,7 +47,7 @@ message AppendEntriesRequest {
   // log entries to store (empty for heartbeat; may send more than one for efficiency
   repeated Entry entries = 5;
   // leader's commitIndex
-  uint64 leaderCommit = 6;
+  uint32 leaderCommit = 6;
 }
 
 // The response from a follower
