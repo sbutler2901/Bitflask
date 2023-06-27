@@ -11,10 +11,13 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
 
   protected final RaftModeManager raftModeManager;
   protected final RaftPersistentState raftPersistentState;
+  protected final RaftLog raftLog;
 
-  RaftModeProcessorBase(RaftModeManager raftModeManager, RaftPersistentState raftPersistentState) {
+  RaftModeProcessorBase(
+      RaftModeManager raftModeManager, RaftPersistentState raftPersistentState, RaftLog raftLog) {
     this.raftModeManager = raftModeManager;
     this.raftPersistentState = raftPersistentState;
+    this.raftLog = raftLog;
   }
 
   /**
@@ -48,6 +51,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     RequestVoteResponse.Builder response =
         RequestVoteResponse.newBuilder().setTerm(raftPersistentState.getCurrentTerm());
     RaftServerId candidateRaftServerId = new RaftServerId(request.getCandidateId());
+
     if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
       response.setVoteGranted(false);
     } else if (raftPersistentState.getVotedForCandidateId().isPresent()
@@ -64,11 +68,22 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
       }
       response.setVoteGranted(grantVote);
     }
+
     return response.build();
   }
 
   /** The base Raft logic for handling a {@link AppendEntriesRequest}. */
   public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
-    return AppendEntriesResponse.getDefaultInstance();
+    AppendEntriesResponse.Builder response =
+        AppendEntriesResponse.newBuilder().setTerm(raftPersistentState.getCurrentTerm());
+
+    if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
+      response.setSuccess(false);
+    } else if (raftLog.logAtIndexHasMatchingTerm(
+        request.getPrevLogIndex(), request.getPrevLogTerm())) {
+      response.setSuccess(false);
+    }
+
+    return response.build();
   }
 }

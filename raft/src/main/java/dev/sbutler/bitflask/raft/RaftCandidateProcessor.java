@@ -16,7 +16,6 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
   private final RaftModeManager raftModeManager;
   private final RaftElectionTimer raftElectionTimer;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
-  private final RaftLog raftLog;
 
   private volatile boolean shouldContinueElections = true;
   private volatile boolean hasElectionTimeoutOccurred = false;
@@ -26,15 +25,14 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
       RaftClusterConfiguration raftClusterConfiguration,
       RaftModeManager raftModeManager,
       RaftPersistentState raftPersistentState,
+      RaftLog raftLog,
       RaftElectionTimer raftElectionTimer,
-      RaftClusterRpcChannelManager raftClusterRpcChannelManager,
-      RaftLog raftLog) {
-    super(raftModeManager, raftPersistentState);
+      RaftClusterRpcChannelManager raftClusterRpcChannelManager) {
+    super(raftModeManager, raftPersistentState, raftLog);
     this.raftClusterConfiguration = raftClusterConfiguration;
     this.raftModeManager = raftModeManager;
     this.raftElectionTimer = raftElectionTimer;
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
-    this.raftLog = raftLog;
   }
 
   @Override
