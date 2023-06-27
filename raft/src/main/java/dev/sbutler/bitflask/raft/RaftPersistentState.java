@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.raft;
 import com.google.common.base.Preconditions;
 import jakarta.inject.Singleton;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -18,19 +18,19 @@ final class RaftPersistentState {
   /** The RaftLog for this server. */
   private final RaftLog raftLog;
   /** Latest term server has seen. */
-  private final AtomicLong currentTerm = new AtomicLong(0);
+  private final AtomicInteger currentTerm = new AtomicInteger(0);
   /** Candidate ID that received vote in current term (or null if none). */
-  private volatile RaftServerId votedForCandidateId = null;
+  private volatile RaftServerId votedForCandidateId;
 
   // Helper fields
   private final RaftClusterConfiguration raftClusterConfiguration;
   private final ReentrantLock voteLock = new ReentrantLock();
-  private volatile long termWhenVotedForCandidate = 0L;
+  private volatile int termWhenVotedForCandidate = 0;
 
   RaftPersistentState(
       RaftClusterConfiguration raftClusterConfiguration,
       RaftLog raftLog,
-      long latestTermSeen,
+      int latestTermSeen,
       RaftServerId votedForCandidateId) {
     this.raftClusterConfiguration = raftClusterConfiguration;
     this.raftLog = raftLog;
@@ -44,7 +44,7 @@ final class RaftPersistentState {
   }
 
   /** Returns the latest term this server has seen. */
-  long getCurrentTerm() {
+  int getCurrentTerm() {
     return currentTerm.get();
   }
 
@@ -60,7 +60,7 @@ final class RaftPersistentState {
   }
 
   /** Sets the current term and resets this server's vote. */
-  void setCurrentTermAndResetVote(long newCurrentTerm) {
+  void setCurrentTermAndResetVote(int newCurrentTerm) {
     voteLock.lock();
     try {
       currentTerm.set(newCurrentTerm);

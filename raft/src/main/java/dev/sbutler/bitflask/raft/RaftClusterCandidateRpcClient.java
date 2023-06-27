@@ -10,7 +10,6 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.raft.RaftGrpc.RaftFutureStub;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 /**
@@ -26,7 +25,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
 
   private final AtomicInteger responsesReceived = new AtomicInteger(0);
   private final AtomicInteger votesReceived = new AtomicInteger(0);
-  private final AtomicLong largestTermSeen = new AtomicLong(-1);
+  private final AtomicInteger largestTermSeen = new AtomicInteger(-1);
 
   private ImmutableList<ListenableFuture<RequestVoteResponse>> responseFutures = ImmutableList.of();
 
@@ -86,7 +85,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
       int numberRequestsSent,
       int numberResponsesReceived,
       int numberVotesReceived,
-      long largestTermSeen) {
+      int largestTermSeen) {
 
     boolean allResponsesReceived() {
       return numberRequestsSent() == numberResponsesReceived();

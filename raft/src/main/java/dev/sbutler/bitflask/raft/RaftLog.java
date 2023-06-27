@@ -7,12 +7,12 @@ final class RaftLog {
     return new LastLogDetails(0, 0);
   }
 
-  record LastLogDetails(long term, long index) implements Comparable<LastLogDetails> {
+  record LastLogDetails(int term, int index) implements Comparable<LastLogDetails> {
 
     @Override
     public int compareTo(LastLogDetails provided) {
-      var termsCompared = Long.compare(term(), provided.term());
-      var indexesCompared = Long.compare(index(), provided.index());
+      var termsCompared = Integer.compare(term(), provided.term());
+      var indexesCompared = Integer.compare(index(), provided.index());
 
       if (termsCompared > 0) {
         return 1;

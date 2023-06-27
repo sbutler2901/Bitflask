@@ -33,7 +33,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
    *
    * <p>This method should be used after a subclasses has executed its custom logic.
    */
-  protected final void updateTermAndConvertToFollower(long rpcTerm) {
+  protected final void updateTermAndConvertToFollower(int rpcTerm) {
     raftPersistentState.setCurrentTermAndResetVote(rpcTerm);
     raftModeManager.transitionToFollowerState();
   }
