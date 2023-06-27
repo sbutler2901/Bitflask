@@ -17,19 +17,19 @@ service Raft {
 // Sent by a candidate who is requesting to become leader
 message RequestVoteRequest {
   // candidate’s term
-  uint64 term = 1;
+  uint32 term = 1;
   // candidate requesting vote
   string candidateId = 2;
   // index of candidate’s last log entry
-  uint64 lastLogIndex = 3;
+  uint32 lastLogIndex = 3;
   // term of candidate’s last log entry
-  uint64 lastLogTerm = 4;
+  uint32 lastLogTerm = 4;
 }
 
 // Response to a candidate's request for vote
 message RequestVoteResponse {
   // current term, for candidate to update itself
-  uint64 term = 1;
+  uint32 term = 1;
   // true means candidate received vote
   bool voteGranted = 2;
 }
@@ -37,13 +37,13 @@ message RequestVoteResponse {
 // Sent by the leader to replicate log entries, or as a heartbeat
 message AppendEntriesRequest {
   // leader's term
-  uint64 term = 1;
+  uint32 term = 1;
   // so follower can redirect clients
   string leaderId = 2;
   // index of log entry immediately preceding new ones
-  uint64 prevLogIndex = 3;
+  uint32 prevLogIndex = 3;
   // term of prevLogIndex entry
-  uint64 prevLogTerm = 4;
+  uint32 prevLogTerm = 4;
   // log entries to store (empty for heartbeat; may send more than one for efficiency
   repeated Entry entries = 5;
   // leader's commitIndex
@@ -53,13 +53,16 @@ message AppendEntriesRequest {
 // The response from a follower
 message AppendEntriesResponse {
   // current term, for leader to update itself
-  uint64 term = 1;
+  uint32 term = 1;
   // true if follower contained entry matching prevLogIndex and prevLogTerm
   bool success = 2;
 }
 
 // A Raft log entry
 message Entry {
+  // The term that the entry was created
+  uint32 term = 1;
+
   // Used by a leader at the start of its term to ensure it has the latest
   // information on which entries are committed
   message EmptyCommand {}
@@ -75,8 +78,8 @@ message Entry {
   }
   // The type of command an entry is appending to the log
   oneof command {
-    EmptyCommand empty_command = 1;
-    SetCommand set_command = 2;
-    DeleteCommand delete_command = 3;
+    EmptyCommand empty_command = 2;
+    SetCommand set_command = 3;
+    DeleteCommand delete_command = 4;
   }
 }
