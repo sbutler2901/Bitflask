@@ -1,7 +1,8 @@
 package dev.sbutler.bitflask.raft;
 
 import jakarta.inject.Singleton;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Volatile state that must be reinitialized each time a Raft server boots, unless it is the first
@@ -11,32 +12,43 @@ import java.util.concurrent.atomic.AtomicLong;
 final class RaftVolatileState {
 
   /** Index of highest log entry known to be committed. */
-  private final AtomicLong highestCommittedEntryIndex = new AtomicLong(0);
+  private final AtomicInteger highestCommittedEntryIndex = new AtomicInteger(0);
   /** Index of highest log entry applied to state machine. */
-  private final AtomicLong highestAppliedEntryIndex = new AtomicLong(0);
+  private final AtomicInteger highestAppliedEntryIndex = new AtomicInteger(0);
 
-  RaftVolatileState(long highestCommittedEntryIndex, long highestAppliedEntryIndex) {
+  private volatile RaftServerId leaderServerId;
+
+  RaftVolatileState(int highestCommittedEntryIndex, int highestAppliedEntryIndex) {
     this.highestCommittedEntryIndex.set(highestCommittedEntryIndex);
     this.highestAppliedEntryIndex.set(highestAppliedEntryIndex);
   }
 
   /** Returns the index of the highest log entry known to be committed. */
-  long getHighestCommittedEntryIndex() {
+  int getHighestCommittedEntryIndex() {
     return highestCommittedEntryIndex.get();
   }
 
   /** Sets the index of the highest log entry known to be committed. */
-  long setHighestCommittedEntryIndex(long index) {
-    return highestCommittedEntryIndex.getAndSet(index);
+  void setHighestCommittedEntryIndex(int index) {
+    highestCommittedEntryIndex.getAndSet(index);
   }
 
   /** Returns the index of the highest log entry applied to the state machine. */
-  long getHighestAppliedEntryIndex() {
+  int getHighestAppliedEntryIndex() {
     return highestAppliedEntryIndex.get();
   }
 
   /** Sets the index of the highest log entry applied to the state machine. */
-  long setHighestAppliedEntryIndex(long index) {
-    return highestAppliedEntryIndex.getAndSet(index);
+  void setHighestAppliedEntryIndex(int index) {
+    highestAppliedEntryIndex.getAndSet(index);
+  }
+
+  /** Returns the {@link RaftServerId} of the current leader, if known. */
+  Optional<RaftServerId> getLeaderServerId() {
+    return Optional.ofNullable(leaderServerId);
+  }
+
+  void setLeaderId(RaftServerId leaderServerId) {
+    this.leaderServerId = leaderServerId;
   }
 }
