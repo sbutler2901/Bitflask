@@ -6,8 +6,11 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase {
 
   @Inject
   RaftLeaderProcessor(
-      RaftModeManager raftModeManager, RaftPersistentState raftPersistentState, RaftLog raftLog) {
-    super(raftModeManager, raftPersistentState, raftLog);
+      RaftModeManager raftModeManager,
+      RaftPersistentState raftPersistentState,
+      RaftVolatileState raftVolatileState,
+      RaftLog raftLog) {
+    super(raftModeManager, raftPersistentState, raftVolatileState, raftLog);
   }
 
   @Override

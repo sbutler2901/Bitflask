@@ -25,10 +25,11 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
       RaftClusterConfiguration raftClusterConfiguration,
       RaftModeManager raftModeManager,
       RaftPersistentState raftPersistentState,
+      RaftVolatileState raftVolatileState,
       RaftLog raftLog,
       RaftElectionTimer raftElectionTimer,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager) {
-    super(raftModeManager, raftPersistentState, raftLog);
+    super(raftModeManager, raftPersistentState, raftVolatileState, raftLog);
     this.raftClusterConfiguration = raftClusterConfiguration;
     this.raftModeManager = raftModeManager;
     this.raftElectionTimer = raftElectionTimer;

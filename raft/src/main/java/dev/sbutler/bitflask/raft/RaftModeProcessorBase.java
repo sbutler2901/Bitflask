@@ -11,12 +11,17 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
 
   protected final RaftModeManager raftModeManager;
   protected final RaftPersistentState raftPersistentState;
+  protected final RaftVolatileState raftVolatileState;
   protected final RaftLog raftLog;
 
   RaftModeProcessorBase(
-      RaftModeManager raftModeManager, RaftPersistentState raftPersistentState, RaftLog raftLog) {
+      RaftModeManager raftModeManager,
+      RaftPersistentState raftPersistentState,
+      RaftVolatileState raftVolatileState,
+      RaftLog raftLog) {
     this.raftModeManager = raftModeManager;
     this.raftPersistentState = raftPersistentState;
+    this.raftVolatileState = raftVolatileState;
     this.raftLog = raftLog;
   }
 
@@ -82,6 +87,10 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     } else if (raftLog.logAtIndexHasMatchingTerm(
         request.getPrevLogIndex(), request.getPrevLogTerm())) {
       response.setSuccess(false);
+    } else {
+      response.setSuccess(true);
+      raftLog.appendEntriesWithLeaderCommit(request.getEntriesList(), request.getLeaderCommit());
+      raftVolatileState.setLeaderId(new RaftServerId(request.getLeaderId()));
     }
 
     return response.build();
