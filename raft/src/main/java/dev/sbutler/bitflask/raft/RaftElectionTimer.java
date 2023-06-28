@@ -13,7 +13,7 @@ final class RaftElectionTimer {
   private final RaftTimerInterval raftTimerInterval;
   private final Timer timer = new Timer("raft-election-timer", true);
 
-  private volatile HandlesElectionTimeout timeoutHandler;
+  private volatile RaftElectionTimeoutHandler timeoutHandler;
   private volatile TimerTask currentTimerTask;
 
   @Inject
@@ -22,10 +22,10 @@ final class RaftElectionTimer {
   }
 
   /**
-   * Sets the {@link HandlesElectionTimeout} implementing object that will be called on election
+   * Sets the {@link RaftElectionTimeoutHandler} implementing object that will be called on election
    * timeout.
    */
-  void setTimeoutHandler(HandlesElectionTimeout timeoutHandler) {
+  void setTimeoutHandler(RaftElectionTimeoutHandler timeoutHandler) {
     this.timeoutHandler = timeoutHandler;
   }
 
