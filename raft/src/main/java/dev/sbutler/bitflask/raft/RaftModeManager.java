@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /** Handles Raft's server mode and transitioning between them. */
 @Singleton
-final class RaftModeManager {
+final class RaftModeManager implements RaftElectionTimeoutHandler {
 
   private final RaftModeProcessor.Factory raftModeProcessorFactory;
   private final RaftElectionTimer raftElectionTimer;
@@ -50,6 +50,16 @@ final class RaftModeManager {
     return raftModeProcessor;
   }
 
+  /** Updates the Raft's server state as a result of an election timer timeout. */
+  public void handleElectionTimeout() {
+    transitionLock.lock();
+    try {
+      raftModeProcessor.handleElectionTimeout();
+    } finally {
+      transitionLock.unlock();
+    }
+  }
+
   /**
    * Transitions the server to use the {@link RaftFollowerProcessor}.
    *
@@ -67,8 +77,8 @@ final class RaftModeManager {
   /**
    * Transitions the server to use the {@link RaftCandidateProcessor}.
    *
-   * <p>This will cancel the currently running {@link RaftModeProcessor} and updates the election
-   * timer to call the new RaftCandidateProcessor when a timeout occurs.
+   * <p>This will cancel the currently running {@link RaftModeProcessor} and {@link
+   * RaftElectionTimer}.
    */
   void transitionToCandidateState() {
     Preconditions.checkState(
@@ -81,8 +91,8 @@ final class RaftModeManager {
   /**
    * Transitions the server to use the {@link RaftLeaderProcessor}.
    *
-   * <p>This will cancel the currently running {@link RaftModeProcessor} and updates the election
-   * timer to call the new RaftLeaderProcessor when a timeout occurs.
+   * <p>This will cancel the currently running {@link RaftModeProcessor} and {@link
+   * RaftElectionTimer}.
    */
   void transitionToLeaderState() {
     Preconditions.checkState(
@@ -96,8 +106,8 @@ final class RaftModeManager {
     transitionLock.lock();
     try {
       runningProcessorFuture.cancel(false);
+      raftElectionTimer.cancel();
       raftModeProcessor = newRaftModeProcessor;
-      raftElectionTimer.setTimeoutHandler(raftModeProcessor);
       runningProcessorFuture = executorService.submit(raftModeProcessor);
     } finally {
       transitionLock.unlock();
