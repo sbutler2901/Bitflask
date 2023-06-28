@@ -39,7 +39,7 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
   @Override
   public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
     if (shouldUpdateTermAndConvertToFollower(request.getTerm())) {
-      haltCandidate();
+      shouldContinueElections = false;
       updateTermAndConvertToFollower(request.getTerm());
     }
     return super.processRequestVoteRequest(request);
@@ -48,7 +48,7 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
   @Override
   public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
     if (request.getTerm() >= raftPersistentState.getCurrentTerm()) {
-      haltCandidate();
+      shouldContinueElections = false;
       updateTermAndConvertToFollower(request.getTerm());
     }
     return super.processAppendEntriesRequest(request);
@@ -110,21 +110,15 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
     while (shouldContinueElections && !hasElectionTimeoutOccurred) {
       RequestVotesResults requestVotesResults = candidateRpcClient.getCurrentRequestVotesResults();
       if (shouldUpdateTermAndConvertToFollower(requestVotesResults.largestTermSeen())) {
-        haltCandidate();
+        shouldContinueElections = false;
         updateTermAndConvertToFollower(requestVotesResults.largestTermSeen());
       } else if (receivedMajorityVotes(requestVotesResults)) {
-        haltCandidate();
+        shouldContinueElections = false;
         raftModeManager.transitionToLeaderState();
       } else if (requestVotesResults.allResponsesReceived()) {
         break;
       }
     }
-  }
-
-  /** Halts the candidate and election timer preventing anymore elections from occurring. */
-  private void haltCandidate() {
-    shouldContinueElections = false;
-    raftElectionTimer.cancel();
   }
 
   private boolean receivedMajorityVotes(RequestVotesResults requestVotesResults) {

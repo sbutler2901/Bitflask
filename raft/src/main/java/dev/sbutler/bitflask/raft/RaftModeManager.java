@@ -12,9 +12,10 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /** Handles Raft's server mode and transitioning between them. */
 @Singleton
-final class RaftModeManager implements HandlesElectionTimeout {
+final class RaftModeManager {
 
   private final RaftModeProcessor.Factory raftModeProcessorFactory;
+  private final RaftElectionTimer raftElectionTimer;
 
   private final ListeningExecutorService executorService =
       MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
@@ -24,8 +25,10 @@ final class RaftModeManager implements HandlesElectionTimeout {
   private volatile ListenableFuture<?> runningProcessorFuture = Futures.immediateVoidFuture();
 
   @Inject
-  RaftModeManager(RaftModeProcessor.Factory raftModeProcessorFactory) {
+  RaftModeManager(
+      RaftModeProcessor.Factory raftModeProcessorFactory, RaftElectionTimer raftElectionTimer) {
     this.raftModeProcessorFactory = raftModeProcessorFactory;
+    this.raftElectionTimer = raftElectionTimer;
     // TODO: handle starting from persisted state
     transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
   }
@@ -47,17 +50,12 @@ final class RaftModeManager implements HandlesElectionTimeout {
     return raftModeProcessor;
   }
 
-  /** Updates the Raft's server state as a result of an election timer timeout. */
-  public void handleElectionTimeout() {
-    transitionLock.lock();
-    try {
-      raftModeProcessor.handleElectionTimeout();
-    } finally {
-      transitionLock.unlock();
-    }
-  }
-
-  /** Transitions the server to the {@link RaftMode#FOLLOWER} state. */
+  /**
+   * Transitions the server to use the {@link RaftFollowerProcessor}.
+   *
+   * <p>This will cancel the currently running {@link RaftModeProcessor} and updates the election
+   * timer to call the new RaftFollowerProcessor when a timeout occurs.
+   */
   void transitionToFollowerState() {
     Preconditions.checkState(
         !RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
@@ -66,7 +64,12 @@ final class RaftModeManager implements HandlesElectionTimeout {
     transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
   }
 
-  /** Transitions the server to the {@link RaftMode#CANDIDATE} state. */
+  /**
+   * Transitions the server to use the {@link RaftCandidateProcessor}.
+   *
+   * <p>This will cancel the currently running {@link RaftModeProcessor} and updates the election
+   * timer to call the new RaftCandidateProcessor when a timeout occurs.
+   */
   void transitionToCandidateState() {
     Preconditions.checkState(
         RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
@@ -75,7 +78,12 @@ final class RaftModeManager implements HandlesElectionTimeout {
     transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftCandidateProcessor());
   }
 
-  /** Transitions the server to the {@link RaftMode#LEADER} state. */
+  /**
+   * Transitions the server to use the {@link RaftLeaderProcessor}.
+   *
+   * <p>This will cancel the currently running {@link RaftModeProcessor} and updates the election
+   * timer to call the new RaftLeaderProcessor when a timeout occurs.
+   */
   void transitionToLeaderState() {
     Preconditions.checkState(
         RaftMode.CANDIDATE.equals(getCurrentRaftMode()),
@@ -89,6 +97,7 @@ final class RaftModeManager implements HandlesElectionTimeout {
     try {
       runningProcessorFuture.cancel(false);
       raftModeProcessor = newRaftModeProcessor;
+      raftElectionTimer.setTimeoutHandler(raftModeProcessor);
       runningProcessorFuture = executorService.submit(raftModeProcessor);
     } finally {
       transitionLock.unlock();
