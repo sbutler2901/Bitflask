@@ -26,10 +26,9 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
       RaftModeManager raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
-      RaftLog raftLog,
       RaftElectionTimer raftElectionTimer,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager) {
-    super(raftModeManager, raftPersistentState, raftVolatileState, raftLog);
+    super(raftModeManager, raftPersistentState, raftVolatileState);
     this.raftClusterConfiguration = raftClusterConfiguration;
     this.raftModeManager = raftModeManager;
     this.raftElectionTimer = raftElectionTimer;
@@ -97,7 +96,7 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
    *   <li>The candidate is halted.
    */
   private void sendRequestVotesAndWait(RaftClusterCandidateRpcClient candidateRpcClient) {
-    LastLogEntryDetails lastLogEntryDetails = raftLog.getLastLogDetails();
+    LastLogEntryDetails lastLogEntryDetails = raftPersistentState.getRaftLog().getLastLogDetails();
     RequestVoteRequest request =
         RequestVoteRequest.newBuilder()
             .setCandidateId(raftClusterConfiguration.thisRaftServerId().id())

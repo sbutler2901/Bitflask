@@ -8,9 +8,8 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase {
   RaftLeaderProcessor(
       RaftModeManager raftModeManager,
       RaftPersistentState raftPersistentState,
-      RaftVolatileState raftVolatileState,
-      RaftLog raftLog) {
-    super(raftModeManager, raftPersistentState, raftVolatileState, raftLog);
+      RaftVolatileState raftVolatileState) {
+    super(raftModeManager, raftPersistentState, raftVolatileState);
   }
 
   @Override

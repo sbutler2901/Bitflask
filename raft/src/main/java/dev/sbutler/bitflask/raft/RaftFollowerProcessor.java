@@ -11,9 +11,8 @@ final class RaftFollowerProcessor extends RaftModeProcessorBase {
       RaftModeManager raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
-      RaftLog raftLog,
       RaftElectionTimer raftElectionTimer) {
-    super(raftModeManager, raftPersistentState, raftVolatileState, raftLog);
+    super(raftModeManager, raftPersistentState, raftVolatileState);
     this.raftElectionTimer = raftElectionTimer;
   }
 
