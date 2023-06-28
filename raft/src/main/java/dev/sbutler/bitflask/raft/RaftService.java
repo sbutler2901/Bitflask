@@ -21,8 +21,7 @@ final class RaftService extends RaftGrpc.RaftImplBase {
   public void requestVote(
       RequestVoteRequest request, StreamObserver<RequestVoteResponse> responseObserver) {
     try {
-      RequestVoteResponse response =
-          raftModeManager.getRaftStateProcessor().processRequestVoteRequest(request);
+      RequestVoteResponse response = raftModeManager.processRequestVoteRequest(request);
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     } catch (StatusRuntimeException e) {
@@ -39,8 +38,7 @@ final class RaftService extends RaftGrpc.RaftImplBase {
   public void appendEntries(
       AppendEntriesRequest request, StreamObserver<AppendEntriesResponse> responseObserver) {
     try {
-      AppendEntriesResponse response =
-          raftModeManager.getRaftStateProcessor().processAppendEntriesRequest(request);
+      AppendEntriesResponse response = raftModeManager.processAppendEntriesRequest(request);
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     } catch (StatusRuntimeException e) {

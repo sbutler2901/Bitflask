@@ -10,9 +10,12 @@ import jakarta.inject.Singleton;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
-/** Handles Raft's server mode and transitioning between them. */
+/**
+ * Handles the server's {@link RaftModeProcessor}s, transitioning between them, and relaying RPC
+ * requests and election timeouts to the current one.
+ */
 @Singleton
-final class RaftModeManager implements RaftElectionTimeoutHandler {
+final class RaftModeManager implements RaftRpcHandler, RaftElectionTimeoutHandler {
 
   private final RaftModeProcessor.Factory raftModeProcessorFactory;
   private final RaftElectionTimer raftElectionTimer;
@@ -33,21 +36,24 @@ final class RaftModeManager implements RaftElectionTimeoutHandler {
     transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
   }
 
-  /** Returns the current {@link RaftMode} of the server. */
-  RaftMode getCurrentRaftMode() {
-    return switch (raftModeProcessor) {
-      case RaftFollowerProcessor _unused -> RaftMode.FOLLOWER;
-      case RaftCandidateProcessor _unused -> RaftMode.CANDIDATE;
-      case RaftLeaderProcessor _unused -> RaftMode.LEADER;
-    };
+  @Override
+  public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
+    transitionLock.lock();
+    try {
+      return raftModeProcessor.processRequestVoteRequest(request);
+    } finally {
+      transitionLock.unlock();
+    }
   }
 
-  /**
-   * Returns the current {@link RaftModeProcessor} based on the current {@link RaftMode} of the
-   * server.
-   */
-  RaftModeProcessor getRaftStateProcessor() {
-    return raftModeProcessor;
+  @Override
+  public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
+    transitionLock.lock();
+    try {
+      return raftModeProcessor.processAppendEntriesRequest(request);
+    } finally {
+      transitionLock.unlock();
+    }
   }
 
   /** Updates the Raft's server state as a result of an election timer timeout. */
@@ -112,6 +118,15 @@ final class RaftModeManager implements RaftElectionTimeoutHandler {
     } finally {
       transitionLock.unlock();
     }
+  }
+
+  /** Returns the current {@link RaftMode} of the server. */
+  private RaftMode getCurrentRaftMode() {
+    return switch (raftModeProcessor) {
+      case RaftFollowerProcessor _unused -> RaftMode.FOLLOWER;
+      case RaftCandidateProcessor _unused -> RaftMode.CANDIDATE;
+      case RaftLeaderProcessor _unused -> RaftMode.LEADER;
+    };
   }
 
   /** Represents the modes a Raft server can be in. */
