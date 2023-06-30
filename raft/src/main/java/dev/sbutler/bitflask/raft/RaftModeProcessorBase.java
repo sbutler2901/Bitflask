@@ -58,6 +58,16 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     }
   }
 
+  @Override
+  public boolean commitCommand(SetCommand setCommand) {
+    return false;
+  }
+
+  @Override
+  public boolean commitCommand(DeleteCommand deleteCommand) {
+    return false;
+  }
+
   private void checkRequestRpcTerm(int rpcTerm) {
     if (shouldUpdateTermAndTransitionToFollower(rpcTerm)) {
       updateTermAndTransitionToFollower(rpcTerm);
