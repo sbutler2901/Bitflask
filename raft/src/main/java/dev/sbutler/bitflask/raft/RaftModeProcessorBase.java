@@ -33,6 +33,12 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   }
 
   /**
+   * A subclass can override this method to run custom logic before the current term is updated and
+   * the server transitions to the Follower mode.
+   */
+  protected void beforeUpdateTermAndConvertToFollower(int rpcTerm) {}
+
+  /**
    * Updates the term and, if this caller is not an instance of {@link RaftLeaderProcessor},
    * converts to a follower.
    *
@@ -48,6 +54,19 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     }
   }
 
+  private void checkRequestRpcTerm(int rpcTerm) {
+    if (shouldUpdateTermAndConvertToFollower(rpcTerm)) {
+      beforeUpdateTermAndConvertToFollower(rpcTerm);
+      updateTermAndConvertToFollower(rpcTerm);
+    }
+  }
+
+  /**
+   * A subclass can override this method to run custom logic before a {@link RequestVoteRequest} is
+   * processed and response sent.
+   */
+  protected void beforeProcessRequestVoteRequest(RequestVoteRequest request) {}
+
   /**
    * The base Raft logic for handling a {@link RequestVoteRequest}.
    *
@@ -55,6 +74,9 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
    * afterward since a vote will need to be cast.
    */
   public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
+    checkRequestRpcTerm(request.getTerm());
+    beforeProcessRequestVoteRequest(request);
+
     RequestVoteResponse.Builder response =
         RequestVoteResponse.newBuilder().setTerm(raftPersistentState.getCurrentTerm());
     RaftServerId candidateRaftServerId = new RaftServerId(request.getCandidateId());
@@ -79,8 +101,17 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     return response.build();
   }
 
+  /**
+   * A subclass can override this method to run custom logic before a {@link RequestVoteRequest} is
+   * processed and response sent.
+   */
+  protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {}
+
   /** The base Raft logic for handling a {@link AppendEntriesRequest}. */
   public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
+    checkRequestRpcTerm(request.getTerm());
+    beforeProcessAppendEntriesRequest(request);
+
     AppendEntriesResponse.Builder response =
         AppendEntriesResponse.newBuilder().setTerm(raftPersistentState.getCurrentTerm());
 

@@ -24,19 +24,19 @@ final class RaftFollowerProcessor extends RaftModeProcessorBase {
 
   @Override
   public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
-    raftElectionTimer.restart();
     if (shouldUpdateTermAndConvertToFollower(request.getTerm())) {
       updateTermAndConvertToFollower(request.getTerm());
     }
+    raftElectionTimer.restart();
     return super.processRequestVoteRequest(request);
   }
 
   @Override
   public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
-    raftElectionTimer.restart();
     if (shouldUpdateTermAndConvertToFollower(request.getTerm())) {
       updateTermAndConvertToFollower(request.getTerm());
     }
+    raftElectionTimer.restart();
     return super.processAppendEntriesRequest(request);
   }
 
