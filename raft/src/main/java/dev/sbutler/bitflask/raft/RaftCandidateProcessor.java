@@ -5,10 +5,10 @@ import dev.sbutler.bitflask.raft.RaftLog.LastLogEntryDetails;
 import jakarta.inject.Inject;
 
 /**
- * Handles the {@link RaftModeManager.RaftMode#CANDIDATE} stage of the Raft server.
+ * Handles the {@link RaftModeManager.RaftMode#CANDIDATE} mode of the Raft server.
  *
  * <p>A new instance of this class should be created each time the server transitions to the
- * Candidate stage.
+ * Candidate mode.
  */
 final class RaftCandidateProcessor extends RaftModeProcessorBase {
 

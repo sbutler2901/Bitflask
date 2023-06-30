@@ -33,14 +33,19 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   }
 
   /**
-   * Should be called by subclasses if {@link
+   * Updates the term and, if this caller is not an instance of {@link RaftLeaderProcessor},
+   * converts to a follower.
+   *
+   * <p>This method should be called by subclasses if {@link
    * RaftModeProcessorBase#shouldUpdateTermAndConvertToFollower(long)} is true.
    *
    * <p>This method should be used after a subclasses has executed its custom logic.
    */
   protected final void updateTermAndConvertToFollower(int rpcTerm) {
     raftPersistentState.setCurrentTermAndResetVote(rpcTerm);
-    raftModeManager.transitionToFollowerState();
+    if (!this.getClass().isInstance(RaftFollowerProcessor.class)) {
+      raftModeManager.transitionToFollowerState();
+    }
   }
 
   /**

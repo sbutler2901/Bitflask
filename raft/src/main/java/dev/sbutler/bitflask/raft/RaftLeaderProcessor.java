@@ -2,6 +2,12 @@ package dev.sbutler.bitflask.raft;
 
 import jakarta.inject.Inject;
 
+/**
+ * Handles the {@link RaftModeManager.RaftMode#LEADER} mode of the Raft server.
+ *
+ * <p>A new instance of this class should be created each time the server transitions to the Leader
+ * mode.
+ */
 final class RaftLeaderProcessor extends RaftModeProcessorBase {
 
   @Inject
