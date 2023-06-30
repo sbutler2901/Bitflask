@@ -23,31 +23,35 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   }
 
   /**
-   * Used by subclasses to determine if a processor should update the server's current term and
-   * convert to a follower, if not already one.
+   * Used to determine if a processor should update the server's current term and convert to a
+   * follower, if not already one.
    *
-   * <p>This method should be used when a term is received via a Raft RPC request or response.
+   * <p>Subclasses should call this method with the term in any {@link RequestVoteResponse} or
+   * {@link AppendEntriesResponse} received.
    */
-  protected final boolean shouldUpdateTermAndConvertToFollower(long rpcTerm) {
+  protected final boolean shouldUpdateTermAndTransitionToFollower(long rpcTerm) {
     return rpcTerm > raftPersistentState.getCurrentTerm();
   }
 
   /**
    * A subclass can override this method to run custom logic before the current term is updated and
    * the server transitions to the Follower mode.
+   *
+   * <p>This method is executed anytime {@link #updateTermAndTransitionToFollower(int)} is called,
+   * before the term update and transition has occurred.
    */
-  protected void beforeUpdateTermAndConvertToFollower(int rpcTerm) {}
+  protected void beforeUpdateTermAndTransitionToFollower(int rpcTerm) {}
 
   /**
    * Updates the term and, if this caller is not an instance of {@link RaftLeaderProcessor},
    * converts to a follower.
    *
-   * <p>This method should be called by subclasses if {@link
-   * RaftModeProcessorBase#shouldUpdateTermAndConvertToFollower(long)} is true.
-   *
-   * <p>This method should be used after a subclasses has executed its custom logic.
+   * <p>Subclasses should call this method if {@link
+   * RaftModeProcessorBase#shouldUpdateTermAndTransitionToFollower(long)} is true for the term in
+   * any {@link RequestVoteResponse} or {@link AppendEntriesResponse} received.
    */
-  protected final void updateTermAndConvertToFollower(int rpcTerm) {
+  protected final void updateTermAndTransitionToFollower(int rpcTerm) {
+    beforeUpdateTermAndTransitionToFollower(rpcTerm);
     raftPersistentState.setCurrentTermAndResetVote(rpcTerm);
     if (!this.getClass().isInstance(RaftFollowerProcessor.class)) {
       raftModeManager.transitionToFollowerState();
@@ -55,23 +59,23 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   }
 
   private void checkRequestRpcTerm(int rpcTerm) {
-    if (shouldUpdateTermAndConvertToFollower(rpcTerm)) {
-      beforeUpdateTermAndConvertToFollower(rpcTerm);
-      updateTermAndConvertToFollower(rpcTerm);
+    if (shouldUpdateTermAndTransitionToFollower(rpcTerm)) {
+      updateTermAndTransitionToFollower(rpcTerm);
     }
   }
 
   /**
    * A subclass can override this method to run custom logic before a {@link RequestVoteRequest} is
-   * processed and response sent.
+   * processed and {@link RequestVoteResponse} sent.
+   *
+   * <p>This method will be executed after {@link #updateTermAndTransitionToFollower(int)}, if a
+   * term update and transition is necessary.
    */
   protected void beforeProcessRequestVoteRequest(RequestVoteRequest request) {}
 
   /**
-   * The base Raft logic for handling a {@link RequestVoteRequest}.
-   *
-   * <p>If a processor must update the term and convert to a follower, this method should be called
-   * afterward since a vote will need to be cast.
+   * Handles processing a {@link RequestVoteRequest} and responding with a {@link
+   * RequestVoteResponse}.
    */
   public final RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
     checkRequestRpcTerm(request.getTerm());
@@ -102,12 +106,18 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   }
 
   /**
-   * A subclass can override this method to run custom logic before a {@link RequestVoteRequest} is
-   * processed and response sent.
+   * A subclass can override this method to run custom logic before a {@link AppendEntriesRequest}
+   * is processed and {@link AppendEntriesResponse} sent.
+   *
+   * <p>This method will be executed after {@link #updateTermAndTransitionToFollower(int)}, if a
+   * term update and transition is necessary.
    */
   protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {}
 
-  /** The base Raft logic for handling a {@link AppendEntriesRequest}. */
+  /**
+   * Handles processing a {@link AppendEntriesRequest} and responding with a {@link
+   * AppendEntriesResponse}.
+   */
   public final AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
     checkRequestRpcTerm(request.getTerm());
     beforeProcessAppendEntriesRequest(request);

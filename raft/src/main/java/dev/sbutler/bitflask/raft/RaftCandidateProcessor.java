@@ -36,7 +36,7 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
   }
 
   @Override
-  protected void beforeUpdateTermAndConvertToFollower(int rpcTerm) {
+  protected void beforeUpdateTermAndTransitionToFollower(int rpcTerm) {
     shouldContinueElections = false;
   }
 
@@ -45,7 +45,7 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
     // Concede to new leader
     if (request.getTerm() >= raftPersistentState.getCurrentTerm()) {
       shouldContinueElections = false;
-      updateTermAndConvertToFollower(request.getTerm());
+      updateTermAndTransitionToFollower(request.getTerm());
     }
   }
 
@@ -104,9 +104,8 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
     while (shouldContinueElections && !hasElectionTimeoutOccurred) {
       RequestVotesResults requestVotesResults = candidateRpcClient.getCurrentRequestVotesResults();
-      if (shouldUpdateTermAndConvertToFollower(requestVotesResults.largestTermSeen())) {
-        shouldContinueElections = false;
-        updateTermAndConvertToFollower(requestVotesResults.largestTermSeen());
+      if (shouldUpdateTermAndTransitionToFollower(requestVotesResults.largestTermSeen())) {
+        updateTermAndTransitionToFollower(requestVotesResults.largestTermSeen());
       } else if (receivedMajorityVotes(requestVotesResults)) {
         shouldContinueElections = false;
         raftModeManager.transitionToLeaderState();
