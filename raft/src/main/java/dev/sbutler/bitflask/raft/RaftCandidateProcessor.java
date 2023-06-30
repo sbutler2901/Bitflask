@@ -36,21 +36,17 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
   }
 
   @Override
-  public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
-    if (shouldUpdateTermAndConvertToFollower(request.getTerm())) {
-      shouldContinueElections = false;
-      updateTermAndConvertToFollower(request.getTerm());
-    }
-    return super.processRequestVoteRequest(request);
+  protected void beforeUpdateTermAndConvertToFollower(int rpcTerm) {
+    shouldContinueElections = false;
   }
 
   @Override
-  public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
+  protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {
+    // Concede to new leader
     if (request.getTerm() >= raftPersistentState.getCurrentTerm()) {
       shouldContinueElections = false;
       updateTermAndConvertToFollower(request.getTerm());
     }
-    return super.processAppendEntriesRequest(request);
   }
 
   public void handleElectionTimeout() {

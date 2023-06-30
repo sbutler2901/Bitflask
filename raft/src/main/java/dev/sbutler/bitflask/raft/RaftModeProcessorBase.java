@@ -73,7 +73,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
    * <p>If a processor must update the term and convert to a follower, this method should be called
    * afterward since a vote will need to be cast.
    */
-  public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
+  public final RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
     checkRequestRpcTerm(request.getTerm());
     beforeProcessRequestVoteRequest(request);
 
@@ -108,7 +108,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {}
 
   /** The base Raft logic for handling a {@link AppendEntriesRequest}. */
-  public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
+  public final AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
     checkRequestRpcTerm(request.getTerm());
     beforeProcessAppendEntriesRequest(request);
 
