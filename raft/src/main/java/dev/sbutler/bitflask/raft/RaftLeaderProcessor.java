@@ -1,5 +1,8 @@
 package dev.sbutler.bitflask.raft;
 
+import com.google.rpc.Code;
+import com.google.rpc.Status;
+import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
 
 /**
@@ -16,6 +19,24 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase {
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
+  }
+
+  private void handleUnexpectedRequest() {
+    throw StatusProto.toStatusRuntimeException(
+        Status.newBuilder()
+            .setCode(Code.FAILED_PRECONDITION_VALUE)
+            .setMessage("This server is currently the leader and requests should not be sent to it")
+            .build());
+  }
+
+  @Override
+  protected void beforeProcessRequestVoteRequest(RequestVoteRequest request) {
+    handleUnexpectedRequest();
+  }
+
+  @Override
+  protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {
+    handleUnexpectedRequest();
   }
 
   @Override
