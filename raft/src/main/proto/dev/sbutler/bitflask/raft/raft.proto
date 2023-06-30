@@ -58,6 +58,16 @@ message AppendEntriesResponse {
   bool success = 2;
 }
 
+// A command for setting a key:value pair
+message SetCommand {
+  string key = 1;
+  string value = 2;
+}
+// A command for deleting a key's mapping
+message DeleteCommand {
+  string key = 1;
+}
+
 // A Raft log entry
 message Entry {
   // The term that the entry was created
@@ -67,15 +77,6 @@ message Entry {
   // information on which entries are committed
   message EmptyCommand {}
   // TODO: Consider using Any to make Entries generic
-  // A command for setting a key:value pair
-  message SetCommand {
-    string key = 1;
-    string value = 2;
-  }
-  // A command for deleting a key's mapping
-  message DeleteCommand {
-    string key = 1;
-  }
   // The type of command an entry is appending to the log
   oneof command {
     EmptyCommand empty_command = 2;

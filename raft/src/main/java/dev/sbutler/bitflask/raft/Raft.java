@@ -1,7 +1,5 @@
 package dev.sbutler.bitflask.raft;
 
-import dev.sbutler.bitflask.raft.Entry.DeleteCommand;
-import dev.sbutler.bitflask.raft.Entry.SetCommand;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
