@@ -5,7 +5,7 @@ import jakarta.inject.Singleton;
 
 /** The interface for using the Raft Consensus protocol. */
 @Singleton
-public final class Raft implements CommandCommitter, RaftCommandSubjectRegistrar {
+public final class Raft implements CommandSubmitter, RaftCommandSubjectRegistrar {
 
   private final RaftCommandTopic raftCommandTopic;
 
@@ -14,7 +14,7 @@ public final class Raft implements CommandCommitter, RaftCommandSubjectRegistrar
     this.raftCommandTopic = raftCommandTopic;
   }
 
-  public boolean commitCommand(RaftCommand raftCommand) {
+  public boolean submitCommand(RaftCommand raftCommand) {
     return true;
   }
 

@@ -11,7 +11,7 @@ import jakarta.inject.Inject;
  * <p>A new instance of this class should be created each time the server transitions to the Leader
  * mode.
  */
-final class RaftLeaderProcessor extends RaftModeProcessorBase implements CommandCommitter {
+final class RaftLeaderProcessor extends RaftModeProcessorBase implements CommandSubmitter {
 
   @Inject
   RaftLeaderProcessor(
@@ -49,7 +49,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements Command
   public void run() {}
 
   @Override
-  public boolean commitCommand(RaftCommand raftCommand) {
+  public boolean submitCommand(RaftCommand raftCommand) {
     return true;
   }
 }
