@@ -5,24 +5,34 @@ import jakarta.inject.Singleton;
 
 /** The interface for using the Raft Consensus protocol. */
 @Singleton
-public final class Raft implements CommandCommitter {
+public final class Raft implements CommandCommitter, RaftCommandSubjectRegistrar {
 
-  private final RaftModeManager raftModeManager;
+  private final RaftCommandTopic raftCommandTopic;
 
   @Inject
-  Raft(RaftModeManager raftModeManager) {
-    this.raftModeManager = raftModeManager;
+  Raft(RaftCommandTopic raftCommandTopic) {
+    this.raftCommandTopic = raftCommandTopic;
   }
 
   public boolean commitCommand(RaftCommand raftCommand) {
     return true;
   }
 
-  public boolean isLeader() {
-    return false;
+  /**
+   * Registers a {@link dev.sbutler.bitflask.raft.RaftCommandObserver} that will be called whenever
+   * a {@link dev.sbutler.bitflask.raft.RaftCommand} is committed.
+   */
+  @Override
+  public void register(RaftCommandObserver observer) {
+    raftCommandTopic.register(observer);
   }
-  /** Return the current raft leader. */
-  public void getLeader() {
-    // TODO: establish and return server configuration
+
+  /**
+   * Unregisters a {@link dev.sbutler.bitflask.raft.RaftCommandObserver}, if it was previously
+   * registered.
+   */
+  @Override
+  public void unregister(RaftCommandObserver observer) {
+    raftCommandTopic.unregister(observer);
   }
 }
