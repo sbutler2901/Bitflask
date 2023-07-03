@@ -5,6 +5,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import dev.sbutler.bitflask.raft.RaftCommandSubmitter.SubmitResults.NotCurrentLeader;
+import dev.sbutler.bitflask.raft.exceptions.RaftUnknownLeaderException;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.concurrent.Executors;
@@ -18,8 +20,10 @@ import java.util.concurrent.locks.ReentrantLock;
 final class RaftModeManager
     implements RaftRpcHandler, RaftElectionTimeoutHandler, RaftCommandSubmitter {
 
+  private final RaftClusterConfiguration raftClusterConfiguration;
   private final RaftModeProcessor.Factory raftModeProcessorFactory;
   private final RaftElectionTimer raftElectionTimer;
+  private final RaftVolatileState raftVolatileState;
 
   private final ListeningExecutorService executorService =
       MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
@@ -30,9 +34,14 @@ final class RaftModeManager
 
   @Inject
   RaftModeManager(
-      RaftModeProcessor.Factory raftModeProcessorFactory, RaftElectionTimer raftElectionTimer) {
+      RaftClusterConfiguration raftClusterConfiguration,
+      RaftModeProcessor.Factory raftModeProcessorFactory,
+      RaftElectionTimer raftElectionTimer,
+      RaftVolatileState raftVolatileState) {
+    this.raftClusterConfiguration = raftClusterConfiguration;
     this.raftModeProcessorFactory = raftModeProcessorFactory;
     this.raftElectionTimer = raftElectionTimer;
+    this.raftVolatileState = raftVolatileState;
     // TODO: handle starting from persisted state
     transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
   }
@@ -68,8 +77,22 @@ final class RaftModeManager
   }
 
   public SubmitResults submitCommand(RaftCommand raftCommand) {
-    // TODO: implement, but consider transitioning while this call is blocking
-    return new SubmitResults.Success();
+    transitionLock.lock();
+    try {
+      if (RaftMode.LEADER.equals(getCurrentRaftMode())) {
+        return ((RaftLeaderProcessor) raftModeProcessor).submitCommand(raftCommand);
+      } else {
+        return raftVolatileState
+            .getLeaderServerId()
+            .map(leaderServiceId -> raftClusterConfiguration.clusterServers().get(leaderServiceId))
+            .map(
+                leaderServiceInfo ->
+                    new NotCurrentLeader(leaderServiceInfo.host(), leaderServiceInfo.port()))
+            .orElseThrow(RaftUnknownLeaderException::new);
+      }
+    } finally {
+      transitionLock.unlock();
+    }
   }
 
   /**
