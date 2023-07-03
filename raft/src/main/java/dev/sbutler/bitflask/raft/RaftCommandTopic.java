@@ -25,12 +25,12 @@ final class RaftCommandTopic implements RaftCommandSubject {
   }
 
   @Override
-  public void register(RaftCommandObserver obj) {
-    observers.add(obj);
+  public void register(RaftCommandObserver observer) {
+    observers.add(observer);
   }
 
   @Override
-  public void unregister(RaftCommandObserver obj) {
-    observers.remove(obj);
+  public void unregister(RaftCommandObserver observer) {
+    observers.remove(observer);
   }
 }
