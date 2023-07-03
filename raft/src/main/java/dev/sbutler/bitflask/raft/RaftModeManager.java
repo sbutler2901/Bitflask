@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Singleton
 final class RaftModeManager
-    implements RaftRpcHandler, RaftElectionTimeoutHandler, CommandSubmitter {
+    implements RaftRpcHandler, RaftElectionTimeoutHandler, RaftCommandSubmitter {
 
   private final RaftModeProcessor.Factory raftModeProcessorFactory;
   private final RaftElectionTimer raftElectionTimer;
@@ -67,9 +67,9 @@ final class RaftModeManager
     }
   }
 
-  public boolean submitCommand(RaftCommand raftCommand) {
+  public SubmitResults submitCommand(RaftCommand raftCommand) {
     // TODO: implement, but consider transitioning while this call is blocking
-    return true;
+    return new SubmitResults.Success();
   }
 
   /**
