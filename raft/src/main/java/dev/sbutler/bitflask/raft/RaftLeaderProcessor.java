@@ -49,12 +49,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements Command
   public void run() {}
 
   @Override
-  public boolean commitCommand(SetCommand setCommand) {
-    return true;
-  }
-
-  @Override
-  public boolean commitCommand(DeleteCommand deleteCommand) {
+  public boolean commitCommand(RaftCommand raftCommand) {
     return true;
   }
 }

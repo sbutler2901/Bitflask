@@ -14,11 +14,7 @@ public final class Raft implements CommandCommitter {
     this.raftModeManager = raftModeManager;
   }
 
-  public boolean commitCommand(SetCommand setCommand) {
-    return true;
-  }
-
-  public boolean commitCommand(DeleteCommand deleteCommand) {
+  public boolean commitCommand(RaftCommand raftCommand) {
     return true;
   }
 

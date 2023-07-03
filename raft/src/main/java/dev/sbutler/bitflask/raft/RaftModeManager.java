@@ -67,12 +67,8 @@ final class RaftModeManager
     }
   }
 
-  public boolean commitCommand(SetCommand setCommand) {
+  public boolean commitCommand(RaftCommand raftCommand) {
     // TODO: implement, but consider transitioning while this call is blocking
-    return true;
-  }
-
-  public boolean commitCommand(DeleteCommand deleteCommand) {
     return true;
   }
 
