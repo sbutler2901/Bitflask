@@ -5,20 +5,22 @@ import jakarta.inject.Singleton;
 
 /** The interface for using the Raft Consensus protocol. */
 @Singleton
-public final class Raft {
+public final class Raft implements CommandCommitter {
 
-  private final RaftStateManager raftStateManager;
+  private final RaftModeManager raftModeManager;
 
   @Inject
-  Raft(RaftStateManager raftStateManager) {
-    this.raftStateManager = raftStateManager;
+  Raft(RaftModeManager raftModeManager) {
+    this.raftModeManager = raftModeManager;
   }
 
-  /** A blocking call that returns once a command has successfully committed. */
-  public void commitCommand(SetCommand setCommand) {}
+  public boolean commitCommand(SetCommand setCommand) {
+    return true;
+  }
 
-  /** A blocking call that returns once a command has successfully committed. */
-  public void commitCommand(DeleteCommand deleteCommand) {}
+  public boolean commitCommand(DeleteCommand deleteCommand) {
+    return true;
+  }
 
   public boolean isLeader() {
     return false;

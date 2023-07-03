@@ -15,7 +15,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * requests and election timeouts to the current one.
  */
 @Singleton
-final class RaftModeManager implements RaftRpcHandler, RaftElectionTimeoutHandler {
+final class RaftModeManager
+    implements RaftRpcHandler, RaftElectionTimeoutHandler, CommandCommitter {
 
   private final RaftModeProcessor.Factory raftModeProcessorFactory;
   private final RaftElectionTimer raftElectionTimer;
@@ -64,6 +65,15 @@ final class RaftModeManager implements RaftRpcHandler, RaftElectionTimeoutHandle
     } finally {
       transitionLock.unlock();
     }
+  }
+
+  public boolean commitCommand(SetCommand setCommand) {
+    // TODO: implement, but consider transitioning while this call is blocking
+    return true;
+  }
+
+  public boolean commitCommand(DeleteCommand deleteCommand) {
+    return true;
   }
 
   /**
