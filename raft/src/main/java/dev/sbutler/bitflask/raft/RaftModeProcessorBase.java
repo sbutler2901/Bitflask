@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.raft;
 
-import dev.sbutler.bitflask.raft.RaftLog.LastLogEntryDetails;
+import dev.sbutler.bitflask.raft.RaftLog.LogEntryDetails;
 
 /**
  * Base implementation of {@link RaftModeProcessor} providing some generic implementations of
@@ -101,10 +101,10 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
         && !raftPersistentState.getVotedForCandidateId().get().equals(candidateRaftServerId)) {
       response.setVoteGranted(false);
     } else {
-      LastLogEntryDetails candidateLastLogEntryDetails =
-          new LastLogEntryDetails(request.getLastLogTerm(), request.getLastLogIndex());
-      LastLogEntryDetails localLastLogEntryDetails =
-          raftPersistentState.getRaftLog().getLastLogDetails();
+      LogEntryDetails candidateLastLogEntryDetails =
+          new LogEntryDetails(request.getLastLogTerm(), request.getLastLogIndex());
+      LogEntryDetails localLastLogEntryDetails =
+          raftPersistentState.getRaftLog().getLastLogEntryDetails();
       boolean grantVote = candidateLastLogEntryDetails.compareTo(localLastLogEntryDetails) >= 0;
       if (grantVote) {
         raftPersistentState.setVotedForCandidateId(candidateRaftServerId);

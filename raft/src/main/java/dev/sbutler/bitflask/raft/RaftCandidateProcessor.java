@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.raft;
 
 import dev.sbutler.bitflask.raft.RaftClusterCandidateRpcClient.RequestVotesResults;
-import dev.sbutler.bitflask.raft.RaftLog.LastLogEntryDetails;
+import dev.sbutler.bitflask.raft.RaftLog.LogEntryDetails;
 import jakarta.inject.Inject;
 
 /**
@@ -92,7 +92,7 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
    *   <li>The candidate is halted.
    */
   private void sendRequestVotesAndWait(RaftClusterCandidateRpcClient candidateRpcClient) {
-    LastLogEntryDetails lastLogEntryDetails = raftPersistentState.getRaftLog().getLastLogDetails();
+    LogEntryDetails lastLogEntryDetails = raftPersistentState.getRaftLog().getLastLogEntryDetails();
     RequestVoteRequest request =
         RequestVoteRequest.newBuilder()
             .setCandidateId(raftClusterConfiguration.thisRaftServerId().id())

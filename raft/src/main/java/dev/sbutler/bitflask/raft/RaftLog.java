@@ -47,17 +47,18 @@ final class RaftLog {
     return entries.size() - 1;
   }
 
-  LastLogEntryDetails getLastLogDetails() {
+  /** Returns {@link LogEntryDetails} about the last entry in the log. */
+  LogEntryDetails getLastLogEntryDetails() {
     int lastEntryIndex = getLastEntryIndex();
     Entry lastEntry = entries.get(lastEntryIndex);
-    return new LastLogEntryDetails(lastEntry.getTerm(), lastEntryIndex);
+    return new LogEntryDetails(lastEntry.getTerm(), lastEntryIndex);
   }
 
-  /** Simplified details about the last {@link Entry} in the {@link RaftLog}. */
-  record LastLogEntryDetails(int term, int index) implements Comparable<LastLogEntryDetails> {
+  /** Simplified details about an {@link Entry} in the {@link RaftLog}. */
+  record LogEntryDetails(int term, int index) implements Comparable<LogEntryDetails> {
 
     @Override
-    public int compareTo(LastLogEntryDetails provided) {
+    public int compareTo(LogEntryDetails provided) {
       var termsCompared = Integer.compare(term(), provided.term());
       var indexesCompared = Integer.compare(index(), provided.index());
 
