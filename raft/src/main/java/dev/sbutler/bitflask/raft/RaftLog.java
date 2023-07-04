@@ -32,15 +32,13 @@ final class RaftLog {
     return entries.lastIndexOf(newEntry);
   }
 
-  /**
-   * Returns true if an entry exists at the provided index with a term matching the provided one.
-   */
-  boolean logAtIndexHasMatchingTerm(int index, int term) {
-    if (index >= entries.size()) {
+  /** Returns true if the log has an {@link Entry} matching the provided {@link LogEntryDetails}. */
+  boolean logHasMatchingEntry(LogEntryDetails logEntryDetails) {
+    if (logEntryDetails.index() >= entries.size()) {
       return false;
     }
-    Entry entry = entries.get(index);
-    return entry.getTerm() == term;
+    Entry entry = entries.get(logEntryDetails.index());
+    return entry.getTerm() == logEntryDetails.term();
   }
 
   int getLastEntryIndex() {
