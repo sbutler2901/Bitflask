@@ -5,10 +5,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import dev.sbutler.bitflask.raft.RaftCommandSubmitter.SubmitResults.NotCurrentLeader;
-import dev.sbutler.bitflask.raft.exceptions.RaftUnknownLeaderException;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -76,20 +75,27 @@ final class RaftModeManager
     }
   }
 
-  public SubmitResults submitCommand(RaftCommand raftCommand) {
+  public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
     transitionLock.lock();
     try {
       if (RaftMode.LEADER.equals(getCurrentRaftMode())) {
         return ((RaftLeaderProcessor) raftModeProcessor).submitCommand(raftCommand);
       } else {
-        return raftVolatileState
-            .getLeaderServerId()
-            .map(leaderServiceId -> raftClusterConfiguration.clusterServers().get(leaderServiceId))
-            .map(
-                leaderServiceInfo ->
-                    new NotCurrentLeader(leaderServiceInfo.host(), leaderServiceInfo.port()))
-            .orElseThrow(RaftUnknownLeaderException::new);
+        return getCurrentLeaderServerInfo()
+            .<RaftSubmitResults>map(RaftSubmitResults.NotCurrentLeader::new)
+            .orElseGet(RaftSubmitResults.NoKnownLeader::new);
       }
+    } finally {
+      transitionLock.unlock();
+    }
+  }
+
+  Optional<RaftServerInfo> getCurrentLeaderServerInfo() {
+    transitionLock.lock();
+    try {
+      return raftVolatileState
+          .getLeaderServerId()
+          .map(leaderServiceId -> raftClusterConfiguration.clusterServers().get(leaderServiceId));
     } finally {
       transitionLock.unlock();
     }

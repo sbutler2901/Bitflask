@@ -53,9 +53,9 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   public void run() {}
 
   @Override
-  public SubmitResults submitCommand(RaftCommand raftCommand) {
+  public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
     Entry newEntry = RaftCommandConverter.INSTANCE.convert(raftCommand);
     raftLog.appendEntry(newEntry);
-    return new SubmitResults.Success();
+    return new RaftSubmitResults.Success();
   }
 }

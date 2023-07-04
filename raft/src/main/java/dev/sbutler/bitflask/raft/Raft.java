@@ -16,7 +16,7 @@ public final class Raft implements RaftCommandSubmitter, RaftCommandSubjectRegis
     this.raftCommandTopic = raftCommandTopic;
   }
 
-  public SubmitResults submitCommand(RaftCommand raftCommand) {
+  public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
     return raftModeManager.submitCommand(raftCommand);
   }
 
