@@ -78,13 +78,22 @@ final class RaftModeManager
   public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
     transitionLock.lock();
     try {
-      if (RaftMode.LEADER.equals(getCurrentRaftMode())) {
+      if (isCurrentLeader()) {
         return ((RaftLeaderProcessor) raftModeProcessor).submitCommand(raftCommand);
       } else {
         return getCurrentLeaderServerInfo()
             .<RaftSubmitResults>map(RaftSubmitResults.NotCurrentLeader::new)
             .orElseGet(RaftSubmitResults.NoKnownLeader::new);
       }
+    } finally {
+      transitionLock.unlock();
+    }
+  }
+
+  boolean isCurrentLeader() {
+    transitionLock.lock();
+    try {
+      return RaftMode.LEADER.equals(getCurrentRaftMode());
     } finally {
       transitionLock.unlock();
     }
