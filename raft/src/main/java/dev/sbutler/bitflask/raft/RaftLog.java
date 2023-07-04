@@ -28,9 +28,8 @@ final class RaftLog {
 
   /** Appends the entry returning its index. */
   int appendEntry(Entry newEntry) {
-    int entryIndex = raftVolatileState.incrementAndGetHighestAppliedEntryIndex();
-    entries.set(entryIndex, newEntry);
-    return entryIndex;
+    entries.add(newEntry);
+    return entries.lastIndexOf(newEntry);
   }
 
   /**
@@ -44,7 +43,7 @@ final class RaftLog {
     return entry.getTerm() == term;
   }
 
-  private int getLastEntryIndex() {
+  int getLastEntryIndex() {
     return entries.size() - 1;
   }
 
