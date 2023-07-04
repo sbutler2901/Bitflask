@@ -33,6 +33,9 @@ final class RaftLog {
 
   /** Returns true if the log has an {@link Entry} matching the provided {@link LogEntryDetails}. */
   private boolean logHasMatchingEntry(LogEntryDetails logEntryDetails) {
+    if (LogEntryDetails.isEmptyLogSentinel(logEntryDetails)) {
+      return entries.size() == 0;
+    }
     if (logEntryDetails.index() >= entries.size()) {
       return false;
     }
@@ -59,6 +62,12 @@ final class RaftLog {
 
   /** Simplified details about an {@link Entry} in the {@link RaftLog}. */
   record LogEntryDetails(int term, int index) implements Comparable<LogEntryDetails> {
+
+    static LogEntryDetails EMPTY_LOG_SENTINEL = new LogEntryDetails(-1, -1);
+
+    static boolean isEmptyLogSentinel(LogEntryDetails logEntryDetails) {
+      return EMPTY_LOG_SENTINEL.equals(logEntryDetails);
+    }
 
     @Override
     public int compareTo(LogEntryDetails provided) {
