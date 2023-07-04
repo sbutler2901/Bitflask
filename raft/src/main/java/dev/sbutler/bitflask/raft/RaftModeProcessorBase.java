@@ -143,12 +143,16 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
       boolean appendSuccessful =
           raftPersistentState
               .getRaftLog()
-              .appendEntriesFromLeader(
-                  prevLogEntryDetails, request.getEntriesList(), request.getLeaderCommit());
+              .appendEntriesAfterPrevEntry(prevLogEntryDetails, request.getEntriesList());
+      response.setSuccess(appendSuccessful);
       if (appendSuccessful) {
         raftVolatileState.setLeaderId(new RaftServerId(request.getLeaderId()));
+        if (request.getLeaderCommit() > raftVolatileState.getHighestCommittedEntryIndex()) {
+          raftVolatileState.setHighestCommittedEntryIndex(
+              Math.min(
+                  request.getLeaderCommit(), raftPersistentState.getRaftLog().getLastEntryIndex()));
+        }
       }
-      response.setSuccess(appendSuccessful);
     }
 
     return response.build();

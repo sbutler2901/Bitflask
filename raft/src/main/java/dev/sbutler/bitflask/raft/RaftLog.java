@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.raft;
 
+import dev.sbutler.bitflask.raft.exceptions.RaftException;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.List;
@@ -18,17 +19,45 @@ final class RaftLog {
     this.raftVolatileState = raftVolatileState;
   }
 
-  boolean appendEntriesFromLeader(
-      LogEntryDetails prevLogEntryDetails, List<Entry> newEntries, int leaderCommitIndex) {
+  /**
+   * Inserts the provided {@link Entry}s after the entry provided by {@code prevLogEntryDetails}.
+   *
+   * <p>If a conflicting Entry is found in the log, that entry and all subsequent ones will be
+   * deleted. The rest of the log will be populated with the remaining Entrys in {@code newEntries}
+   * including the one that conflicted with the pre-existing Entry.
+   *
+   * @return true if an {@link Entry} existed in the log matching {@code prevLogEntryDetails}, false
+   *     otherwise.
+   */
+  boolean appendEntriesAfterPrevEntry(LogEntryDetails prevLogEntryDetails, List<Entry> newEntries) {
     if (!logHasMatchingEntry(prevLogEntryDetails)) {
       return false;
     }
-    // TODO: Handled appending entries, handling conflicts, and potentially applying
-    if (leaderCommitIndex > raftVolatileState.getHighestCommittedEntryIndex()) {
-      raftVolatileState.setHighestCommittedEntryIndex(
-          Math.min(leaderCommitIndex, getLastEntryIndex()));
+
+    int insertIdx = 1 + prevLogEntryDetails.index();
+    for (var newEntry : newEntries) {
+      if (insertIdx <= getLastEntryIndex()) {
+        if (entries.get(insertIdx).getTerm() != newEntry.getTerm()) {
+          // Conflict detected, clear all entries from conflict on
+          deleteEntriesFromIndex(insertIdx);
+          appendEntry(newEntry);
+        }
+      } else if (insertIdx == entries.size()) {
+        appendEntry(newEntry);
+      } else {
+        throw new RaftException(
+            String.format(
+                "Insert index was not the next empty index, expected: %d, actual: %d",
+                entries.size(), insertIdx));
+      }
+      insertIdx++;
     }
     return true;
+  }
+
+  /** Deletes all {@link Entry}s from {@code deleteStartIdx} through the end of the log. */
+  private void deleteEntriesFromIndex(int deleteStartIdx) {
+    entries.subList(deleteStartIdx, entries.size()).clear();
   }
 
   /** Returns true if the log has an {@link Entry} matching the provided {@link LogEntryDetails}. */
@@ -43,7 +72,7 @@ final class RaftLog {
     return entry.getTerm() == logEntryDetails.term();
   }
 
-  /** Appends the entry returning its index. */
+  /** Appends the entry to the log returning its index. */
   int appendEntry(Entry newEntry) {
     entries.add(newEntry);
     return entries.lastIndexOf(newEntry);
