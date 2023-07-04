@@ -18,27 +18,32 @@ final class RaftLog {
     this.raftVolatileState = raftVolatileState;
   }
 
-  void appendEntriesWithLeaderCommit(List<Entry> newEntries, int leaderCommitIndex) {
+  boolean appendEntriesFromLeader(
+      LogEntryDetails prevLogEntryDetails, List<Entry> newEntries, int leaderCommitIndex) {
+    if (!logHasMatchingEntry(prevLogEntryDetails)) {
+      return false;
+    }
     // TODO: Handled appending entries, handling conflicts, and potentially applying
     if (leaderCommitIndex > raftVolatileState.getHighestCommittedEntryIndex()) {
       raftVolatileState.setHighestCommittedEntryIndex(
           Math.min(leaderCommitIndex, getLastEntryIndex()));
     }
+    return true;
+  }
+
+  /** Returns true if the log has an {@link Entry} matching the provided {@link LogEntryDetails}. */
+  private boolean logHasMatchingEntry(LogEntryDetails logEntryDetails) {
+    if (logEntryDetails.index() >= entries.size()) {
+      return false;
+    }
+    Entry entry = entries.get(logEntryDetails.index());
+    return entry.getTerm() == logEntryDetails.term();
   }
 
   /** Appends the entry returning its index. */
   int appendEntry(Entry newEntry) {
     entries.add(newEntry);
     return entries.lastIndexOf(newEntry);
-  }
-
-  /** Returns true if the log has an {@link Entry} matching the provided {@link LogEntryDetails}. */
-  boolean logHasMatchingEntry(LogEntryDetails logEntryDetails) {
-    if (logEntryDetails.index() >= entries.size()) {
-      return false;
-    }
-    Entry entry = entries.get(logEntryDetails.index());
-    return entry.getTerm() == logEntryDetails.term();
   }
 
   int getLastEntryIndex() {

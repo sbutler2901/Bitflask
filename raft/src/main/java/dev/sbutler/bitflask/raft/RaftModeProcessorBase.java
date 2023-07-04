@@ -139,14 +139,16 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
         new LogEntryDetails(request.getPrevLogTerm(), request.getPrevLogIndex());
     if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
       response.setSuccess(false);
-    } else if (!raftPersistentState.getRaftLog().logHasMatchingEntry(prevLogEntryDetails)) {
-      response.setSuccess(false);
     } else {
-      response.setSuccess(true);
-      raftPersistentState
-          .getRaftLog()
-          .appendEntriesWithLeaderCommit(request.getEntriesList(), request.getLeaderCommit());
-      raftVolatileState.setLeaderId(new RaftServerId(request.getLeaderId()));
+      boolean appendSuccessful =
+          raftPersistentState
+              .getRaftLog()
+              .appendEntriesFromLeader(
+                  prevLogEntryDetails, request.getEntriesList(), request.getLeaderCommit());
+      if (appendSuccessful) {
+        raftVolatileState.setLeaderId(new RaftServerId(request.getLeaderId()));
+      }
+      response.setSuccess(appendSuccessful);
     }
 
     return response.build();
