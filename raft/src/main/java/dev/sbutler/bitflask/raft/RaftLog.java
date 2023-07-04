@@ -26,6 +26,13 @@ final class RaftLog {
     }
   }
 
+  /** Appends the entry returning its index. */
+  int appendEntry(Entry newEntry) {
+    int entryIndex = raftVolatileState.incrementAndGetHighestAppliedEntryIndex();
+    entries.set(entryIndex, newEntry);
+    return entryIndex;
+  }
+
   /**
    * Returns true if an entry exists at the provided index with a term matching the provided one.
    */

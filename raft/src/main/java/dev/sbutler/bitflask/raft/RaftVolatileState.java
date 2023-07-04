@@ -38,6 +38,11 @@ final class RaftVolatileState {
     return highestAppliedEntryIndex.get();
   }
 
+  /** Increments the highest applied entry index and returns the new value. */
+  int incrementAndGetHighestAppliedEntryIndex() {
+    return highestAppliedEntryIndex.incrementAndGet();
+  }
+
   /** Sets the index of the highest log entry applied to the state machine. */
   void setHighestAppliedEntryIndex(int index) {
     highestAppliedEntryIndex.getAndSet(index);

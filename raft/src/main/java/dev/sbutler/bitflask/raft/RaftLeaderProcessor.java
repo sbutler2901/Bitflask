@@ -13,12 +13,16 @@ import jakarta.inject.Inject;
  */
 final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCommandSubmitter {
 
+  private final RaftLog raftLog;
+
   @Inject
   RaftLeaderProcessor(
       RaftModeManager raftModeManager,
       RaftPersistentState raftPersistentState,
-      RaftVolatileState raftVolatileState) {
+      RaftVolatileState raftVolatileState,
+      RaftLog raftLog) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
+    this.raftLog = raftLog;
   }
 
   private void handleUnexpectedRequest() {
@@ -50,6 +54,8 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   @Override
   public SubmitResults submitCommand(RaftCommand raftCommand) {
+    Entry newEntry = RaftCommandConverter.INSTANCE.convert(raftCommand);
+    raftLog.appendEntry(newEntry);
     return new SubmitResults.Success();
   }
 }

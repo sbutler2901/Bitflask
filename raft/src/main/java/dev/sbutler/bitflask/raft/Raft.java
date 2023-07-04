@@ -7,15 +7,17 @@ import jakarta.inject.Singleton;
 @Singleton
 public final class Raft implements RaftCommandSubmitter, RaftCommandSubjectRegistrar {
 
+  private final RaftModeManager raftModeManager;
   private final RaftCommandTopic raftCommandTopic;
 
   @Inject
-  Raft(RaftCommandTopic raftCommandTopic) {
+  Raft(RaftModeManager raftModeManager, RaftCommandTopic raftCommandTopic) {
+    this.raftModeManager = raftModeManager;
     this.raftCommandTopic = raftCommandTopic;
   }
 
   public SubmitResults submitCommand(RaftCommand raftCommand) {
-    return new SubmitResults.Success();
+    return raftModeManager.submitCommand(raftCommand);
   }
 
   /**
