@@ -100,14 +100,9 @@ final class RaftModeManager
   }
 
   Optional<RaftServerInfo> getCurrentLeaderServerInfo() {
-    transitionLock.lock();
-    try {
-      return raftVolatileState
-          .getLeaderServerId()
-          .map(leaderServiceId -> raftClusterConfiguration.clusterServers().get(leaderServiceId));
-    } finally {
-      transitionLock.unlock();
-    }
+    return raftVolatileState
+        .getLeaderServerId()
+        .map(leaderServiceId -> raftClusterConfiguration.clusterServers().get(leaderServiceId));
   }
 
   /**
@@ -158,6 +153,9 @@ final class RaftModeManager
       runningProcessorFuture.cancel(false);
       raftElectionTimer.cancel();
       raftModeProcessor = newRaftModeProcessor;
+      if (isCurrentLeader()) {
+        raftVolatileState.setLeaderId(raftClusterConfiguration.thisRaftServerId());
+      }
       runningProcessorFuture = executorService.submit(raftModeProcessor);
     } finally {
       transitionLock.unlock();
