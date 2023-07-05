@@ -135,26 +135,26 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     AppendEntriesResponse.Builder response =
         AppendEntriesResponse.newBuilder().setTerm(raftPersistentState.getCurrentTerm());
 
-    LogEntryDetails prevLogEntryDetails =
-        new LogEntryDetails(request.getPrevLogTerm(), request.getPrevLogIndex());
     if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
       response.setSuccess(false);
-    } else {
-      boolean appendSuccessful =
-          raftPersistentState
-              .getRaftLog()
-              .appendEntriesAfterPrevEntry(prevLogEntryDetails, request.getEntriesList());
-      response.setSuccess(appendSuccessful);
-      if (appendSuccessful) {
-        raftVolatileState.setLeaderId(new RaftServerId(request.getLeaderId()));
-        if (request.getLeaderCommit() > raftVolatileState.getHighestCommittedEntryIndex()) {
-          raftVolatileState.setHighestCommittedEntryIndex(
-              Math.min(
-                  request.getLeaderCommit(), raftPersistentState.getRaftLog().getLastEntryIndex()));
-        }
-      }
+      return response.build();
     }
 
+    boolean appendSuccessful =
+        raftPersistentState
+            .getRaftLog()
+            .appendEntriesAfterPrevEntry(
+                new LogEntryDetails(request.getPrevLogTerm(), request.getPrevLogIndex()),
+                request.getEntriesList());
+    if (appendSuccessful) {
+      raftVolatileState.setLeaderId(new RaftServerId(request.getLeaderId()));
+      if (request.getLeaderCommit() > raftVolatileState.getHighestCommittedEntryIndex()) {
+        raftVolatileState.setHighestCommittedEntryIndex(
+            Math.min(
+                request.getLeaderCommit(), raftPersistentState.getRaftLog().getLastEntryIndex()));
+      }
+    }
+    response.setSuccess(appendSuccessful);
     return response.build();
   }
 }

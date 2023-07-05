@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.raft;
 
-import dev.sbutler.bitflask.raft.exceptions.RaftException;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.List;
@@ -36,19 +35,14 @@ final class RaftLog {
 
     int insertIdx = 1 + prevLogEntryDetails.index();
     for (var newEntry : newEntries) {
-      if (insertIdx <= getLastEntryIndex()) {
+      if (insertIdx < entries.size()) {
         if (entries.get(insertIdx).getTerm() != newEntry.getTerm()) {
           // Conflict detected, clear all entries from conflict on
           deleteEntriesFromIndex(insertIdx);
           appendEntry(newEntry);
         }
-      } else if (insertIdx == entries.size()) {
-        appendEntry(newEntry);
       } else {
-        throw new RaftException(
-            String.format(
-                "Insert index was not the next empty index, expected: %d, actual: %d",
-                entries.size(), insertIdx));
+        appendEntry(newEntry);
       }
       insertIdx++;
     }
