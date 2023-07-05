@@ -2,6 +2,8 @@ package dev.sbutler.bitflask.raft;
 
 import com.google.rpc.Code;
 import com.google.rpc.Status;
+import dev.sbutler.bitflask.raft.RaftLog.LogEntryDetails;
+import dev.sbutler.bitflask.raft.exceptions.RaftUnknownLeaderException;
 import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,5 +77,27 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     Entry newEntry = raftCommandConverter.convert(raftCommand);
     raftLog.appendEntry(newEntry);
     return new RaftSubmitResults.Success();
+  }
+
+  /**
+   * Creates an {@link dev.sbutler.bitflask.raft.AppendEntriesRequest.Builder} without the {@link
+   * dev.sbutler.bitflask.raft.Entry} list populated.
+   */
+  private AppendEntriesRequest.Builder createBaseAppendEntriesRequest() {
+    String leaderId =
+        raftVolatileState
+            .getLeaderServerId()
+            .map(RaftServerId::id)
+            .orElseThrow(
+                () ->
+                    new RaftUnknownLeaderException(
+                        "LeaderServerId was not set for use by the RaftLeaderProcessor"));
+    LogEntryDetails lastLogEntryDetails = raftLog.getLastLogEntryDetails();
+
+    return AppendEntriesRequest.newBuilder()
+        .setTerm(raftPersistentState.getCurrentTerm())
+        .setLeaderId(leaderId)
+        .setPrevLogTerm(lastLogEntryDetails.term())
+        .setPrevLogIndex(lastLogEntryDetails.index());
   }
 }
