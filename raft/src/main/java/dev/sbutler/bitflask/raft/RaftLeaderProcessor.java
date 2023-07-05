@@ -16,7 +16,9 @@ import java.util.concurrent.ConcurrentMap;
 final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCommandSubmitter {
 
   private final RaftLog raftLog;
+  private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
   private final RaftCommandConverter raftCommandConverter;
+  private final RaftClusterConfiguration raftClusterConfiguration;
 
   private final ConcurrentMap<RaftServerId, Integer> followersNextIndex = new ConcurrentHashMap<>();
 
@@ -26,11 +28,14 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
       RaftLog raftLog,
+      RaftClusterRpcChannelManager raftClusterRpcChannelManager,
       RaftCommandConverter raftCommandConverter,
       RaftClusterConfiguration raftClusterConfiguration) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
     this.raftLog = raftLog;
+    this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
     this.raftCommandConverter = raftCommandConverter;
+    this.raftClusterConfiguration = raftClusterConfiguration;
 
     int nextIndex = raftLog.getLastEntryIndex() + 1;
     for (var followerServerId : raftClusterConfiguration.getOtherServersInCluster().keySet()) {

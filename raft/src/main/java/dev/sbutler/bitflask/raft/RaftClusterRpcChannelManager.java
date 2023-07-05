@@ -65,4 +65,8 @@ final class RaftClusterRpcChannelManager extends AbstractIdleService {
   RaftClusterCandidateRpcClient createRaftClusterCandidateRpcClient() {
     return new RaftClusterCandidateRpcClient(executorService, otherServerStubs);
   }
+
+  RaftClusterLeaderRpcClient createRaftClusterLeaderRpcClient() {
+    return new RaftClusterLeaderRpcClient(executorService, otherServerStubs);
+  }
 }
