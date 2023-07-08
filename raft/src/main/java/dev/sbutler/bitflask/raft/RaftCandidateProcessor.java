@@ -106,19 +106,12 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
       RequestVotesResults requestVotesResults = candidateRpcClient.getCurrentRequestVotesResults();
       if (shouldUpdateTermAndTransitionToFollower(requestVotesResults.largestTermSeen())) {
         updateTermAndTransitionToFollower(requestVotesResults.largestTermSeen());
-      } else if (receivedMajorityVotes(requestVotesResults)) {
+      } else if (requestVotesResults.receivedMajorityVotes()) {
         shouldContinueElections = false;
         raftModeManager.transitionToLeaderState();
       } else if (requestVotesResults.allResponsesReceived()) {
         break;
       }
     }
-  }
-
-  private boolean receivedMajorityVotes(RequestVotesResults requestVotesResults) {
-    int totalServers = raftClusterConfiguration.clusterServers().size();
-    int votesReceived = 1 + requestVotesResults.numberVotesReceived();
-    double requiredForMajority = totalServers / 2.0;
-    return votesReceived > requiredForMajority;
   }
 }

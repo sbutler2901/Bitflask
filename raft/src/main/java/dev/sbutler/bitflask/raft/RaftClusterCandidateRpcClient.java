@@ -78,8 +78,8 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
   }
 
   /**
-   * A simplified snapshot of all of {@link RequestVoteResponse}s received from other clusters in
-   * the server.
+   * A simplified snapshot of all of {@link RequestVoteResponse}s received from other servers in the
+   * clusters.
    */
   record RequestVotesResults(
       int numberRequestsSent,
@@ -89,6 +89,13 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
 
     boolean allResponsesReceived() {
       return numberRequestsSent() == numberResponsesReceived();
+    }
+
+    boolean receivedMajorityVotes() {
+      // include vote for self
+      int votesReceived = 1 + numberVotesReceived();
+      double requiredForMajority = numberRequestsSent() / 2.0;
+      return votesReceived > requiredForMajority;
     }
   }
 
