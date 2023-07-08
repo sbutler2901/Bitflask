@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.raft;
 
+import static com.google.common.util.concurrent.Futures.immediateVoidFuture;
+
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import dev.sbutler.bitflask.raft.RaftLog.LogEntryDetails;
@@ -76,7 +78,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
     Entry newEntry = raftCommandConverter.convert(raftCommand);
     raftLog.appendEntry(newEntry);
-    return new RaftSubmitResults.Success();
+    return new RaftSubmitResults.Success(immediateVoidFuture());
   }
 
   /**

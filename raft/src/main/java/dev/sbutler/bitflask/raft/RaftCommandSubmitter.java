@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.raft;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 /** Supports committing {@link RaftCommand}s. */
 public interface RaftCommandSubmitter {
 
@@ -16,8 +18,12 @@ public interface RaftCommandSubmitter {
 
   /** The results of submitting a {@link dev.sbutler.bitflask.raft.RaftCommand}. */
   sealed interface RaftSubmitResults {
-    /** Indicates the command was successfully submitted. */
-    record Success() implements RaftSubmitResults {}
+    /**
+     * Indicates the command was successfully submitted.
+     *
+     * @param submitFuture resolves once the command has been safely replicated and applied.
+     */
+    record Success(ListenableFuture<Void> submitFuture) implements RaftSubmitResults {}
 
     /**
      * Indicates this Raft instance is not the current Raft leader.
