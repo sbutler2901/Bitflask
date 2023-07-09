@@ -34,7 +34,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   private final RaftLog raftLog;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
   private final RaftCommandConverter raftCommandConverter;
-  private final RaftClusterConfiguration raftClusterConfiguration;
+  private final RaftCommandTopic raftCommandTopic;
 
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersNextIndex =
       new ConcurrentHashMap<>();
@@ -52,13 +52,14 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       RaftLog raftLog,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager,
       RaftCommandConverter raftCommandConverter,
+      RaftCommandTopic raftCommandTopic,
       RaftClusterConfiguration raftClusterConfiguration) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
     this.executorService = executorService;
     this.raftLog = raftLog;
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
     this.raftCommandConverter = raftCommandConverter;
-    this.raftClusterConfiguration = raftClusterConfiguration;
+    this.raftCommandTopic = raftCommandTopic;
 
     int nextIndex = raftLog.getLastEntryIndex() + 1;
     for (var followerServerId : raftClusterConfiguration.getOtherServersInCluster().keySet()) {
@@ -132,8 +133,21 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     }
   }
 
+  /** Applies any committed entries that have not been applied yet. */
   private void applyCommittedEntries() {
-    // TODO: apply to state machine.
+    int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
+    int highestCommittedIndex = raftVolatileState.getHighestCommittedEntryIndex();
+    for (int nextIndex = highestAppliedIndex + 1; nextIndex <= highestCommittedIndex; nextIndex++) {
+      try {
+        raftCommandTopic.notifyObservers(
+            raftCommandConverter.reverse().convert(raftLog.getEntryAtIndex(nextIndex)));
+        raftVolatileState.setHighestAppliedEntryIndex(nextIndex);
+      } catch (Exception e) {
+        logger.atSevere().withCause(e).log("Failed to apply command at index [%d].", nextIndex);
+        // TODO: terminate server if unrecoverable?
+        break;
+      }
+    }
   }
 
   @Override
