@@ -21,14 +21,13 @@ final class RaftClusterLeaderRpcClient {
     ImmutableMap.Builder<RaftServerId, ListenableFuture<AppendEntriesResponse>> futuresMap =
         ImmutableMap.builder();
     for (var raftServerId : otherServerStubs.keySet()) {
-      ListenableFuture<AppendEntriesResponse> responseFuture =
-          appendEntriesToServer(raftServerId, request);
+      ListenableFuture<AppendEntriesResponse> responseFuture = appendEntries(raftServerId, request);
       futuresMap.put(raftServerId, responseFuture);
     }
     return futuresMap.build();
   }
 
-  ListenableFuture<AppendEntriesResponse> appendEntriesToServer(
+  ListenableFuture<AppendEntriesResponse> appendEntries(
       RaftServerId raftServerId, AppendEntriesRequest request) {
     return otherServerStubs.get(raftServerId).appendEntries(request);
   }
