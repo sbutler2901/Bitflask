@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.raft;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -108,17 +109,28 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     return new RaftSubmitResults.Success(clientSubmitFuture);
   }
 
+  private ImmutableMap<RaftServerId, ListenableFuture<Void>> sentRetryingAppendEntriesToAll(
+      int lastEntryLogIndex) {
+    ImmutableMap.Builder<RaftServerId, ListenableFuture<Void>> responseFutures =
+        ImmutableMap.builder();
+    for (var key : followersNextIndex.keySet()) {
+      responseFutures.put(key, sendRetryingAppendEntries(key, lastEntryLogIndex));
+    }
+    return responseFutures.build();
+  }
+
   private ListenableFuture<Void> sendRetryingAppendEntries(
-      RaftServerId raftServerId, int logIndex) {
+      RaftServerId raftServerId, int lastEntryLogIndex) {
     SettableFuture<Void> requestCompleted = SettableFuture.create();
-    sendRetryingAppendEntries(raftServerId, logIndex, requestCompleted);
+    sendRetryingAppendEntries(raftServerId, lastEntryLogIndex, requestCompleted);
     return requestCompleted;
   }
 
   private void sendRetryingAppendEntries(
-      RaftServerId raftServerId, int logIndex, SettableFuture<Void> requestCompleted) {
+      RaftServerId raftServerId, int lastEntryIndex, SettableFuture<Void> requestCompleted) {
     int followerNextIndex = followersNextIndex.get(raftServerId).get();
-    ImmutableList<Entry> entries = raftLog.getEntriesFromIndex(followerNextIndex, 1 + logIndex);
+    ImmutableList<Entry> entries =
+        raftLog.getEntriesFromIndex(followerNextIndex, 1 + lastEntryIndex);
     RaftClusterLeaderRpcClient leaderRpcClient =
         raftClusterRpcChannelManager.createRaftClusterLeaderRpcClient();
     AppendEntriesRequest request =
@@ -133,11 +145,11 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
             } else if (!result.getSuccess()) {
               logger.atInfo().log(
                   "Follower [%s] did not accept index [%d] with prevLogIndex [%d]. Trying again with lower prevLogIndex.",
-                  raftServerId, logIndex, followerNextIndex);
+                  raftServerId, lastEntryIndex, followerNextIndex);
               followersNextIndex
                   .get(raftServerId)
                   .compareAndExchange(followerNextIndex, followerNextIndex - 1);
-              sendRetryingAppendEntries(raftServerId, logIndex);
+              sendRetryingAppendEntries(raftServerId, lastEntryIndex);
             } else {
               requestCompleted.set(null);
             }
@@ -148,7 +160,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
             String msg =
                 String.format(
                     "Follower [%s] AppendEntries request failed for Entry at index [%d] with prevLogIndex [%d]",
-                    raftServerId, logIndex, followerNextIndex);
+                    raftServerId, lastEntryIndex, followerNextIndex);
             // TODO: try again?
             requestCompleted.setException(new RaftException(msg, t));
           }
