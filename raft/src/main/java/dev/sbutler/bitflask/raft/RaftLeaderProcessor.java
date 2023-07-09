@@ -10,7 +10,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
-import dev.sbutler.bitflask.raft.exceptions.RaftException;
+import dev.sbutler.bitflask.raft.exceptions.RaftLeaderException;
 import dev.sbutler.bitflask.raft.exceptions.RaftUnknownLeaderException;
 import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
@@ -198,7 +198,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
                     "Follower [%s] AppendEntries request failed for Entry at index [%d] with prevLogIndex [%d]",
                     raftServerId, lastEntryIndex, followerNextIndex);
             // TODO: try again?
-            requestCompleted.setException(new RaftException(msg, t));
+            requestCompleted.setException(new RaftLeaderException(msg, t));
           }
         },
         executorService);
@@ -208,6 +208,10 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     logger.atWarning().log("Larger term [%d] found transitioning to follower.", term);
     shouldContinueExecuting = false;
     raftPersistentState.setCurrentTermAndResetVote(term);
+    RaftLeaderException exception = new RaftLeaderException("Another leader was discovered");
+    for (var clientResponseFuture : clientResponseMap.values()) {
+      clientResponseFuture.setException(exception);
+    }
     raftModeManager.transitionToFollowerState();
   }
 
