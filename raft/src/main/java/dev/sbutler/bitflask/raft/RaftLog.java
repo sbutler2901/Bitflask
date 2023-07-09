@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.raft;
 
+import com.google.common.collect.ImmutableList;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.List;
@@ -81,6 +82,29 @@ final class RaftLog {
     int lastEntryIndex = getLastEntryIndex();
     Entry lastEntry = entries.get(lastEntryIndex);
     return new LogEntryDetails(lastEntry.getTerm(), lastEntryIndex);
+  }
+
+  /** Returns {@link LogEntryDetails} for the {@link Entry} at the provided index. */
+  LogEntryDetails getLogEntryDetails(int entryIndex) {
+    return new LogEntryDetails(entries.get(entryIndex).getTerm(), entryIndex);
+  }
+
+  /** Returns the {@link Entry} at the provided index. */
+  Entry getEntryAtIndex(int index) {
+    return entries.get(index);
+  }
+
+  /** Returns a list of {@link Entry}s starting from the provided index to the last one. */
+  ImmutableList<Entry> getEntriesFromIndex(int fromIndex) {
+    return ImmutableList.copyOf(entries.subList(fromIndex, entries.size()));
+  }
+
+  /**
+   * Returns a list of {@link Entry}s from {@code fromIndex} (inclusive) to {@code toIndex}
+   * (exclusive).
+   */
+  ImmutableList<Entry> getEntriesFromIndex(int fromIndex, int toIndex) {
+    return ImmutableList.copyOf(entries.subList(fromIndex, toIndex));
   }
 
   /** Simplified details about an {@link Entry} in the {@link RaftLog}. */
