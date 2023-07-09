@@ -118,8 +118,18 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     return raftVolatileState.getHighestCommittedEntryIndex() < raftLog.getLastEntryIndex();
   }
 
+  /**
+   * Responds to clients who submitted a {@link RaftCommand} and are waiting for it to be applied.
+   */
   private void checkAppliedEntriesAndRespondToClients() {
-    // TODO: respond to clients waiting on an entry to be applied.
+    int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
+    for (var clientResponseEntry : clientResponseMap.entrySet()) {
+      if (clientResponseEntry.getKey() > highestAppliedIndex) {
+        break;
+      }
+      clientResponseEntry.getValue().set(null);
+      clientResponseMap.remove(clientResponseEntry.getKey());
+    }
   }
 
   private void applyCommittedEntries() {
