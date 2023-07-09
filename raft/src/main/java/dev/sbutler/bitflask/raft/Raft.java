@@ -1,5 +1,9 @@
 package dev.sbutler.bitflask.raft;
 
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
+
+import com.google.common.flogger.FluentLogger;
+import dev.sbutler.bitflask.raft.exceptions.RaftException;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.Optional;
@@ -7,6 +11,8 @@ import java.util.Optional;
 /** The interface for using the Raft Consensus protocol. */
 @Singleton
 public final class Raft implements RaftCommandSubmitter, RaftCommandSubjectRegistrar {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final RaftModeManager raftModeManager;
   private final RaftCommandTopic raftCommandTopic;
@@ -29,7 +35,16 @@ public final class Raft implements RaftCommandSubmitter, RaftCommandSubjectRegis
 
   /** Submits a {@link RaftCommand} to be replicated. */
   public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
-    return raftModeManager.submitCommand(raftCommand);
+    try {
+      return raftModeManager.submitCommand(raftCommand);
+    } catch (RaftException e) {
+      logger.atSevere().withCause(e).log("Failed to submit command [%s]", raftCommand);
+      return new RaftSubmitResults.Success(immediateFailedFuture(e));
+    } catch (Exception e) {
+      logger.atSevere().withCause(e).log("Failed to submit command [%s]", raftCommand);
+      return new RaftSubmitResults.Success(
+          immediateFailedFuture(new RaftException("Unknown error while submitting.")));
+    }
   }
 
   /**

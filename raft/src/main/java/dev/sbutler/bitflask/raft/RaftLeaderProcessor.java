@@ -1,7 +1,5 @@
 package dev.sbutler.bitflask.raft;
 
-import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
@@ -18,6 +16,8 @@ import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -38,6 +38,9 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersNextIndex =
       new ConcurrentHashMap<>();
+
+  private final ConcurrentNavigableMap<Integer, SettableFuture<Void>> clientResponseMap =
+      new ConcurrentSkipListMap<>();
 
   @Inject
   RaftLeaderProcessor(
@@ -91,21 +94,10 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   @Override
   public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
-    Entry newEntry;
-    try {
-      newEntry = raftCommandConverter.convert(raftCommand);
-      raftLog.appendEntry(newEntry);
-    } catch (RaftException e) {
-      logger.atSevere().withCause(e).log("Unable to create or append entry to log");
-      return new RaftSubmitResults.Success(immediateFailedFuture(e));
-    } catch (Exception e) {
-      logger.atSevere().withCause(e).log("Unable to create or append entry to log");
-      return new RaftSubmitResults.Success(
-          immediateFailedFuture(new RaftException("Unknown error while submitting.")));
-    }
-
+    Entry newEntry = raftCommandConverter.convert(raftCommand);
+    int newEntryIndex = raftLog.appendEntry(newEntry);
     SettableFuture<Void> clientSubmitFuture = SettableFuture.create();
-
+    clientResponseMap.put(newEntryIndex, clientSubmitFuture);
     return new RaftSubmitResults.Success(clientSubmitFuture);
   }
 
@@ -140,7 +132,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
         new FutureCallback<>() {
           @Override
           public void onSuccess(AppendEntriesResponse result) {
-            if (result.getTerm() > raftPersistentState.getCurrentTerm()) {
+            if (!result.getSuccess() && result.getTerm() > raftPersistentState.getCurrentTerm()) {
               handleLargerTermFound(result.getTerm());
             } else if (!result.getSuccess()) {
               logger.atInfo().log(
