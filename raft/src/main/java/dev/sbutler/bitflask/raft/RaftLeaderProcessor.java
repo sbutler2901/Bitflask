@@ -38,9 +38,10 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersNextIndex =
       new ConcurrentHashMap<>();
-
   private final ConcurrentNavigableMap<Integer, SettableFuture<Void>> clientResponseMap =
       new ConcurrentSkipListMap<>();
+
+  private volatile boolean shouldContinueExecuting = true;
 
   @Inject
   RaftLeaderProcessor(
@@ -90,7 +91,40 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   }
 
   @Override
-  public void run() {}
+  public void run() {
+    sendHeartbeats();
+    while (shouldContinueExecuting) {
+      if (raftVolatileState.committedEntriesNeedApplying()) {
+        applyCommittedEntries();
+      }
+      checkAppliedEntriesAndRespondToClients();
+      if (logHasUncommittedEntries()) {
+        commitEntries();
+      } else {
+        sendHeartbeats();
+      }
+    }
+  }
+
+  private void commitEntries() {
+    // TODO: commit entries in log within current term
+  }
+
+  private void sendHeartbeats() {
+    // TODO: send heartbeats to all servers.
+  }
+
+  private boolean logHasUncommittedEntries() {
+    return raftVolatileState.getHighestCommittedEntryIndex() < raftLog.getLastEntryIndex();
+  }
+
+  private void checkAppliedEntriesAndRespondToClients() {
+    // TODO: respond to clients waiting on an entry to be applied.
+  }
+
+  private void applyCommittedEntries() {
+    // TODO: apply to state machine.
+  }
 
   @Override
   public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
@@ -162,6 +196,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   private void handleLargerTermFound(int term) {
     logger.atWarning().log("Larger term [%d] found transitioning to follower.", term);
+    shouldContinueExecuting = false;
     raftPersistentState.setCurrentTermAndResetVote(term);
     raftModeManager.transitionToFollowerState();
   }

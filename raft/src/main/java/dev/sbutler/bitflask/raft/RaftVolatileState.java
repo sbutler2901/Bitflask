@@ -48,6 +48,10 @@ final class RaftVolatileState {
     highestAppliedEntryIndex.getAndSet(index);
   }
 
+  boolean committedEntriesNeedApplying() {
+    return highestCommittedEntryIndex.get() < highestAppliedEntryIndex.get();
+  }
+
   /** Returns the {@link RaftServerId} of the current leader, if known. */
   Optional<RaftServerId> getLeaderServerId() {
     return Optional.ofNullable(leaderServerId);
