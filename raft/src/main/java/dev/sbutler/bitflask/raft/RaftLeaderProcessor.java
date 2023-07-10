@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.raft;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -18,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -35,10 +35,11 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
   private final RaftCommandConverter raftCommandConverter;
   private final RaftCommandTopic raftCommandTopic;
+  private final RaftClusterConfiguration raftClusterConfiguration;
 
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersNextIndex =
       new ConcurrentHashMap<>();
-  private final ConcurrentNavigableMap<Integer, SettableFuture<Void>> clientResponseMap =
+  private final ConcurrentNavigableMap<Integer, SubmittedEntryState> submittedEntryStateMap =
       new ConcurrentSkipListMap<>();
 
   private volatile boolean shouldContinueExecuting = true;
@@ -60,6 +61,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
     this.raftCommandConverter = raftCommandConverter;
     this.raftCommandTopic = raftCommandTopic;
+    this.raftClusterConfiguration = raftClusterConfiguration;
 
     int nextIndex = raftLog.getLastEntryIndex() + 1;
     for (var followerServerId : raftClusterConfiguration.getOtherServersInCluster().keySet()) {
@@ -86,6 +88,12 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   }
 
   @Override
+  protected void beforeUpdateTermAndTransitionToFollower(int rpcTerm) {
+    logger.atWarning().log("Larger term [%d] found transitioning to follower.", rpcTerm);
+    shouldContinueExecuting = false;
+  }
+
+  @Override
   public void handleElectionTimeout() {
     throw new IllegalStateException(
         "Raft in LEADER mode should not have an election timer running");
@@ -95,6 +103,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   public void run() {
     sendHeartbeats();
     while (shouldContinueExecuting) {
+      checkSubmittedEntryState();
       if (raftVolatileState.committedEntriesNeedApplying()) {
         applyCommittedEntries();
       }
@@ -105,6 +114,12 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
         sendHeartbeats();
       }
     }
+
+    RaftLeaderException exception = new RaftLeaderException("Another leader was discovered");
+    for (var submittedEntryState : submittedEntryStateMap.values()) {
+      submittedEntryState.clientSubmitFuture().setException(exception);
+    }
+    // TODO: clean unresolved futures
   }
 
   private void commitEntries() {
@@ -124,12 +139,12 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
    */
   private void checkAppliedEntriesAndRespondToClients() {
     int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
-    for (var clientResponseEntry : clientResponseMap.entrySet()) {
-      if (clientResponseEntry.getKey() > highestAppliedIndex) {
+    for (var submittedEntry : submittedEntryStateMap.entrySet()) {
+      if (submittedEntry.getKey() > highestAppliedIndex) {
         break;
       }
-      clientResponseEntry.getValue().set(null);
-      clientResponseMap.remove(clientResponseEntry.getKey());
+      submittedEntry.getValue().clientSubmitFuture().set(null);
+      submittedEntryStateMap.remove(submittedEntry.getKey());
     }
   }
 
@@ -150,83 +165,134 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     }
   }
 
+  /**
+   * Commits {@link Entry}s that have been submitted by clients if a majority of success responses
+   * has been received.
+   */
+  private void checkSubmittedEntryState() {
+    for (var submittedEntry : submittedEntryStateMap.entrySet()) {
+      int numServersReplicated = 1 + submittedEntry.getValue().numberOfSuccessfulServers();
+      double halfOfServers = raftClusterConfiguration.clusterServers().size() / 2.0;
+      if (numServersReplicated <= halfOfServers) {
+        break;
+      }
+      raftVolatileState.setHighestCommittedEntryIndex(submittedEntry.getKey());
+    }
+  }
+
   @Override
   public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
     Entry newEntry = raftCommandConverter.convert(raftCommand);
     int newEntryIndex = raftLog.appendEntry(newEntry);
     SettableFuture<Void> clientSubmitFuture = SettableFuture.create();
-    clientResponseMap.put(newEntryIndex, clientSubmitFuture);
+    submittedEntryStateMap.put(
+        newEntryIndex,
+        new SubmittedEntryState(newEntry, new CopyOnWriteArrayList<>(), clientSubmitFuture));
     return new RaftSubmitResults.Success(clientSubmitFuture);
   }
 
-  private ImmutableMap<RaftServerId, ListenableFuture<Void>> sentRetryingAppendEntriesToAll(
-      int lastEntryLogIndex) {
-    ImmutableMap.Builder<RaftServerId, ListenableFuture<Void>> responseFutures =
-        ImmutableMap.builder();
-    for (var key : followersNextIndex.keySet()) {
-      responseFutures.put(key, sendRetryingAppendEntries(key, lastEntryLogIndex));
+  /**
+   * Holds state relevant to an {@link Entry} that has been submitted by a client and waiting to be
+   * committed.
+   */
+  private record SubmittedEntryState(
+      Entry entry,
+      CopyOnWriteArrayList<RaftServerId> successResponseServers,
+      SettableFuture<Void> clientSubmitFuture) {
+    private void successfulServerAddIfAbsent(RaftServerId raftServerId) {
+      successResponseServers.addIfAbsent(raftServerId);
     }
-    return responseFutures.build();
+
+    private int numberOfSuccessfulServers() {
+      return successResponseServers.size();
+    }
   }
 
-  private ListenableFuture<Void> sendRetryingAppendEntries(
-      RaftServerId raftServerId, int lastEntryLogIndex) {
-    SettableFuture<Void> requestCompleted = SettableFuture.create();
-    sendRetryingAppendEntries(raftServerId, lastEntryLogIndex, requestCompleted);
-    return requestCompleted;
+  private void sentAppendEntriesToAll(
+      AppendEntriesRequest request, int followerNextIndex, int lastEntryIndex) {
+    raftClusterConfiguration
+        .getOtherServersInCluster()
+        .keySet()
+        .forEach(
+            raftServerId ->
+                sendAppendEntriesToServer(
+                    raftServerId, request, followerNextIndex, lastEntryIndex));
   }
 
-  private void sendRetryingAppendEntries(
-      RaftServerId raftServerId, int lastEntryIndex, SettableFuture<Void> requestCompleted) {
-    int followerNextIndex = followersNextIndex.get(raftServerId).get();
-    ImmutableList<Entry> entries =
-        raftLog.getEntriesFromIndex(followerNextIndex, 1 + lastEntryIndex);
+  private void sendAppendEntriesToServer(
+      RaftServerId raftServerId,
+      AppendEntriesRequest request,
+      int followerNextIndex,
+      int lastEntryIndex) {
     RaftClusterLeaderRpcClient leaderRpcClient =
         raftClusterRpcChannelManager.createRaftClusterLeaderRpcClient();
-    AppendEntriesRequest request =
-        createBaseAppendEntriesRequest(followerNextIndex).addAllEntries(entries).build();
+    ListenableFuture<AppendEntriesResponse> responseFuture =
+        leaderRpcClient.appendEntries(raftServerId, request);
+
     Futures.addCallback(
-        leaderRpcClient.appendEntries(raftServerId, request),
+        responseFuture,
         new FutureCallback<>() {
           @Override
           public void onSuccess(AppendEntriesResponse result) {
             if (!result.getSuccess() && result.getTerm() > raftPersistentState.getCurrentTerm()) {
-              handleLargerTermFound(result.getTerm());
+              updateTermAndTransitionToFollower(result.getTerm());
             } else if (!result.getSuccess()) {
               logger.atInfo().log(
-                  "Follower [%s] did not accept index [%d] with prevLogIndex [%d]. Trying again with lower prevLogIndex.",
+                  "Follower [%s] did not accept lastEntryIndex [%d] with prevLogIndex [%d].",
                   raftServerId, lastEntryIndex, followerNextIndex);
               followersNextIndex
                   .get(raftServerId)
                   .compareAndExchange(followerNextIndex, followerNextIndex - 1);
-              sendRetryingAppendEntries(raftServerId, lastEntryIndex);
             } else {
-              requestCompleted.set(null);
+              logger.atInfo().log(
+                  "Follower [%s] accepted lastEntryIndex [%d] with prevLogIndex [%d].",
+                  raftServerId, lastEntryIndex, followerNextIndex);
+              for (var submittedEntry : submittedEntryStateMap.entrySet()) {
+                if (submittedEntry.getKey() > lastEntryIndex) {
+                  break;
+                }
+                submittedEntry.getValue().successfulServerAddIfAbsent(raftServerId);
+              }
             }
           }
 
           @Override
           public void onFailure(Throwable t) {
-            String msg =
-                String.format(
-                    "Follower [%s] AppendEntries request failed for Entry at index [%d] with prevLogIndex [%d]",
-                    raftServerId, lastEntryIndex, followerNextIndex);
-            // TODO: try again?
-            requestCompleted.setException(new RaftLeaderException(msg, t));
+            logger.atSevere().withCause(t).log(
+                "Follower [%s] AppendEntries request failed for Entry at index [%d] with prevLogIndex [%d]",
+                raftServerId, lastEntryIndex, followerNextIndex);
           }
         },
         executorService);
   }
 
-  private void handleLargerTermFound(int term) {
-    logger.atWarning().log("Larger term [%d] found transitioning to follower.", term);
-    shouldContinueExecuting = false;
-    raftPersistentState.setCurrentTermAndResetVote(term);
-    RaftLeaderException exception = new RaftLeaderException("Another leader was discovered");
-    for (var clientResponseFuture : clientResponseMap.values()) {
-      clientResponseFuture.setException(exception);
-    }
-    raftModeManager.transitionToFollowerState();
+  /**
+   * Returns an {@link AppendEntriesRequest} based on the provided follower.
+   *
+   * <p>The request's {@code prevLogIndex} and {@code prevLogTerm} will be the entry preceding the
+   * follower's {@code nextIndex}
+   *
+   * <p>The {@link Entry}s included will be from the follower's {@code nextIndex} to the provided
+   * {@code lastEntryIndex} (both inclusive).
+   */
+  private AppendEntriesRequest getAppendEntriesRequestForFollower(
+      RaftServerId raftServerId, int lastEntryIndex) {
+    int followerNextIndex = followersNextIndex.get(raftServerId).get();
+    ImmutableList<Entry> entries =
+        raftLog.getEntriesFromIndex(followerNextIndex, 1 + lastEntryIndex);
+    return createBaseAppendEntriesRequest(followerNextIndex - 1).addAllEntries(entries).build();
+  }
+
+  /**
+   * Returns an {@link AppendEntriesRequest} based on the provided follower with no {@link Entry}s.
+   *
+   * <p>The request's {@code prevLogIndex} and {@code prevLogTerm} will be the entry preceding the
+   * follower's {@code nextIndex}
+   */
+  private AppendEntriesRequest getHeartbeatAppendEntriesRequestForFollower(
+      RaftServerId raftServerId) {
+    int followerNextIndex = followersNextIndex.get(raftServerId).get();
+    return createBaseAppendEntriesRequest(followerNextIndex - 1).build();
   }
 
   /**

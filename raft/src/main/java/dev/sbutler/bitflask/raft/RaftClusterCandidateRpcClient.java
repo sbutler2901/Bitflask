@@ -94,8 +94,8 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
     boolean receivedMajorityVotes() {
       // include vote for self
       int votesReceived = 1 + numberVotesReceived();
-      double requiredForMajority = numberRequestsSent() / 2.0;
-      return votesReceived > requiredForMajority;
+      double halfRequiredRequests = numberRequestsSent() / 2.0;
+      return votesReceived > halfRequiredRequests;
     }
   }
 
