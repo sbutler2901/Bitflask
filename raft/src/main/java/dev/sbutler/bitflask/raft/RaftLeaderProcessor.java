@@ -40,6 +40,8 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersNextIndex =
       new ConcurrentHashMap<>();
+  private final ConcurrentMap<RaftServerId, AtomicInteger> followersMatchIndex =
+      new ConcurrentHashMap<>();
   private final ConcurrentNavigableMap<Integer, SubmittedEntryState> submittedEntryStateMap =
       new ConcurrentSkipListMap<>();
 
@@ -67,6 +69,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     int nextIndex = raftLog.getLastEntryIndex() + 1;
     for (var followerServerId : raftClusterConfiguration.getOtherServersInCluster().keySet()) {
       followersNextIndex.put(followerServerId, new AtomicInteger(nextIndex));
+      followersMatchIndex.put(followerServerId, new AtomicInteger(0));
     }
   }
 
@@ -132,16 +135,12 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   public void run() {
     sendHeartbeatToAll();
     while (shouldContinueExecuting) {
-      checkSubmittedEntryState();
-      if (raftVolatileState.committedEntriesNeedApplying()) {
-        applyCommittedEntries();
-      }
+      appendEntriesOrSendHeartbeat();
+      checkAndUpdateCommitIndex();
+      // TODO: probably should be ran in background thread to prevent election timeout. Followers
+      // should do this too.
+      applyCommittedEntries();
       checkAppliedEntriesAndRespondToClients();
-      if (logHasUncommittedEntries()) {
-        sendAppendEntriesToAll(raftLog.getLastEntryIndex());
-      } else {
-        sendHeartbeatToAll();
-      }
     }
 
     RaftLeaderException exception = new RaftLeaderException("Another leader was discovered");
@@ -151,40 +150,83 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     // TODO: clean unresolved futures
   }
 
-  /**
-   * Commits {@link Entry}s that have been submitted by clients if a majority of success responses
-   * has been received.
-   */
-  private void checkSubmittedEntryState() {
-    for (var submittedEntry : submittedEntryStateMap.entrySet()) {
-      int numServersReplicated = 1 + submittedEntry.getValue().numberOfSuccessfulServers();
-      double halfOfServers = raftClusterConfiguration.clusterServers().size() / 2.0;
-      if (numServersReplicated <= halfOfServers) {
+  private void appendEntriesOrSendHeartbeat() {
+    int lastEntryIndex = raftLog.getLastEntryIndex();
+    raftClusterConfiguration
+        .getOtherServersInCluster()
+        .keySet()
+        .forEach(
+            raftServerId -> {
+              int followerNextIndex = followersNextIndex.get(raftServerId).get();
+              if (lastEntryIndex >= followerNextIndex) {
+                AppendEntriesRequest request =
+                    createAppendEntriesRequest(followerNextIndex, lastEntryIndex);
+                sendAppendEntriesToServer(
+                    raftServerId, request, followerNextIndex, Optional.of(lastEntryIndex));
+              } else {
+                AppendEntriesRequest request =
+                    createHeartbeatAppendEntriesRequest(followerNextIndex);
+                sendAppendEntriesToServer(
+                    raftServerId,
+                    request,
+                    followerNextIndex,
+                    /* lastEntryIndex= */ Optional.empty());
+              }
+            });
+  }
+
+  private void checkAndUpdateCommitIndex() {
+    int currentCommitIndex = raftVolatileState.getHighestCommittedEntryIndex();
+    int currentTerm = raftPersistentState.getCurrentTerm();
+    for (int possibleCommitIndex = raftLog.getLastEntryIndex();
+        possibleCommitIndex > currentCommitIndex
+            && raftLog.getEntryAtIndex(possibleCommitIndex).getTerm() == currentTerm;
+        possibleCommitIndex--) {
+      if (entryIndexHasMajorityMatch(possibleCommitIndex)) {
+        raftVolatileState.setHighestCommittedEntryIndex(possibleCommitIndex);
         break;
       }
-      raftVolatileState.setHighestCommittedEntryIndex(submittedEntry.getKey());
     }
+  }
+
+  private boolean entryIndexHasMajorityMatch(int entryIndex) {
+    double halfOfServers = raftClusterConfiguration.clusterServers().size() / 2.0;
+    long numServersWithEntryWithinMatch =
+        1 // include this server
+            + raftClusterConfiguration.getOtherServersInCluster().keySet().stream()
+                .map(followersMatchIndex::get)
+                .map(AtomicInteger::get)
+                .filter(matchIndex -> matchIndex >= entryIndex)
+                .count();
+    return numServersWithEntryWithinMatch > halfOfServers;
   }
 
   /** Applies any committed entries that have not been applied yet. */
   private void applyCommittedEntries() {
     int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
     int highestCommittedIndex = raftVolatileState.getHighestCommittedEntryIndex();
-    for (int nextIndex = highestAppliedIndex + 1; nextIndex <= highestCommittedIndex; nextIndex++) {
+    if (highestCommittedIndex < highestAppliedIndex) {
+      throw new RaftLeaderException(
+          "The highest applied index is greater than the highest committed index!");
+    } else if (highestCommittedIndex == highestAppliedIndex) {
+      return;
+    }
+
+    for (int nextIndexToApply = highestAppliedIndex + 1;
+        nextIndexToApply <= highestCommittedIndex;
+        nextIndexToApply++) {
       try {
+        raftVolatileState.setHighestAppliedEntryIndex(nextIndexToApply);
         raftCommandTopic.notifyObservers(
-            raftCommandConverter.reverse().convert(raftLog.getEntryAtIndex(nextIndex)));
-        raftVolatileState.setHighestAppliedEntryIndex(nextIndex);
+            raftCommandConverter.reverse().convert(raftLog.getEntryAtIndex(nextIndexToApply)));
       } catch (Exception e) {
-        logger.atSevere().withCause(e).log("Failed to apply command at index [%d].", nextIndex);
+        raftVolatileState.setHighestAppliedEntryIndex(nextIndexToApply - 1);
+        logger.atSevere().withCause(e).log(
+            "Failed to apply command at index [%d].", nextIndexToApply);
         // TODO: terminate server if unrecoverable?
         break;
       }
     }
-  }
-
-  private boolean logHasUncommittedEntries() {
-    return raftVolatileState.getHighestCommittedEntryIndex() < raftLog.getLastEntryIndex();
   }
 
   /**
@@ -199,24 +241,6 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       submittedEntry.getValue().clientSubmitFuture().set(null);
       submittedEntryStateMap.remove(submittedEntry.getKey());
     }
-  }
-
-  /**
-   * Sends an {@link AppendEntriesRequest} with {@link Entry}s ranging from the follower's {@code
-   * nextIndex} to the {@code lastEntryIndex} (both-inclusive) to all followers.
-   */
-  private void sendAppendEntriesToAll(int lastEntryIndex) {
-    raftClusterConfiguration
-        .getOtherServersInCluster()
-        .keySet()
-        .forEach(
-            raftServerId -> {
-              int followerNextIndex = followersNextIndex.get(raftServerId).get();
-              AppendEntriesRequest request =
-                  createAppendEntriesRequest(followerNextIndex, lastEntryIndex);
-              sendAppendEntriesToServer(
-                  raftServerId, request, followerNextIndex, Optional.of(lastEntryIndex));
-            });
   }
 
   /**
@@ -289,11 +313,18 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
                           raftServerId, followerNextIndex));
               followersNextIndex
                   .get(raftServerId)
-                  .compareAndExchange(followerNextIndex, followerNextIndex - 1);
+                  .getAndUpdate(prev -> Math.min(prev, followerNextIndex - 1));
             } else if (lastEntryIndex.isPresent()) {
               logger.atInfo().log(
                   "Follower [%s] accepted lastEntryIndex [%d] with prevLogIndex [%d].",
                   raftServerId, lastEntryIndex, followerNextIndex);
+              followersNextIndex
+                  .get(raftServerId)
+                  .getAndUpdate(prev -> Math.max(prev, followerNextIndex + 1));
+              followersMatchIndex
+                  .get(raftServerId)
+                  .getAndUpdate(prev -> Math.max(prev, lastEntryIndex.get()));
+
               for (var submittedEntry : submittedEntryStateMap.entrySet()) {
                 if (submittedEntry.getKey() > lastEntryIndex.get()) {
                   break;
