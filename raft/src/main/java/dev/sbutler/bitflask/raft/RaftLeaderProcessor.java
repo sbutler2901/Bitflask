@@ -101,79 +101,6 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   }
 
   @Override
-  public void run() {
-    sendHeartbeatToAll();
-    while (shouldContinueExecuting) {
-      checkSubmittedEntryState();
-      if (raftVolatileState.committedEntriesNeedApplying()) {
-        applyCommittedEntries();
-      }
-      checkAppliedEntriesAndRespondToClients();
-      if (logHasUncommittedEntries()) {
-        sendAppendEntriesToAll(raftLog.getLastEntryIndex());
-      } else {
-        sendHeartbeatToAll();
-      }
-    }
-
-    RaftLeaderException exception = new RaftLeaderException("Another leader was discovered");
-    for (var submittedEntryState : submittedEntryStateMap.values()) {
-      submittedEntryState.clientSubmitFuture().setException(exception);
-    }
-    // TODO: clean unresolved futures
-  }
-
-  private boolean logHasUncommittedEntries() {
-    return raftVolatileState.getHighestCommittedEntryIndex() < raftLog.getLastEntryIndex();
-  }
-
-  /**
-   * Responds to clients who submitted a {@link RaftCommand} and are waiting for it to be applied.
-   */
-  private void checkAppliedEntriesAndRespondToClients() {
-    int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
-    for (var submittedEntry : submittedEntryStateMap.entrySet()) {
-      if (submittedEntry.getKey() > highestAppliedIndex) {
-        break;
-      }
-      submittedEntry.getValue().clientSubmitFuture().set(null);
-      submittedEntryStateMap.remove(submittedEntry.getKey());
-    }
-  }
-
-  /** Applies any committed entries that have not been applied yet. */
-  private void applyCommittedEntries() {
-    int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
-    int highestCommittedIndex = raftVolatileState.getHighestCommittedEntryIndex();
-    for (int nextIndex = highestAppliedIndex + 1; nextIndex <= highestCommittedIndex; nextIndex++) {
-      try {
-        raftCommandTopic.notifyObservers(
-            raftCommandConverter.reverse().convert(raftLog.getEntryAtIndex(nextIndex)));
-        raftVolatileState.setHighestAppliedEntryIndex(nextIndex);
-      } catch (Exception e) {
-        logger.atSevere().withCause(e).log("Failed to apply command at index [%d].", nextIndex);
-        // TODO: terminate server if unrecoverable?
-        break;
-      }
-    }
-  }
-
-  /**
-   * Commits {@link Entry}s that have been submitted by clients if a majority of success responses
-   * has been received.
-   */
-  private void checkSubmittedEntryState() {
-    for (var submittedEntry : submittedEntryStateMap.entrySet()) {
-      int numServersReplicated = 1 + submittedEntry.getValue().numberOfSuccessfulServers();
-      double halfOfServers = raftClusterConfiguration.clusterServers().size() / 2.0;
-      if (numServersReplicated <= halfOfServers) {
-        break;
-      }
-      raftVolatileState.setHighestCommittedEntryIndex(submittedEntry.getKey());
-    }
-  }
-
-  @Override
   public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
     Entry newEntry = raftCommandConverter.convert(raftCommand);
     int newEntryIndex = raftLog.appendEntry(newEntry);
@@ -198,6 +125,79 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
     private int numberOfSuccessfulServers() {
       return successResponseServers.size();
+    }
+  }
+
+  @Override
+  public void run() {
+    sendHeartbeatToAll();
+    while (shouldContinueExecuting) {
+      checkSubmittedEntryState();
+      if (raftVolatileState.committedEntriesNeedApplying()) {
+        applyCommittedEntries();
+      }
+      checkAppliedEntriesAndRespondToClients();
+      if (logHasUncommittedEntries()) {
+        sendAppendEntriesToAll(raftLog.getLastEntryIndex());
+      } else {
+        sendHeartbeatToAll();
+      }
+    }
+
+    RaftLeaderException exception = new RaftLeaderException("Another leader was discovered");
+    for (var submittedEntryState : submittedEntryStateMap.values()) {
+      submittedEntryState.clientSubmitFuture().setException(exception);
+    }
+    // TODO: clean unresolved futures
+  }
+
+  /**
+   * Commits {@link Entry}s that have been submitted by clients if a majority of success responses
+   * has been received.
+   */
+  private void checkSubmittedEntryState() {
+    for (var submittedEntry : submittedEntryStateMap.entrySet()) {
+      int numServersReplicated = 1 + submittedEntry.getValue().numberOfSuccessfulServers();
+      double halfOfServers = raftClusterConfiguration.clusterServers().size() / 2.0;
+      if (numServersReplicated <= halfOfServers) {
+        break;
+      }
+      raftVolatileState.setHighestCommittedEntryIndex(submittedEntry.getKey());
+    }
+  }
+
+  /** Applies any committed entries that have not been applied yet. */
+  private void applyCommittedEntries() {
+    int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
+    int highestCommittedIndex = raftVolatileState.getHighestCommittedEntryIndex();
+    for (int nextIndex = highestAppliedIndex + 1; nextIndex <= highestCommittedIndex; nextIndex++) {
+      try {
+        raftCommandTopic.notifyObservers(
+            raftCommandConverter.reverse().convert(raftLog.getEntryAtIndex(nextIndex)));
+        raftVolatileState.setHighestAppliedEntryIndex(nextIndex);
+      } catch (Exception e) {
+        logger.atSevere().withCause(e).log("Failed to apply command at index [%d].", nextIndex);
+        // TODO: terminate server if unrecoverable?
+        break;
+      }
+    }
+  }
+
+  private boolean logHasUncommittedEntries() {
+    return raftVolatileState.getHighestCommittedEntryIndex() < raftLog.getLastEntryIndex();
+  }
+
+  /**
+   * Responds to clients who submitted a {@link RaftCommand} and are waiting for it to be applied.
+   */
+  private void checkAppliedEntriesAndRespondToClients() {
+    int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
+    for (var submittedEntry : submittedEntryStateMap.entrySet()) {
+      if (submittedEntry.getKey() > highestAppliedIndex) {
+        break;
+      }
+      submittedEntry.getValue().clientSubmitFuture().set(null);
+      submittedEntryStateMap.remove(submittedEntry.getKey());
     }
   }
 
@@ -259,6 +259,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     return createBaseAppendEntriesRequest(followerNextIndex - 1).build();
   }
 
+  /** Sends an {@link AppendEntriesRequest} to a {@link RaftServerId}. */
   private void sendAppendEntriesToServer(
       RaftServerId raftServerId,
       AppendEntriesRequest request,
