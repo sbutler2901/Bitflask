@@ -13,12 +13,11 @@ import dev.sbutler.bitflask.raft.exceptions.RaftLeaderException;
 import dev.sbutler.bitflask.raft.exceptions.RaftUnknownLeaderException;
 import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
+import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -42,8 +41,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       new ConcurrentHashMap<>();
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersMatchIndex =
       new ConcurrentHashMap<>();
-  private final ConcurrentNavigableMap<Integer, SubmittedEntryState> submittedEntryStateMap =
-      new ConcurrentSkipListMap<>();
+  private final NavigableSet<WaitingSubmission> waitingSubmissions = new ConcurrentSkipListSet<>();
 
   private volatile boolean shouldContinueExecuting = true;
 
@@ -108,26 +106,17 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     Entry newEntry = raftCommandConverter.convert(raftCommand);
     int newEntryIndex = raftLog.appendEntry(newEntry);
     SettableFuture<Void> clientSubmitFuture = SettableFuture.create();
-    submittedEntryStateMap.put(
-        newEntryIndex,
-        new SubmittedEntryState(newEntry, new CopyOnWriteArrayList<>(), clientSubmitFuture));
+    waitingSubmissions.add(new WaitingSubmission(newEntryIndex, clientSubmitFuture));
     return new RaftSubmitResults.Success(clientSubmitFuture);
   }
 
-  /**
-   * Holds state relevant to an {@link Entry} that has been submitted by a client and waiting to be
-   * committed.
-   */
-  private record SubmittedEntryState(
-      Entry entry,
-      CopyOnWriteArrayList<RaftServerId> successResponseServers,
-      SettableFuture<Void> clientSubmitFuture) {
-    private void successfulServerAddIfAbsent(RaftServerId raftServerId) {
-      successResponseServers.addIfAbsent(raftServerId);
-    }
+  /** Holds a submission future that cannot be resolved until the associated entry is applied. */
+  private record WaitingSubmission(int entryIndex, SettableFuture<Void> submissionFuture)
+      implements Comparable<WaitingSubmission> {
 
-    private int numberOfSuccessfulServers() {
-      return successResponseServers.size();
+    @Override
+    public int compareTo(WaitingSubmission waitingSubmission) {
+      return Integer.compare(this.entryIndex(), waitingSubmission.entryIndex());
     }
   }
 
@@ -144,9 +133,9 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     }
 
     RaftLeaderException exception = new RaftLeaderException("Another leader was discovered");
-    for (var submittedEntryState : submittedEntryStateMap.values()) {
-      submittedEntryState.clientSubmitFuture().setException(exception);
-    }
+    waitingSubmissions.stream()
+        .map(WaitingSubmission::submissionFuture)
+        .forEach(future -> future.setException(exception));
     // TODO: clean unresolved futures
   }
 
@@ -234,12 +223,12 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
    */
   private void checkAppliedEntriesAndRespondToClients() {
     int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
-    for (var submittedEntry : submittedEntryStateMap.entrySet()) {
-      if (submittedEntry.getKey() > highestAppliedIndex) {
+    for (var waitingSubmission : waitingSubmissions) {
+      if (waitingSubmission.entryIndex() > highestAppliedIndex) {
         break;
       }
-      submittedEntry.getValue().clientSubmitFuture().set(null);
-      submittedEntryStateMap.remove(submittedEntry.getKey());
+      waitingSubmission.submissionFuture().set(null);
+      waitingSubmissions.remove(waitingSubmission);
     }
   }
 
@@ -291,6 +280,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       Optional<Integer> lastEntryIndex) {
     RaftClusterLeaderRpcClient leaderRpcClient =
         raftClusterRpcChannelManager.createRaftClusterLeaderRpcClient();
+    // TODO: track futures for manual cancellation
     ListenableFuture<AppendEntriesResponse> responseFuture =
         leaderRpcClient.appendEntries(raftServerId, request);
 
@@ -324,13 +314,6 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
               followersMatchIndex
                   .get(raftServerId)
                   .getAndUpdate(prev -> Math.max(prev, lastEntryIndex.get()));
-
-              for (var submittedEntry : submittedEntryStateMap.entrySet()) {
-                if (submittedEntry.getKey() > lastEntryIndex.get()) {
-                  break;
-                }
-                submittedEntry.getValue().successfulServerAddIfAbsent(raftServerId);
-              }
             }
           }
 
