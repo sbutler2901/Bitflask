@@ -31,6 +31,34 @@
           </set>
         </option>
       </GradleProjectSettings>
+      <GradleProjectSettings>
+        <compositeConfiguration>
+          <compositeBuild compositeDefinitionSource="SCRIPT">
+            <builds>
+              <build path="$PROJECT_DIR$/buildSrc" name="buildSrc">
+                <projects>
+                  <project path="$PROJECT_DIR$/buildSrc" />
+                </projects>
+              </build>
+            </builds>
+          </compositeBuild>
+        </compositeConfiguration>
+        <option name="delegatedBuild" value="false" />
+        <option name="testRunner" value="PLATFORM" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/buildSrc" />
+            <option value="$PROJECT_DIR$/client" />
+            <option value="$PROJECT_DIR$/common" />
+            <option value="$PROJECT_DIR$/raft" />
+            <option value="$PROJECT_DIR$/resp" />
+            <option value="$PROJECT_DIR$/server" />
+            <option value="$PROJECT_DIR$/storage" />
+          </set>
+        </option>
+      </GradleProjectSettings>
     </option>
   </component>
 </project>

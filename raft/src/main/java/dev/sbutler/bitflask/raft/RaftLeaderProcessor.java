@@ -13,6 +13,7 @@ import dev.sbutler.bitflask.raft.exceptions.RaftLeaderException;
 import dev.sbutler.bitflask.raft.exceptions.RaftUnknownLeaderException;
 import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
@@ -101,7 +102,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   @Override
   public void run() {
-    sendHeartbeats();
+    sendHeartbeatToAll();
     while (shouldContinueExecuting) {
       checkSubmittedEntryState();
       if (raftVolatileState.committedEntriesNeedApplying()) {
@@ -109,9 +110,9 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       }
       checkAppliedEntriesAndRespondToClients();
       if (logHasUncommittedEntries()) {
-        commitEntries();
+        sendAppendEntriesToAll(raftLog.getLastEntryIndex());
       } else {
-        sendHeartbeats();
+        sendHeartbeatToAll();
       }
     }
 
@@ -120,14 +121,6 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       submittedEntryState.clientSubmitFuture().setException(exception);
     }
     // TODO: clean unresolved futures
-  }
-
-  private void commitEntries() {
-    // TODO: commit entries in log within current term
-  }
-
-  private void sendHeartbeats() {
-    // TODO: send heartbeats to all servers.
   }
 
   private boolean logHasUncommittedEntries() {
@@ -208,22 +201,69 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     }
   }
 
-  private void sentAppendEntriesToAll(
-      AppendEntriesRequest request, int followerNextIndex, int lastEntryIndex) {
+  /**
+   * Sends an {@link AppendEntriesRequest} with {@link Entry}s ranging from the follower's {@code
+   * nextIndex} to the {@code lastEntryIndex} (both-inclusive) to all followers.
+   */
+  private void sendAppendEntriesToAll(int lastEntryIndex) {
     raftClusterConfiguration
         .getOtherServersInCluster()
         .keySet()
         .forEach(
-            raftServerId ->
-                sendAppendEntriesToServer(
-                    raftServerId, request, followerNextIndex, lastEntryIndex));
+            raftServerId -> {
+              int followerNextIndex = followersNextIndex.get(raftServerId).get();
+              AppendEntriesRequest request =
+                  createAppendEntriesRequest(followerNextIndex, lastEntryIndex);
+              sendAppendEntriesToServer(
+                  raftServerId, request, followerNextIndex, Optional.of(lastEntryIndex));
+            });
+  }
+
+  /**
+   * Returns an {@link AppendEntriesRequest} based on the provided follower.
+   *
+   * <p>The request's {@code prevLogIndex} and {@code prevLogTerm} will be the entry preceding the
+   * follower's {@code nextIndex}
+   *
+   * <p>The {@link Entry}s included will be from the follower's {@code nextIndex} to the provided
+   * {@code lastEntryIndex} (both inclusive).
+   */
+  private AppendEntriesRequest createAppendEntriesRequest(
+      int followerNextIndex, int lastEntryIndex) {
+    ImmutableList<Entry> entries =
+        raftLog.getEntriesFromIndex(followerNextIndex, 1 + lastEntryIndex);
+    return createBaseAppendEntriesRequest(followerNextIndex - 1).addAllEntries(entries).build();
+  }
+
+  /** Sends an {@link AppendEntriesRequest} with no {@link Entry}s to all followers. */
+  private void sendHeartbeatToAll() {
+    raftClusterConfiguration
+        .getOtherServersInCluster()
+        .keySet()
+        .forEach(
+            raftServerId -> {
+              int followerNextIndex = followersNextIndex.get(raftServerId).get();
+              AppendEntriesRequest request = createHeartbeatAppendEntriesRequest(followerNextIndex);
+              sendAppendEntriesToServer(
+                  raftServerId, request, followerNextIndex, /* lastEntryIndex= */ Optional.empty());
+            });
+  }
+
+  /**
+   * Returns an {@link AppendEntriesRequest} based on the provided follower with no {@link Entry}s.
+   *
+   * <p>The request's {@code prevLogIndex} and {@code prevLogTerm} will be the entry preceding the
+   * follower's {@code nextIndex}
+   */
+  private AppendEntriesRequest createHeartbeatAppendEntriesRequest(int followerNextIndex) {
+    return createBaseAppendEntriesRequest(followerNextIndex - 1).build();
   }
 
   private void sendAppendEntriesToServer(
       RaftServerId raftServerId,
       AppendEntriesRequest request,
       int followerNextIndex,
-      int lastEntryIndex) {
+      Optional<Integer> lastEntryIndex) {
     RaftClusterLeaderRpcClient leaderRpcClient =
         raftClusterRpcChannelManager.createRaftClusterLeaderRpcClient();
     ListenableFuture<AppendEntriesResponse> responseFuture =
@@ -237,18 +277,24 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
             if (!result.getSuccess() && result.getTerm() > raftPersistentState.getCurrentTerm()) {
               updateTermAndTransitionToFollower(result.getTerm());
             } else if (!result.getSuccess()) {
-              logger.atInfo().log(
-                  "Follower [%s] did not accept lastEntryIndex [%d] with prevLogIndex [%d].",
-                  raftServerId, lastEntryIndex, followerNextIndex);
+              lastEntryIndex.ifPresentOrElse(
+                  index ->
+                      logger.atInfo().log(
+                          "Follower [%s] did not accept AppendEntries request with lastEntryIndex [%d] and followerNextIndex [%d].",
+                          raftServerId, index, followerNextIndex),
+                  () ->
+                      logger.atInfo().log(
+                          "Follower [%s] did not accept heartbeat AppendEntries request with followerNextIndex [%d]",
+                          raftServerId, followerNextIndex));
               followersNextIndex
                   .get(raftServerId)
                   .compareAndExchange(followerNextIndex, followerNextIndex - 1);
-            } else {
+            } else if (lastEntryIndex.isPresent()) {
               logger.atInfo().log(
                   "Follower [%s] accepted lastEntryIndex [%d] with prevLogIndex [%d].",
                   raftServerId, lastEntryIndex, followerNextIndex);
               for (var submittedEntry : submittedEntryStateMap.entrySet()) {
-                if (submittedEntry.getKey() > lastEntryIndex) {
+                if (submittedEntry.getKey() > lastEntryIndex.get()) {
                   break;
                 }
                 submittedEntry.getValue().successfulServerAddIfAbsent(raftServerId);
@@ -258,41 +304,18 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
           @Override
           public void onFailure(Throwable t) {
-            logger.atSevere().withCause(t).log(
-                "Follower [%s] AppendEntries request failed for Entry at index [%d] with prevLogIndex [%d]",
-                raftServerId, lastEntryIndex, followerNextIndex);
+            lastEntryIndex.ifPresentOrElse(
+                index ->
+                    logger.atSevere().withCause(t).log(
+                        "AppendEntries request to Follower [%s] with lastEntryIndex [%d] and followerNextIndex [%d] failed",
+                        raftServerId, index, followerNextIndex),
+                () ->
+                    logger.atSevere().withCause(t).log(
+                        "Heartbeat AppendEntries request to Follower [%s] with followerNextIndex [%d] failed",
+                        raftServerId, followerNextIndex));
           }
         },
         executorService);
-  }
-
-  /**
-   * Returns an {@link AppendEntriesRequest} based on the provided follower.
-   *
-   * <p>The request's {@code prevLogIndex} and {@code prevLogTerm} will be the entry preceding the
-   * follower's {@code nextIndex}
-   *
-   * <p>The {@link Entry}s included will be from the follower's {@code nextIndex} to the provided
-   * {@code lastEntryIndex} (both inclusive).
-   */
-  private AppendEntriesRequest getAppendEntriesRequestForFollower(
-      RaftServerId raftServerId, int lastEntryIndex) {
-    int followerNextIndex = followersNextIndex.get(raftServerId).get();
-    ImmutableList<Entry> entries =
-        raftLog.getEntriesFromIndex(followerNextIndex, 1 + lastEntryIndex);
-    return createBaseAppendEntriesRequest(followerNextIndex - 1).addAllEntries(entries).build();
-  }
-
-  /**
-   * Returns an {@link AppendEntriesRequest} based on the provided follower with no {@link Entry}s.
-   *
-   * <p>The request's {@code prevLogIndex} and {@code prevLogTerm} will be the entry preceding the
-   * follower's {@code nextIndex}
-   */
-  private AppendEntriesRequest getHeartbeatAppendEntriesRequestForFollower(
-      RaftServerId raftServerId) {
-    int followerNextIndex = followersNextIndex.get(raftServerId).get();
-    return createBaseAppendEntriesRequest(followerNextIndex - 1).build();
   }
 
   /**
