@@ -1,12 +1,15 @@
 package dev.sbutler.bitflask.raft;
 
-import com.google.inject.AbstractModule;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.Service;
+import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import dev.sbutler.bitflask.common.concurrency.VirtualThreadConcurrencyModule;
+import dev.sbutler.bitflask.common.guice.RootModule;
 
 /** Module for using the Raft Consensus protocol. */
-public class RaftModule extends AbstractModule {
+public class RaftModule extends RootModule {
 
   private final RaftClusterConfiguration raftClusterConfiguration;
   private final boolean standaloneMode;
@@ -32,6 +35,14 @@ public class RaftModule extends AbstractModule {
     if (standaloneMode) {
       install(new VirtualThreadConcurrencyModule());
     }
+  }
+
+  @Override
+  public ImmutableSet<Service> getServices(Injector injector) {
+    return ImmutableSet.of(
+        injector.getInstance(RaftClusterRpcChannelManager.class),
+        injector.getInstance(RaftEntryApplier.class),
+        injector.getInstance(RaftServer.class));
   }
 
   @Provides
