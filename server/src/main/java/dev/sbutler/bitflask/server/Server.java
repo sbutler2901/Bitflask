@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.server;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 
 import com.google.common.collect.ImmutableSet;
@@ -8,16 +9,16 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.Service;
 import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.common.concurrency.VirtualThreadConcurrencyModule;
 import dev.sbutler.bitflask.common.configuration.ConfigurationsBuilder;
+import dev.sbutler.bitflask.common.guice.RootModule;
 import dev.sbutler.bitflask.server.configuration.ConfigurationsInitializer;
 import dev.sbutler.bitflask.server.configuration.ConfigurationsInitializer.InitializedConfigurations;
 import dev.sbutler.bitflask.server.configuration.ServerConfigurations;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
-import dev.sbutler.bitflask.server.network_service.NetworkService;
-import dev.sbutler.bitflask.storage.StorageService;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -39,8 +40,7 @@ public final class Server {
 
   private static Instant executionStarted;
 
-  private Server() {
-  }
+  private Server() {}
 
   public static void main(String[] args) {
     try {
@@ -48,20 +48,26 @@ public final class Server {
       InitializedConfigurations initializedConfigurations = initializeConfigurations(args);
       printConfigInfo(initializedConfigurations);
 
-      Injector injector = Guice.createInjector(
-          ImmutableSet.of(
-              new VirtualThreadConcurrencyModule(),
-              new ServerModule(initializedConfigurations.serverConfigurations()),
-              new StorageServiceModule(initializedConfigurations.storageConfigurations())));
-
       ServerSocketChannel serverSocketChannel =
           createServerSocketChannel(initializedConfigurations.serverConfigurations());
-      NetworkService.Factory networkServiceFactory =
-          injector.getInstance(NetworkService.Factory.class);
 
-      ImmutableSet<Service> services = ImmutableSet.of(
-          injector.getInstance(StorageService.class),
-          networkServiceFactory.create(serverSocketChannel));
+      ImmutableSet<RootModule> rootModules =
+          ImmutableSet.of(
+              new ServerModule(
+                  initializedConfigurations.serverConfigurations(), serverSocketChannel),
+              new StorageServiceModule(initializedConfigurations.storageConfigurations()));
+      ImmutableSet<AbstractModule> modules =
+          ImmutableSet.<AbstractModule>builder()
+              .add(new VirtualThreadConcurrencyModule())
+              .addAll(rootModules)
+              .build();
+
+      Injector injector = Guice.createInjector(modules);
+
+      ImmutableSet<Service> services =
+          rootModules.stream()
+              .flatMap(module -> module.getServices(injector).stream())
+              .collect(toImmutableSet());
 
       ServiceManager serviceManager = new ServiceManager(services);
       ListeningExecutorService listeningExecutorService =
@@ -84,8 +90,8 @@ public final class Server {
     return serverSocketChannel;
   }
 
-  private static void addServiceManagerListener(ServiceManager serviceManager,
-      ListeningExecutorService listeningExecutorService) {
+  private static void addServiceManagerListener(
+      ServiceManager serviceManager, ListeningExecutorService listeningExecutorService) {
     serviceManager.addListener(
         new Listener() {
           public void stopped() {
@@ -98,29 +104,35 @@ public final class Server {
           }
 
           public void failure(@Nonnull Service service) {
-            logger.atSevere().withCause(service.failureCause())
-                .log("[%s] failed.", service.getClass());
+            logger.atSevere().withCause(service.failureCause()).log(
+                "[%s] failed.", service.getClass());
             serviceManager.stopAsync();
           }
-        }, listeningExecutorService);
+        },
+        listeningExecutorService);
   }
 
   @SuppressWarnings("UnstableApiUsage")
-  private static void registerShutdownHook(ServiceManager serviceManager,
-      ListeningExecutorService listeningExecutorService) {
-    Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(() -> {
-      System.out.println("Starting Server shutdown hook");
-      // Give the services 5 seconds to stop to ensure that we are responsive to shut down
-      // requests.
-      try {
-        serviceManager.stopAsync().awaitStopped(5, TimeUnit.SECONDS);
-      } catch (TimeoutException timeout) {
-        // stopping timed out
-        System.err.println("ServiceManager timed out while stopping" + timeout);
-      }
-      shutdownAndAwaitTermination(listeningExecutorService, Duration.ofSeconds(5));
-      System.out.println("Shutdown hook completed");
-    }));
+  private static void registerShutdownHook(
+      ServiceManager serviceManager, ListeningExecutorService listeningExecutorService) {
+    Runtime.getRuntime()
+        .addShutdownHook(
+            Thread.ofVirtual()
+                .unstarted(
+                    () -> {
+                      System.out.println("Starting Server shutdown hook");
+                      // Give the services 5 seconds to stop to ensure that we are responsive to
+                      // shut down
+                      // requests.
+                      try {
+                        serviceManager.stopAsync().awaitStopped(5, TimeUnit.SECONDS);
+                      } catch (TimeoutException timeout) {
+                        // stopping timed out
+                        System.err.println("ServiceManager timed out while stopping" + timeout);
+                      }
+                      shutdownAndAwaitTermination(listeningExecutorService, Duration.ofSeconds(5));
+                      System.out.println("Shutdown hook completed");
+                    }));
   }
 
   private static InitializedConfigurations initializeConfigurations(String[] args) {
@@ -134,8 +146,8 @@ public final class Server {
 
   private static void printConfigInfo(InitializedConfigurations initializedConfigurations) {
     logger.atInfo().log("Using java version [%s]", System.getProperty("java.version"));
-    logger.atInfo()
-        .log("Runtime processors available [%d]", Runtime.getRuntime().availableProcessors());
+    logger.atInfo().log(
+        "Runtime processors available [%d]", Runtime.getRuntime().availableProcessors());
 
     logger.atInfo().log(initializedConfigurations.serverConfigurations().toString());
     logger.atInfo().log(initializedConfigurations.storageConfigurations().toString());
