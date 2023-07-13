@@ -139,6 +139,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     // TODO: clean unresolved futures
   }
 
+  /** Appends {@link Entry}s to any follower who is behind the log; otherwise, a heartbeat. */
   private void appendEntriesOrSendHeartbeat() {
     int lastEntryIndex = raftLog.getLastEntryIndex();
     raftClusterConfiguration
@@ -164,6 +165,10 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
             });
   }
 
+  /**
+   * Updates the current commit index to the latest log entry that has been replicated to a majority
+   * of servers.
+   */
   private void checkAndUpdateCommitIndex() {
     int currentCommitIndex = raftVolatileState.getHighestCommittedEntryIndex();
     int currentTerm = raftPersistentState.getCurrentTerm();
@@ -178,6 +183,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     }
   }
 
+  /** Use to determine if an entry has been replicated to a majority of servers. */
   private boolean entryIndexHasMajorityMatch(int entryIndex) {
     double halfOfServers = raftClusterConfiguration.clusterServers().size() / 2.0;
     long numServersWithEntryWithinMatch =
