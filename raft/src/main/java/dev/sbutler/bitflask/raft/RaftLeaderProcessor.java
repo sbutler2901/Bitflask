@@ -126,9 +126,6 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
     while (shouldContinueExecuting) {
       appendEntriesOrSendHeartbeat();
       checkAndUpdateCommitIndex();
-      // TODO: probably should be ran in background thread to prevent election timeout. Followers
-      // should do this too.
-      applyCommittedEntries();
       checkAppliedEntriesAndRespondToClients();
     }
 
@@ -194,34 +191,6 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
                 .filter(matchIndex -> matchIndex >= entryIndex)
                 .count();
     return numServersWithEntryWithinMatch > halfOfServers;
-  }
-
-  /** Applies any committed entries that have not been applied yet. */
-  private void applyCommittedEntries() {
-    int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
-    int highestCommittedIndex = raftVolatileState.getHighestCommittedEntryIndex();
-    if (highestCommittedIndex < highestAppliedIndex) {
-      throw new RaftLeaderException(
-          "The highest applied index is greater than the highest committed index!");
-    } else if (highestCommittedIndex == highestAppliedIndex) {
-      return;
-    }
-
-    for (int nextIndexToApply = highestAppliedIndex + 1;
-        nextIndexToApply <= highestCommittedIndex;
-        nextIndexToApply++) {
-      try {
-        raftVolatileState.setHighestAppliedEntryIndex(nextIndexToApply);
-        raftCommandTopic.notifyObservers(
-            raftCommandConverter.reverse().convert(raftLog.getEntryAtIndex(nextIndexToApply)));
-      } catch (Exception e) {
-        raftVolatileState.setHighestAppliedEntryIndex(nextIndexToApply - 1);
-        logger.atSevere().withCause(e).log(
-            "Failed to apply command at index [%d].", nextIndexToApply);
-        // TODO: terminate server if unrecoverable?
-        break;
-      }
-    }
   }
 
   /**

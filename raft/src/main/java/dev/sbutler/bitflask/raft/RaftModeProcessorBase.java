@@ -152,7 +152,6 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
         raftVolatileState.setHighestCommittedEntryIndex(
             Math.min(
                 request.getLeaderCommit(), raftPersistentState.getRaftLog().getLastEntryIndex()));
-        // TODO: apply any newly committed entries
       }
     }
     response.setSuccess(appendSuccessful);
