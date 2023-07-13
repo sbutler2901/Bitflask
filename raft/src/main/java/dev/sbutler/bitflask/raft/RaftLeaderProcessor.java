@@ -15,6 +15,7 @@ import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
 import java.util.NavigableSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -34,7 +35,6 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   private final RaftLog raftLog;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
   private final RaftCommandConverter raftCommandConverter;
-  private final RaftCommandTopic raftCommandTopic;
   private final RaftClusterConfiguration raftClusterConfiguration;
 
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersNextIndex =
@@ -42,6 +42,8 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersMatchIndex =
       new ConcurrentHashMap<>();
   private final NavigableSet<WaitingSubmission> waitingSubmissions = new ConcurrentSkipListSet<>();
+  private final Set<ListenableFuture<AppendEntriesResponse>> responseFutures =
+      ConcurrentHashMap.newKeySet();
 
   private volatile boolean shouldContinueExecuting = true;
 
@@ -54,14 +56,12 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       RaftLog raftLog,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager,
       RaftCommandConverter raftCommandConverter,
-      RaftCommandTopic raftCommandTopic,
       RaftClusterConfiguration raftClusterConfiguration) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
     this.executorService = executorService;
     this.raftLog = raftLog;
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
     this.raftCommandConverter = raftCommandConverter;
-    this.raftCommandTopic = raftCommandTopic;
     this.raftClusterConfiguration = raftClusterConfiguration;
 
     int nextIndex = raftLog.getLastEntryIndex() + 1;
@@ -128,12 +128,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       checkAndUpdateCommitIndex();
       checkAppliedEntriesAndRespondToClients();
     }
-
-    RaftLeaderException exception = new RaftLeaderException("Another leader was discovered");
-    waitingSubmissions.stream()
-        .map(WaitingSubmission::submissionFuture)
-        .forEach(future -> future.setException(exception));
-    // TODO: clean unresolved futures
+    cleanupBeforeTerminating();
   }
 
   /** Appends {@link Entry}s to any follower who is behind the log; otherwise, a heartbeat. */
@@ -255,15 +250,16 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       Optional<Integer> lastEntryIndex) {
     RaftClusterLeaderRpcClient leaderRpcClient =
         raftClusterRpcChannelManager.createRaftClusterLeaderRpcClient();
-    // TODO: track futures for manual cancellation
     ListenableFuture<AppendEntriesResponse> responseFuture =
         leaderRpcClient.appendEntries(raftServerId, request);
+    responseFutures.add(responseFuture);
 
     Futures.addCallback(
         responseFuture,
         new FutureCallback<>() {
           @Override
           public void onSuccess(AppendEntriesResponse result) {
+            responseFutures.remove(responseFuture);
             if (!result.getSuccess() && result.getTerm() > raftPersistentState.getCurrentTerm()) {
               updateTermAndTransitionToFollower(result.getTerm());
             } else if (!result.getSuccess()) {
@@ -294,6 +290,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
           @Override
           public void onFailure(Throwable t) {
+            responseFutures.remove(responseFuture);
             lastEntryIndex.ifPresentOrElse(
                 index ->
                     logger.atSevere().withCause(t).log(
@@ -327,5 +324,20 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
         .setLeaderId(leaderId)
         .setPrevLogTerm(raftLog.getEntryAtIndex(prevLogIndex).getTerm())
         .setPrevLogIndex(prevLogIndex);
+  }
+
+  /**
+   * Cleans up any unresolved client or {@link AppendEntriesResponse} futures before terminating.
+   */
+  private void cleanupBeforeTerminating() {
+    RaftLeaderException exception = new RaftLeaderException("Another leader was discovered");
+    for (var waitingSubmission : waitingSubmissions) {
+      waitingSubmission.submissionFuture().setException(exception);
+      waitingSubmissions.remove(waitingSubmission);
+    }
+    for (var requestFuture : responseFutures) {
+      requestFuture.cancel(true);
+      responseFutures.remove(requestFuture);
+    }
   }
 }
