@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /** Manages Raft's log of entries. */
+// TODO: implement persisting log
 @Singleton
 final class RaftLog {
 
