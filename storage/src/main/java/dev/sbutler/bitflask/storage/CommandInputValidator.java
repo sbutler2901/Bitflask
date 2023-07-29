@@ -3,12 +3,12 @@ package dev.sbutler.bitflask.storage;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class InputValidator {
+final class CommandInputValidator {
 
   static final int KEY_MAX_SIZE = 255;
   static final int VALUE_MAX_SIZE = 255;
 
-  private InputValidator() {}
+  private CommandInputValidator() {}
 
   public static void validateKey(String key) {
     checkNotNull(key);

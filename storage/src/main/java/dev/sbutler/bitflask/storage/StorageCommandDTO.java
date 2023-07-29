@@ -15,7 +15,7 @@ public sealed interface StorageCommandDTO {
   record ReadDTO(String key) implements StorageCommandDTO {
 
     public ReadDTO {
-      InputValidator.validateKey(key);
+      CommandInputValidator.validateKey(key);
     }
   }
 
@@ -26,8 +26,8 @@ public sealed interface StorageCommandDTO {
   record WriteDTO(String key, String value) implements StorageCommandDTO {
 
     public WriteDTO {
-      InputValidator.validateKey(key);
-      InputValidator.validateValue(value);
+      CommandInputValidator.validateKey(key);
+      CommandInputValidator.validateValue(value);
     }
   }
 
@@ -35,7 +35,7 @@ public sealed interface StorageCommandDTO {
   record DeleteDTO(String key) implements StorageCommandDTO {
 
     public DeleteDTO {
-      InputValidator.validateKey(key);
+      CommandInputValidator.validateKey(key);
     }
   }
 }
