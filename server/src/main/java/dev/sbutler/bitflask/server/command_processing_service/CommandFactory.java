@@ -1,23 +1,18 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
+import dev.sbutler.bitflask.storage.StorageService;
 import jakarta.inject.Inject;
 import java.util.List;
 
 /** Handles creating {@link ServerCommand}s. */
 final class CommandFactory {
 
-  private final ListeningExecutorService listeningExecutorService;
-  private final StorageCommandDispatcher storageCommandDispatcher;
+  private final StorageService storageService;
 
   @Inject
-  CommandFactory(
-      ListeningExecutorService listeningExecutorService,
-      StorageCommandDispatcher storageCommandDispatcher) {
-    this.listeningExecutorService = listeningExecutorService;
-    this.storageCommandDispatcher = storageCommandDispatcher;
+  CommandFactory(StorageService storageService) {
+    this.storageService = storageService;
   }
 
   /** */
@@ -40,20 +35,20 @@ final class CommandFactory {
   }
 
   private GetCommand createGetCommand(String key) {
-    return new GetCommand(listeningExecutorService, storageCommandDispatcher, key);
+    return new GetCommand(storageService, key);
   }
 
   private SetCommand createSetCommand(String key, String value) {
-    return new SetCommand(listeningExecutorService, storageCommandDispatcher, key, value);
+    return new SetCommand(storageService, key, value);
   }
 
   private DeleteCommand createDeleteCommand(String key) {
-    return new DeleteCommand(listeningExecutorService, storageCommandDispatcher, key);
+    return new DeleteCommand(storageService, key);
   }
 
   private static boolean isValidCommandArgs(CommandType commandType, List<String> args) {
     return switch (commandType) {
-      case PING -> args.size() == 0;
+      case PING -> args.isEmpty();
       case GET, DEL -> args.size() == 1;
       case SET -> args.size() == 2;
     };

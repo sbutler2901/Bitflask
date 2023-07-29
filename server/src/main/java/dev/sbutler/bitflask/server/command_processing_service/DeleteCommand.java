@@ -1,41 +1,34 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.flogger.FluentLogger;
-import com.google.common.util.concurrent.FluentFuture;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.StorageResponse;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
+import dev.sbutler.bitflask.storage.StorageService;
 
 /** Asynchronously submits a delete request to the storage engine and processes the results. */
 public class DeleteCommand implements ServerCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ListeningExecutorService listeningExecutorService;
-  private final StorageCommandDispatcher storageCommandDispatcher;
+  private final StorageService storageService;
   private final String key;
 
-  public DeleteCommand(
-      ListeningExecutorService listeningExecutorService,
-      StorageCommandDispatcher storageCommandDispatcher,
-      String key) {
-    this.listeningExecutorService = listeningExecutorService;
-    this.storageCommandDispatcher = storageCommandDispatcher;
+  public DeleteCommand(StorageService storageService, String key) {
+    this.storageService = storageService;
     this.key = key;
   }
 
   @Override
-  public ListenableFuture<String> execute() {
+  public String execute() {
     StorageCommandDTO storageCommandDTO = new DeleteDTO(key);
-    ListenableFuture<StorageResponse> storageResponseFuture =
-        storageCommandDispatcher.put(storageCommandDTO);
-
-    return FluentFuture.from(storageResponseFuture)
-        .transform(this::transformStorageResponse, listeningExecutorService)
-        .catching(Throwable.class, this::catchStorageFailure, listeningExecutorService);
+    try {
+      return transformStorageResponse(storageService.processCommand(storageCommandDTO));
+    } catch (Exception e) {
+      logger.atWarning().withCause(e).log(
+          "StorageService response threw an unexpected error while deleting [%s]", key);
+      return String.format("Unexpected failure deleting [%s]", key);
+    }
   }
 
   private String transformStorageResponse(StorageResponse storageResponse) {
@@ -46,11 +39,5 @@ public class DeleteCommand implements ServerCommand {
         yield String.format("Failed to delete [%s]", key);
       }
     };
-  }
-
-  private String catchStorageFailure(Throwable t) {
-    logger.atWarning().withCause(t).log(
-        "StorageService response threw an unexpected error while deleting [%s]", key);
-    return String.format("Unexpected failure deleting [%s]", key);
   }
 }

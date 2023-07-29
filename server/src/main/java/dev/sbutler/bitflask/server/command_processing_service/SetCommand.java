@@ -1,44 +1,36 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.flogger.FluentLogger;
-import com.google.common.util.concurrent.FluentFuture;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.StorageResponse;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
+import dev.sbutler.bitflask.storage.StorageService;
 
 /** Asynchronously submits a write request to the storage engine and processes the results. */
 class SetCommand implements ServerCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ListeningExecutorService listeningExecutorService;
-  private final StorageCommandDispatcher storageCommandDispatcher;
+  private final StorageService storageService;
   private final String key;
   private final String value;
 
-  public SetCommand(
-      ListeningExecutorService listeningExecutorService,
-      StorageCommandDispatcher storageCommandDispatcher,
-      String key,
-      String value) {
-    this.listeningExecutorService = listeningExecutorService;
-    this.storageCommandDispatcher = storageCommandDispatcher;
+  public SetCommand(StorageService storageService, String key, String value) {
+    this.storageService = storageService;
     this.key = key;
     this.value = value;
   }
 
   @Override
-  public ListenableFuture<String> execute() {
+  public String execute() {
     StorageCommandDTO storageCommandDTO = new WriteDTO(key, value);
-    ListenableFuture<StorageResponse> storageResponseFuture =
-        storageCommandDispatcher.put(storageCommandDTO);
-
-    return FluentFuture.from(storageResponseFuture)
-        .transform(this::transformStorageResponse, listeningExecutorService)
-        .catching(Throwable.class, this::catchStorageFailure, listeningExecutorService);
+    try {
+      return transformStorageResponse(storageService.processCommand(storageCommandDTO));
+    } catch (Exception e) {
+      logger.atWarning().withCause(e).log(
+          "StorageService response threw an unexpected error while writing [%s]:[%s]", key, value);
+      return String.format("Unexpected failure writing [%s]:[%s]", key, value);
+    }
   }
 
   private String transformStorageResponse(StorageResponse storageResponse) {
@@ -50,11 +42,5 @@ class SetCommand implements ServerCommand {
         yield String.format("Failed to write [%s]:[%s]", key, value);
       }
     };
-  }
-
-  private String catchStorageFailure(Throwable e) {
-    logger.atWarning().withCause(e).log(
-        "StorageService response threw an unexpected error while writing [%s]:[%s]", key, value);
-    return String.format("Unexpected failure writing [%s]:[%s]", key, value);
   }
 }
