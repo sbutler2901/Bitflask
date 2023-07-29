@@ -4,14 +4,12 @@ import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
+import dev.sbutler.bitflask.storage.StorageCommandDTO;
+import dev.sbutler.bitflask.storage.StorageCommandDTO.ReadDTO;
+import dev.sbutler.bitflask.storage.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 
-/**
- * Asynchronously submits a read request to the storage engine and processes the results.
- */
+/** Asynchronously submits a read request to the storage engine and processes the results. */
 class GetCommand implements ServerCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -20,7 +18,8 @@ class GetCommand implements ServerCommand {
   private final StorageCommandDispatcher storageCommandDispatcher;
   private final String key;
 
-  public GetCommand(ListeningExecutorService listeningExecutorService,
+  public GetCommand(
+      ListeningExecutorService listeningExecutorService,
       StorageCommandDispatcher storageCommandDispatcher,
       String key) {
     this.listeningExecutorService = listeningExecutorService;
@@ -28,7 +27,6 @@ class GetCommand implements ServerCommand {
     this.key = key;
   }
 
-  @SuppressWarnings("UnstableApiUsage")
   @Override
   public ListenableFuture<String> execute() {
     StorageCommandDTO storageCommandDTO = new ReadDTO(key);
@@ -51,8 +49,8 @@ class GetCommand implements ServerCommand {
   }
 
   private String catchStorageFailure(Throwable e) {
-    logger.atWarning().withCause(e)
-        .log("StorageService response threw an unexpected error while reading [%s]", key);
+    logger.atWarning().withCause(e).log(
+        "StorageService response threw an unexpected error while reading [%s]", key);
     return String.format("Unexpected failure getting [%s]", key);
   }
 }

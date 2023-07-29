@@ -4,14 +4,12 @@ import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
+import dev.sbutler.bitflask.storage.StorageCommandDTO;
+import dev.sbutler.bitflask.storage.StorageCommandDTO.WriteDTO;
+import dev.sbutler.bitflask.storage.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 
-/**
- * Asynchronously submits a write request to the storage engine and processes the results.
- */
+/** Asynchronously submits a write request to the storage engine and processes the results. */
 class SetCommand implements ServerCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -21,16 +19,17 @@ class SetCommand implements ServerCommand {
   private final String key;
   private final String value;
 
-  public SetCommand(ListeningExecutorService listeningExecutorService,
+  public SetCommand(
+      ListeningExecutorService listeningExecutorService,
       StorageCommandDispatcher storageCommandDispatcher,
-      String key, String value) {
+      String key,
+      String value) {
     this.listeningExecutorService = listeningExecutorService;
     this.storageCommandDispatcher = storageCommandDispatcher;
     this.key = key;
     this.value = value;
   }
 
-  @SuppressWarnings("UnstableApiUsage")
   @Override
   public ListenableFuture<String> execute() {
     StorageCommandDTO storageCommandDTO = new WriteDTO(key, value);
@@ -46,17 +45,16 @@ class SetCommand implements ServerCommand {
     return switch (storageResponse) {
       case StorageResponse.Success success -> success.message();
       case StorageResponse.Failed failed -> {
-        logger.atWarning()
-            .log("Storage failed writing [%s]:[%s]. %s", key, value, failed.message());
+        logger.atWarning().log(
+            "Storage failed writing [%s]:[%s]. %s", key, value, failed.message());
         yield String.format("Failed to write [%s]:[%s]", key, value);
       }
     };
   }
 
   private String catchStorageFailure(Throwable e) {
-    logger.atWarning().withCause(e)
-        .log("StorageService response threw an unexpected error while writing [%s]:[%s]", key,
-            value);
+    logger.atWarning().withCause(e).log(
+        "StorageService response threw an unexpected error while writing [%s]:[%s]", key, value);
     return String.format("Unexpected failure writing [%s]:[%s]", key, value);
   }
 }

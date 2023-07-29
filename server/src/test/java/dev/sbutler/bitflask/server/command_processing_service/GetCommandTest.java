@@ -11,10 +11,10 @@ import static org.mockito.Mockito.mock;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
+import dev.sbutler.bitflask.storage.StorageResponse;
+import dev.sbutler.bitflask.storage.StorageResponse.Failed;
+import dev.sbutler.bitflask.storage.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Spy;
@@ -22,9 +22,11 @@ import org.mockito.Spy;
 public class GetCommandTest {
 
   GetCommand getCommand;
+
   @Spy
   @SuppressWarnings("UnstableApiUsage")
   ListeningExecutorService executorService = TestingExecutors.sameThreadScheduledExecutor();
+
   StorageCommandDispatcher storageCommandDispatcher;
   String key = "key";
 
@@ -62,7 +64,8 @@ public class GetCommandTest {
   void execute_storageException() throws Exception {
     // Arrange
     doReturn(immediateFailedFuture(new RuntimeException("test")))
-        .when(storageCommandDispatcher).put(any());
+        .when(storageCommandDispatcher)
+        .put(any());
     // Act
     ListenableFuture<String> executeFuture = getCommand.execute();
     // Assert

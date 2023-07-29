@@ -4,14 +4,12 @@ import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
+import dev.sbutler.bitflask.storage.StorageCommandDTO;
+import dev.sbutler.bitflask.storage.StorageCommandDTO.DeleteDTO;
+import dev.sbutler.bitflask.storage.StorageResponse;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 
-/**
- * Asynchronously submits a delete request to the storage engine and processes the results.
- */
+/** Asynchronously submits a delete request to the storage engine and processes the results. */
 public class DeleteCommand implements ServerCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -29,7 +27,6 @@ public class DeleteCommand implements ServerCommand {
     this.key = key;
   }
 
-  @SuppressWarnings("UnstableApiUsage")
   @Override
   public ListenableFuture<String> execute() {
     StorageCommandDTO storageCommandDTO = new DeleteDTO(key);
@@ -52,8 +49,8 @@ public class DeleteCommand implements ServerCommand {
   }
 
   private String catchStorageFailure(Throwable t) {
-    logger.atWarning().withCause(t)
-        .log("StorageService response threw an unexpected error while deleting [%s]", key);
+    logger.atWarning().withCause(t).log(
+        "StorageService response threw an unexpected error while deleting [%s]", key);
     return String.format("Unexpected failure deleting [%s]", key);
   }
 }

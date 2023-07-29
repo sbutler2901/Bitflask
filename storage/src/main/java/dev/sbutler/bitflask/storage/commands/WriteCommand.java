@@ -1,10 +1,10 @@
 package dev.sbutler.bitflask.storage.commands;
 
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
+import dev.sbutler.bitflask.storage.StorageCommandDTO.WriteDTO;
+import dev.sbutler.bitflask.storage.StorageResponse;
+import dev.sbutler.bitflask.storage.StorageResponse.Failed;
+import dev.sbutler.bitflask.storage.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 

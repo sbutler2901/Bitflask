@@ -13,7 +13,6 @@ import dev.sbutler.bitflask.storage.StorageService;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurationsConstants;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import java.time.Duration;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeoutException;
@@ -28,8 +27,8 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 /**
  * Sets up a functioning storage instance to interact with in an integration test class.
  *
- * <p>A {@link StorageCommandDispatcher} instance will injectable for a test class that is extended
- * by this extension.
+ * <p>A {@link StorageService} instance will injectable for a test class that is extended by this
+ * extension.
  *
  * <p>This extension can be programmatically added to a test class with the ability to specify
  * custom {@link StorageConfigurations} for the service instance created.

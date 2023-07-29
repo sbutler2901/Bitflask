@@ -7,11 +7,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.sbutler.bitflask.storage.StorageCommandDTO.ReadDTO;
+import dev.sbutler.bitflask.storage.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.commands.CommandMapper;
 import dev.sbutler.bitflask.storage.commands.StorageCommand;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import org.junit.jupiter.api.Test;
 

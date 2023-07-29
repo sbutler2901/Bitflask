@@ -1,10 +1,10 @@
 package dev.sbutler.bitflask.storage.commands;
 
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
+import dev.sbutler.bitflask.storage.StorageCommandDTO.DeleteDTO;
+import dev.sbutler.bitflask.storage.StorageResponse;
+import dev.sbutler.bitflask.storage.StorageResponse.Failed;
+import dev.sbutler.bitflask.storage.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 
@@ -31,8 +31,7 @@ public class DeleteCommand implements StorageCommand {
     try {
       lsmTree.delete(deleteDTO.key());
     } catch (StorageException e) {
-      String responseErrorMessage =
-          String.format("Failed to delete [%s]", deleteDTO.key());
+      String responseErrorMessage = String.format("Failed to delete [%s]", deleteDTO.key());
       logger.atWarning().withCause(e).log(responseErrorMessage);
       return new Failed(responseErrorMessage);
     }

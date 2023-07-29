@@ -3,9 +3,9 @@ package dev.sbutler.bitflask.storage.commands;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.mock;
 
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
+import dev.sbutler.bitflask.storage.StorageCommandDTO.DeleteDTO;
+import dev.sbutler.bitflask.storage.StorageCommandDTO.ReadDTO;
+import dev.sbutler.bitflask.storage.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import org.junit.jupiter.api.Test;
 

@@ -5,10 +5,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Failed;
-import dev.sbutler.bitflask.storage.dispatcher.StorageResponse.Success;
+import dev.sbutler.bitflask.storage.StorageCommandDTO.ReadDTO;
+import dev.sbutler.bitflask.storage.StorageResponse;
+import dev.sbutler.bitflask.storage.StorageResponse.Failed;
+import dev.sbutler.bitflask.storage.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import java.util.Optional;
