@@ -18,7 +18,7 @@ final class CommandFactory {
   /** */
   ServerCommand createCommand(CommandType commandType, ImmutableList<String> args) {
     if (!isValidCommandArgs(commandType, args)) {
-      throw new InvalidCommandArgumentsException(
+      throw new InvalidCommandException(
           String.format("Invalid arguments for command [%s]: %s", commandType, args));
     }
 

@@ -29,7 +29,8 @@ class SetCommand implements ServerCommand {
     } catch (Exception e) {
       logger.atWarning().withCause(e).log(
           "StorageService response threw an unexpected error while writing [%s]:[%s]", key, value);
-      return String.format("Unexpected failure writing [%s]:[%s]", key, value);
+      throw new StorageProcessingException(
+          String.format("Unexpected failure writing [%s]:[%s]", key, value));
     }
   }
 

@@ -27,7 +27,7 @@ public class DeleteCommand implements ServerCommand {
     } catch (Exception e) {
       logger.atWarning().withCause(e).log(
           "StorageService response threw an unexpected error while deleting [%s]", key);
-      return String.format("Unexpected failure deleting [%s]", key);
+      throw new StorageProcessingException(String.format("Unexpected failure deleting [%s]", key));
     }
   }
 

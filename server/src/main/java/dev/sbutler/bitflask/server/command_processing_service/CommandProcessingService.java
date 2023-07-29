@@ -1,8 +1,6 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import jakarta.inject.Inject;
 
 /**
@@ -22,9 +20,9 @@ public final class CommandProcessingService {
    * Initiates processing of the provided message providing a ListenableFuture for retrieving the
    * results.
    */
-  public ListenableFuture<String> processCommandMessage(ImmutableList<String> commandMessage) {
-    if (commandMessage.size() < 1) {
-      return createFailureFuture("Message must contain at least one argument");
+  public String processCommandMessage(ImmutableList<String> commandMessage) {
+    if (commandMessage.isEmpty()) {
+      return "Message must contain at least one argument";
     }
 
     String messageCommand = commandMessage.get(0).trim();
@@ -32,21 +30,10 @@ public final class CommandProcessingService {
     try {
       commandType = CommandType.valueOf(messageCommand.toUpperCase());
     } catch (IllegalArgumentException e) {
-      return createFailureFuture(String.format("Invalid command [%s]", messageCommand));
+      throw new InvalidCommandException(String.format("Invalid command [%s]", messageCommand));
     }
 
     ImmutableList<String> args = commandMessage.subList(1, commandMessage.size());
-    try {
-      ServerCommand command = commandFactory.createCommand(commandType, args);
-      return command.execute();
-    } catch (InvalidCommandArgumentsException e) {
-      return createFailureFuture(e.getMessage());
-    }
-  }
-
-  private static ListenableFuture<String> createFailureFuture(String responseMessage) {
-    SettableFuture<String> failureFuture = SettableFuture.create();
-    failureFuture.set(responseMessage);
-    return failureFuture;
+    return commandFactory.createCommand(commandType, args).execute();
   }
 }

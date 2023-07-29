@@ -27,7 +27,7 @@ class GetCommand implements ServerCommand {
     } catch (Exception e) {
       logger.atWarning().withCause(e).log(
           "StorageService response threw an unexpected error while reading [%s]", key);
-      return String.format("Unexpected failure getting [%s]", key);
+      throw new StorageProcessingException(String.format("Unexpected failure getting [%s]", key));
     }
   }
 
