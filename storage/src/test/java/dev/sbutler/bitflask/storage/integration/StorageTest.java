@@ -1,83 +1,78 @@
 package dev.sbutler.bitflask.storage.integration;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.storage.StorageService;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO.WriteDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.integration.extensions.ListeningExecutorServiceExtension;
 import dev.sbutler.bitflask.storage.integration.extensions.StorageExtension;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({ListeningExecutorServiceExtension.class, StorageExtension.class})
 public class StorageTest {
 
-  private final StorageCommandDispatcherHelper dispatcherHelper;
-  private final StorageConfigurations configurations;
+  private final StorageService storageService;
+  private final ListeningExecutorService listeningExecutorService;
 
-  public StorageTest(StorageCommandDispatcher commandDispatcher,
-      ListeningExecutorService listeningExecutorService,
-      StorageConfigurations configurations) {
-    this.dispatcherHelper = new StorageCommandDispatcherHelper(
-        commandDispatcher,
-        listeningExecutorService);
-    this.configurations = configurations;
+  public StorageTest(
+      StorageService storageService, ListeningExecutorService listeningExecutorService) {
+    this.storageService = storageService;
+    this.listeningExecutorService = listeningExecutorService;
   }
 
   @Test
-  public void write() throws Exception {
-    var responseFuture = dispatcherHelper.submitStorageCommand(new WriteDTO("key", "value"));
+  public void write() {
+    StorageCommandDTO dto = new WriteDTO("key", "value");
 
-    StorageResponse.Success response = dispatcherHelper.getResponseAsSuccess(responseFuture);
+    StorageResponse.Success response = getResponseAsSuccess(storageService.processCommand(dto));
 
     assertThat(response.message()).isEqualTo("OK");
   }
 
   @Test
-  public void read_notFound() throws Exception {
-    var responseFuture = dispatcherHelper.submitStorageCommand(new ReadDTO("unknownKey"));
+  public void read_notFound() {
+    StorageCommandDTO dto = new ReadDTO("unknownKey");
 
-    StorageResponse.Success response = dispatcherHelper.getResponseAsSuccess(responseFuture);
+    StorageResponse.Success response = getResponseAsSuccess(storageService.processCommand(dto));
 
     assertThat(response.message()).isEqualTo("[unknownKey] not found");
   }
 
   @Test
-  public void read_found() throws Exception {
-    var responseFutures =
-        dispatcherHelper.combineResponseFutures(ImmutableList.of(
-            dispatcherHelper.submitStorageCommand(new WriteDTO("key", "value")),
-            dispatcherHelper.submitStorageCommand(new ReadDTO("key"))));
+  public void read_found() {
+    StorageCommandDTO writeDto = new WriteDTO("key", "value");
+    StorageCommandDTO readDto = new ReadDTO("key");
 
-    var responses = responseFutures.get();
-    StorageResponse.Success writeResponse = dispatcherHelper.getResponseAsSuccess(responses.get(0));
-    StorageResponse.Success readResponse = dispatcherHelper.getResponseAsSuccess(responses.get(1));
+    StorageResponse.Success writeResponse =
+        getResponseAsSuccess(storageService.processCommand(writeDto));
+    StorageResponse.Success readResponse =
+        getResponseAsSuccess(storageService.processCommand(readDto));
 
     assertThat(writeResponse.message()).isEqualTo("OK");
     assertThat(readResponse.message()).isEqualTo("value");
   }
 
   @Test
-  public void delete() throws Exception {
-    var responseFutures =
-        dispatcherHelper.combineResponseFutures(ImmutableList.of(
-            dispatcherHelper.submitStorageCommand(new WriteDTO("key", "value")),
-            dispatcherHelper.submitStorageCommand(new DeleteDTO("key")),
-            dispatcherHelper.submitStorageCommand(new ReadDTO("key"))));
+  public void delete() {
+    StorageCommandDTO writeDto = new WriteDTO("key", "value");
+    StorageCommandDTO deleteDto = new DeleteDTO("key");
+    StorageCommandDTO readDto = new ReadDTO("key");
 
-    var responses = responseFutures.get();
-    StorageResponse.Success writeResponse = dispatcherHelper.getResponseAsSuccess(responses.get(0));
-    StorageResponse.Success deleteResponse = dispatcherHelper.getResponseAsSuccess(
-        responses.get(1));
-    StorageResponse.Success readResponse = dispatcherHelper.getResponseAsSuccess(responses.get(2));
+    StorageResponse.Success writeResponse =
+        getResponseAsSuccess(storageService.processCommand(writeDto));
+    StorageResponse.Success deleteResponse =
+        getResponseAsSuccess(storageService.processCommand(deleteDto));
+    StorageResponse.Success readResponse =
+        getResponseAsSuccess(storageService.processCommand(readDto));
 
     assertThat(writeResponse.message()).isEqualTo("OK");
     assertThat(deleteResponse.message()).isEqualTo("OK");
@@ -85,23 +80,36 @@ public class StorageTest {
   }
 
   @Test
-  public void compactionStress() throws Exception {
-    var commands = ImmutableList.<StorageCommandDTO>builder()
-        .addAll(generateWriteCommands(50))
-        .addAll(generateDeleteCommands(25))
-        .addAll(generateReadCommands(50))
-        .build();
+  public void compactionStress() {
+    var commands =
+        ImmutableList.<StorageCommandDTO>builder()
+            .addAll(generateWriteCommands(50))
+            .addAll(generateDeleteCommands(25))
+            .addAll(generateReadCommands(50))
+            .build();
 
-    var responseFutures = dispatcherHelper.combineResponseFutures(
-        dispatcherHelper.submitStorageCommandsSequentiallyWithDelay(
-            commands, Duration.ofMillis(500), 10));
+    var responseFutures =
+        commands.stream()
+            .map(
+                dto ->
+                    Futures.submit(
+                        () -> storageService.processCommand(dto), listeningExecutorService))
+            .collect(toImmutableList());
 
-    Thread.sleep(Duration.ofMillis(1000 + configurations.getCompactorExecDelayMilliseconds()));
-    var results = responseFutures.get();
+    Futures.whenAllSucceed(responseFutures)
+        .run(
+            () ->
+                responseFutures.stream()
+                    .map(Futures::getUnchecked)
+                    .forEach(
+                        response ->
+                            assertThat(response).isInstanceOf(StorageResponse.Success.class)),
+            listeningExecutorService);
+  }
 
-    for (var result : results) {
-      dispatcherHelper.getResponseAsSuccess(result);
-    }
+  private static StorageResponse.Success getResponseAsSuccess(StorageResponse response) {
+    assertThat(response).isInstanceOf(StorageResponse.Success.class);
+    return (StorageResponse.Success) response;
   }
 
   private static ImmutableList<StorageCommandDTO.WriteDTO> generateWriteCommands(int num) {

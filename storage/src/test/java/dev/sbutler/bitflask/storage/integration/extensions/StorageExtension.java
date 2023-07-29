@@ -37,13 +37,11 @@ import org.junit.jupiter.api.extension.ParameterResolver;
  * <p>The storage instance will exist for the life of the test class that is extended by this
  * extension. Will the lifecycle of all resources managed by this extension.
  */
-@SuppressWarnings("UnstableApiUsage")
 public class StorageExtension implements ParameterResolver, BeforeAllCallback, AfterAllCallback {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private static final Namespace NAMESPACE = Namespace
-      .create(StorageExtension.class);
+  private static final Namespace NAMESPACE = Namespace.create(StorageExtension.class);
 
   private static final String TEST_RESOURCE_NAME = "test";
 
@@ -52,11 +50,20 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
 
   /**
    * Creates a new instance using the default testing properties file.
+   *
+   * <p>This constructor is used by the Junit @ExtendWith annotation
    */
+  @SuppressWarnings("unused")
   public StorageExtension() {
     this.configurations = initializeConfiguration(new String[0]);
   }
 
+  /**
+   * Creates a new instance using the provided configurations.
+   *
+   * <p>This constructor is used when instantiated with a test class.
+   */
+  @SuppressWarnings("unused")
   public StorageExtension(StorageConfigurations configurations) {
     this.configurations = configurations;
   }
@@ -67,12 +74,12 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
 
     storeHelper = new ExtensionStoreHelper(extensionContext.getStore(NAMESPACE));
 
-    var injector = Guice.createInjector(ImmutableSet.of(
-        new VirtualThreadConcurrencyModule(),
-        new StorageServiceModule(configurations)));
+    var storageServiceModule = new StorageServiceModule(configurations);
+    var injector =
+        Guice.createInjector(
+            ImmutableSet.of(new VirtualThreadConcurrencyModule(), storageServiceModule));
 
-    var serviceManager = new ServiceManager(ImmutableSet.of(
-        injector.getInstance(StorageService.class)));
+    var serviceManager = new ServiceManager(storageServiceModule.getServices(injector));
 
     serviceManager.startAsync().awaitHealthy(Duration.ofSeconds(5));
 
@@ -91,27 +98,33 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
       logger.atSevere().withCause(timeout).log("ServiceManager timed out while stopping");
     }
 
-    var listeningExecutorService = storeHelper.getFromStore(Injector.class)
-        .getInstance(Injector.class).getInstance(ListeningExecutorService.class);
+    var listeningExecutorService =
+        storeHelper
+            .getFromStore(Injector.class)
+            .getInstance(Injector.class)
+            .getInstance(ListeningExecutorService.class);
     MoreExecutors.shutdownAndAwaitTermination(listeningExecutorService, Duration.ofSeconds(5));
 
     logger.atFine().log("Storage terminated");
   }
 
   @Override
-  public boolean supportsParameter(ParameterContext parameterContext,
-      ExtensionContext extensionContext) throws ParameterResolutionException {
-    return StorageCommandDispatcher.class.equals(parameterContext.getParameter().getType())
+  public boolean supportsParameter(
+      ParameterContext parameterContext, ExtensionContext extensionContext)
+      throws ParameterResolutionException {
+    return StorageService.class.equals(parameterContext.getParameter().getType())
         || StorageConfigurations.class.equals(parameterContext.getParameter().getType());
   }
 
   @Override
-  public Object resolveParameter(ParameterContext parameterContext,
-      ExtensionContext extensionContext) throws ParameterResolutionException {
+  public Object resolveParameter(
+      ParameterContext parameterContext, ExtensionContext extensionContext)
+      throws ParameterResolutionException {
     if (StorageConfigurations.class.equals(parameterContext.getParameter().getType())) {
       return configurations;
     }
-    return storeHelper.getFromStore(Injector.class)
+    return storeHelper
+        .getFromStore(Injector.class)
         .getInstance(parameterContext.getParameter().getType());
   }
 
@@ -120,17 +133,16 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
     ConfigurationsBuilder configurationsBuilder = new ConfigurationsBuilder(args, resourceBundle);
 
     StorageConfigurations storageConfigurations = new StorageConfigurations();
-    configurationsBuilder.buildAcceptingUnknownOptions(storageConfigurations,
-        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
+    configurationsBuilder.buildAcceptingUnknownOptions(
+        storageConfigurations, StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     return storageConfigurations;
   }
 
   private static void printConfigInfo(StorageConfigurations storageConfigurations) {
     logger.atFine().log("Using java version [%s]", System.getProperty("java.version"));
-    logger.atFine()
-        .log("Runtime processors available [%d]", Runtime.getRuntime().availableProcessors());
+    logger.atFine().log(
+        "Runtime processors available [%d]", Runtime.getRuntime().availableProcessors());
 
     logger.atFine().log(storageConfigurations.toString());
   }
-
 }

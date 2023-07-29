@@ -1,85 +1,46 @@
 package dev.sbutler.bitflask.storage;
 
 import com.google.common.flogger.FluentLogger;
-import com.google.common.util.concurrent.AbstractExecutionThreadService;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.common.dispatcher.DispatcherSubmission;
+import com.google.common.util.concurrent.AbstractIdleService;
 import dev.sbutler.bitflask.storage.commands.CommandMapper;
 import dev.sbutler.bitflask.storage.commands.StorageCommand;
 import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDTO;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
 import dev.sbutler.bitflask.storage.dispatcher.StorageResponse;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
-/**
- * Manages persisting and retrieving data.
- */
+/** Manages persisting and retrieving data. */
 @Singleton
-public final class StorageService extends AbstractExecutionThreadService {
+public final class StorageService extends AbstractIdleService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final ListeningExecutorService executorService;
-  private final StorageCommandDispatcher commandDispatcher;
-  private final CommandMapper commandMapper;
   private final LSMTree lsmTree;
+  private final CommandMapper commandMapper;
   private final StorageLoader storageLoader;
 
-  private volatile boolean isRunning = true;
-
   @Inject
-  public StorageService(ListeningExecutorService executorService,
-      StorageCommandDispatcher commandDispatcher,
-      CommandMapper commandMapper,
-      LSMTree lsmTree,
-      StorageLoader storageLoader) {
-    this.executorService = executorService;
-    this.commandDispatcher = commandDispatcher;
-    this.commandMapper = commandMapper;
+  StorageService(LSMTree lsmTree, CommandMapper commandMapper, StorageLoader storageLoader) {
     this.lsmTree = lsmTree;
+    this.commandMapper = commandMapper;
     this.storageLoader = storageLoader;
   }
 
   @Override
   protected void startUp() {
     storageLoader.load();
+    logger.atInfo().log("storage loaded.");
+  }
+
+  public StorageResponse processCommand(StorageCommandDTO commandDTO) {
+    StorageCommand command = commandMapper.mapToCommand(commandDTO);
+    return command.execute();
   }
 
   @Override
-  public void run() {
-    try {
-      while (isRunning && !Thread.currentThread().isInterrupted()) {
-        Optional<DispatcherSubmission<StorageCommandDTO, StorageResponse>> submission;
-        try {
-          submission = commandDispatcher.poll(1, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-          logger.atWarning().withCause(e)
-              .log("Interrupted while polling dispatcher. Shutting down");
-          break;
-        }
-        submission.ifPresent(this::processSubmission);
-      }
-    } finally {
-      triggerShutdown();
-    }
-  }
-
-  private void processSubmission(
-      DispatcherSubmission<StorageCommandDTO, StorageResponse> submission) {
-    StorageCommand command = commandMapper.mapToCommand(submission.commandDTO());
-    submission.responseFuture().setFuture(Futures.submit(command::execute, executorService));
-  }
-
-  @SuppressWarnings("UnstableApiUsage")
-  @Override
-  protected void triggerShutdown() {
-    isRunning = false;
-    commandDispatcher.closeAndDrain();
+  protected void shutDown() {
     lsmTree.close();
+    logger.atInfo().log("storage shutdown");
   }
 }
