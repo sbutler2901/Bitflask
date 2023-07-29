@@ -62,11 +62,24 @@ final class ClientMessageProcessor implements AutoCloseable {
     return readClientMessage().map(this::processClientMessage).orElse(false);
   }
 
+  private Optional<RespElement> readClientMessage() {
+    try {
+      return Optional.of(respService.read());
+    } catch (EOFException e) {
+      logger.atInfo().log("Client disconnected.");
+    } catch (ProtocolException e) {
+      logger.atWarning().withCause(e).log("Client message format malformed");
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log("Failure reading client's message");
+    }
+    return Optional.empty();
+  }
+
   private boolean processClientMessage(RespElement rawClientMessage) {
     try {
       ImmutableList<String> parsedClientMessage = parseClientMessage(rawClientMessage);
       String storageResponse = commandProcessingService.processCommandMessage(parsedClientMessage);
-      RespElement serverResponseToClient = getServerResponseToClient(storageResponse);
+      RespElement serverResponseToClient = new RespBulkString(storageResponse);
       return sendServerResponse(serverResponseToClient);
     } catch (InvalidCommandException e) {
       sendErrorToClient(e.getMessage());
@@ -80,8 +93,18 @@ final class ClientMessageProcessor implements AutoCloseable {
     }
   }
 
-  private RespElement getServerResponseToClient(String response) {
-    return new RespBulkString(response);
+  private ImmutableList<String> parseClientMessage(RespElement rawClientMessage) {
+    ImmutableList.Builder<String> clientMessage = ImmutableList.builder();
+    if (!(rawClientMessage instanceof RespArray clientMessageRespArray)) {
+      throw new InvalidCommandException("Message must be provided in a RespArray");
+    }
+    for (RespElement arg : clientMessageRespArray.getValue()) {
+      if (!(arg instanceof RespBulkString argBulkString)) {
+        throw new InvalidCommandException("Message arguments must be RespBulkStrings");
+      }
+      clientMessage.add(argBulkString.getValue());
+    }
+    return clientMessage.build();
   }
 
   private boolean sendServerResponse(RespElement serverResponse) {
@@ -99,33 +122,6 @@ final class ClientMessageProcessor implements AutoCloseable {
     RespError respError = new RespError(errorMessage);
     sendServerResponse(respError);
     return false;
-  }
-
-  private ImmutableList<String> parseClientMessage(RespElement rawClientMessage) {
-    ImmutableList.Builder<String> clientMessage = ImmutableList.builder();
-    if (!(rawClientMessage instanceof RespArray clientMessageRespArray)) {
-      throw new InvalidCommandException("Message must be provided in a RespArray");
-    }
-    for (RespElement arg : clientMessageRespArray.getValue()) {
-      if (!(arg instanceof RespBulkString argBulkString)) {
-        throw new InvalidCommandException("Message arguments must be RespBulkStrings");
-      }
-      clientMessage.add(argBulkString.getValue());
-    }
-    return clientMessage.build();
-  }
-
-  private Optional<RespElement> readClientMessage() {
-    try {
-      return Optional.of(respService.read());
-    } catch (EOFException e) {
-      logger.atInfo().log("Client disconnected.");
-    } catch (ProtocolException e) {
-      logger.atWarning().withCause(e).log("Client message format malformed");
-    } catch (IOException e) {
-      logger.atSevere().withCause(e).log("Failure reading client's message");
-    }
-    return Optional.empty();
   }
 
   public boolean isOpen() {

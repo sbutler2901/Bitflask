@@ -2,26 +2,23 @@ package dev.sbutler.bitflask.server.command_processing_service;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
+import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.dispatcher.StorageCommandDispatcher;
+import dev.sbutler.bitflask.storage.StorageService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+/** Unit tests for {@link CommandFactory}. */
 public class CommandFactoryTest {
 
-  @InjectMocks
   private CommandFactory commandFactory;
-  @Mock
-  private ListeningExecutorService listeningExecutorService;
-  @Mock
-  private StorageCommandDispatcher storageCommandDispatcher;
+  private final StorageService storageService = mock(StorageService.class);
 
+  @BeforeEach
+  void beforeEach() {
+    commandFactory = new CommandFactory(storageService);
+  }
 
   @Test
   void ping() {
@@ -35,8 +32,9 @@ public class CommandFactoryTest {
   @Test
   void ping_invalid() {
     // Act
-    InvalidCommandArgumentsException e =
-        assertThrows(InvalidCommandArgumentsException.class,
+    InvalidCommandException e =
+        assertThrows(
+            InvalidCommandException.class,
             () -> commandFactory.createCommand(CommandType.PING, ImmutableList.of("invalidArg")));
     // Assert
     assertThat(e).hasMessageThat().ignoringCase().contains("ping");
@@ -55,10 +53,12 @@ public class CommandFactoryTest {
   @Test
   void get_invalid() {
     // Act
-    InvalidCommandArgumentsException e =
-        assertThrows(InvalidCommandArgumentsException.class,
-            () -> commandFactory.createCommand(CommandType.GET,
-                ImmutableList.of("key", "invalidArg")));
+    InvalidCommandException e =
+        assertThrows(
+            InvalidCommandException.class,
+            () ->
+                commandFactory.createCommand(
+                    CommandType.GET, ImmutableList.of("key", "invalidArg")));
     // Assert
     assertThat(e).hasMessageThat().ignoringCase().contains("get");
     assertThat(e).hasMessageThat().ignoringCase().contains("invalidArg");
@@ -76,10 +76,12 @@ public class CommandFactoryTest {
   @Test
   void set_invalid() {
     // Act
-    InvalidCommandArgumentsException e =
-        assertThrows(InvalidCommandArgumentsException.class,
-            () -> commandFactory.createCommand(CommandType.SET,
-                ImmutableList.of("key", "value", "invalidArg")));
+    InvalidCommandException e =
+        assertThrows(
+            InvalidCommandException.class,
+            () ->
+                commandFactory.createCommand(
+                    CommandType.SET, ImmutableList.of("key", "value", "invalidArg")));
     // Assert
     assertThat(e).hasMessageThat().ignoringCase().contains("set");
     assertThat(e).hasMessageThat().ignoringCase().contains("invalidArg");
@@ -97,10 +99,12 @@ public class CommandFactoryTest {
   @Test
   void delete_invalid() {
     // Act
-    InvalidCommandArgumentsException e =
-        assertThrows(InvalidCommandArgumentsException.class,
-            () -> commandFactory.createCommand(CommandType.DEL,
-                ImmutableList.of("key", "invalidArg")));
+    InvalidCommandException e =
+        assertThrows(
+            InvalidCommandException.class,
+            () ->
+                commandFactory.createCommand(
+                    CommandType.DEL, ImmutableList.of("key", "invalidArg")));
     // Assert
     assertThat(e).hasMessageThat().ignoringCase().contains("del");
     assertThat(e).hasMessageThat().ignoringCase().contains("invalidArg");

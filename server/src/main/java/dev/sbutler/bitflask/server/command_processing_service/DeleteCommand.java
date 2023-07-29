@@ -6,7 +6,7 @@ import dev.sbutler.bitflask.storage.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.StorageResponse;
 import dev.sbutler.bitflask.storage.StorageService;
 
-/** Asynchronously submits a delete request to the storage engine and processes the results. */
+/** Submits a blocking delete request to the storage engine and processes the results. */
 public class DeleteCommand implements ServerCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();

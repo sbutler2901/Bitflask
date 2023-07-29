@@ -6,7 +6,7 @@ import dev.sbutler.bitflask.storage.StorageCommandDTO.WriteDTO;
 import dev.sbutler.bitflask.storage.StorageResponse;
 import dev.sbutler.bitflask.storage.StorageService;
 
-/** Asynchronously submits a write request to the storage engine and processes the results. */
+/** Submits a blocking write request to the storage engine and processes the results. */
 class SetCommand implements ServerCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();

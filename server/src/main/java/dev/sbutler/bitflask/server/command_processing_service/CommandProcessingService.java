@@ -22,7 +22,7 @@ public final class CommandProcessingService {
    */
   public String processCommandMessage(ImmutableList<String> commandMessage) {
     if (commandMessage.isEmpty()) {
-      return "Message must contain at least one argument";
+      throw new InvalidCommandException("Message must contain at least one argument");
     }
 
     String messageCommand = commandMessage.get(0).trim();
