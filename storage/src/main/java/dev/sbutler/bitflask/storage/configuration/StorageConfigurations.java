@@ -3,7 +3,6 @@ package dev.sbutler.bitflask.storage.configuration;
 import com.beust.jcommander.Parameter;
 import dev.sbutler.bitflask.common.configuration.Configurations;
 import dev.sbutler.bitflask.common.configuration.validators.AbsolutePathValidator;
-import dev.sbutler.bitflask.common.configuration.validators.PositiveIntegerValidator;
 import dev.sbutler.bitflask.common.configuration.validators.PositiveLongValidator;
 import java.nio.file.Path;
 
@@ -11,11 +10,6 @@ import java.nio.file.Path;
  * Provides access to the storage engine's runtime configurations.
  */
 public class StorageConfigurations implements Configurations {
-
-  @Parameter(names = StorageConfigurationsConstants.DISPATCHER_CAPACITY_FLAG,
-      validateWith = PositiveIntegerValidator.class,
-      description = "The maximum number of storage submissions that can be queued")
-  private int dispatcherCapacity;
 
   @Parameter(names = StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG,
       validateWith = AbsolutePathValidator.class,
@@ -45,10 +39,6 @@ public class StorageConfigurations implements Configurations {
       description = "The number of milliseconds to delay between completed compactor executions")
   private long compactorExecDelayMilliseconds;
 
-  public int getDispatcherCapacity() {
-    return dispatcherCapacity;
-  }
-
   public Path getStoreDirectoryPath() {
     return storeDirectoryPath;
   }
@@ -72,7 +62,6 @@ public class StorageConfigurations implements Configurations {
   @Override
   public String toString() {
     return "StorageConfigurations{" +
-        "storageDispatcherCapacity=" + dispatcherCapacity +
         ", storageStoreDirectoryPath=" + storeDirectoryPath +
         ", storageLoadingMode=" + loadingMode +
         ", memtableFlushThresholdBytes=" + memtableFlushThresholdBytes +

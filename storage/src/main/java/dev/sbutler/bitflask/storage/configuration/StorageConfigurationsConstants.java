@@ -8,15 +8,6 @@ import java.nio.file.Paths;
 
 public class StorageConfigurationsConstants {
 
-  // Dispatcher Capacity
-  static final String DISPATCHER_CAPACITY_FLAG = "--storageDispatcherCapacity";
-  static final String DISPATCHER_CAPACITY_PROPERTY_KEY = "storage.dispatcherCapacity";
-  static final int DISPATCHER_CAPACITY_DEFAULT = 500;
-  static final Configuration DISPATCHER_CONFIGURATION = new Configuration(
-      ImmutableList.of(DISPATCHER_CAPACITY_FLAG),
-      DISPATCHER_CAPACITY_PROPERTY_KEY,
-      DISPATCHER_CAPACITY_DEFAULT);
-
   // Store Directory Path
   static final String STORE_DIRECTORY_PATH_FLAG = "--storageStoreDirectoryPath";
   static final String STORE_DIRECTORY_PATH_PROPERTY_KEY = "storage.storeDirectory";
@@ -65,7 +56,6 @@ public class StorageConfigurationsConstants {
 
   public static final ConfigurationFlagMap STORAGE_FLAG_TO_CONFIGURATION_MAP =
       new ConfigurationFlagMap.Builder()
-          .put(DISPATCHER_CAPACITY_FLAG, DISPATCHER_CONFIGURATION)
           .put(STORE_DIRECTORY_PATH_FLAG, STORAGE_STORE_DIRECTORY_PATH_CONFIGURATION)
           .put(LOADING_MODE_FLAG, LOADING_MODE_CONFIGURATION)
           .put(MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG, MEMTABLE_FLUSH_THRESHOLD_BYTES_CONFIGURATION)

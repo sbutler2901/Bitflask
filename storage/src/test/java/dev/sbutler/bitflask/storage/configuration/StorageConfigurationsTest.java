@@ -14,18 +14,14 @@ import org.junit.jupiter.api.Test;
 
 public class StorageConfigurationsTest {
 
-  private static final int DISPATCHER_CAPACITY_DEFAULT = 100;
   private static final Path STORE_DIRECTORY_PATH_DEFAULT = Path.of("/tmp/.bitflask");
   private static final StorageLoadingMode LOADING_MODE_DEFAULT = StorageLoadingMode.LOAD;
   private static final long MEMTABLE_FLUSH_BYTES_DEFAULT = 1;
   private static final long SEGMENT_LEVEL_FLUSH_BYTES_DEFAULT = 5;
   private static final long COMPACTOR_DELAY_DEFAULT = 5000;
 
-
   private static final ImmutableList<String> CLI_ARG_LIST =
       ImmutableList.of(
-          StorageConfigurationsConstants.DISPATCHER_CAPACITY_FLAG,
-          String.valueOf(DISPATCHER_CAPACITY_DEFAULT),
           StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG,
           STORE_DIRECTORY_PATH_DEFAULT.toString(),
           StorageConfigurationsConstants.LOADING_MODE_FLAG,
@@ -40,10 +36,11 @@ public class StorageConfigurationsTest {
   @Test
   void propertyFile_defaults() {
     // Arrange
-    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
+    ConfigurationDefaultProvider defaultProvider =
+        new ConfigurationDefaultProvider(
+            StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageConfigurations storageConfigurations = new StorageConfigurations();
-    String[] argv = new String[]{};
+    String[] argv = new String[] {};
     // Act
     JCommander.newBuilder()
         .addObject(storageConfigurations)
@@ -51,47 +48,28 @@ public class StorageConfigurationsTest {
         .build()
         .parse(argv);
     // Assert
-    assertThat(storageConfigurations.getDispatcherCapacity())
-        .isEqualTo(Integer.parseInt(defaultProvider.getDefaultValueFor(
-            StorageConfigurationsConstants.DISPATCHER_CAPACITY_FLAG)));
     assertThat(storageConfigurations.getStoreDirectoryPath().toString())
-        .isEqualTo(Path.of(defaultProvider.getDefaultValueFor(
-            StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG)).toString());
-    assertThat(storageConfigurations.getStorageLoadingMode())
-        .isEqualTo(StorageLoadingMode.LOAD);
+        .isEqualTo(
+            Path.of(
+                    defaultProvider.getDefaultValueFor(
+                        StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG))
+                .toString());
+    assertThat(storageConfigurations.getStorageLoadingMode()).isEqualTo(StorageLoadingMode.LOAD);
     assertThat(storageConfigurations.getMemtableFlushThresholdBytes())
-        .isEqualTo(Long.parseLong(defaultProvider.getDefaultValueFor(
-            StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG)));
+        .isEqualTo(
+            Long.parseLong(
+                defaultProvider.getDefaultValueFor(
+                    StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG)));
     assertThat(storageConfigurations.getSegmentLevelFlushThresholdBytes())
-        .isEqualTo(Long.parseLong(defaultProvider.getDefaultValueFor(
-            StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG)));
+        .isEqualTo(
+            Long.parseLong(
+                defaultProvider.getDefaultValueFor(
+                    StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG)));
     assertThat(storageConfigurations.getCompactorExecDelayMilliseconds())
-        .isEqualTo(Long.parseLong(defaultProvider.getDefaultValueFor(
-            StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG)));
-  }
-
-  @Test
-  void propertyFile_dispatcherCapacity_throwsIllegalConfigurationException() {
-    // Arrange
-    ConfigurationDefaultProvider defaultProvider = mock(ConfigurationDefaultProvider.class);
-    mockDefaultProvider(defaultProvider);
-    when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.DISPATCHER_CAPACITY_FLAG))
-        .thenReturn("-1");
-
-    StorageConfigurations storageConfigurations = new StorageConfigurations();
-    String[] argv = new String[]{};
-    // Act
-    IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class,
-            () -> JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
-    // Assert
-    assertThat(exception).hasMessageThat()
-        .contains(StorageConfigurationsConstants.DISPATCHER_CAPACITY_FLAG);
+        .isEqualTo(
+            Long.parseLong(
+                defaultProvider.getDefaultValueFor(
+                    StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG)));
   }
 
   @Test
@@ -99,22 +77,25 @@ public class StorageConfigurationsTest {
     // Arrange
     ConfigurationDefaultProvider defaultProvider = mock(ConfigurationDefaultProvider.class);
     mockDefaultProvider(defaultProvider);
-    when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG))
+    when(defaultProvider.getDefaultValueFor(
+            StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG))
         .thenReturn("~/.bitflask");
 
     StorageConfigurations storageConfigurations = new StorageConfigurations();
-    String[] argv = new String[]{};
+    String[] argv = new String[] {};
     // Act
     IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class, () ->
-            JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
+        assertThrows(
+            IllegalConfigurationException.class,
+            () ->
+                JCommander.newBuilder()
+                    .addObject(storageConfigurations)
+                    .defaultProvider(defaultProvider)
+                    .build()
+                    .parse(argv));
     // Assert
-    assertThat(exception).hasMessageThat()
+    assertThat(exception)
+        .hasMessageThat()
         .contains(StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG);
   }
 
@@ -123,22 +104,24 @@ public class StorageConfigurationsTest {
     // Arrange
     ConfigurationDefaultProvider defaultProvider = mock(ConfigurationDefaultProvider.class);
     mockDefaultProvider(defaultProvider);
-    when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.LOADING_MODE_FLAG))
+    when(defaultProvider.getDefaultValueFor(StorageConfigurationsConstants.LOADING_MODE_FLAG))
         .thenReturn("append");
 
     StorageConfigurations storageConfigurations = new StorageConfigurations();
-    String[] argv = new String[]{};
+    String[] argv = new String[] {};
     // Act
     IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class, () ->
-            JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
+        assertThrows(
+            IllegalConfigurationException.class,
+            () ->
+                JCommander.newBuilder()
+                    .addObject(storageConfigurations)
+                    .defaultProvider(defaultProvider)
+                    .build()
+                    .parse(argv));
     // Assert
-    assertThat(exception).hasMessageThat()
+    assertThat(exception)
+        .hasMessageThat()
         .contains(StorageConfigurationsConstants.LOADING_MODE_FLAG);
   }
 
@@ -147,22 +130,25 @@ public class StorageConfigurationsTest {
     // Arrange
     ConfigurationDefaultProvider defaultProvider = mock(ConfigurationDefaultProvider.class);
     mockDefaultProvider(defaultProvider);
-    when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG))
+    when(defaultProvider.getDefaultValueFor(
+            StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG))
         .thenReturn("-1");
 
     StorageConfigurations storageConfigurations = new StorageConfigurations();
-    String[] argv = new String[]{};
+    String[] argv = new String[] {};
     // Act
     IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class, () ->
-            JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
+        assertThrows(
+            IllegalConfigurationException.class,
+            () ->
+                JCommander.newBuilder()
+                    .addObject(storageConfigurations)
+                    .defaultProvider(defaultProvider)
+                    .build()
+                    .parse(argv));
     // Assert
-    assertThat(exception).hasMessageThat()
+    assertThat(exception)
+        .hasMessageThat()
         .contains(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG);
   }
 
@@ -171,23 +157,25 @@ public class StorageConfigurationsTest {
     // Arrange
     ConfigurationDefaultProvider defaultProvider = mock(ConfigurationDefaultProvider.class);
     mockDefaultProvider(defaultProvider);
-    when(defaultProvider
-        .getDefaultValueFor(
+    when(defaultProvider.getDefaultValueFor(
             StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG))
         .thenReturn("-1");
 
     StorageConfigurations storageConfigurations = new StorageConfigurations();
-    String[] argv = new String[]{};
+    String[] argv = new String[] {};
     // Act
     IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class, () ->
-            JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
+        assertThrows(
+            IllegalConfigurationException.class,
+            () ->
+                JCommander.newBuilder()
+                    .addObject(storageConfigurations)
+                    .defaultProvider(defaultProvider)
+                    .build()
+                    .parse(argv));
     // Assert
-    assertThat(exception).hasMessageThat()
+    assertThat(exception)
+        .hasMessageThat()
         .contains(StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG);
   }
 
@@ -196,31 +184,34 @@ public class StorageConfigurationsTest {
     // Arrange
     ConfigurationDefaultProvider defaultProvider = mock(ConfigurationDefaultProvider.class);
     mockDefaultProvider(defaultProvider);
-    when(defaultProvider
-        .getDefaultValueFor(
+    when(defaultProvider.getDefaultValueFor(
             StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG))
         .thenReturn("-1");
 
     StorageConfigurations storageConfigurations = new StorageConfigurations();
-    String[] argv = new String[]{};
+    String[] argv = new String[] {};
     // Act
     IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class, () ->
-            JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
+        assertThrows(
+            IllegalConfigurationException.class,
+            () ->
+                JCommander.newBuilder()
+                    .addObject(storageConfigurations)
+                    .defaultProvider(defaultProvider)
+                    .build()
+                    .parse(argv));
     // Assert
-    assertThat(exception).hasMessageThat()
+    assertThat(exception)
+        .hasMessageThat()
         .contains(StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG);
   }
 
   @Test
   void commandLineFlags() {
     // Arrange
-    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
+    ConfigurationDefaultProvider defaultProvider =
+        new ConfigurationDefaultProvider(
+            StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageConfigurations storageConfigurations = new StorageConfigurations();
 
     String[] argv = CLI_ARG_LIST.toArray(new String[0]);
@@ -231,12 +222,9 @@ public class StorageConfigurationsTest {
         .build()
         .parse(argv);
     // Assert
-    assertThat(storageConfigurations.getDispatcherCapacity())
-        .isEqualTo(DISPATCHER_CAPACITY_DEFAULT);
     assertThat(storageConfigurations.getStoreDirectoryPath().toString())
         .isEqualTo(STORE_DIRECTORY_PATH_DEFAULT.toString());
-    assertThat(storageConfigurations.getStorageLoadingMode())
-        .isEqualTo(LOADING_MODE_DEFAULT);
+    assertThat(storageConfigurations.getStorageLoadingMode()).isEqualTo(LOADING_MODE_DEFAULT);
     assertThat(storageConfigurations.getMemtableFlushThresholdBytes())
         .isEqualTo(MEMTABLE_FLUSH_BYTES_DEFAULT);
     assertThat(storageConfigurations.getSegmentLevelFlushThresholdBytes())
@@ -246,79 +234,92 @@ public class StorageConfigurationsTest {
   }
 
   @Test
-  void commandLineFlags_dispatcherCapacity_throwsIllegalConfigurationException() {
-    // Arrange
-    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
-    StorageConfigurations storageConfigurations = new StorageConfigurations();
-
-    String[] argv = CLI_ARG_LIST.toArray(new String[0]);
-    argv[1] = "-1";
-
-    // Act
-    IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class,
-            () -> JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
-    // Assert
-    assertThat(exception).hasMessageThat()
-        .contains(StorageConfigurationsConstants.DISPATCHER_CAPACITY_FLAG);
-  }
-
-  @Test
   void commandLineFlags_storeDirectoryFlag_throwsIllegalConfigurationException() {
     // Arrange
-    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
+    ConfigurationDefaultProvider defaultProvider =
+        new ConfigurationDefaultProvider(
+            StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageConfigurations storageConfigurations = new StorageConfigurations();
 
     String[] argv = CLI_ARG_LIST.toArray(new String[0]);
-    argv[3] = "~/random/relative/path";
+    argv[1] = "~/random/relative/path";
 
     // Act
     IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class,
-            () -> JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
+        assertThrows(
+            IllegalConfigurationException.class,
+            () ->
+                JCommander.newBuilder()
+                    .addObject(storageConfigurations)
+                    .defaultProvider(defaultProvider)
+                    .build()
+                    .parse(argv));
     // Assert
-    assertThat(exception).hasMessageThat()
+    assertThat(exception)
+        .hasMessageThat()
         .contains(StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG);
   }
 
   @Test
   void commandLineFlags_storageLoadingMode_throwsIllegalConfigurationException() {
     // Arrange
-    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
+    ConfigurationDefaultProvider defaultProvider =
+        new ConfigurationDefaultProvider(
+            StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageConfigurations storageConfigurations = new StorageConfigurations();
 
     String[] argv = CLI_ARG_LIST.toArray(new String[0]);
-    argv[5] = "append";
+    argv[3] = "append";
 
     // Act
     IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class,
-            () -> JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
+        assertThrows(
+            IllegalConfigurationException.class,
+            () ->
+                JCommander.newBuilder()
+                    .addObject(storageConfigurations)
+                    .defaultProvider(defaultProvider)
+                    .build()
+                    .parse(argv));
     // Assert
-    assertThat(exception).hasMessageThat()
+    assertThat(exception)
+        .hasMessageThat()
         .contains(StorageConfigurationsConstants.LOADING_MODE_FLAG);
   }
 
   @Test
   void commandLineFlags_memtableFlushThresholdMB_throwsIllegalConfigurationException() {
     // Arrange
-    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
+    ConfigurationDefaultProvider defaultProvider =
+        new ConfigurationDefaultProvider(
+            StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
+    StorageConfigurations storageConfigurations = new StorageConfigurations();
+
+    String[] argv = CLI_ARG_LIST.toArray(new String[0]);
+    argv[5] = "-1";
+
+    // Act
+    IllegalConfigurationException exception =
+        assertThrows(
+            IllegalConfigurationException.class,
+            () ->
+                JCommander.newBuilder()
+                    .addObject(storageConfigurations)
+                    .defaultProvider(defaultProvider)
+                    .build()
+                    .parse(argv));
+    // Assert
+    assertThat(exception)
+        .hasMessageThat()
+        .contains(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG);
+  }
+
+  @Test
+  void commandLineFlags_segmentLevelCompactThresholdMB_throwsIllegalConfigurationException() {
+    // Arrange
+    ConfigurationDefaultProvider defaultProvider =
+        new ConfigurationDefaultProvider(
+            StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageConfigurations storageConfigurations = new StorageConfigurations();
 
     String[] argv = CLI_ARG_LIST.toArray(new String[0]);
@@ -326,22 +327,26 @@ public class StorageConfigurationsTest {
 
     // Act
     IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class,
-            () -> JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
+        assertThrows(
+            IllegalConfigurationException.class,
+            () ->
+                JCommander.newBuilder()
+                    .addObject(storageConfigurations)
+                    .defaultProvider(defaultProvider)
+                    .build()
+                    .parse(argv));
     // Assert
-    assertThat(exception).hasMessageThat()
-        .contains(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG);
+    assertThat(exception)
+        .hasMessageThat()
+        .contains(StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG);
   }
 
   @Test
-  void commandLineFlags_segmentLevelCompactThresholdMB_throwsIllegalConfigurationException() {
+  void commandLineFlags_compactorExecDelayMilliseconds_throwsIllegalConfigurationException() {
     // Arrange
-    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
+    ConfigurationDefaultProvider defaultProvider =
+        new ConfigurationDefaultProvider(
+            StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
     StorageConfigurations storageConfigurations = new StorageConfigurations();
 
     String[] argv = CLI_ARG_LIST.toArray(new String[0]);
@@ -349,59 +354,34 @@ public class StorageConfigurationsTest {
 
     // Act
     IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class,
-            () -> JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
+        assertThrows(
+            IllegalConfigurationException.class,
+            () ->
+                JCommander.newBuilder()
+                    .addObject(storageConfigurations)
+                    .defaultProvider(defaultProvider)
+                    .build()
+                    .parse(argv));
     // Assert
-    assertThat(exception).hasMessageThat()
-        .contains(StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG);
-  }
-
-  @Test
-  void commandLineFlags_compactorExecDelayMilliseconds_throwsIllegalConfigurationException() {
-    // Arrange
-    ConfigurationDefaultProvider defaultProvider = new ConfigurationDefaultProvider(
-        StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
-    StorageConfigurations storageConfigurations = new StorageConfigurations();
-
-    String[] argv = CLI_ARG_LIST.toArray(new String[0]);
-    argv[11] = "-1";
-
-    // Act
-    IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class,
-            () -> JCommander.newBuilder()
-                .addObject(storageConfigurations)
-                .defaultProvider(defaultProvider)
-                .build()
-                .parse(argv));
-    // Assert
-    assertThat(exception).hasMessageThat()
+    assertThat(exception)
+        .hasMessageThat()
         .contains(StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG);
   }
 
   private static void mockDefaultProvider(ConfigurationDefaultProvider defaultProvider) {
-    when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.DISPATCHER_CAPACITY_FLAG))
-        .thenReturn(String.valueOf(DISPATCHER_CAPACITY_DEFAULT));
-    when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG))
+    when(defaultProvider.getDefaultValueFor(
+            StorageConfigurationsConstants.STORE_DIRECTORY_PATH_FLAG))
         .thenReturn(STORE_DIRECTORY_PATH_DEFAULT.toString());
-    when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.LOADING_MODE_FLAG))
+    when(defaultProvider.getDefaultValueFor(StorageConfigurationsConstants.LOADING_MODE_FLAG))
         .thenReturn(LOADING_MODE_DEFAULT.toString());
-    when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG))
+    when(defaultProvider.getDefaultValueFor(
+            StorageConfigurationsConstants.MEMTABLE_FLUSH_THRESHOLD_BYTES_FLAG))
         .thenReturn(String.valueOf(MEMTABLE_FLUSH_BYTES_DEFAULT));
-    when(defaultProvider
-        .getDefaultValueFor(
+    when(defaultProvider.getDefaultValueFor(
             StorageConfigurationsConstants.SEGMENT_LEVEL_COMPACT_THRESHOLD_BYTES_FLAG))
         .thenReturn(String.valueOf(SEGMENT_LEVEL_FLUSH_BYTES_DEFAULT));
-    when(defaultProvider
-        .getDefaultValueFor(StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG))
+    when(defaultProvider.getDefaultValueFor(
+            StorageConfigurationsConstants.COMPACTOR_EXEC_DELAY_MILLISECONDS_FLAG))
         .thenReturn(String.valueOf(COMPACTOR_DELAY_DEFAULT));
   }
 }
