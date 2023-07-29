@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 @Singleton
 final class RaftClusterRpcChannelManager extends AbstractIdleService {
 
-  private final RaftClusterConfiguration raftClusterConfiguration;
+  private final RaftConfigurations raftConfigurations;
   private final ListeningExecutorService executorService;
 
   private ImmutableMap<RaftServerId, ManagedChannel> otherServerChannels;
@@ -26,8 +26,8 @@ final class RaftClusterRpcChannelManager extends AbstractIdleService {
 
   @Inject
   RaftClusterRpcChannelManager(
-      RaftClusterConfiguration raftClusterConfiguration, ListeningExecutorService executorService) {
-    this.raftClusterConfiguration = raftClusterConfiguration;
+      RaftConfigurations raftConfigurations, ListeningExecutorService executorService) {
+    this.raftConfigurations = raftConfigurations;
     this.executorService = executorService;
   }
 
@@ -35,7 +35,7 @@ final class RaftClusterRpcChannelManager extends AbstractIdleService {
   protected void startUp() {
     ImmutableMap.Builder<RaftServerId, ManagedChannel> managedChannelsBuilder =
         ImmutableMap.builder();
-    for (var serverEntry : raftClusterConfiguration.getOtherServersInCluster().entrySet()) {
+    for (var serverEntry : raftConfigurations.getOtherServersInCluster().entrySet()) {
       String target =
           String.format("%s:%s", serverEntry.getValue().host(), serverEntry.getValue().port());
       ManagedChannel managedChannel =

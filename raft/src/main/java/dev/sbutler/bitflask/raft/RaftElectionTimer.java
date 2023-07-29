@@ -17,9 +17,8 @@ final class RaftElectionTimer {
   private volatile TimerTask currentTimerTask;
 
   @Inject
-  RaftElectionTimer(
-      RaftClusterConfiguration raftClusterConfiguration, RaftModeManager raftModeManager) {
-    this.raftTimerInterval = raftClusterConfiguration.raftTimerInterval();
+  RaftElectionTimer(RaftConfigurations raftConfigurations, RaftModeManager raftModeManager) {
+    this.raftTimerInterval = raftConfigurations.raftTimerInterval();
     this.raftModeManager = raftModeManager;
   }
 

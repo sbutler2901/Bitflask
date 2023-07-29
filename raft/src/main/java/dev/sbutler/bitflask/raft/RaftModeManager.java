@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 final class RaftModeManager
     implements RaftRpcHandler, RaftElectionTimeoutHandler, RaftCommandSubmitter {
 
-  private final RaftClusterConfiguration raftClusterConfiguration;
+  private final RaftConfigurations raftConfigurations;
   private final RaftModeProcessor.Factory raftModeProcessorFactory;
   private final RaftElectionTimer raftElectionTimer;
   private final RaftVolatileState raftVolatileState;
@@ -33,11 +33,11 @@ final class RaftModeManager
 
   @Inject
   RaftModeManager(
-      RaftClusterConfiguration raftClusterConfiguration,
+      RaftConfigurations raftConfigurations,
       RaftModeProcessor.Factory raftModeProcessorFactory,
       RaftElectionTimer raftElectionTimer,
       RaftVolatileState raftVolatileState) {
-    this.raftClusterConfiguration = raftClusterConfiguration;
+    this.raftConfigurations = raftConfigurations;
     this.raftModeProcessorFactory = raftModeProcessorFactory;
     this.raftElectionTimer = raftElectionTimer;
     this.raftVolatileState = raftVolatileState;
@@ -102,7 +102,7 @@ final class RaftModeManager
   Optional<RaftServerInfo> getCurrentLeaderServerInfo() {
     return raftVolatileState
         .getLeaderServerId()
-        .map(leaderServiceId -> raftClusterConfiguration.clusterServers().get(leaderServiceId));
+        .map(leaderServiceId -> raftConfigurations.clusterServers().get(leaderServiceId));
   }
 
   /**
@@ -154,7 +154,7 @@ final class RaftModeManager
       raftElectionTimer.cancel();
       raftModeProcessor = newRaftModeProcessor;
       if (isCurrentLeader()) {
-        raftVolatileState.setLeaderId(raftClusterConfiguration.thisRaftServerId());
+        raftVolatileState.setLeaderId(raftConfigurations.thisRaftServerId());
       }
       runningProcessorFuture = executorService.submit(raftModeProcessor);
     } finally {

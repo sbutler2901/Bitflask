@@ -23,16 +23,16 @@ final class RaftPersistentState {
   private volatile RaftServerId votedForCandidateId;
 
   // Helper fields
-  private final RaftClusterConfiguration raftClusterConfiguration;
+  private final RaftConfigurations raftConfigurations;
   private final ReentrantLock voteLock = new ReentrantLock();
   private volatile int termWhenVotedForCandidate = 0;
 
   RaftPersistentState(
-      RaftClusterConfiguration raftClusterConfiguration,
+      RaftConfigurations raftConfigurations,
       RaftLog raftLog,
       int latestTermSeen,
       RaftServerId votedForCandidateId) {
-    this.raftClusterConfiguration = raftClusterConfiguration;
+    this.raftConfigurations = raftConfigurations;
     this.raftLog = raftLog;
     this.currentTerm.set(latestTermSeen);
     this.votedForCandidateId = votedForCandidateId;
@@ -85,7 +85,7 @@ final class RaftPersistentState {
     voteLock.lock();
     try {
       currentTerm.getAndIncrement();
-      votedForCandidateId = raftClusterConfiguration.thisRaftServerId();
+      votedForCandidateId = raftConfigurations.thisRaftServerId();
       termWhenVotedForCandidate = currentTerm.get();
     } finally {
       voteLock.unlock();

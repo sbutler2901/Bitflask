@@ -22,7 +22,7 @@ final class RaftLeaderState {
    */
   private final ConcurrentMap<RaftServerId, Long> matchIndex = new ConcurrentHashMap<>();
 
-  RaftLeaderState(RaftClusterConfiguration clusterConfiguration) {
+  RaftLeaderState(RaftConfigurations clusterConfiguration) {
     initialize(clusterConfiguration.clusterServers().keySet());
   }
 

@@ -6,7 +6,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.mu.util.stream.BiStream;
 
 /** The configuration for a Raft cluster. */
-public record RaftClusterConfiguration(
+public record RaftConfigurations(
     RaftServerId thisRaftServerId,
     ImmutableMap<RaftServerId, RaftServerInfo> clusterServers,
     RaftTimerInterval raftTimerInterval) {
