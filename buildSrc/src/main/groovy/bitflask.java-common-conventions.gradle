@@ -44,9 +44,6 @@ dependencies {
     compileOnly 'org.apache.tomcat:annotations-api:6.0.53' // necessary for Java 9+
     implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
 
-
-    implementation 'com.beust:jcommander:1.82'
-
     // Testing
 
     testImplementation 'com.google.guava:guava-testlib:32.1.2-jre'
