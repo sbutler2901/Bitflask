@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import dev.sbutler.bitflask.config.IllegalConfigurationException;
+import dev.sbutler.bitflask.config.InvalidConfigurationException;
 import org.junit.jupiter.api.Test;
 
 public class AbsolutePathValidatorTest {
@@ -30,9 +30,9 @@ public class AbsolutePathValidatorTest {
     String value = "~/test";
     AbsolutePathValidator validator = new AbsolutePathValidator();
     // Act
-    IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class,
-            () -> validator.validate(flagName, value));
+    InvalidConfigurationException exception =
+        assertThrows(
+            InvalidConfigurationException.class, () -> validator.validate(flagName, value));
     // Assert
     assertTrue(exception.getMessage().contains(flagName));
     assertTrue(exception.getMessage().contains(value));

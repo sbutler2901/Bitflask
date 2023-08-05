@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import dev.sbutler.bitflask.config.IllegalConfigurationException;
+import dev.sbutler.bitflask.config.InvalidConfigurationException;
 import org.junit.jupiter.api.Test;
 
 public class PositiveLongValidatorTest {
@@ -30,8 +30,8 @@ public class PositiveLongValidatorTest {
     String value = "0";
     PositiveLongValidator validator = new PositiveLongValidator();
     // Act
-    IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class,
+    InvalidConfigurationException exception =
+        assertThrows(InvalidConfigurationException.class,
             () -> validator.validate(flagName, value));
     // Assert
     assertTrue(exception.getMessage().contains(flagName));
@@ -45,8 +45,8 @@ public class PositiveLongValidatorTest {
     String value = "-1";
     PositiveLongValidator validator = new PositiveLongValidator();
     // Act
-    IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class,
+    InvalidConfigurationException exception =
+        assertThrows(InvalidConfigurationException.class,
             () -> validator.validate(flagName, value));
     // Assert
     assertTrue(exception.getMessage().contains(flagName));

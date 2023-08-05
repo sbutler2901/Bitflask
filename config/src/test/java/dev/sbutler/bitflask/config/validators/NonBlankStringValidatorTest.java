@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import dev.sbutler.bitflask.config.IllegalConfigurationException;
+import dev.sbutler.bitflask.config.InvalidConfigurationException;
 import org.junit.jupiter.api.Test;
 
 public class NonBlankStringValidatorTest {
@@ -26,9 +26,8 @@ public class NonBlankStringValidatorTest {
     // Arrange
     NonBlankStringValidator validator = new NonBlankStringValidator();
     // Act
-    IllegalConfigurationException exception =
-        assertThrows(IllegalConfigurationException.class,
-            () -> validator.validate("--flag", ""));
+    InvalidConfigurationException exception =
+        assertThrows(InvalidConfigurationException.class, () -> validator.validate("--flag", ""));
     // Assert
     assertTrue(exception.getMessage().contains("--flag"));
     assertTrue(exception.getMessage().contains("not be blank"));
