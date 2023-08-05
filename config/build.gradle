@@ -1,0 +1,6 @@
+plugins {
+    id 'bitflask.java-library-conventions'
+}
+
+dependencies {
+}
