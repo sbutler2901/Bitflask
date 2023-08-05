@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /** CLI tool for building BitflaskConfig as a json file. */
-public class ConfigWriter {
+public final class ConfigWriter {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -86,4 +86,6 @@ public class ConfigWriter {
         .setTimerMaximumMilliseconds(300)
         .build();
   }
+
+  private ConfigWriter() {}
 }
