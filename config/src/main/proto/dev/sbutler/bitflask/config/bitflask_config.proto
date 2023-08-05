@@ -6,25 +6,56 @@ option java_outer_classname = "BitflaskConfigProto";
 
 package server;
 
-// All configurations for Bitflask
+// All configurations for Bitflask.
 message Config {
-  ServerConfig serverConfig = 1;
-  StorageConfig storageConfig = 2;
-  RaftConfig raftConfig = 3;
+  ServerConfig server_config = 1;
+  StorageConfig storage_config = 2;
+  RaftConfig raft_config = 3;
 }
 
-// Configurations for Bitflask's Server
+// Configurations for Bitflask's Server.
 message ServerConfig {
-  // The port the server's RESP endpoint should
-  uint32 respPort = 1;
+  // Info about a Bitflask Server.
+  message ServerInfo {
+    // A unique id for a Bitflask server.
+    string server_id = 1;
+    // The host on which a Bitflask server is running.
+    string host = 2;
+    // The port on which the server's RESP endpoint should listen.
+    uint32 resp_port = 3;
+  }
+  // The server id of the running server.
+  string this_server_id = 1;
+
+  // Map of all Bitflask server ids to their info.
+  map<string, ServerConfig> bitflask_servers = 2;
 }
 
-// Configurations for Bitflask's Storage system
+// Configurations for Bitflask's Storage system.
 message StorageConfig {
+  // The directory path for storing Storage files. This must be an absolute file path.
+  string store_directory_path = 1;
 
+  enum LoadingMode {
+    // Loads any pre-existing files in the storeDirectoryPath.
+    LOAD = 0;
+    // Overwrites any pre-existing files in the storeDirectoryPath without loading.
+    TRUNCATE = 1;
+  }
+  // How Storage should handle pre-existing files in the storeDirectoryPath.
+  LoadingMode loading_mode = 2;
+  // The number of bytes the Storage's Memtable must exceed before being flushed to disk.
+  uint32 memtable_flush_threshold_bytes = 3;
+  // The number of bytes a Segment level must exceed before being compaction.
+  uint32 segment_level_flush_threshold_bytes = 4;
+  // The number of milliseconds to delay between completed compactor executions.
+  uint32 compactor_execution_delay_milliseconds = 5;
 }
 
-// Configurations for Bitflask's Raft system
+// Configurations for Bitflask's Raft system.
 message RaftConfig {
-
+  // The minimum time Raft's timer will wait.
+  uint32 timer_minimum_milliseconds = 1;
+  // The maximum time Raft's timer will wait.
+  uint32 timer_maximum_milliseconds = 2;
 }
