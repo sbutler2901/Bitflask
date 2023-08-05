@@ -11,13 +11,10 @@ public class PositiveLongValidatorTest {
 
   @Test
   void positiveValue() {
-    // Arrange
-    String flagName = "--flag";
-    String value = "1";
     PositiveLongValidator validator = new PositiveLongValidator();
-    // Act / Assert
+
     try {
-      validator.validate(flagName, value);
+      validator.validate("longArg", 1L);
     } catch (Exception e) {
       fail();
     }
@@ -25,32 +22,27 @@ public class PositiveLongValidatorTest {
 
   @Test
   void zeroValue() {
-    // Arrange
-    String flagName = "--flag";
-    String value = "0";
+    String name = "longArg";
+    long value = 0L;
     PositiveLongValidator validator = new PositiveLongValidator();
-    // Act
+
     InvalidConfigurationException exception =
-        assertThrows(InvalidConfigurationException.class,
-            () -> validator.validate(flagName, value));
-    // Assert
-    assertTrue(exception.getMessage().contains(flagName));
-    assertTrue(exception.getMessage().contains(value));
+        assertThrows(InvalidConfigurationException.class, () -> validator.validate(name, value));
+
+    assertTrue(exception.getMessage().contains(name));
+    assertTrue(exception.getMessage().contains(Long.toString(value)));
   }
 
   @Test
   void negativeValue() {
-    // Arrange
-    String flagName = "--flag";
-    String value = "-1";
+    String name = "longArg";
+    long value = -1L;
     PositiveLongValidator validator = new PositiveLongValidator();
-    // Act
-    InvalidConfigurationException exception =
-        assertThrows(InvalidConfigurationException.class,
-            () -> validator.validate(flagName, value));
-    // Assert
-    assertTrue(exception.getMessage().contains(flagName));
-    assertTrue(exception.getMessage().contains(value));
 
+    InvalidConfigurationException exception =
+        assertThrows(InvalidConfigurationException.class, () -> validator.validate(name, value));
+
+    assertTrue(exception.getMessage().contains(name));
+    assertTrue(exception.getMessage().contains(Long.toString(value)));
   }
 }

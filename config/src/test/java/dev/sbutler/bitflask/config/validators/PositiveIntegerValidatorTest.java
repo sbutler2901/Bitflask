@@ -11,13 +11,10 @@ public class PositiveIntegerValidatorTest {
 
   @Test
   void positiveValue() {
-    // Arrange
-    String flagName = "--flag";
-    String value = "1";
     PositiveIntegerValidator validator = new PositiveIntegerValidator();
-    // Act / Assert
+
     try {
-      validator.validate(flagName, value);
+      validator.validate("intArg", 1);
     } catch (Exception e) {
       fail();
     }
@@ -25,31 +22,27 @@ public class PositiveIntegerValidatorTest {
 
   @Test
   void zeroValue() {
-    // Arrange
-    String flagName = "--flag";
-    String value = "0";
+    String name = "intArg";
+    int value = 0;
     PositiveIntegerValidator validator = new PositiveIntegerValidator();
-    // Act
+
     InvalidConfigurationException exception =
-        assertThrows(
-            InvalidConfigurationException.class, () -> validator.validate(flagName, value));
-    // Assert
-    assertTrue(exception.getMessage().contains(flagName));
-    assertTrue(exception.getMessage().contains(value));
+        assertThrows(InvalidConfigurationException.class, () -> validator.validate(name, value));
+
+    assertTrue(exception.getMessage().contains(name));
+    assertTrue(exception.getMessage().contains(Integer.toString(value)));
   }
 
   @Test
   void negativeValue() {
-    // Arrange
-    String flagName = "--flag";
-    String value = "-1";
+    String name = "intArg";
+    int value = -1;
     PositiveIntegerValidator validator = new PositiveIntegerValidator();
-    // Act
+
     InvalidConfigurationException exception =
-        assertThrows(
-            InvalidConfigurationException.class, () -> validator.validate(flagName, value));
-    // Assert
-    assertTrue(exception.getMessage().contains(flagName));
-    assertTrue(exception.getMessage().contains(value));
+        assertThrows(InvalidConfigurationException.class, () -> validator.validate(name, value));
+
+    assertTrue(exception.getMessage().contains(name));
+    assertTrue(exception.getMessage().contains(Integer.toString(value)));
   }
 }

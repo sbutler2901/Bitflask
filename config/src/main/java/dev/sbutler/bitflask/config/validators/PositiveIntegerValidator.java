@@ -1,13 +1,13 @@
 package dev.sbutler.bitflask.config.validators;
 
-import com.beust.jcommander.IParameterValidator;
 import dev.sbutler.bitflask.config.InvalidConfigurationException;
 
-public class PositiveIntegerValidator implements IParameterValidator {
+/** Validates that an integer is positive according to {@link Integer#signum(int)}. */
+public class PositiveIntegerValidator implements Validator<Integer> {
 
-  public void validate(String name, String value) throws InvalidConfigurationException {
-    int n = Integer.parseInt(value);
-    if (Integer.signum(n) < 1) {
+  @Override
+  public void validate(String name, Integer value) {
+    if (Integer.signum(value) < 1) {
       throw new InvalidConfigurationException(
           "Parameter " + name + " should be positive (found " + value + ")");
     }

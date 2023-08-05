@@ -1,14 +1,14 @@
 package dev.sbutler.bitflask.config.validators;
 
-import com.beust.jcommander.IParameterValidator;
 import dev.sbutler.bitflask.config.InvalidConfigurationException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class AbsolutePathValidator implements IParameterValidator {
+/** Validates that a path argument is an absolute path according to {@link Path#isAbsolute()}. */
+public class AbsolutePathValidator implements Validator<String> {
 
   @Override
-  public void validate(String name, String value) throws InvalidConfigurationException {
+  public void validate(String name, String value) {
     Path providedPath = Paths.get(value);
     if (!providedPath.isAbsolute()) {
       throw new InvalidConfigurationException(
