@@ -2,9 +2,19 @@ plugins {
     id 'bitflask.java-application-conventions'
 }
 
+def picocliVersion = '4.7.4'
+
 dependencies {
     implementation project(':resp')
     implementation project(':common')
+
+    implementation "info.picocli:picocli:${picocliVersion}"
+    annotationProcessor "info.picocli:picocli-codegen:${picocliVersion}"
+}
+
+compileJava {
+    // Picoli annotation processor at compile time
+    options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 }
 
 application {

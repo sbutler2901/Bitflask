@@ -6,38 +6,55 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.ProvisionException;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
-import dev.sbutler.bitflask.client.configuration.ClientConfigurations;
-import dev.sbutler.bitflask.client.configuration.ClientConfigurationsConstants;
-import dev.sbutler.bitflask.common.configuration.ConfigurationsBuilder;
 import dev.sbutler.bitflask.resp.network.RespService;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
-import java.util.ResourceBundle;
+import java.util.concurrent.Callable;
+import picocli.CommandLine;
 
-public class Client {
+@CommandLine.Command(
+    name = "Client",
+    mixinStandardHelpOptions = true,
+    version = "Client 1.0",
+    description = "Client for interacting with a Bitflask server using the RespProtocol")
+public final class Client implements Callable<Integer> {
+
+  @CommandLine.Option(
+      names = {"-h", "--host"},
+      description = "The RESP port of the Bitflask server")
+  String host = "localhost";
+
+  @CommandLine.Option(
+      names = {"-p", "--port"},
+      description = "The RESP port of the Bitflask server")
+  int port = 9090;
 
   public static void main(String[] args) {
+    int exitCode = new CommandLine(new Client()).execute(args);
+    System.exit(exitCode);
+  }
+
+  @Override
+  public Integer call() {
     try {
-      ClientConfigurations clientConfigurations = initializeConfiguration(args);
-      printConfigInfo(clientConfigurations);
+      printConfigInfo();
 
-      SocketChannel socketChannel = createSocketChannel(clientConfigurations);
-      RespService respService = RespService.create(socketChannel);
+      RespService respService =
+          RespService.create(SocketChannel.open(new InetSocketAddress(host, port)));
 
-      ClientModule clientModule =
-          new ClientModule.Builder()
-              .addRuntimeModule(
-                  new AbstractModule() {
-                    @Override
-                    protected void configure() {
-                      super.configure();
-                      bind(RespService.class).toInstance(respService);
-                    }
-                  })
-              .build();
-      Injector injector = Guice.createInjector(clientModule);
+      Injector injector =
+          Guice.createInjector(
+              new ClientModule.Builder()
+                  .addRuntimeModule(
+                      new AbstractModule() {
+                        @Override
+                        protected void configure() {
+                          super.configure();
+                          bind(RespService.class).toInstance(respService);
+                        }
+                      })
+                  .build());
 
       ReplClientProcessorService replClientProcessorService =
           injector.getInstance(ReplClientProcessorService.class);
@@ -47,31 +64,18 @@ public class Client {
       replClientProcessorService.run();
     } catch (ProvisionException e) {
       e.getErrorMessages().forEach(System.err::println);
+      return 1;
     } catch (ConfigurationException e) {
       e.getErrorMessages().forEach(System.err::println);
+      return 1;
     } catch (Exception e) {
       e.printStackTrace();
+      return 1;
     }
+    return 0;
   }
 
-  private static SocketChannel createSocketChannel(ClientConfigurations clientConfigurations)
-      throws IOException {
-    SocketAddress socketAddress =
-        new InetSocketAddress(clientConfigurations.getHost(), clientConfigurations.getPort());
-    return SocketChannel.open(socketAddress);
-  }
-
-  private static ClientConfigurations initializeConfiguration(String[] args) {
-    ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
-    ConfigurationsBuilder configsBuilder = new ConfigurationsBuilder(args, resourceBundle);
-
-    ClientConfigurations clientConfigurations = new ClientConfigurations();
-    configsBuilder.build(
-        clientConfigurations, ClientConfigurationsConstants.CLIENT_FLAG_TO_CONFIGURATION_MAP);
-    return clientConfigurations;
-  }
-
-  private static void registerShutdownHook(
+  private void registerShutdownHook(
       ReplClientProcessorService replClientProcessorService, RespService respService) {
     Runtime.getRuntime()
         .addShutdownHook(
@@ -84,7 +88,7 @@ public class Client {
                     }));
   }
 
-  private static void closeConnection(RespService respService) {
+  private void closeConnection(RespService respService) {
     try {
       respService.close();
     } catch (IOException e) {
@@ -92,10 +96,10 @@ public class Client {
     }
   }
 
-  private static void printConfigInfo(ClientConfigurations clientConfigurations) {
+  private void printConfigInfo() {
     System.out.println("Using java version " + System.getProperty("java.version"));
     System.out.println(
         "Runtime processors available " + Runtime.getRuntime().availableProcessors());
-    System.out.println(clientConfigurations.toString());
+    System.out.printf("Host [%s], port [%d]%n", host, port);
   }
 }
