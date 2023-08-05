@@ -7,7 +7,7 @@ option java_outer_classname = "BitflaskConfigProto";
 package server;
 
 // All configurations for Bitflask.
-message Config {
+message BitflaskConfig {
   ServerConfig server_config = 1;
   StorageConfig storage_config = 2;
   RaftConfig raft_config = 3;
@@ -28,7 +28,7 @@ message ServerConfig {
   string this_server_id = 1;
 
   // Map of all Bitflask server ids to their info.
-  map<string, ServerConfig> bitflask_servers = 2;
+  map<string, ServerInfo> bitflask_servers = 2;
 }
 
 // Configurations for Bitflask's Storage system.
