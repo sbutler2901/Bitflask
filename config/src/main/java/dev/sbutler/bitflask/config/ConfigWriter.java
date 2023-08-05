@@ -15,7 +15,10 @@ public final class ConfigWriter {
   private static final String configFileName = "bitflask_config.json";
 
   public static void main(String[] args) throws Exception {
-    String configJson = JsonFormat.printer().print(ConfigDefaults.BITFLASK_CONFIG);
+    BitflaskConfig bitflaskConfig = ConfigDefaults.BITFLASK_CONFIG;
+    ConfigValidator.validate(bitflaskConfig);
+
+    String configJson = JsonFormat.printer().print(bitflaskConfig);
 
     Path configOutputDir = Paths.get(System.getProperty("user.home") + "/.bitflask/config");
     Path configOutputFile = configOutputDir.resolve(configFileName);

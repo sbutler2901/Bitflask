@@ -24,7 +24,11 @@ public final class ConfigLoader {
     BitflaskConfig.Builder configBuilder = BitflaskConfig.newBuilder();
     JsonFormat.parser().ignoringUnknownFields().merge(configJson, configBuilder);
     // Override defaults with loaded fields.
-    return ConfigDefaults.BITFLASK_CONFIG.toBuilder().mergeFrom(configBuilder.build()).build();
+    BitflaskConfig finalConfig =
+        ConfigDefaults.BITFLASK_CONFIG.toBuilder().mergeFrom(configBuilder.build()).build();
+
+    ConfigValidator.validate(finalConfig);
+    return finalConfig;
   }
 
   private ConfigLoader() {}
