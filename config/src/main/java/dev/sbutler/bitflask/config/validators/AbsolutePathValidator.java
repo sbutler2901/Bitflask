@@ -1,7 +1,7 @@
-package dev.sbutler.bitflask.common.configuration.validators;
+package dev.sbutler.bitflask.config.validators;
 
 import com.beust.jcommander.IParameterValidator;
-import dev.sbutler.bitflask.common.configuration.exceptions.IllegalConfigurationException;
+import dev.sbutler.bitflask.config.IllegalConfigurationException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 

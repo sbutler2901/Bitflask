@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.common.configuration.exceptions;
+package dev.sbutler.bitflask.config;
 
 import com.beust.jcommander.ParameterException;
 

@@ -1,10 +1,10 @@
-package dev.sbutler.bitflask.common.configuration.validators;
+package dev.sbutler.bitflask.config.validators;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import dev.sbutler.bitflask.common.configuration.exceptions.IllegalConfigurationException;
+import dev.sbutler.bitflask.config.IllegalConfigurationException;
 import org.junit.jupiter.api.Test;
 
 public class AbsolutePathValidatorTest {

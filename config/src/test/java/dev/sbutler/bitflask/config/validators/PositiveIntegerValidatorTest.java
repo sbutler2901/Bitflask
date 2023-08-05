@@ -1,20 +1,20 @@
-package dev.sbutler.bitflask.common.configuration.validators;
+package dev.sbutler.bitflask.config.validators;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import dev.sbutler.bitflask.common.configuration.exceptions.IllegalConfigurationException;
+import dev.sbutler.bitflask.config.IllegalConfigurationException;
 import org.junit.jupiter.api.Test;
 
-public class PositiveLongValidatorTest {
+public class PositiveIntegerValidatorTest {
 
   @Test
   void positiveValue() {
     // Arrange
     String flagName = "--flag";
     String value = "1";
-    PositiveLongValidator validator = new PositiveLongValidator();
+    PositiveIntegerValidator validator = new PositiveIntegerValidator();
     // Act / Assert
     try {
       validator.validate(flagName, value);
@@ -28,7 +28,7 @@ public class PositiveLongValidatorTest {
     // Arrange
     String flagName = "--flag";
     String value = "0";
-    PositiveLongValidator validator = new PositiveLongValidator();
+    PositiveIntegerValidator validator = new PositiveIntegerValidator();
     // Act
     IllegalConfigurationException exception =
         assertThrows(IllegalConfigurationException.class,
@@ -43,7 +43,7 @@ public class PositiveLongValidatorTest {
     // Arrange
     String flagName = "--flag";
     String value = "-1";
-    PositiveLongValidator validator = new PositiveLongValidator();
+    PositiveIntegerValidator validator = new PositiveIntegerValidator();
     // Act
     IllegalConfigurationException exception =
         assertThrows(IllegalConfigurationException.class,
@@ -51,6 +51,5 @@ public class PositiveLongValidatorTest {
     // Assert
     assertTrue(exception.getMessage().contains(flagName));
     assertTrue(exception.getMessage().contains(value));
-
   }
 }
