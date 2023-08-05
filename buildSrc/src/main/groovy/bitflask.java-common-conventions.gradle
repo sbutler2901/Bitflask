@@ -3,6 +3,7 @@
 plugins {
     id 'java'
     id 'idea'
+    id 'com.google.protobuf'
 }
 
 group 'dev.sbutler'
@@ -17,18 +18,30 @@ compileJava {
     targetCompatibility = '20'
 }
 
+def guiceVersion = '7.0.0'
+def mugVersion = '6.6'
+def floggerVersion = '0.7.4'
+def grpcVersion = '1.57.1'
+def protobufVersion = '3.23.4'
+def junitVersion = '5.10.0'
+
 dependencies {
-    implementation 'com.google.inject:guice:7.0.0'
-    implementation 'com.google.inject.extensions:guice-assistedinject:7.0.0'
-    implementation 'com.google.inject.extensions:guice-throwingproviders:7.0.0'
+    implementation "com.google.inject:guice:${guiceVersion}"
+    implementation "com.google.inject.extensions:guice-assistedinject:${guiceVersion}"
+    implementation "com.google.inject.extensions:guice-throwingproviders:${guiceVersion}"
 
     implementation 'com.google.guava:guava:32.1.2-jre'
 
-    implementation 'com.google.mug:mug:6.6'
-    implementation 'com.google.mug:mug-guava:6.6'
+    implementation "com.google.mug:mug:${mugVersion}"
+    implementation "com.google.mug:mug-guava:${mugVersion}"
 
-    implementation 'com.google.flogger:flogger:0.7.4'
-    implementation 'com.google.flogger:flogger-log4j2-backend:0.7.4'
+    implementation "com.google.flogger:flogger:${floggerVersion}"
+    implementation "com.google.flogger:flogger-log4j2-backend:${floggerVersion}"
+
+    runtimeOnly "io.grpc:grpc-netty-shaded:${grpcVersion}"
+    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    compileOnly 'org.apache.tomcat:annotations-api:6.0.53' // necessary for Java 9+
 
     implementation 'com.beust:jcommander:1.82'
 
@@ -39,8 +52,10 @@ dependencies {
     testImplementation "com.google.truth:truth:1.1.5"
     testImplementation 'com.google.truth.extensions:truth-java8-extension:1.1.5'
 
-    testImplementation(platform('org.junit:junit-bom:5.10.0'))
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testImplementation "io.grpc:grpc-testing:${grpcVersion}"
+
+    testImplementation(platform("org.junit:junit-bom:${junitVersion}"))
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
     testImplementation 'org.mockito:mockito-junit-jupiter:5.4.0'
 }
 
@@ -61,4 +76,22 @@ tasks.withType(JavaExec).configureEach {
     jvmArgs += "--enable-preview"
     jvmArgs += "--add-modules"
     jvmArgs += "jdk.incubator.concurrent"
+}
+
+// Gradle protobuf plugin
+protobuf {
+    protoc {
+        // The artifact spec for the Protobuf Compiler
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
 }

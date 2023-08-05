@@ -1,6 +1,5 @@
 plugins {
     id 'bitflask.java-library-conventions'
-    id 'bitflask.java-grpc-conventions'
 }
 
 dependencies {
