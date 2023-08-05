@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm.entry;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
@@ -16,10 +16,9 @@ public class EntryMetadataTest {
     long creationEpochSeconds = Instant.now().getEpochSecond();
     UnsignedShort keyLength = UnsignedShort.valueOf(UnsignedShort.MAX_VALUE);
     UnsignedShort valueLength = UnsignedShort.valueOf(UnsignedShort.MIN_VALUE);
-    byte[] expectedBytes = Bytes.concat(
-        Longs.toByteArray(creationEpochSeconds),
-        keyLength.getBytes(),
-        valueLength.getBytes());
+    byte[] expectedBytes =
+        Bytes.concat(
+            Longs.toByteArray(creationEpochSeconds), keyLength.getBytes(), valueLength.getBytes());
 
     byte[] bytes = EntryMetadata.fromBytes(expectedBytes).getBytes();
 
@@ -43,10 +42,9 @@ public class EntryMetadataTest {
     long creationEpochSeconds = Instant.now().getEpochSecond();
     UnsignedShort keyLength = UnsignedShort.valueOf(UnsignedShort.MAX_VALUE);
     UnsignedShort valueLength = UnsignedShort.valueOf(UnsignedShort.MIN_VALUE);
-    byte[] bytes = Bytes.concat(
-        Longs.toByteArray(creationEpochSeconds),
-        keyLength.getBytes(),
-        valueLength.getBytes());
+    byte[] bytes =
+        Bytes.concat(
+            Longs.toByteArray(creationEpochSeconds), keyLength.getBytes(), valueLength.getBytes());
 
     EntryMetadata metadata = EntryMetadata.fromBytes(bytes);
 
@@ -60,15 +58,16 @@ public class EntryMetadataTest {
     long creationEpochSeconds = -1;
     UnsignedShort keyLength = UnsignedShort.valueOf(UnsignedShort.MAX_VALUE);
     UnsignedShort valueLength = UnsignedShort.valueOf(UnsignedShort.MIN_VALUE);
-    byte[] bytes = Bytes.concat(
-        Longs.toByteArray(creationEpochSeconds),
-        keyLength.getBytes(),
-        valueLength.getBytes());
+    byte[] bytes =
+        Bytes.concat(
+            Longs.toByteArray(creationEpochSeconds), keyLength.getBytes(), valueLength.getBytes());
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> EntryMetadata.fromBytes(bytes));
 
-    assertThat(e).hasMessageThat().ignoringCase()
+    assertThat(e)
+        .hasMessageThat()
+        .ignoringCase()
         .contains("CreationEpochSeconds cannot be negative.");
   }
 
@@ -77,21 +76,19 @@ public class EntryMetadataTest {
     long creationEpochSeconds = Instant.now().getEpochSecond();
     UnsignedShort keyLength = UnsignedShort.valueOf(UnsignedShort.MIN_VALUE);
     UnsignedShort valueLength = UnsignedShort.valueOf(UnsignedShort.MIN_VALUE);
-    byte[] bytes = Bytes.concat(
-        Longs.toByteArray(creationEpochSeconds),
-        keyLength.getBytes(),
-        valueLength.getBytes());
+    byte[] bytes =
+        Bytes.concat(
+            Longs.toByteArray(creationEpochSeconds), keyLength.getBytes(), valueLength.getBytes());
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> EntryMetadata.fromBytes(bytes));
 
-    assertThat(e).hasMessageThat().ignoringCase()
-        .contains("Key length must be greater than 0");
+    assertThat(e).hasMessageThat().ignoringCase().contains("Key length must be greater than 0");
   }
 
   @Test
   public void fromBytes_invalidLength_lessThan_throwsIllegalArgumentException() {
-    byte[] bytes = new byte[]{EntryMetadata.BYTES - 1};
+    byte[] bytes = new byte[] {EntryMetadata.BYTES - 1};
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> EntryMetadata.fromBytes(bytes));
@@ -101,7 +98,7 @@ public class EntryMetadataTest {
 
   @Test
   public void fromBytes_invalidLength_greaterThan_throwsIllegalArgumentException() {
-    byte[] bytes = new byte[]{EntryMetadata.BYTES + 1};
+    byte[] bytes = new byte[] {EntryMetadata.BYTES + 1};
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> EntryMetadata.fromBytes(bytes));
@@ -115,10 +112,9 @@ public class EntryMetadataTest {
     UnsignedShort keyLength = UnsignedShort.valueOf(UnsignedShort.MAX_VALUE);
     UnsignedShort valueLength = UnsignedShort.valueOf(UnsignedShort.MIN_VALUE);
     EntryMetadata metadata = new EntryMetadata(creationEpochSeconds, keyLength, valueLength);
-    byte[] expectedBytes = Bytes.concat(
-        Longs.toByteArray(creationEpochSeconds),
-        keyLength.getBytes(),
-        valueLength.getBytes());
+    byte[] expectedBytes =
+        Bytes.concat(
+            Longs.toByteArray(creationEpochSeconds), keyLength.getBytes(), valueLength.getBytes());
 
     byte[] bytes = metadata.getBytes();
 

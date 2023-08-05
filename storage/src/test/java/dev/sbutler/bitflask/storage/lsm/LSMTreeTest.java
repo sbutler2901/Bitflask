@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.storage.lsm;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -19,16 +19,15 @@ import org.mockito.ArgumentCaptor;
 
 public class LSMTreeTest {
 
-  private final static Entry ENTRY = new Entry(Instant.now().getEpochSecond(), "key", "value");
-  private final static Entry DELETED_ENTRY = new Entry(Instant.now().getEpochSecond(), "key", "");
+  private static final Entry ENTRY = new Entry(Instant.now().getEpochSecond(), "key", "value");
+  private static final Entry DELETED_ENTRY = new Entry(Instant.now().getEpochSecond(), "key", "");
 
-  private final ListeningScheduledExecutorService scheduledExecutorService = mock(
-      ListeningScheduledExecutorService.class);
+  private final ListeningScheduledExecutorService scheduledExecutorService =
+      mock(ListeningScheduledExecutorService.class);
   private final LSMTreeReader reader = mock(LSMTreeReader.class);
   private final LSMTreeWriter writer = mock(LSMTreeWriter.class);
 
-  private final LSMTree lsmTree =
-      new LSMTree(scheduledExecutorService, reader, writer);
+  private final LSMTree lsmTree = new LSMTree(scheduledExecutorService, reader, writer);
 
   @Test
   public void read_entryFound_returnsValue() {

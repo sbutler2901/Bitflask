@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedBytes;
@@ -34,7 +34,7 @@ public class SegmentMetadataTest {
 
   @Test
   public void fromBytes_lowerRange() {
-    byte[] bytes = new byte[]{0, 0, 0, 0};
+    byte[] bytes = new byte[] {0, 0, 0, 0};
 
     SegmentMetadata metadata = SegmentMetadata.fromBytes(bytes);
 
@@ -45,7 +45,7 @@ public class SegmentMetadataTest {
   @Test
   public void fromBytes_upperRange() {
     byte unsignedMax = UnsignedBytes.checkedCast(255);
-    byte[] bytes = new byte[]{unsignedMax, unsignedMax, unsignedMax, unsignedMax};
+    byte[] bytes = new byte[] {unsignedMax, unsignedMax, unsignedMax, unsignedMax};
 
     SegmentMetadata metadata = SegmentMetadata.fromBytes(bytes);
 
@@ -78,8 +78,8 @@ public class SegmentMetadataTest {
     UnsignedShort minValue = UnsignedShort.valueOf(UnsignedShort.MIN_VALUE);
     SegmentMetadata metadata = new SegmentMetadata(minValue, minValue);
 
-    assertThat(metadata.getBytes()).isEqualTo(
-        Bytes.concat(minValue.getBytes(), minValue.getBytes()));
+    assertThat(metadata.getBytes())
+        .isEqualTo(Bytes.concat(minValue.getBytes(), minValue.getBytes()));
   }
 
   @Test
@@ -87,7 +87,7 @@ public class SegmentMetadataTest {
     UnsignedShort maxValue = UnsignedShort.valueOf(UnsignedShort.MAX_VALUE);
     SegmentMetadata metadata = new SegmentMetadata(maxValue, maxValue);
 
-    assertThat(metadata.getBytes()).isEqualTo(
-        Bytes.concat(maxValue.getBytes(), maxValue.getBytes()));
+    assertThat(metadata.getBytes())
+        .isEqualTo(Bytes.concat(maxValue.getBytes(), maxValue.getBytes()));
   }
 }

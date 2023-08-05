@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 public class LSMTreeWriterTest {
 
   private final Memtable MEMTABLE = mock(Memtable.class);
-  SegmentLevelMultiMap MULTI_MAP = new SegmentLevelMultiMap.Builder(
-      ImmutableListMultimap.of()).build();
+  SegmentLevelMultiMap MULTI_MAP =
+      new SegmentLevelMultiMap.Builder(ImmutableListMultimap.of()).build();
 
   private final LSMTreeStateManager stateManager = new LSMTreeStateManager(MEMTABLE, MULTI_MAP);
 
@@ -50,8 +50,7 @@ public class LSMTreeWriterTest {
     IOException ioException = new IOException("test");
     doThrow(ioException).when(MEMTABLE).write(any());
 
-    StorageWriteException e =
-        assertThrows(StorageWriteException.class, () -> writer.write(entry));
+    StorageWriteException e = assertThrows(StorageWriteException.class, () -> writer.write(entry));
 
     assertThat(e).hasCauseThat().isEqualTo(ioException);
   }

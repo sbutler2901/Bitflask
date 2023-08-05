@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm.utils;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -28,12 +28,13 @@ public class LoaderUtilsTest {
     DirectoryStream<Path> dirStream = mock(DirectoryStream.class);
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.exists(any())).thenReturn(true);
-      filesMockedStatic.when(() -> Files.newDirectoryStream(any(), anyString()))
+      filesMockedStatic
+          .when(() -> Files.newDirectoryStream(any(), anyString()))
           .thenReturn(dirStream);
       when(dirStream.iterator()).thenReturn(ImmutableList.of(segPath).iterator());
 
-      ImmutableList<Path> matchedPaths = LoaderUtils.loadPathsInDirForGlob(
-          Path.of("/tmp"), "*.seg");
+      ImmutableList<Path> matchedPaths =
+          LoaderUtils.loadPathsInDirForGlob(Path.of("/tmp"), "*.seg");
       assertThat(matchedPaths).containsExactly(segPath);
     }
   }
@@ -44,7 +45,8 @@ public class LoaderUtilsTest {
       filesMockedStatic.when(() -> Files.exists(any())).thenReturn(false);
 
       StorageLoadException e =
-          assertThrows(StorageLoadException.class,
+          assertThrows(
+              StorageLoadException.class,
               () -> LoaderUtils.loadPathsInDirForGlob(Path.of("/tmp"), "*.seg"));
 
       assertThat(e).hasMessageThat().isEqualTo("Directory does not exist [/tmp]");
@@ -56,15 +58,18 @@ public class LoaderUtilsTest {
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.exists(any())).thenReturn(true);
       IOException ioException = new IOException("test");
-      filesMockedStatic.when(() -> Files.newDirectoryStream(any(), anyString()))
+      filesMockedStatic
+          .when(() -> Files.newDirectoryStream(any(), anyString()))
           .thenThrow(ioException);
 
       StorageLoadException e =
-          assertThrows(StorageLoadException.class,
+          assertThrows(
+              StorageLoadException.class,
               () -> LoaderUtils.loadPathsInDirForGlob(Path.of("/tmp"), "*.seg"));
 
       assertThat(e).hasCauseThat().isEqualTo(ioException);
-      assertThat(e).hasMessageThat()
+      assertThat(e)
+          .hasMessageThat()
           .isEqualTo("Failed to load paths in storage dir [/tmp] for glob [*.seg]");
     }
   }
@@ -75,15 +80,14 @@ public class LoaderUtilsTest {
     DirectoryStream<Path> dirStream = mock(DirectoryStream.class);
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.exists(any())).thenReturn(true);
-      filesMockedStatic.when(() -> Files.newDirectoryStream(any(), anyString()))
+      filesMockedStatic
+          .when(() -> Files.newDirectoryStream(any(), anyString()))
           .thenReturn(dirStream);
       when(dirStream.iterator()).thenReturn(ImmutableList.of(segPath).iterator());
 
       LoaderUtils.deletePathsInDirForGlob(Path.of("/tmp"), "*.seg");
 
-      filesMockedStatic.verify(
-          () -> Files.delete(eq(segPath)),
-          times(1));
+      filesMockedStatic.verify(() -> Files.delete(eq(segPath)), times(1));
     }
   }
 
@@ -93,7 +97,8 @@ public class LoaderUtilsTest {
     DirectoryStream<Path> dirStream = mock(DirectoryStream.class);
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.exists(any())).thenReturn(true);
-      filesMockedStatic.when(() -> Files.newDirectoryStream(any(), anyString()))
+      filesMockedStatic
+          .when(() -> Files.newDirectoryStream(any(), anyString()))
           .thenReturn(dirStream);
       when(dirStream.iterator()).thenReturn(ImmutableList.of(segPath).iterator());
 
@@ -101,7 +106,8 @@ public class LoaderUtilsTest {
       filesMockedStatic.when(() -> Files.delete(any())).thenThrow(ioException);
 
       StorageLoadException e =
-          assertThrows(StorageLoadException.class,
+          assertThrows(
+              StorageLoadException.class,
               () -> LoaderUtils.deletePathsInDirForGlob(Path.of("/tmp"), "*.seg"));
 
       assertThat(e).hasCauseThat().isEqualTo(ioException);

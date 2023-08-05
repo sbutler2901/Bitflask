@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -31,43 +31,46 @@ public class SegmentTest {
 
   private final UnsignedShort zeroUnsignedShort = UnsignedShort.valueOf(0);
 
-  private final SegmentMetadata metadata = new SegmentMetadata(zeroUnsignedShort,
-      UnsignedShort.valueOf(1));
+  private final SegmentMetadata metadata =
+      new SegmentMetadata(zeroUnsignedShort, UnsignedShort.valueOf(1));
   private final EntryReader entryReader = mock(EntryReader.class);
   private final BloomFilter<String> keyFilter =
       BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), 1);
-  SegmentIndex emptySegmentIndex = new SegmentIndexDense(
-      INDEX_PATH,
-      new SegmentIndexMetadata(zeroUnsignedShort),
-      ImmutableSortedMap.of());
+  SegmentIndex emptySegmentIndex =
+      new SegmentIndexDense(
+          INDEX_PATH, new SegmentIndexMetadata(zeroUnsignedShort), ImmutableSortedMap.of());
 
   @Test
   public void construction_mismatchSegmentNumber_throwsIllegalArgumentException() {
-    SegmentIndex segmentIndex = new SegmentIndexDense(
-        INDEX_PATH,
-        new SegmentIndexMetadata(UnsignedShort.valueOf(1)),
-        ImmutableSortedMap.of());
+    SegmentIndex segmentIndex =
+        new SegmentIndexDense(
+            INDEX_PATH,
+            new SegmentIndexMetadata(UnsignedShort.valueOf(1)),
+            ImmutableSortedMap.of());
 
     IllegalArgumentException e =
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, segmentIndex, 0));
 
-    assertThat(e).hasMessageThat().ignoringCase()
+    assertThat(e)
+        .hasMessageThat()
+        .ignoringCase()
         .contains("SegmentMetadata segmentNumber does not match SegmentIndex segmentNumber.");
   }
 
   @Test
   public void getSegmentNumber_matchesSegmentMetadata() {
-    Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter,
-        emptySegmentIndex, 0);
+    Segment segment =
+        Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, emptySegmentIndex, 0);
 
     assertThat(segment.getSegmentNumber()).isEqualTo(metadata.getSegmentNumber());
   }
 
   @Test
   public void getSegmentLevel_matchesSegmentMetadata() {
-    Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter,
-        emptySegmentIndex, 0);
+    Segment segment =
+        Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, emptySegmentIndex, 0);
 
     assertThat(segment.getSegmentLevel()).isEqualTo(metadata.getSegmentLevel());
   }
@@ -76,8 +79,8 @@ public class SegmentTest {
   public void mightContain_absent_returnsFalse() {
     String key = "key";
 
-    Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter,
-        emptySegmentIndex, 0);
+    Segment segment =
+        Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, emptySegmentIndex, 0);
 
     assertThat(segment.mightContain(key)).isFalse();
   }
@@ -87,8 +90,8 @@ public class SegmentTest {
     String key = "key";
     keyFilter.put(key);
 
-    Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter,
-        emptySegmentIndex, 0);
+    Segment segment =
+        Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, emptySegmentIndex, 0);
 
     assertThat(segment.mightContain(key)).isTrue();
   }
@@ -96,25 +99,27 @@ public class SegmentTest {
   @Test
   public void mightContain_presentInSegmentIndex_returnsTrue() {
     String key = "key";
-    SegmentIndex segmentIndex = new SegmentIndexDense(
-        INDEX_PATH,
-        new SegmentIndexMetadata(zeroUnsignedShort),
-        ImmutableSortedMap.of(key, 0L));
+    SegmentIndex segmentIndex =
+        new SegmentIndexDense(
+            INDEX_PATH,
+            new SegmentIndexMetadata(zeroUnsignedShort),
+            ImmutableSortedMap.of(key, 0L));
 
-    Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, segmentIndex,
-        0);
+    Segment segment =
+        Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, segmentIndex, 0);
 
     assertThat(segment.mightContain(key)).isTrue();
   }
 
   @Test
   public void readEntry_notFound() throws Exception {
-    SegmentIndex segmentIndex = new SegmentIndexDense(
-        INDEX_PATH,
-        new SegmentIndexMetadata(UnsignedShort.valueOf(0)),
-        ImmutableSortedMap.of());
-    Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, segmentIndex,
-        0);
+    SegmentIndex segmentIndex =
+        new SegmentIndexDense(
+            INDEX_PATH,
+            new SegmentIndexMetadata(UnsignedShort.valueOf(0)),
+            ImmutableSortedMap.of());
+    Segment segment =
+        Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, segmentIndex, 0);
 
     Optional<Entry> readEntry = segment.readEntry("key");
 
@@ -126,15 +131,16 @@ public class SegmentTest {
     String key = "key";
     String value = "value";
     keyFilter.put(key);
-    SegmentIndex segmentIndex = new SegmentIndexDense(
-        INDEX_PATH,
-        new SegmentIndexMetadata(UnsignedShort.valueOf(0)),
-        ImmutableSortedMap.of(key, 0L));
+    SegmentIndex segmentIndex =
+        new SegmentIndexDense(
+            INDEX_PATH,
+            new SegmentIndexMetadata(UnsignedShort.valueOf(0)),
+            ImmutableSortedMap.of(key, 0L));
     Entry entry = new Entry(Instant.now().getEpochSecond(), key, value);
-    Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, segmentIndex,
-        entry.getNumBytesSize());
-    when(entryReader.findEntryFromOffset(anyString(), anyLong()))
-        .thenReturn(Optional.of(entry));
+    Segment segment =
+        Segment.create(
+            SEGMENT_PATH, metadata, entryReader, keyFilter, segmentIndex, entry.getNumBytesSize());
+    when(entryReader.findEntryFromOffset(anyString(), anyLong())).thenReturn(Optional.of(entry));
 
     Optional<Entry> readEntry = segment.readEntry(key);
 
@@ -145,8 +151,8 @@ public class SegmentTest {
   public void readEntry_offsetNotFound() throws Exception {
     String key = "key";
     keyFilter.put(key);
-    Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter,
-        emptySegmentIndex, 0);
+    Segment segment =
+        Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, emptySegmentIndex, 0);
 
     Optional<Entry> readEntry = segment.readEntry(key);
 
@@ -156,27 +162,26 @@ public class SegmentTest {
 
   @Test
   public void readAllEntries() throws Exception {
-    Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter,
-        emptySegmentIndex, 0);
+    Segment segment =
+        Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, emptySegmentIndex, 0);
 
     segment.readAllEntries();
 
-    verify(entryReader, times(1))
-        .readAllEntriesFromOffset(SegmentMetadata.BYTES);
+    verify(entryReader, times(1)).readAllEntriesFromOffset(SegmentMetadata.BYTES);
   }
 
   @Test
   public void getNumBytesSize() {
-    Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter,
-        emptySegmentIndex, 0);
+    Segment segment =
+        Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, emptySegmentIndex, 0);
 
     assertThat(segment.getNumBytesSize()).isEqualTo(0);
   }
 
   @Test
   public void getPathsForDeletion() {
-    Segment segment = Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter,
-        emptySegmentIndex, 0);
+    Segment segment =
+        Segment.create(SEGMENT_PATH, metadata, entryReader, keyFilter, emptySegmentIndex, 0);
 
     SegmentRelatedPaths pathsForDeletion = segment.getSegmentRelatedPaths();
 

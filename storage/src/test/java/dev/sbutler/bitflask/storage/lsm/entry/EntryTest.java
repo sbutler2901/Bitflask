@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm.entry;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.primitives.Bytes;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
@@ -19,10 +19,12 @@ public class EntryTest {
     String value = "value";
 
     IllegalArgumentException e =
-        assertThrows(IllegalArgumentException.class,
-            () -> new Entry(creationEpochSeconds, key, value));
+        assertThrows(
+            IllegalArgumentException.class, () -> new Entry(creationEpochSeconds, key, value));
 
-    assertThat(e).hasMessageThat().ignoringCase()
+    assertThat(e)
+        .hasMessageThat()
+        .ignoringCase()
         .contains("CreationEpochSeconds cannot be negative.");
   }
 
@@ -33,11 +35,10 @@ public class EntryTest {
     String value = "value";
 
     IllegalArgumentException e =
-        assertThrows(IllegalArgumentException.class,
-            () -> new Entry(creationEpochSeconds, key, value));
+        assertThrows(
+            IllegalArgumentException.class, () -> new Entry(creationEpochSeconds, key, value));
 
-    assertThat(e).hasMessageThat().ignoringCase()
-        .contains("Key must not be empty.");
+    assertThat(e).hasMessageThat().ignoringCase().contains("Key must not be empty.");
   }
 
   @Test
@@ -47,11 +48,10 @@ public class EntryTest {
     String value = "value";
 
     IllegalArgumentException e =
-        assertThrows(IllegalArgumentException.class,
-            () -> new Entry(creationEpochSeconds, key, value));
+        assertThrows(
+            IllegalArgumentException.class, () -> new Entry(creationEpochSeconds, key, value));
 
-    assertThat(e).hasMessageThat().ignoringCase()
-        .contains("Key length greater than allowed.");
+    assertThat(e).hasMessageThat().ignoringCase().contains("Key length greater than allowed.");
   }
 
   @Test
@@ -61,11 +61,10 @@ public class EntryTest {
     String value = String.valueOf(new char[Entry.VALUE_MAX_LENGTH + 1]);
 
     IllegalArgumentException e =
-        assertThrows(IllegalArgumentException.class,
-            () -> new Entry(creationEpochSeconds, key, value));
+        assertThrows(
+            IllegalArgumentException.class, () -> new Entry(creationEpochSeconds, key, value));
 
-    assertThat(e).hasMessageThat().ignoringCase()
-        .contains("Value length greater than allowed.");
+    assertThat(e).hasMessageThat().ignoringCase().contains("Value length greater than allowed.");
   }
 
   @Test
@@ -73,12 +72,16 @@ public class EntryTest {
     long creationEpochSeconds = Instant.now().getEpochSecond();
     String key = "key";
     String value = "value";
-    EntryMetadata metadata = new EntryMetadata(creationEpochSeconds,
-        UnsignedShort.valueOf(key.length()),
-        UnsignedShort.valueOf(value.length()));
-    byte[] expectedBytes = Bytes.concat(metadata.getBytes(),
-        key.getBytes(StandardCharsets.UTF_8),
-        value.getBytes(StandardCharsets.UTF_8));
+    EntryMetadata metadata =
+        new EntryMetadata(
+            creationEpochSeconds,
+            UnsignedShort.valueOf(key.length()),
+            UnsignedShort.valueOf(value.length()));
+    byte[] expectedBytes =
+        Bytes.concat(
+            metadata.getBytes(),
+            key.getBytes(StandardCharsets.UTF_8),
+            value.getBytes(StandardCharsets.UTF_8));
 
     byte[] bytes = Entry.fromBytes(expectedBytes).getBytes();
 
@@ -102,12 +105,16 @@ public class EntryTest {
     long creationEpochSeconds = Instant.now().getEpochSecond();
     String key = "key";
     String value = "value";
-    EntryMetadata metadata = new EntryMetadata(creationEpochSeconds,
-        UnsignedShort.valueOf(key.length()),
-        UnsignedShort.valueOf(value.length()));
-    byte[] bytes = Bytes.concat(metadata.getBytes(),
-        key.getBytes(StandardCharsets.UTF_8),
-        value.getBytes(StandardCharsets.UTF_8));
+    EntryMetadata metadata =
+        new EntryMetadata(
+            creationEpochSeconds,
+            UnsignedShort.valueOf(key.length()),
+            UnsignedShort.valueOf(value.length()));
+    byte[] bytes =
+        Bytes.concat(
+            metadata.getBytes(),
+            key.getBytes(StandardCharsets.UTF_8),
+            value.getBytes(StandardCharsets.UTF_8));
 
     Entry entry = Entry.fromBytes(bytes);
 
@@ -126,15 +133,18 @@ public class EntryTest {
 
   @Test
   public void fromBytes_byteArrayHeaderMismatch_throwsIllegalArgumentException() {
-    EntryMetadata metadata = new EntryMetadata(Instant.now().getEpochSecond(),
-        UnsignedShort.valueOf(1), UnsignedShort.valueOf(0));
+    EntryMetadata metadata =
+        new EntryMetadata(
+            Instant.now().getEpochSecond(), UnsignedShort.valueOf(1), UnsignedShort.valueOf(0));
     byte[] keyValueBytes = new byte[Entry.MIN_BYTES + 10];
     byte[] bytes = Bytes.concat(metadata.getBytes(), keyValueBytes);
 
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> Entry.fromBytes(bytes));
 
-    assertThat(e).hasMessageThat().ignoringCase()
+    assertThat(e)
+        .hasMessageThat()
+        .ignoringCase()
         .contains("Byte array length does not match decoded header.");
   }
 
@@ -154,13 +164,18 @@ public class EntryTest {
     EntryMetadata decodedMetadata = EntryMetadata.fromBytes(metadataBytes);
     assertThat(decodedMetadata).isEqualTo(entry.getMetaData());
 
-    String decodedKey = new String(bytes, EntryMetadata.BYTES,
-        decodedMetadata.keyLength().value(), StandardCharsets.UTF_8);
+    String decodedKey =
+        new String(
+            bytes,
+            EntryMetadata.BYTES,
+            decodedMetadata.keyLength().value(),
+            StandardCharsets.UTF_8);
     assertThat(decodedKey).isEqualTo(key);
 
     int valueOffset = EntryMetadata.BYTES + decodedMetadata.keyLength().value();
-    String decodedValue = new String(bytes, valueOffset,
-        decodedMetadata.valueLength().value(), StandardCharsets.UTF_8);
+    String decodedValue =
+        new String(
+            bytes, valueOffset, decodedMetadata.valueLength().value(), StandardCharsets.UTF_8);
 
     assertThat(decodedValue).isEqualTo(value);
   }

@@ -1,16 +1,16 @@
 package dev.sbutler.bitflask.common.primitives;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.primitives.UnsignedBytes;
 import org.junit.jupiter.api.Test;
 
 public class UnsignedShortTest {
 
-  private static final byte[] MIN_VALUE_BYTES = new byte[]{0, 0};
-  private static final byte[] MAX_VALUE_BYTES = new byte[]{UnsignedBytes.checkedCast(255),
-      UnsignedBytes.checkedCast(255)};
+  private static final byte[] MIN_VALUE_BYTES = new byte[] {0, 0};
+  private static final byte[] MAX_VALUE_BYTES =
+      new byte[] {UnsignedBytes.checkedCast(255), UnsignedBytes.checkedCast(255)};
 
   @Test
   public void identityConversion_fromBytes_minValue() {
@@ -61,7 +61,8 @@ public class UnsignedShortTest {
   @Test
   public void value_invalid_lessThanMinValue_throwsIllegalArgumentException() {
     IllegalArgumentException e =
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> UnsignedShort.valueOf(UnsignedShort.MIN_VALUE - 1));
 
     assertThat(e).hasMessageThat().ignoringCase().contains("Provided value less than MIN_VALUE");
@@ -70,7 +71,8 @@ public class UnsignedShortTest {
   @Test
   public void value_invalid_greaterThanMaxValue_throwsIllegalArgumentException() {
     IllegalArgumentException e =
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> UnsignedShort.valueOf(UnsignedShort.MAX_VALUE + 1));
 
     assertThat(e).hasMessageThat().ignoringCase().contains("Provided value greater than MAX_VALUE");
@@ -93,8 +95,7 @@ public class UnsignedShortTest {
   @Test
   public void fromBytes_invalid_arrayLength_lessThanTwo_throwsIllegalArgumentException() {
     IllegalArgumentException e =
-        assertThrows(IllegalArgumentException.class,
-            () -> UnsignedShort.fromBytes(new byte[0]));
+        assertThrows(IllegalArgumentException.class, () -> UnsignedShort.fromBytes(new byte[0]));
 
     assertThat(e).hasMessageThat().ignoringCase().contains("Byte array length invalid.");
   }
@@ -102,8 +103,7 @@ public class UnsignedShortTest {
   @Test
   public void fromBytes_invalid_arrayLength_greaterThanTwo_throwsIllegalArgumentException() {
     IllegalArgumentException e =
-        assertThrows(IllegalArgumentException.class,
-            () -> UnsignedShort.fromBytes(new byte[3]));
+        assertThrows(IllegalArgumentException.class, () -> UnsignedShort.fromBytes(new byte[3]));
 
     assertThat(e).hasMessageThat().ignoringCase().contains("Byte array length invalid.");
   }

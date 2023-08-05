@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm.segment;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -65,10 +65,7 @@ public class SegmentLevelCompactorTest {
     when(segment_1.getSegmentRelatedPaths())
         .thenReturn(new SegmentRelatedPaths(SEGMENT_PATH_1, SEGMENT_INDEX_PATH_1));
 
-    segmentLevelMultiMap = SegmentLevelMultiMap.builder()
-        .add(segment_0)
-        .add(segment_1)
-        .build();
+    segmentLevelMultiMap = SegmentLevelMultiMap.builder().add(segment_0).add(segment_1).build();
   }
 
   @Test
@@ -80,8 +77,7 @@ public class SegmentLevelCompactorTest {
 
     SegmentLevelMultiMap compactedMap;
     try (MockedStatic<Files> ignored = mockStatic(Files.class)) {
-      compactedMap = compactor.compactSegmentLevel(
-          segmentLevelMultiMap, SEGMENT_LEVEL);
+      compactedMap = compactor.compactSegmentLevel(segmentLevelMultiMap, SEGMENT_LEVEL);
     }
 
     assertThat(compactedMap.getSegmentLevels()).containsExactly(nextSegmentLevel);
@@ -93,8 +89,8 @@ public class SegmentLevelCompactorTest {
     ArgumentCaptor<Integer> segmentLevelCaptor = ArgumentCaptor.forClass(Integer.class);
     verify(segmentFactory, times(1))
         .create(keyEntryMapCaptor.capture(), segmentLevelCaptor.capture());
-    assertThat(keyEntryMapCaptor.getValue()).isEqualTo(
-        ImmutableSortedMap.of(ENTRY_0.key(), ENTRY_0));
+    assertThat(keyEntryMapCaptor.getValue())
+        .isEqualTo(ImmutableSortedMap.of(ENTRY_0.key(), ENTRY_0));
     assertThat(segmentLevelCaptor.getValue()).isEqualTo(nextSegmentLevel);
   }
 
@@ -106,11 +102,9 @@ public class SegmentLevelCompactorTest {
     when(segmentFactory.create(any(), anyInt())).thenReturn(newSegment);
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-      filesMockedStatic.when(() -> Files.delete(SEGMENT_PATH_0))
-          .thenThrow(new IOException("test"));
+      filesMockedStatic.when(() -> Files.delete(SEGMENT_PATH_0)).thenThrow(new IOException("test"));
 
-      compactor.compactSegmentLevel(
-          segmentLevelMultiMap, SEGMENT_LEVEL);
+      compactor.compactSegmentLevel(segmentLevelMultiMap, SEGMENT_LEVEL);
 
       filesMockedStatic.verify(() -> Files.delete(eq(SEGMENT_PATH_0)), times(1));
       filesMockedStatic.verify(() -> Files.delete(eq(SEGMENT_INDEX_PATH_0)), times(0));
@@ -125,11 +119,11 @@ public class SegmentLevelCompactorTest {
     when(segmentFactory.create(any(), anyInt())).thenReturn(newSegment);
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-      filesMockedStatic.when(() -> Files.delete(SEGMENT_INDEX_PATH_0))
+      filesMockedStatic
+          .when(() -> Files.delete(SEGMENT_INDEX_PATH_0))
           .thenThrow(new IOException("test"));
 
-      compactor.compactSegmentLevel(
-          segmentLevelMultiMap, SEGMENT_LEVEL);
+      compactor.compactSegmentLevel(segmentLevelMultiMap, SEGMENT_LEVEL);
 
       filesMockedStatic.verify(() -> Files.delete(eq(SEGMENT_PATH_0)), times(1));
       filesMockedStatic.verify(() -> Files.delete(eq(SEGMENT_INDEX_PATH_0)), times(1));
@@ -137,13 +131,16 @@ public class SegmentLevelCompactorTest {
   }
 
   @Test
-  public void compactSegmentLevel_segmentReadAllEntriesThrowsException_throwStorageCompactionException()
-      throws Exception {
+  public void
+      compactSegmentLevel_segmentReadAllEntriesThrowsException_throwStorageCompactionException()
+          throws Exception {
     RuntimeException runtimeException = new RuntimeException("test");
     when(segment_0.readAllEntries()).thenThrow(runtimeException);
 
-    StorageCompactionException exception = assertThrows(StorageCompactionException.class,
-        () -> compactor.compactSegmentLevel(segmentLevelMultiMap, SEGMENT_LEVEL));
+    StorageCompactionException exception =
+        assertThrows(
+            StorageCompactionException.class,
+            () -> compactor.compactSegmentLevel(segmentLevelMultiMap, SEGMENT_LEVEL));
 
     assertThat(exception).hasCauseThat().isEqualTo(runtimeException);
     assertThat(exception).hasMessageThat().isEqualTo("Failed getting all entries in segment level");
@@ -155,8 +152,10 @@ public class SegmentLevelCompactorTest {
     IOException ioException = new IOException("test");
     when(segmentFactory.create(any(), anyInt())).thenThrow(ioException);
 
-    StorageCompactionException exception = assertThrows(StorageCompactionException.class,
-        () -> compactor.compactSegmentLevel(segmentLevelMultiMap, SEGMENT_LEVEL));
+    StorageCompactionException exception =
+        assertThrows(
+            StorageCompactionException.class,
+            () -> compactor.compactSegmentLevel(segmentLevelMultiMap, SEGMENT_LEVEL));
 
     assertThat(exception).hasCauseThat().isEqualTo(ioException);
     assertThat(exception).hasMessageThat().isEqualTo("Failed creating new segment");

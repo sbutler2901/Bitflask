@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
@@ -32,7 +32,8 @@ public class LSMTreeStateManagerTest {
     StorageException e =
         assertThrows(StorageException.class, uninitializedManager::getCurrentState);
 
-    assertThat(e).hasMessageThat()
+    assertThat(e)
+        .hasMessageThat()
         .isEqualTo("LSMTreeStateManager's state must be initialized before usage");
   }
 
@@ -63,11 +64,14 @@ public class LSMTreeStateManagerTest {
 
     StorageException exception;
     try (var ignored = lsmTreeStateManager.getAndLockCurrentState()) {
-      exception = assertThrows(StorageException.class,
-          () -> lsmTreeStateManager.updateCurrentState(null, newMultiMap));
+      exception =
+          assertThrows(
+              StorageException.class,
+              () -> lsmTreeStateManager.updateCurrentState(null, newMultiMap));
     }
 
-    assertThat(exception).hasMessageThat()
+    assertThat(exception)
+        .hasMessageThat()
         .isEqualTo("LSMTreeStateManager's state cannot be set to null");
   }
 
@@ -77,20 +81,26 @@ public class LSMTreeStateManagerTest {
 
     StorageException exception;
     try (var ignored = lsmTreeStateManager.getAndLockCurrentState()) {
-      exception = assertThrows(StorageException.class,
-          () -> lsmTreeStateManager.updateCurrentState(newMemtable, null));
+      exception =
+          assertThrows(
+              StorageException.class,
+              () -> lsmTreeStateManager.updateCurrentState(newMemtable, null));
     }
 
-    assertThat(exception).hasMessageThat()
+    assertThat(exception)
+        .hasMessageThat()
         .isEqualTo("LSMTreeStateManager's state cannot be set to null");
   }
 
   @Test
   public void updateCurrentState_withoutLock_throwsStorageException() {
-    StorageException e = assertThrows(StorageException.class,
-        () -> lsmTreeStateManager.updateCurrentState(MEMTABLE, MULTI_MAP));
+    StorageException e =
+        assertThrows(
+            StorageException.class,
+            () -> lsmTreeStateManager.updateCurrentState(MEMTABLE, MULTI_MAP));
 
-    assertThat(e).hasMessageThat()
+    assertThat(e)
+        .hasMessageThat()
         .isEqualTo("Attempted to update CurrentState without holding lock.");
   }
 }

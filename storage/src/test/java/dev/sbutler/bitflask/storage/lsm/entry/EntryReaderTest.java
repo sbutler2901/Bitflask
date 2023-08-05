@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.storage.lsm.entry;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 
@@ -25,21 +25,17 @@ import org.mockito.MockedStatic;
 @SuppressWarnings({"resource"})
 public class EntryReaderTest {
 
-  private final static Path FILE_PATH = Paths.get(
-      "src/test/resources/segment0" + Segment.FILE_EXTENSION);
+  private static final Path FILE_PATH =
+      Paths.get("src/test/resources/segment0" + Segment.FILE_EXTENSION);
 
-  private static final Entry ENTRY_0 =
-      new Entry(Instant.now().getEpochSecond(), "key0", "value0");
-  private static final Entry ENTRY_1 =
-      new Entry(Instant.now().getEpochSecond(), "key1", "value1");
+  private static final Entry ENTRY_0 = new Entry(Instant.now().getEpochSecond(), "key0", "value0");
+  private static final Entry ENTRY_1 = new Entry(Instant.now().getEpochSecond(), "key1", "value1");
 
   private final EntryReader entryReader = EntryReader.create(FILE_PATH);
 
   @Test
   public void readAllEntriesFromOffset() throws Exception {
-    InputStream is = new ByteArrayInputStream(Bytes.concat(
-        ENTRY_0.getBytes(),
-        ENTRY_1.getBytes()));
+    InputStream is = new ByteArrayInputStream(Bytes.concat(ENTRY_0.getBytes(), ENTRY_1.getBytes()));
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.exists(any(), any())).thenReturn(true);
@@ -51,9 +47,7 @@ public class EntryReaderTest {
 
   @Test
   public void readAllEntriesFromOffset_skipToOffset() throws Exception {
-    InputStream is = new ByteArrayInputStream(Bytes.concat(
-        ENTRY_0.getBytes(),
-        ENTRY_1.getBytes()));
+    InputStream is = new ByteArrayInputStream(Bytes.concat(ENTRY_0.getBytes(), ENTRY_1.getBytes()));
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.exists(any(), any())).thenReturn(true);
@@ -69,20 +63,22 @@ public class EntryReaderTest {
     String key = "key";
     String value = "value";
 
-    EntryMetadata storedMetadata = new EntryMetadata(
-        Instant.now().getEpochSecond(),
-        UnsignedShort.valueOf(key.length()),
-        UnsignedShort.valueOf(value.length()));
+    EntryMetadata storedMetadata =
+        new EntryMetadata(
+            Instant.now().getEpochSecond(),
+            UnsignedShort.valueOf(key.length()),
+            UnsignedShort.valueOf(value.length()));
     InputStream is = new ByteArrayInputStream(storedMetadata.getBytes());
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.exists(any(), any())).thenReturn(true);
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
       IOException e =
-          assertThrows(IOException.class,
-              () -> entryReader.readAllEntriesFromOffset(0L));
+          assertThrows(IOException.class, () -> entryReader.readAllEntriesFromOffset(0L));
 
-      assertThat(e).hasMessageThat().ignoringCase()
+      assertThat(e)
+          .hasMessageThat()
+          .ignoringCase()
           .contains("Read key length did not match entry.");
     }
   }
@@ -92,22 +88,24 @@ public class EntryReaderTest {
     String key = "key";
     String value = "value";
 
-    EntryMetadata storedMetadata = new EntryMetadata(
-        Instant.now().getEpochSecond(),
-        UnsignedShort.valueOf(key.length()),
-        UnsignedShort.valueOf(value.length()));
-    InputStream is = new ByteArrayInputStream(Bytes.concat(
-        storedMetadata.getBytes(),
-        key.getBytes(StandardCharsets.UTF_8)));
+    EntryMetadata storedMetadata =
+        new EntryMetadata(
+            Instant.now().getEpochSecond(),
+            UnsignedShort.valueOf(key.length()),
+            UnsignedShort.valueOf(value.length()));
+    InputStream is =
+        new ByteArrayInputStream(
+            Bytes.concat(storedMetadata.getBytes(), key.getBytes(StandardCharsets.UTF_8)));
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.exists(any(), any())).thenReturn(true);
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
       IOException e =
-          assertThrows(IOException.class,
-              () -> entryReader.readAllEntriesFromOffset(0L));
+          assertThrows(IOException.class, () -> entryReader.readAllEntriesFromOffset(0L));
 
-      assertThat(e).hasMessageThat().ignoringCase()
+      assertThat(e)
+          .hasMessageThat()
+          .ignoringCase()
           .contains("Read value length did not match entry.");
     }
   }
@@ -147,9 +145,7 @@ public class EntryReaderTest {
 
   @Test
   public void findEntryFromOffset_found_noOffset() throws Exception {
-    InputStream is = new ByteArrayInputStream(Bytes.concat(
-        ENTRY_0.getBytes(),
-        ENTRY_1.getBytes()));
+    InputStream is = new ByteArrayInputStream(Bytes.concat(ENTRY_0.getBytes(), ENTRY_1.getBytes()));
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
@@ -160,14 +156,12 @@ public class EntryReaderTest {
 
   @Test
   public void findEntryFromOffset_found_skipToOffset() throws Exception {
-    InputStream is = new ByteArrayInputStream(Bytes.concat(
-        ENTRY_0.getBytes(),
-        ENTRY_1.getBytes()));
+    InputStream is = new ByteArrayInputStream(Bytes.concat(ENTRY_0.getBytes(), ENTRY_1.getBytes()));
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
-      Optional<Entry> entry = entryReader
-          .findEntryFromOffset(ENTRY_1.key(), ENTRY_0.getBytes().length);
+      Optional<Entry> entry =
+          entryReader.findEntryFromOffset(ENTRY_1.key(), ENTRY_0.getBytes().length);
       assertThat(entry).hasValue(ENTRY_1);
     }
   }
@@ -177,19 +171,21 @@ public class EntryReaderTest {
     String key = "key";
     String value = "value";
 
-    EntryMetadata storedMetadata = new EntryMetadata(
-        Instant.now().getEpochSecond(),
-        UnsignedShort.valueOf(key.length()),
-        UnsignedShort.valueOf(value.length()));
+    EntryMetadata storedMetadata =
+        new EntryMetadata(
+            Instant.now().getEpochSecond(),
+            UnsignedShort.valueOf(key.length()),
+            UnsignedShort.valueOf(value.length()));
     InputStream is = new ByteArrayInputStream(storedMetadata.getBytes());
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
       IOException e =
-          assertThrows(IOException.class,
-              () -> entryReader.findEntryFromOffset(key, 0L));
+          assertThrows(IOException.class, () -> entryReader.findEntryFromOffset(key, 0L));
 
-      assertThat(e).hasMessageThat().ignoringCase()
+      assertThat(e)
+          .hasMessageThat()
+          .ignoringCase()
           .contains("Read key length did not match entry.");
     }
   }
@@ -199,21 +195,23 @@ public class EntryReaderTest {
     String key = "key";
     String value = "value";
 
-    EntryMetadata storedMetadata = new EntryMetadata(
-        Instant.now().getEpochSecond(),
-        UnsignedShort.valueOf(key.length()),
-        UnsignedShort.valueOf(value.length()));
-    InputStream is = new ByteArrayInputStream(Bytes.concat(
-        storedMetadata.getBytes(),
-        key.getBytes(StandardCharsets.UTF_8)));
+    EntryMetadata storedMetadata =
+        new EntryMetadata(
+            Instant.now().getEpochSecond(),
+            UnsignedShort.valueOf(key.length()),
+            UnsignedShort.valueOf(value.length()));
+    InputStream is =
+        new ByteArrayInputStream(
+            Bytes.concat(storedMetadata.getBytes(), key.getBytes(StandardCharsets.UTF_8)));
 
     try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
       filesMockedStatic.when(() -> Files.newInputStream(any(), any())).thenReturn(is);
       IOException e =
-          assertThrows(IOException.class,
-              () -> entryReader.findEntryFromOffset(key, 0L));
+          assertThrows(IOException.class, () -> entryReader.findEntryFromOffset(key, 0L));
 
-      assertThat(e).hasMessageThat().ignoringCase()
+      assertThat(e)
+          .hasMessageThat()
+          .ignoringCase()
           .contains("Read value length did not match entry.");
     }
   }
