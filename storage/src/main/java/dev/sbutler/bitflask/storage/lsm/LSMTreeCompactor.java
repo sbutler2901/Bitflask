@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.lsm;
 
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.exceptions.StorageCompactionException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
@@ -25,7 +25,7 @@ final class LSMTreeCompactor implements Runnable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final StorageConfigurations configurations;
+  private final StorageConfig storageConfig;
   private final LSMTreeStateManager stateManager;
   private final MemtableFactory memtableFactory;
   private final SegmentFactory segmentFactory;
@@ -33,12 +33,12 @@ final class LSMTreeCompactor implements Runnable {
 
   @Inject
   LSMTreeCompactor(
-      StorageConfigurations configurations,
+      StorageConfig storageConfig,
       LSMTreeStateManager stateManager,
       SegmentLevelCompactor segmentLevelCompactor,
       MemtableFactory memtableFactory,
       SegmentFactory segmentFactory) {
-    this.configurations = configurations;
+    this.storageConfig = storageConfig;
     this.stateManager = stateManager;
     this.segmentLevelCompactor = segmentLevelCompactor;
     this.memtableFactory = memtableFactory;
@@ -64,7 +64,7 @@ final class LSMTreeCompactor implements Runnable {
   boolean flushMemtable() {
     try (var currentState = stateManager.getAndLockCurrentState()) {
       if (currentState.getMemtable().getNumBytesSize()
-          < configurations.getMemtableFlushThresholdBytes()) {
+          < storageConfig.getMemtableFlushThresholdBytes()) {
         return false;
       }
 
@@ -131,6 +131,6 @@ final class LSMTreeCompactor implements Runnable {
 
   private long getSegmentLevelFlushThreshold(int segmentLevel) {
     return Math.round(
-        Math.pow(configurations.getSegmentLevelFlushThresholdBytes(), (segmentLevel + 1)));
+        Math.pow(storageConfig.getSegmentLevelFlushThresholdBytes(), (segmentLevel + 1)));
   }
 }

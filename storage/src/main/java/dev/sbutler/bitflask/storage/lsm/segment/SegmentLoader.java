@@ -4,7 +4,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.utils.LoaderUtils;
 import jakarta.inject.Inject;
@@ -15,24 +15,20 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
-/**
- * Handles loading all {@link Segment}s in the storage directory.
- */
+/** Handles loading all {@link Segment}s in the storage directory. */
 final class SegmentLoader {
 
   private static final String SEGMENT_GLOB = String.format("*.%s", Segment.FILE_EXTENSION);
 
+  private final StorageConfig storageConfig;
   private final ThreadFactory threadFactory;
-  private final StorageConfigurations configurations;
   private final SegmentFactory segmentFactory;
 
   @Inject
   SegmentLoader(
-      ThreadFactory threadFactory,
-      StorageConfigurations configurations,
-      SegmentFactory segmentFactory) {
+      StorageConfig storageConfig, ThreadFactory threadFactory, SegmentFactory segmentFactory) {
+    this.storageConfig = storageConfig;
     this.threadFactory = threadFactory;
-    this.configurations = configurations;
     this.segmentFactory = segmentFactory;
   }
 
@@ -42,15 +38,16 @@ final class SegmentLoader {
    */
   ImmutableList<Segment> loadWithIndexes(
       ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap) {
-    ImmutableList<Path> segmentPaths = LoaderUtils.loadPathsInDirForGlob(
-        configurations.getStoreDirectoryPath(), SEGMENT_GLOB);
+    ImmutableList<Path> segmentPaths =
+        LoaderUtils.loadPathsInDirForGlob(
+            Path.of(storageConfig.getStoreDirectoryPath()), SEGMENT_GLOB);
 
     try (var scope =
         new StructuredTaskScope.ShutdownOnFailure("load-segment-scope", threadFactory)) {
       List<Future<Segment>> segmentFutures = new ArrayList<>(segmentPaths.size());
       for (var path : segmentPaths) {
-        segmentFutures.add(scope.fork(
-            () -> segmentFactory.loadFromPath(path, segmentNumberToIndexMap)));
+        segmentFutures.add(
+            scope.fork(() -> segmentFactory.loadFromPath(path, segmentNumberToIndexMap)));
       }
 
       try {
@@ -65,10 +62,9 @@ final class SegmentLoader {
     }
   }
 
-  /**
-   * Deletes all existing {@link Segment}s in the storage directory.
-   */
+  /** Deletes all existing {@link Segment}s in the storage directory. */
   void truncate() {
-    LoaderUtils.deletePathsInDirForGlob(configurations.getStoreDirectoryPath(), SEGMENT_GLOB);
+    LoaderUtils.deletePathsInDirForGlob(
+        Path.of(storageConfig.getStoreDirectoryPath()), SEGMENT_GLOB);
   }
 }

@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.storage.lsm;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
 import dev.sbutler.bitflask.storage.lsm.memtable.MemtableLoader;
@@ -20,9 +20,9 @@ public final class LSMTreeLoader {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private final StorageConfig storageConfig;
   private final ListeningScheduledExecutorService scheduledExecutorService;
   private final ThreadFactory threadFactory;
-  private final StorageConfigurations configurations;
   private final LSMTreeStateManager stateManager;
   private final LSMTreeCompactor compactor;
   private final MemtableLoader memtableLoader;
@@ -30,17 +30,17 @@ public final class LSMTreeLoader {
 
   @Inject
   LSMTreeLoader(
+      StorageConfig storageConfig,
       @LSMTreeListeningScheduledExecutorService
           ListeningScheduledExecutorService scheduledExecutorService,
       ThreadFactory threadFactory,
-      StorageConfigurations configurations,
       LSMTreeStateManager stateManager,
       LSMTreeCompactor compactor,
       MemtableLoader memtableLoader,
       SegmentLevelMultiMapLoader segmentLevelMultiMapLoader) {
+    this.storageConfig = storageConfig;
     this.scheduledExecutorService = scheduledExecutorService;
     this.threadFactory = threadFactory;
-    this.configurations = configurations;
     this.stateManager = stateManager;
     this.compactor = compactor;
     this.memtableLoader = memtableLoader;
@@ -80,6 +80,6 @@ public final class LSMTreeLoader {
     scheduledExecutorService.scheduleWithFixedDelay(
         compactor,
         Duration.ofMinutes(0),
-        Duration.ofMillis(configurations.getCompactorExecDelayMilliseconds()));
+        Duration.ofMillis(storageConfig.getCompactorExecutionDelayMilliseconds()));
   }
 }

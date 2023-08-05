@@ -9,11 +9,11 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.common.concurrency.VirtualThreadConcurrencyModule;
 import dev.sbutler.bitflask.config.BitflaskConfig;
+import dev.sbutler.bitflask.config.ConfigDefaults;
 import dev.sbutler.bitflask.config.ConfigModule;
 import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.StorageService;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -31,7 +31,7 @@ import org.junit.jupiter.api.extension.ParameterResolver;
  * extension.
  *
  * <p>This extension can be programmatically added to a test class with the ability to specify
- * custom {@link StorageConfigurations} for the service instance created.
+ * custom {@link StorageConfig} for the service instance created.
  *
  * <p>The storage instance will exist for the life of the test class that is extended by this
  * extension. Will the lifecycle of all resources managed by this extension.
@@ -52,7 +52,7 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
    */
   @SuppressWarnings("unused")
   public StorageExtension() {
-    this.storageConfig = StorageConfig.getDefaultInstance();
+    this.storageConfig = ConfigDefaults.STORAGE_CONFIG;
   }
 
   /**

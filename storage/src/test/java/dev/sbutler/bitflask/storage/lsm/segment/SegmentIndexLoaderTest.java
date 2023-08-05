@@ -9,7 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.utils.LoaderUtils;
 import java.io.IOException;
@@ -18,6 +18,7 @@ import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+/** Unit tests for {@link SegmentIndexLoader}. */
 public class SegmentIndexLoaderTest {
 
   private static final Path PATH_0 = Path.of("/tmp/index_0.idx");
@@ -27,16 +28,17 @@ public class SegmentIndexLoaderTest {
   private final SegmentIndex index_1 = mock(SegmentIndex.class);
 
   private final ThreadFactory threadFactory = Thread.ofVirtual().factory();
-  private final StorageConfigurations configurations = mock(StorageConfigurations.class);
   private final SegmentIndexFactory segmentIndexFactory = mock(SegmentIndexFactory.class);
 
   private final SegmentIndexLoader loader =
-      new SegmentIndexLoader(threadFactory, configurations, segmentIndexFactory);
+      new SegmentIndexLoader(
+          StorageConfig.getDefaultInstance(), threadFactory, segmentIndexFactory);
 
   @Test
   public void load_success() throws Exception {
     try (MockedStatic<LoaderUtils> loaderUtilsMockedStatic = mockStatic(LoaderUtils.class)) {
-      loaderUtilsMockedStatic.when(() -> LoaderUtils.loadPathsInDirForGlob(any(), any()))
+      loaderUtilsMockedStatic
+          .when(() -> LoaderUtils.loadPathsInDirForGlob(any(), any()))
           .thenReturn(ImmutableList.of(PATH_0, PATH_1));
       when(segmentIndexFactory.loadFromPath(PATH_0)).thenReturn(index_0);
       when(segmentIndexFactory.loadFromPath(PATH_1)).thenReturn(index_1);
@@ -50,7 +52,8 @@ public class SegmentIndexLoaderTest {
   @Test
   public void load_indexFactoryThrowsIoException_throwsStorageLoadException() throws Exception {
     try (MockedStatic<LoaderUtils> loaderUtilsMockedStatic = mockStatic(LoaderUtils.class)) {
-      loaderUtilsMockedStatic.when(() -> LoaderUtils.loadPathsInDirForGlob(any(), any()))
+      loaderUtilsMockedStatic
+          .when(() -> LoaderUtils.loadPathsInDirForGlob(any(), any()))
           .thenReturn(ImmutableList.of(PATH_0));
       IOException ioException = new IOException("test");
       when(segmentIndexFactory.loadFromPath(PATH_0)).thenThrow(ioException);
@@ -68,8 +71,7 @@ public class SegmentIndexLoaderTest {
       loader.truncate();
 
       loaderUtilsMockedStatic.verify(
-          () -> LoaderUtils.deletePathsInDirForGlob(any(), any()),
-          times(1));
+          () -> LoaderUtils.deletePathsInDirForGlob(any(), any()), times(1));
     }
   }
 }

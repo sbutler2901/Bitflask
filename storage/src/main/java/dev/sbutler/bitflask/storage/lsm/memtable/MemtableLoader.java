@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.storage.lsm.memtable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
@@ -12,30 +12,31 @@ import java.io.IOException;
 import java.util.SortedMap;
 
 /**
- * Creates a Memtable by loading or truncating previous values based on the
- * {@link dev.sbutler.bitflask.storage.configuration.StorageLoadingMode} specified at startup.
+ * Creates a Memtable by loading or truncating previous values based on the {@link
+ * StorageConfig.LoadingMode} specified at startup.
  */
 public final class MemtableLoader {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final StorageConfigurations configurations;
+  private final StorageConfig storageConfig;
   private final MemtableFactory memtableFactory;
 
   @Inject
-  MemtableLoader(StorageConfigurations configurations, MemtableFactory memtableFactory) {
-    this.configurations = configurations;
+  MemtableLoader(StorageConfig storageConfig, MemtableFactory memtableFactory) {
+    this.storageConfig = storageConfig;
     this.memtableFactory = memtableFactory;
   }
 
   /**
-   * Creates a Memtable by loading or truncating previous values based on the
-   * {@link dev.sbutler.bitflask.storage.configuration.StorageLoadingMode} specified at startup.
+   * Creates a Memtable by loading or truncating previous values based on the {@link
+   * StorageConfig.LoadingMode} specified at startup.
    */
   public Memtable load() {
-    return switch (configurations.getStorageLoadingMode()) {
-      case TRUNCATE -> createWithTruncation();
+    return switch (storageConfig.getLoadingMode()) {
       case LOAD -> createWithLoading();
+      case TRUNCATE -> createWithTruncation();
+      case UNRECOGNIZED -> throw new StorageLoadException("Unrecognized StorageConfig.LoadingMode");
     };
   }
 
@@ -55,17 +56,14 @@ public final class MemtableLoader {
 
     try {
       Memtable memtable = memtableFactory.createWithLoading(keyEntryMap);
-      logger.atInfo()
-          .log("Created Memtable with [%d] pre-existing entries.", keyEntryMap.size());
+      logger.atInfo().log("Created Memtable with [%d] pre-existing entries.", keyEntryMap.size());
       return memtable;
     } catch (IOException e) {
       throw new StorageLoadException("Failed to create Memtable with loading", e);
     }
   }
 
-  /**
-   * Loads all entries from the pre-existing {@link WriteAheadLog} file.
-   */
+  /** Loads all entries from the pre-existing {@link WriteAheadLog} file. */
   private ImmutableList<Entry> loadEntries() {
     EntryReader entryReader = EntryReader.create(memtableFactory.getWriteAheadLogPath());
     try {

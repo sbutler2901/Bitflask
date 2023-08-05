@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.storage.lsm.segment;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.utils.LoaderUtils;
 import jakarta.inject.Inject;
@@ -14,33 +14,30 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
-/**
- * Handles loading all {@link SegmentIndex} in the storage directory.
- */
+/** Handles loading all {@link SegmentIndex} in the storage directory. */
 final class SegmentIndexLoader {
 
   private static final String INDEX_GLOB = String.format("*.%s", SegmentIndex.FILE_EXTENSION);
 
+  private final StorageConfig storageConfig;
   private final ThreadFactory threadFactory;
-  private final StorageConfigurations configurations;
   private final SegmentIndexFactory segmentIndexFactory;
 
   @Inject
   SegmentIndexLoader(
+      StorageConfig storageConfig,
       ThreadFactory threadFactory,
-      StorageConfigurations configurations,
       SegmentIndexFactory segmentIndexFactory) {
+    this.storageConfig = storageConfig;
     this.threadFactory = threadFactory;
-    this.configurations = configurations;
     this.segmentIndexFactory = segmentIndexFactory;
   }
 
-  /**
-   * Loads existing {@link SegmentIndex} in the storage directory.
-   */
+  /** Loads existing {@link SegmentIndex} in the storage directory. */
   ImmutableList<SegmentIndex> load() {
-    ImmutableList<Path> indexPaths = LoaderUtils.loadPathsInDirForGlob(
-        configurations.getStoreDirectoryPath(), INDEX_GLOB);
+    ImmutableList<Path> indexPaths =
+        LoaderUtils.loadPathsInDirForGlob(
+            Path.of(storageConfig.getStoreDirectoryPath()), INDEX_GLOB);
 
     try (var scope = new StructuredTaskScope.ShutdownOnFailure("load-index-scope", threadFactory)) {
       List<Future<SegmentIndex>> indexFutures = new ArrayList<>(indexPaths.size());
@@ -60,10 +57,8 @@ final class SegmentIndexLoader {
     }
   }
 
-  /**
-   * Deletes all existing {@link SegmentIndex}s in the storage directory.
-   */
+  /** Deletes all existing {@link SegmentIndex}s in the storage directory. */
   void truncate() {
-    LoaderUtils.deletePathsInDirForGlob(configurations.getStoreDirectoryPath(), INDEX_GLOB);
+    LoaderUtils.deletePathsInDirForGlob(Path.of(storageConfig.getStoreDirectoryPath()), INDEX_GLOB);
   }
 }

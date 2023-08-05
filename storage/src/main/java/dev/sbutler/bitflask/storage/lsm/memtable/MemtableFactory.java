@@ -1,22 +1,20 @@
 package dev.sbutler.bitflask.storage.lsm.memtable;
 
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.SortedMap;
 
-/**
- * Factory for creating {@link Memtable}s and their associated {@link WriteAheadLog}.
- */
+/** Factory for creating {@link Memtable}s and their associated {@link WriteAheadLog}. */
 public final class MemtableFactory {
 
-  private final StorageConfigurations configurations;
+  private final StorageConfig storageConfig;
 
   @Inject
-  MemtableFactory(StorageConfigurations configurations) {
-    this.configurations = configurations;
+  MemtableFactory(StorageConfig storageConfig) {
+    this.storageConfig = storageConfig;
   }
 
   /**
@@ -39,10 +37,9 @@ public final class MemtableFactory {
     return Memtable.create(keyEntryMap, writeAheadLog);
   }
 
-
   Path getWriteAheadLogPath() {
     return Path.of(
-        configurations.getStoreDirectoryPath().toString(),
+        storageConfig.getStoreDirectoryPath(),
         String.format("%s.%s", WriteAheadLog.FILE_NAME, WriteAheadLog.FILE_EXTENSION));
   }
 }

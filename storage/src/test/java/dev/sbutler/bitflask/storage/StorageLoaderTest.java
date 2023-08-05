@@ -7,31 +7,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.LSMTreeLoader;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+/** Unit tests for {@link StorageLoader}. */
 public class StorageLoaderTest {
 
-  private static final Path DIR_PATH = Path.of("/tmp/.bitflask");
+  private static final StorageConfig STORAGE_CONFIG =
+      StorageConfig.newBuilder().setStoreDirectoryPath("/tmp/.bitflask").buildPartial();
 
-  private final StorageConfigurations config = mock(StorageConfigurations.class);
   private final LSMTreeLoader lsmTreeLoader = mock(LSMTreeLoader.class);
 
-  private final StorageLoader storageLoader = new StorageLoader(config, lsmTreeLoader);
-
-  @BeforeEach
-  public void beforeEach() {
-    when(config.getStoreDirectoryPath()).thenReturn(DIR_PATH);
-  }
+  private final StorageLoader storageLoader = new StorageLoader(STORAGE_CONFIG, lsmTreeLoader);
 
   @Test
   public void load() {
@@ -54,8 +47,12 @@ public class StorageLoaderTest {
           assertThrows(StorageLoadException.class, storageLoader::load);
 
       assertThat(exception).hasCauseThat().isEqualTo(ioException);
-      assertThat(exception).hasMessageThat()
-          .isEqualTo(String.format("Failed to create storage directory path [%s]", DIR_PATH));
+      assertThat(exception)
+          .hasMessageThat()
+          .isEqualTo(
+              String.format(
+                  "Failed to create storage directory path [%s]",
+                  STORAGE_CONFIG.getStoreDirectoryPath()));
 
       verify(lsmTreeLoader, times(0)).load();
     }

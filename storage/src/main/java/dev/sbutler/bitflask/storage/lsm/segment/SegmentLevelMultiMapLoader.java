@@ -7,30 +7,31 @@ import static java.util.function.Function.identity;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import jakarta.inject.Inject;
 
 public final class SegmentLevelMultiMapLoader {
 
-  private final StorageConfigurations configurations;
+  private final StorageConfig storageConfig;
   private final SegmentLoader segmentLoader;
   private final SegmentIndexLoader segmentIndexLoader;
 
   @Inject
   SegmentLevelMultiMapLoader(
-      StorageConfigurations configurations,
+      StorageConfig storageConfig,
       SegmentLoader segmentLoader,
       SegmentIndexLoader segmentIndexLoader) {
-    this.configurations = configurations;
+    this.storageConfig = storageConfig;
     this.segmentLoader = segmentLoader;
     this.segmentIndexLoader = segmentIndexLoader;
   }
 
   public SegmentLevelMultiMap load() {
-    return switch (configurations.getStorageLoadingMode()) {
+    return switch (storageConfig.getLoadingMode()) {
       case TRUNCATE -> createWithTruncation();
       case LOAD -> createWithLoading();
+      case UNRECOGNIZED -> throw new StorageLoadException("Unrecognized loading mode");
     };
   }
 
@@ -60,9 +61,15 @@ public final class SegmentLevelMultiMapLoader {
   private ImmutableMap<Integer, SegmentIndex> mapIndexesBySegmentNumber(
       ImmutableList<SegmentIndex> indexes) {
     return indexes.stream()
-        .collect(toImmutableMap(SegmentIndex::getSegmentNumber, identity(), (i0, i1) -> {
-          throw new StorageLoadException(String.format(
-              "Duplicate segment number [%d] for SegmentIndexes found", i0.getSegmentNumber()));
-        }));
+        .collect(
+            toImmutableMap(
+                SegmentIndex::getSegmentNumber,
+                identity(),
+                (i0, i1) -> {
+                  throw new StorageLoadException(
+                      String.format(
+                          "Duplicate segment number [%d] for SegmentIndexes found",
+                          i0.getSegmentNumber()));
+                }));
   }
 }

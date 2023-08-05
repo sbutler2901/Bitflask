@@ -2,12 +2,9 @@ package dev.sbutler.bitflask.storage.lsm.memtable;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 import com.google.common.primitives.Bytes;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
@@ -15,21 +12,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+/** Unit tests for {@link WriteAheadLog}. */
 public class WriteAheadLogTest {
 
-  private final Path TEST_RESOURCE_PATH = Paths.get("src/test/resources/");
-
-  private final StorageConfigurations config = mock(StorageConfigurations.class);
-
-
-  @BeforeEach
-  public void beforeEach() {
-    when(config.getStoreDirectoryPath()).thenReturn(TEST_RESOURCE_PATH);
-  }
+  private static final Path TEST_RESOURCE_PATH = Paths.get("src/test/resources/");
 
   @Test
   public void append_newFile() throws Exception {
@@ -39,7 +28,8 @@ public class WriteAheadLogTest {
 
     WriteAheadLog writeAheadLog;
     try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class)) {
-      fileMockedStatic.when(() -> Files.newOutputStream(any(), any(StandardOpenOption[].class)))
+      fileMockedStatic
+          .when(() -> Files.newOutputStream(any(), any(StandardOpenOption[].class)))
           .thenReturn(outputStream);
       writeAheadLog = WriteAheadLog.create(TEST_RESOURCE_PATH);
     }
@@ -61,7 +51,8 @@ public class WriteAheadLogTest {
 
     WriteAheadLog writeAheadLog;
     try (MockedStatic<Files> fileMockedStatic = mockStatic(Files.class)) {
-      fileMockedStatic.when(() -> Files.newOutputStream(any(), any(StandardOpenOption[].class)))
+      fileMockedStatic
+          .when(() -> Files.newOutputStream(any(), any(StandardOpenOption[].class)))
           .thenReturn(outputStream);
       writeAheadLog = WriteAheadLog.create(TEST_RESOURCE_PATH);
     }

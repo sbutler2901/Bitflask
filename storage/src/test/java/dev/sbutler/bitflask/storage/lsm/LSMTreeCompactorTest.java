@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSortedMap;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.exceptions.StorageCompactionException;
 import dev.sbutler.bitflask.storage.lsm.LSMTreeStateManager.CurrentState;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
@@ -23,37 +23,35 @@ import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelCompactor;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMap;
 import java.io.IOException;
 import java.time.Instant;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Unit tests for {@link LSMTreeCompactor}. */
 public class LSMTreeCompactorTest {
 
-  private final long MEMTABLE_FLUSH_THRESHOLD = 1;
-  private final long SEGMENT_LEVEL_FLUSH_THRESHOLD = 1;
+  private static final long MEMTABLE_FLUSH_THRESHOLD = 1;
+  private static final long SEGMENT_LEVEL_FLUSH_THRESHOLD = 1;
 
-  private final Entry ENTRY_0 = new Entry(Instant.now().getEpochSecond(), "key0", "value0");
+  private static final StorageConfig STORAGE_CONFIG =
+      StorageConfig.newBuilder()
+          .setMemtableFlushThresholdBytes(MEMTABLE_FLUSH_THRESHOLD)
+          .setSegmentLevelFlushThresholdBytes(SEGMENT_LEVEL_FLUSH_THRESHOLD)
+          .buildPartial();
+
+  private static final Entry ENTRY_0 = new Entry(Instant.now().getEpochSecond(), "key0", "value0");
 
   private final Memtable memtable = mock(Memtable.class);
   private final SegmentLevelMultiMap segmentLevelMultiMap = mock(SegmentLevelMultiMap.class);
   private final Segment segment = mock(Segment.class);
 
-  private final StorageConfigurations configurations = mock(StorageConfigurations.class);
   private final LSMTreeStateManager stateManager =
       new LSMTreeStateManager(memtable, segmentLevelMultiMap);
   private final SegmentLevelCompactor segmentLevelCompactor = mock(SegmentLevelCompactor.class);
   private final MemtableFactory memtableFactory = mock(MemtableFactory.class);
   private final SegmentFactory segmentFactory = mock(SegmentFactory.class);
 
-  private final LSMTreeCompactor compactor = new LSMTreeCompactor(
-      configurations, stateManager, segmentLevelCompactor, memtableFactory, segmentFactory);
-
-  @BeforeEach
-  public void beforeEach() {
-    when(configurations.getMemtableFlushThresholdBytes())
-        .thenReturn(MEMTABLE_FLUSH_THRESHOLD);
-    when(configurations.getSegmentLevelFlushThresholdBytes()).thenReturn(
-        SEGMENT_LEVEL_FLUSH_THRESHOLD);
-  }
+  private final LSMTreeCompactor compactor =
+      new LSMTreeCompactor(
+          STORAGE_CONFIG, stateManager, segmentLevelCompactor, memtableFactory, segmentFactory);
 
   @Test
   public void run_memtableNotFlushed() {
@@ -66,8 +64,7 @@ public class LSMTreeCompactorTest {
     assertThat(currentState.getMemtable()).isEqualTo(memtable);
     assertThat(currentState.getSegmentLevelMultiMap()).isEqualTo(segmentLevelMultiMap);
 
-    verify(segmentLevelCompactor, times(0))
-        .compactSegmentLevel(any(), anyInt());
+    verify(segmentLevelCompactor, times(0)).compactSegmentLevel(any(), anyInt());
   }
 
   @Test
@@ -86,8 +83,7 @@ public class LSMTreeCompactorTest {
     assertThat(currentState.getMemtable()).isEqualTo(newMemtable);
     assertThat(currentState.getSegmentLevelMultiMap()).isEqualTo(secondNewSegmentLevelMultiMap);
 
-    verify(segmentLevelCompactor, times(1))
-        .compactSegmentLevel(any(), anyInt());
+    verify(segmentLevelCompactor, times(1)).compactSegmentLevel(any(), anyInt());
   }
 
   @Test
@@ -128,8 +124,7 @@ public class LSMTreeCompactorTest {
         assertThrows(StorageCompactionException.class, compactor::flushMemtable);
 
     assertThat(exception).hasCauseThat().isEqualTo(ioException);
-    assertThat(exception).hasMessageThat()
-        .isEqualTo("Failed to create new Segment from Memtable");
+    assertThat(exception).hasMessageThat().isEqualTo("Failed to create new Segment from Memtable");
   }
 
   @Test
@@ -153,8 +148,7 @@ public class LSMTreeCompactorTest {
 
     compactor.compactSegmentLevels();
 
-    verify(segmentLevelCompactor, times(0))
-        .compactSegmentLevel(any(), anyInt());
+    verify(segmentLevelCompactor, times(0)).compactSegmentLevel(any(), anyInt());
 
     CurrentState currentState = stateManager.getCurrentState();
     assertThat(currentState.getMemtable()).isEqualTo(memtable);
@@ -168,16 +162,15 @@ public class LSMTreeCompactorTest {
 
     compactor.compactSegmentLevels();
 
-    verify(segmentLevelCompactor, times(1))
-        .compactSegmentLevel(any(), anyInt());
+    verify(segmentLevelCompactor, times(1)).compactSegmentLevel(any(), anyInt());
 
     CurrentState currentState = stateManager.getCurrentState();
     assertThat(currentState.getMemtable()).isEqualTo(memtable);
     assertThat(currentState.getSegmentLevelMultiMap()).isEqualTo(newSegmentLevelMultiMap);
   }
 
-  private void mockMemtableFlushed(Memtable newMemtable,
-      SegmentLevelMultiMap newSegmentLevelMultiMap) throws Exception {
+  private void mockMemtableFlushed(
+      Memtable newMemtable, SegmentLevelMultiMap newSegmentLevelMultiMap) throws Exception {
     when(memtable.flush()).thenReturn(ImmutableSortedMap.of(ENTRY_0.key(), ENTRY_0));
     when(memtable.getNumBytesSize()).thenReturn(MEMTABLE_FLUSH_THRESHOLD);
     when(segmentFactory.create(any(), anyInt(), anyLong())).thenReturn(segment);
@@ -188,14 +181,13 @@ public class LSMTreeCompactorTest {
     when(segmentLevelMultiMap.toBuilder()).thenReturn(builder);
   }
 
-  private void mockFirstSegmentLevelOverThreshold(SegmentLevelMultiMap overThresholdMap,
-      SegmentLevelMultiMap newMap) {
+  private void mockFirstSegmentLevelOverThreshold(
+      SegmentLevelMultiMap overThresholdMap, SegmentLevelMultiMap newMap) {
     when(overThresholdMap.getNumBytesSizeOfSegmentLevel(anyInt()))
         .thenReturn(SEGMENT_LEVEL_FLUSH_THRESHOLD);
 
     when(newMap.getNumBytesSizeOfSegmentLevel(anyInt()))
         .thenReturn(SEGMENT_LEVEL_FLUSH_THRESHOLD - 1);
-    when(segmentLevelCompactor.compactSegmentLevel(any(), anyInt()))
-        .thenReturn(newMap);
+    when(segmentLevelCompactor.compactSegmentLevel(any(), anyInt())).thenReturn(newMap);
   }
 }

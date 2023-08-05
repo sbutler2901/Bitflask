@@ -4,7 +4,7 @@ import static dev.sbutler.bitflask.storage.lsm.utils.LoaderUtils.checkLoadedByte
 
 import com.google.common.collect.ImmutableSortedMap;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentIndexEntry.PartialEntry;
 import jakarta.inject.Inject;
 import java.io.BufferedInputStream;
@@ -17,32 +17,29 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.SortedMap;
 
-/**
- * Handles the creation of a {@link SegmentIndex}.
- */
+/** Handles the creation of a {@link SegmentIndex}. */
 final class SegmentIndexFactory {
 
-  private final StorageConfigurations configurations;
+  private final StorageConfig storageConfig;
 
   @Inject
-  SegmentIndexFactory(StorageConfigurations configurations) {
-    this.configurations = configurations;
+  SegmentIndexFactory(StorageConfig storageConfig) {
+    this.storageConfig = storageConfig;
   }
 
-  /**
-   * Creates a new {@link SegmentIndex} and writes it to disk.
-   */
-  SegmentIndex create(
-      SortedMap<String, Long> keyOffsetMap,
-      UnsignedShort segmentNumber) throws IOException {
+  /** Creates a new {@link SegmentIndex} and writes it to disk. */
+  SegmentIndex create(SortedMap<String, Long> keyOffsetMap, UnsignedShort segmentNumber)
+      throws IOException {
     SegmentIndexMetadata indexMetadata = new SegmentIndexMetadata(segmentNumber);
     ImmutableSortedMap.Builder<String, Long> indexKeyOffsetMap = ImmutableSortedMap.naturalOrder();
 
-    Path indexPath = Path.of(configurations.getStoreDirectoryPath().toString(),
-        SegmentIndex.createFileName(segmentNumber.value()));
+    Path indexPath =
+        Path.of(
+            storageConfig.getStoreDirectoryPath(),
+            SegmentIndex.createFileName(segmentNumber.value()));
 
-    try (BufferedOutputStream indexOutputStream = new BufferedOutputStream(
-        Files.newOutputStream(indexPath, StandardOpenOption.CREATE_NEW))) {
+    try (BufferedOutputStream indexOutputStream =
+        new BufferedOutputStream(Files.newOutputStream(indexPath, StandardOpenOption.CREATE_NEW))) {
 
       indexOutputStream.write(indexMetadata.getBytes());
 
@@ -56,16 +53,15 @@ final class SegmentIndexFactory {
     return new SegmentIndexDense(indexPath, indexMetadata, indexKeyOffsetMap.build());
   }
 
-  /**
-   * Loads a {@link SegmentIndex} from disk at the provided path.
-   */
+  /** Loads a {@link SegmentIndex} from disk at the provided path. */
   SegmentIndex loadFromPath(Path path) throws IOException {
     try (BufferedInputStream is = new BufferedInputStream(Files.newInputStream(path))) {
       byte[] metadataBytes = is.readNBytes(SegmentIndexMetadata.BYTES);
       checkLoadedBytesLength(metadataBytes, SegmentIndexMetadata.BYTES, SegmentIndexMetadata.class);
       SegmentIndexMetadata metadata = SegmentIndexMetadata.fromBytes(metadataBytes);
 
-      ImmutableSortedMap.Builder<String, Long> indexKeyOffsetMap = ImmutableSortedMap.naturalOrder();
+      ImmutableSortedMap.Builder<String, Long> indexKeyOffsetMap =
+          ImmutableSortedMap.naturalOrder();
 
       Optional<SegmentIndexEntry> nextEntry;
       while ((nextEntry = readNextSegmentIndexEntry(is)).isPresent()) {
@@ -76,8 +72,8 @@ final class SegmentIndexFactory {
     }
   }
 
-  private Optional<SegmentIndexEntry> readNextSegmentIndexEntry(
-      BufferedInputStream is) throws IOException {
+  private Optional<SegmentIndexEntry> readNextSegmentIndexEntry(BufferedInputStream is)
+      throws IOException {
     byte[] partialEntryBytes = is.readNBytes(PartialEntry.BYTES);
     if (partialEntryBytes.length == 0) {
       return Optional.empty();

@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import dev.sbutler.bitflask.common.primitives.UnsignedShort;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.entry.Entry;
 import dev.sbutler.bitflask.storage.lsm.entry.EntryReader;
@@ -24,21 +24,19 @@ import java.nio.file.StandardOpenOption;
 import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Handles the creation of a {@link Segment}.
- */
+/** Handles the creation of a {@link Segment}. */
 @SuppressWarnings("UnstableApiUsage")
 @Singleton
 public final class SegmentFactory {
 
   private final AtomicInteger nextSegmentNumber = new AtomicInteger(0);
 
-  private final StorageConfigurations configurations;
+  private final StorageConfig storageConfig;
   private final SegmentIndexFactory indexFactory;
 
   @Inject
-  SegmentFactory(StorageConfigurations configurations, SegmentIndexFactory indexFactory) {
-    this.configurations = configurations;
+  SegmentFactory(StorageConfig storageConfig, SegmentIndexFactory indexFactory) {
+    this.storageConfig = storageConfig;
     this.indexFactory = indexFactory;
   }
 
@@ -48,10 +46,8 @@ public final class SegmentFactory {
    * <p>The provided {@code keyEntryMap} cannot be empty. The segmentLevel must be non-negative.
    */
   public Segment create(SortedMap<String, Entry> keyEntryMap, int segmentLevel) throws IOException {
-    long numBytesSize = keyEntryMap.values().stream()
-        .map(Entry::getNumBytesSize)
-        .mapToLong(Long::longValue)
-        .sum();
+    long numBytesSize =
+        keyEntryMap.values().stream().map(Entry::getNumBytesSize).mapToLong(Long::longValue).sum();
     return create(keyEntryMap, segmentLevel, numBytesSize);
   }
 
@@ -69,12 +65,13 @@ public final class SegmentFactory {
 
     UnsignedShort segmentNumber = UnsignedShort.valueOf(nextSegmentNumber.getAndIncrement());
 
-    SegmentMetadata segmentMetadata = new SegmentMetadata(
-        segmentNumber, UnsignedShort.valueOf(segmentLevel));
-    Path segmentPath = Path.of(configurations.getStoreDirectoryPath().toString(),
-        Segment.createFileName(segmentNumber.value()));
-    BloomFilter<String> keyFilter = BloomFilter.create(Funnels.stringFunnel(
-        StandardCharsets.UTF_8), keyEntryMap.size());
+    SegmentMetadata segmentMetadata =
+        new SegmentMetadata(segmentNumber, UnsignedShort.valueOf(segmentLevel));
+    Path segmentPath =
+        Path.of(
+            storageConfig.getStoreDirectoryPath(), Segment.createFileName(segmentNumber.value()));
+    BloomFilter<String> keyFilter =
+        BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), keyEntryMap.size());
 
     SortedMap<String, Long> keyOffsetMap =
         writeSegment(keyEntryMap, segmentMetadata, keyFilter, segmentPath);
@@ -95,14 +92,18 @@ public final class SegmentFactory {
    *
    * @return a key offset map for entries in the new Segment.
    */
-  SortedMap<String, Long> writeSegment(SortedMap<String, Entry> keyEntryMap,
-      SegmentMetadata segmentMetadata, BloomFilter<String> keyFilter, Path segmentPath)
+  SortedMap<String, Long> writeSegment(
+      SortedMap<String, Entry> keyEntryMap,
+      SegmentMetadata segmentMetadata,
+      BloomFilter<String> keyFilter,
+      Path segmentPath)
       throws IOException {
 
     ImmutableSortedMap.Builder<String, Long> keyOffsetMap = ImmutableSortedMap.naturalOrder();
 
-    try (BufferedOutputStream segmentOutputStream = new BufferedOutputStream(
-        Files.newOutputStream(segmentPath, StandardOpenOption.CREATE_NEW))) {
+    try (BufferedOutputStream segmentOutputStream =
+        new BufferedOutputStream(
+            Files.newOutputStream(segmentPath, StandardOpenOption.CREATE_NEW))) {
 
       byte[] segmentMetadataBytes = segmentMetadata.getBytes();
       segmentOutputStream.write(segmentMetadataBytes);
@@ -126,8 +127,8 @@ public final class SegmentFactory {
    * Loads a {@link Segment} from the path and finds its corresponding {@link SegmentIndex} from the
    * segmentNumberToIndexMap.
    */
-  Segment loadFromPath(Path path,
-      ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap) throws IOException {
+  Segment loadFromPath(Path path, ImmutableMap<Integer, SegmentIndex> segmentNumberToIndexMap)
+      throws IOException {
 
     SegmentMetadata metadata;
     try (var is = Files.newInputStream(path)) {
@@ -139,19 +140,18 @@ public final class SegmentFactory {
     EntryReader entryReader = EntryReader.create(path);
     ImmutableList<Entry> entries = entryReader.readAllEntriesFromOffset(SegmentMetadata.BYTES);
 
-    BloomFilter<String> keyFilter = BloomFilter.create(Funnels.stringFunnel(
-        StandardCharsets.UTF_8), entries.size());
+    BloomFilter<String> keyFilter =
+        BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), entries.size());
     entries.stream().map(Entry::key).forEach(keyFilter::put);
-    long numBytesSize = entries.stream()
-        .map(Entry::getNumBytesSize)
-        .mapToLong(Long::longValue)
-        .sum();
+    long numBytesSize =
+        entries.stream().map(Entry::getNumBytesSize).mapToLong(Long::longValue).sum();
 
     SegmentIndex index = segmentNumberToIndexMap.get(metadata.getSegmentNumber());
     if (index == null) {
-      throw new StorageLoadException(String.format(
-          "Could not find a SegmentIndex with expected segment number [%d]",
-          metadata.getSegmentNumber()));
+      throw new StorageLoadException(
+          String.format(
+              "Could not find a SegmentIndex with expected segment number [%d]",
+              metadata.getSegmentNumber()));
     }
 
     nextSegmentNumber.getAndUpdate(current -> Math.max(1 + metadata.getSegmentNumber(), current));

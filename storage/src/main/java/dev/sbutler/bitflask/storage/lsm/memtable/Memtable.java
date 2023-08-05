@@ -34,14 +34,11 @@ public final class Memtable {
 
   static Memtable create(SortedMap<String, Entry> keyEntryMap, WriteAheadLog writeAheadLog) {
     Memtable memtable = new Memtable(keyEntryMap, writeAheadLog);
-    keyEntryMap.values().forEach(
-        e -> memtable.updateSize(e, Optional.empty()));
+    keyEntryMap.values().forEach(e -> memtable.updateSize(e, Optional.empty()));
     return memtable;
   }
 
-  /**
-   * Reads the value corresponding to the provided key, if present.
-   */
+  /** Reads the value corresponding to the provided key, if present. */
   public Optional<Entry> read(String key) {
     readWriteLock.readLock().lock();
     try {
@@ -51,9 +48,7 @@ public final class Memtable {
     }
   }
 
-  /**
-   * Writes the provided {@link Entry}.
-   */
+  /** Writes the provided {@link Entry}. */
   public void write(Entry entry) throws IOException {
     readWriteLock.writeLock().lock();
     try {
@@ -73,16 +68,12 @@ public final class Memtable {
             .orElseGet(newEntry::getNumBytesSize));
   }
 
-  /**
-   * Returns the number of bytes of all {@link Entry}s contained within the Memtable.
-   */
+  /** Returns the number of bytes of all {@link Entry}s contained within the Memtable. */
   public long getNumBytesSize() {
     return currentSize.get();
   }
 
-  /**
-   * Returns true if this Memtable contains an entry for the provided key.
-   */
+  /** Returns true if this Memtable contains an entry for the provided key. */
   public boolean contains(String key) {
     readWriteLock.readLock().lock();
     try {
@@ -92,9 +83,7 @@ public final class Memtable {
     }
   }
 
-  /**
-   * Flushes all key:entry pairs contained within this Memtable.
-   */
+  /** Flushes all key:entry pairs contained within this Memtable. */
   public SortedMap<String, Entry> flush() {
     readWriteLock.readLock().lock();
     try {
