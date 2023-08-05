@@ -6,6 +6,7 @@ dependencies {
     implementation project(':storage')
     implementation project(':resp')
     implementation project(':common')
+    implementation project(':config')
 }
 
 application {

@@ -13,11 +13,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.common.concurrency.VirtualThreadConcurrencyModule;
-import dev.sbutler.bitflask.common.configuration.ConfigurationsBuilder;
 import dev.sbutler.bitflask.common.guice.RootModule;
-import dev.sbutler.bitflask.server.configuration.ConfigurationsInitializer;
-import dev.sbutler.bitflask.server.configuration.ConfigurationsInitializer.InitializedConfigurations;
-import dev.sbutler.bitflask.server.configuration.ServerConfigurations;
+import dev.sbutler.bitflask.config.BitflaskConfig;
+import dev.sbutler.bitflask.config.ConfigLoader;
+import dev.sbutler.bitflask.config.ConfigModule;
+import dev.sbutler.bitflask.config.ServerConfig;
 import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
 import java.io.IOException;
@@ -25,7 +25,6 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nonnull;
@@ -45,24 +44,22 @@ public final class Server {
   public static void main(String[] args) {
     try {
       executionStarted = Instant.now();
-      InitializedConfigurations initializedConfigurations = initializeConfigurations(args);
-      printConfigInfo(initializedConfigurations);
+      BitflaskConfig bitflaskConfig = ConfigLoader.load();
+      printConfigInfo(bitflaskConfig);
 
       ServerSocketChannel serverSocketChannel =
-          createServerSocketChannel(initializedConfigurations.serverConfigurations());
+          createServerSocketChannel(bitflaskConfig.getServerConfig());
 
       ImmutableSet<RootModule> rootModules =
-          ImmutableSet.of(
-              new ServerModule(
-                  initializedConfigurations.serverConfigurations(), serverSocketChannel),
-              new StorageServiceModule(initializedConfigurations.storageConfigurations()));
-      ImmutableSet<AbstractModule> modules =
-          ImmutableSet.<AbstractModule>builder()
-              .add(new VirtualThreadConcurrencyModule())
-              .addAll(rootModules)
-              .build();
+          ImmutableSet.of(new ServerModule(serverSocketChannel), new StorageServiceModule());
 
-      Injector injector = Guice.createInjector(modules);
+      Injector injector =
+          Guice.createInjector(
+              ImmutableSet.<AbstractModule>builder()
+                  .add(new ConfigModule(bitflaskConfig))
+                  .add(new VirtualThreadConcurrencyModule())
+                  .addAll(rootModules)
+                  .build());
 
       ImmutableSet<Service> services =
           rootModules.stream()
@@ -82,10 +79,12 @@ public final class Server {
     }
   }
 
-  private static ServerSocketChannel createServerSocketChannel(
-      ServerConfigurations serverConfigurations) throws IOException {
+  private static ServerSocketChannel createServerSocketChannel(ServerConfig serverConfig)
+      throws IOException {
     ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-    InetSocketAddress inetSocketAddress = new InetSocketAddress(serverConfigurations.getPort());
+    ServerConfig.ServerInfo thisServerInfo =
+        serverConfig.getBitflaskServersMap().get(serverConfig.getThisServerId());
+    InetSocketAddress inetSocketAddress = new InetSocketAddress(thisServerInfo.getRespPort());
     serverSocketChannel.bind(inetSocketAddress);
     return serverSocketChannel;
   }
@@ -112,7 +111,6 @@ public final class Server {
         listeningExecutorService);
   }
 
-  @SuppressWarnings("UnstableApiUsage")
   private static void registerShutdownHook(
       ServiceManager serviceManager, ListeningExecutorService listeningExecutorService) {
     Runtime.getRuntime()
@@ -122,8 +120,7 @@ public final class Server {
                     () -> {
                       System.out.println("Starting Server shutdown hook");
                       // Give the services 5 seconds to stop to ensure that we are responsive to
-                      // shut down
-                      // requests.
+                      // shut down requests.
                       try {
                         serviceManager.stopAsync().awaitStopped(5, TimeUnit.SECONDS);
                       } catch (TimeoutException timeout) {
@@ -135,22 +132,12 @@ public final class Server {
                     }));
   }
 
-  private static InitializedConfigurations initializeConfigurations(String[] args) {
-    ResourceBundle resourceBundle = ResourceBundle.getBundle("config");
-    ConfigurationsBuilder configurationsBuilder = new ConfigurationsBuilder(args, resourceBundle);
-    ConfigurationsInitializer configurationsInitializer =
-        new ConfigurationsInitializer(configurationsBuilder);
-
-    return configurationsInitializer.initializeConfigurations();
-  }
-
-  private static void printConfigInfo(InitializedConfigurations initializedConfigurations) {
+  private static void printConfigInfo(BitflaskConfig bitflaskConfig) {
     logger.atInfo().log("Using java version [%s]", System.getProperty("java.version"));
     logger.atInfo().log(
         "Runtime processors available [%d]", Runtime.getRuntime().availableProcessors());
 
-    logger.atInfo().log(initializedConfigurations.serverConfigurations().toString());
-    logger.atInfo().log(initializedConfigurations.storageConfigurations().toString());
+    logger.atInfo().log(bitflaskConfig.toString());
   }
 
   private static void logTimeFromStart() {

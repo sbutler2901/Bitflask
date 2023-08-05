@@ -8,13 +8,13 @@ import com.google.common.util.concurrent.ServiceManager;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.sbutler.bitflask.common.concurrency.VirtualThreadConcurrencyModule;
-import dev.sbutler.bitflask.common.configuration.ConfigurationsBuilder;
+import dev.sbutler.bitflask.config.BitflaskConfig;
+import dev.sbutler.bitflask.config.ConfigModule;
+import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.StorageService;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
 import dev.sbutler.bitflask.storage.configuration.StorageConfigurations;
-import dev.sbutler.bitflask.storage.configuration.StorageConfigurationsConstants;
 import java.time.Duration;
-import java.util.ResourceBundle;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -42,9 +42,7 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
 
   private static final Namespace NAMESPACE = Namespace.create(StorageExtension.class);
 
-  private static final String TEST_RESOURCE_NAME = "test";
-
-  private final StorageConfigurations configurations;
+  private final StorageConfig storageConfig;
   private ExtensionStoreHelper storeHelper;
 
   /**
@@ -54,7 +52,7 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
    */
   @SuppressWarnings("unused")
   public StorageExtension() {
-    this.configurations = initializeConfiguration(new String[0]);
+    this.storageConfig = StorageConfig.getDefaultInstance();
   }
 
   /**
@@ -63,20 +61,24 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
    * <p>This constructor is used when instantiated with a test class.
    */
   @SuppressWarnings("unused")
-  public StorageExtension(StorageConfigurations configurations) {
-    this.configurations = configurations;
+  public StorageExtension(StorageConfig storageConfig) {
+    this.storageConfig = storageConfig;
   }
 
   @Override
   public void beforeAll(ExtensionContext extensionContext) throws Exception {
-    printConfigInfo(configurations);
+    printConfigInfo(storageConfig);
 
     storeHelper = new ExtensionStoreHelper(extensionContext.getStore(NAMESPACE));
 
-    var storageServiceModule = new StorageServiceModule(configurations);
+    var storageServiceModule = new StorageServiceModule();
     var injector =
         Guice.createInjector(
-            ImmutableSet.of(new VirtualThreadConcurrencyModule(), storageServiceModule));
+            ImmutableSet.of(
+                new ConfigModule(
+                    BitflaskConfig.newBuilder().setStorageConfig(storageConfig).build()),
+                new VirtualThreadConcurrencyModule(),
+                storageServiceModule));
 
     var serviceManager = new ServiceManager(storageServiceModule.getServices(injector));
 
@@ -112,36 +114,26 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
       ParameterContext parameterContext, ExtensionContext extensionContext)
       throws ParameterResolutionException {
     return StorageService.class.equals(parameterContext.getParameter().getType())
-        || StorageConfigurations.class.equals(parameterContext.getParameter().getType());
+        || StorageConfig.class.equals(parameterContext.getParameter().getType());
   }
 
   @Override
   public Object resolveParameter(
       ParameterContext parameterContext, ExtensionContext extensionContext)
       throws ParameterResolutionException {
-    if (StorageConfigurations.class.equals(parameterContext.getParameter().getType())) {
-      return configurations;
+    if (StorageConfig.class.equals(parameterContext.getParameter().getType())) {
+      return storageConfig;
     }
     return storeHelper
         .getFromStore(Injector.class)
         .getInstance(parameterContext.getParameter().getType());
   }
 
-  private static StorageConfigurations initializeConfiguration(String[] args) {
-    ResourceBundle resourceBundle = ResourceBundle.getBundle(TEST_RESOURCE_NAME);
-    ConfigurationsBuilder configurationsBuilder = new ConfigurationsBuilder(args, resourceBundle);
-
-    StorageConfigurations storageConfigurations = new StorageConfigurations();
-    configurationsBuilder.buildAcceptingUnknownOptions(
-        storageConfigurations, StorageConfigurationsConstants.STORAGE_FLAG_TO_CONFIGURATION_MAP);
-    return storageConfigurations;
-  }
-
-  private static void printConfigInfo(StorageConfigurations storageConfigurations) {
+  private static void printConfigInfo(StorageConfig storageConfig) {
     logger.atFine().log("Using java version [%s]", System.getProperty("java.version"));
     logger.atFine().log(
         "Runtime processors available [%d]", Runtime.getRuntime().availableProcessors());
 
-    logger.atFine().log(storageConfigurations.toString());
+    logger.atFine().log(storageConfig.toString());
   }
 }
