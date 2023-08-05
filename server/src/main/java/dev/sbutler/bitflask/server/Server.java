@@ -18,7 +18,6 @@ import dev.sbutler.bitflask.config.BitflaskConfig;
 import dev.sbutler.bitflask.config.ConfigLoader;
 import dev.sbutler.bitflask.config.ConfigModule;
 import dev.sbutler.bitflask.config.ServerConfig;
-import dev.sbutler.bitflask.server.configuration.ServerModule;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
 import java.io.IOException;
 import java.net.InetSocketAddress;
