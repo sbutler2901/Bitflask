@@ -45,9 +45,9 @@ message StorageConfig {
   // How Storage should handle pre-existing files in the storeDirectoryPath.
   LoadingMode loading_mode = 2;
   // The number of bytes the Storage's Memtable must exceed before being flushed to disk.
-  uint32 memtable_flush_threshold_bytes = 3;
+  uint64 memtable_flush_threshold_bytes = 3;
   // The number of bytes a Segment level must exceed before being compaction.
-  uint32 segment_level_flush_threshold_bytes = 4;
+  uint64 segment_level_flush_threshold_bytes = 4;
   // The number of milliseconds to delay between completed compactor executions.
   uint32 compactor_execution_delay_milliseconds = 5;
 }

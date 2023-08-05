@@ -21,7 +21,7 @@ public final class ConfigLoader {
     }
 
     String configJson = Files.readString(configOutputFile, StandardCharsets.UTF_8);
-    BitflaskConfig.Builder configBuilder = BitflaskConfig.newBuilder();
+    BitflaskConfig.Builder configBuilder = ConfigDefaults.BITFLASK_CONFIG.toBuilder();
     JsonFormat.parser().merge(configJson, configBuilder);
     return configBuilder.build();
   }
