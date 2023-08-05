@@ -1,42 +1,40 @@
 package dev.sbutler.bitflask.client.client_processing;
 
 import com.google.common.collect.ImmutableList;
+import dev.sbutler.bitflask.client.ExecutionMode;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplIOException;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplParser;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplSyntaxException;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
-import dev.sbutler.bitflask.client.configuration.ClientConfigurations;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.Optional;
 
-/**
- * Handles getting and submitting client Repl input for processing.
- */
+/** Handles getting and submitting client Repl input for processing. */
 public class ReplClientProcessorService implements Runnable {
 
   private static final String SHELL_PREFIX = "> ";
 
+  private final ExecutionMode executionMode;
   private final ClientProcessor clientProcessor;
   private final ReplReader replReader;
   private final OutputWriter outputWriter;
-  private final ClientConfigurations configurations;
 
   private boolean continueProcessingClientInput = true;
   private boolean shouldCleanup = false;
 
   @Inject
   public ReplClientProcessorService(
+      ExecutionMode executionMode,
       ClientProcessor clientProcessor,
       ReplReader replReader,
-      OutputWriter outputWriter,
-      ClientConfigurations configurations) {
+      OutputWriter outputWriter) {
+    this.executionMode = executionMode;
     this.clientProcessor = clientProcessor;
     this.replReader = replReader;
     this.outputWriter = outputWriter;
-    this.configurations = configurations;
   }
 
   @Override
@@ -56,7 +54,7 @@ public class ReplClientProcessorService implements Runnable {
         }
       }
 
-      if (configurations.getUsePrompt()) {
+      if (executionMode.isReplMode()) {
         outputWriter.write(SHELL_PREFIX);
       }
       getAndProcessClientInput();

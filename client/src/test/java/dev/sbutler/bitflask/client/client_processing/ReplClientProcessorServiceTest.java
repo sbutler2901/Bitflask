@@ -2,19 +2,18 @@ package dev.sbutler.bitflask.client.client_processing;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import dev.sbutler.bitflask.client.ExecutionMode;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplIOException;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplParser;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplSyntaxException;
-import dev.sbutler.bitflask.client.configuration.ClientConfigurations;
 import java.io.IOException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,27 +27,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ReplClientProcessorServiceTest {
 
   ReplClientProcessorService replClientProcessorService;
-  @Mock
-  ClientProcessor clientProcessor;
-  @Mock
-  ReplReader replReader;
-  @Mock
-  OutputWriter outputWriter;
-  @Mock
-  ClientConfigurations configurations;
+  @Mock ClientProcessor clientProcessor;
+  @Mock ReplReader replReader;
+  @Mock OutputWriter outputWriter;
 
   @BeforeEach
   void beforeEach() {
-    lenient().when(configurations.getUsePrompt()).thenReturn(true);
     replClientProcessorService =
-        new ReplClientProcessorService(clientProcessor, replReader, outputWriter, configurations);
+        new ReplClientProcessorService(
+            ExecutionMode.REPL, clientProcessor, replReader, outputWriter);
   }
 
   @Test
   void replParser_endOfInput() throws Exception {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
-      replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
+      replParserMockedStatic
+          .when(() -> ReplParser.readNextLine(any()))
           .thenReturn(Optional.empty());
       // Act
       replClientProcessorService.run();
@@ -62,7 +57,8 @@ public class ReplClientProcessorServiceTest {
   void replParser_emptyInput() {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
-      replParserMockedStatic.when(() -> ReplParser.readNextLine(replReader))
+      replParserMockedStatic
+          .when(() -> ReplParser.readNextLine(replReader))
           .thenReturn(Optional.of(ImmutableList.of()))
           .thenReturn(Optional.of(ImmutableList.of()));
       when(clientProcessor.processClientInput(any()))
@@ -80,7 +76,8 @@ public class ReplClientProcessorServiceTest {
   void replParser_throwsReplSyntaxException_cleanup() {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
-      replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
+      replParserMockedStatic
+          .when(() -> ReplParser.readNextLine(any()))
           .thenThrow(ReplSyntaxException.class)
           // artificially terminate
           .thenReturn(Optional.empty());
@@ -97,9 +94,11 @@ public class ReplClientProcessorServiceTest {
   void replParser_throwsReplSyntaxException_cleanup_throwsReplIOException() throws Exception {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
-      replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
+      replParserMockedStatic
+          .when(() -> ReplParser.readNextLine(any()))
           .thenThrow(ReplSyntaxException.class);
-      replParserMockedStatic.when(() -> ReplParser.cleanupForNextLine(any()))
+      replParserMockedStatic
+          .when(() -> ReplParser.cleanupForNextLine(any()))
           .thenThrow(ReplIOException.class);
       // Act
       replClientProcessorService.run();
@@ -115,7 +114,8 @@ public class ReplClientProcessorServiceTest {
   void replParser_throwsReplIOException() throws Exception {
     try (MockedStatic<ReplParser> replParserMockedStatic = mockStatic(ReplParser.class)) {
       // Arrange
-      replParserMockedStatic.when(() -> ReplParser.readNextLine(any()))
+      replParserMockedStatic
+          .when(() -> ReplParser.readNextLine(any()))
           .thenThrow(ReplIOException.class);
       // Act
       replClientProcessorService.run();

@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.client;
 
-import com.google.inject.AbstractModule;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -10,7 +9,6 @@ import dev.sbutler.bitflask.resp.network.RespService;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -18,7 +16,7 @@ import picocli.CommandLine;
     mixinStandardHelpOptions = true,
     version = "Client 1.0",
     description = "Client for interacting with a Bitflask server using the RespProtocol")
-public final class Client implements Callable<Integer> {
+public final class Client implements Runnable {
 
   @CommandLine.Option(
       names = {"-h", "--host"},
@@ -30,13 +28,16 @@ public final class Client implements Callable<Integer> {
       description = "The RESP port of the Bitflask server")
   int port = 9090;
 
+  @CommandLine.Parameters(description = "An inline command to execute and terminate")
+  String[] inlineCommandArgs = {};
+
   public static void main(String[] args) {
     int exitCode = new CommandLine(new Client()).execute(args);
-    System.exit(exitCode);
+    System.out.println("Exited with code " + exitCode);
   }
 
   @Override
-  public Integer call() {
+  public void run() {
     try {
       printConfigInfo();
 
@@ -44,17 +45,7 @@ public final class Client implements Callable<Integer> {
           RespService.create(SocketChannel.open(new InetSocketAddress(host, port)));
 
       Injector injector =
-          Guice.createInjector(
-              new ClientModule.Builder()
-                  .addRuntimeModule(
-                      new AbstractModule() {
-                        @Override
-                        protected void configure() {
-                          super.configure();
-                          bind(RespService.class).toInstance(respService);
-                        }
-                      })
-                  .build());
+          Guice.createInjector(new ClientModule(respService, new InlineCommand(inlineCommandArgs)));
 
       ReplClientProcessorService replClientProcessorService =
           injector.getInstance(ReplClientProcessorService.class);
@@ -64,15 +55,11 @@ public final class Client implements Callable<Integer> {
       replClientProcessorService.run();
     } catch (ProvisionException e) {
       e.getErrorMessages().forEach(System.err::println);
-      return 1;
     } catch (ConfigurationException e) {
       e.getErrorMessages().forEach(System.err::println);
-      return 1;
     } catch (Exception e) {
       e.printStackTrace();
-      return 1;
     }
-    return 0;
   }
 
   private void registerShutdownHook(

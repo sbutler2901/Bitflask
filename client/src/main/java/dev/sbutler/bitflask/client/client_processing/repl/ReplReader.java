@@ -20,9 +20,7 @@ import java.util.function.Supplier;
 @Singleton
 public final class ReplReader implements AutoCloseable {
 
-  /**
-   * Various special chars used by the Repl parser for easy reuse.
-   */
+  /** Various special chars used by the Repl parser for easy reuse. */
   private static class SpecialChars {
 
     static final String SINGLE_QUOTE = "'";
@@ -111,9 +109,7 @@ public final class ReplReader implements AutoCloseable {
     return Optional.of(readElements);
   }
 
-  /**
-   * Gets the next input character and maps it to a {@link ReplToken} for further processing
-   */
+  /** Gets the next input character and maps it to a {@link ReplToken} for further processing */
   private void peek() throws ReplIOException, ReplSyntaxException {
     int nextPeeked;
     try {
@@ -131,9 +127,7 @@ public final class ReplReader implements AutoCloseable {
     peeked = Character.toString(nextPeeked);
   }
 
-  /**
-   * Reads the next element as a raw string.
-   */
+  /** Reads the next element as a raw string. */
   private ReplString readRawString() throws ReplIOException, ReplSyntaxException {
     StringBuilder builder = new StringBuilder();
     while (shouldContinueReadingElement()) {
@@ -147,7 +141,6 @@ public final class ReplReader implements AutoCloseable {
    * Attempts to read the next element as a ReplInteger, returning a ReplString of the value read if
    * not.
    */
-  @SuppressWarnings("UnstableApiUsage")
   private ReplElement attemptReadingReplInteger() throws ReplIOException, ReplSyntaxException {
     // Try to read as number
     ReplString replString = readRawString();
@@ -178,7 +171,7 @@ public final class ReplReader implements AutoCloseable {
    * <p>A {@link ReplSyntaxException} will be thrown if the quoted string is not properly
    * terminated.
    *
-   * @param startQuote    the quote type to determine which the quoted string has been terminated.
+   * @param startQuote the quote type to determine which the quoted string has been terminated.
    * @param escapeHandler used for handling the quote's specific escaping
    */
   private String parseQuotedString(ReplToken startQuote, Supplier<String> escapeHandler)
@@ -211,8 +204,9 @@ public final class ReplReader implements AutoCloseable {
     // Consume end quote
     peek();
     if (shouldContinueReadingElement()) {
-      throw new ReplSyntaxException(String.format(
-          "Quoted element was not properly terminated. Found [%s] after end quote.", peeked));
+      throw new ReplSyntaxException(
+          String.format(
+              "Quoted element was not properly terminated. Found [%s] after end quote.", peeked));
     }
     return builder.toString();
   }
@@ -237,8 +231,8 @@ public final class ReplReader implements AutoCloseable {
   }
 
   /**
-   * Maps a read character into a recognized {@link ReplToken}, or throws a
-   * {@link ReplSyntaxException} if an unrecognized value is encountered.
+   * Maps a read character into a recognized {@link ReplToken}, or throws a {@link
+   * ReplSyntaxException} if an unrecognized value is encountered.
    */
   private static ReplToken mapNextPeekedToToken(int nextPeeked) throws ReplSyntaxException {
     if (nextPeeked == -1) {
@@ -264,22 +258,18 @@ public final class ReplReader implements AutoCloseable {
       case SpecialChars.SINGLE_QUOTE -> ReplToken.SINGLE_QUOTE;
       case SpecialChars.DOUBLE_QUOTE -> ReplToken.DOUBLE_QUOTE;
       case SpecialChars.BACK_SLASH -> ReplToken.BACK_SLASH;
-      // TODO: improve handling of unexpected values
+        // TODO: improve handling of unexpected values
       default -> throw new ReplSyntaxException(
           String.format("Could not map to ReplToken: int [%d], string [%s]", nextPeeked, asString));
     };
   }
 
-  /**
-   * Checks if a space, end of the line or document has been reached.
-   */
+  /** Checks if a space, end of the line or document has been reached. */
   private boolean shouldContinueReadingElement() {
     return peekedIsNotSpace() && isNotEnd();
   }
 
-  /**
-   * Checks that the end of the line or document has not been reached.
-   */
+  /** Checks that the end of the line or document has not been reached. */
   private boolean isNotEnd() {
     return peekedIsNotEndLine() && peekedIsNotEndDocument();
   }

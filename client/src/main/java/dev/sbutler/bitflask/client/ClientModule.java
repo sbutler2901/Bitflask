@@ -1,36 +1,49 @@
 package dev.sbutler.bitflask.client;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Joiner;
 import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import dev.sbutler.bitflask.client.client_processing.ClientProcessingModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
+import dev.sbutler.bitflask.client.client_processing.output.StdoutOutputWriter;
+import dev.sbutler.bitflask.resp.network.RespService;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
 
 public class ClientModule extends AbstractModule {
 
-  private final ImmutableList<Module> runtimeModules;
+  private final RespService respService;
+  private final InlineCommand inlineCommand;
 
-  private ClientModule(ImmutableList<Module> runtimeModules) {
-    this.runtimeModules = runtimeModules;
+  public ClientModule(RespService respService, InlineCommand inlineCommand) {
+    this.respService = respService;
+    this.inlineCommand = inlineCommand;
   }
 
   @Override
   protected void configure() {
-    runtimeModules.forEach(this::install);
-    install(new ClientProcessingModule());
+    bind(OutputWriter.class).to(StdoutOutputWriter.class);
   }
 
-  public static class Builder {
+  @Provides
+  RespService provideRespService() {
+    return respService;
+  }
 
-    ImmutableList.Builder<Module> runtimeModules
-        = new ImmutableList.Builder<>();
+  @Provides
+  ExecutionMode provideExecutionMode() {
+    return inlineCommand.isEmpty() ? ExecutionMode.REPL : ExecutionMode.INLINE;
+  }
 
-    public Builder addRuntimeModule(Module module) {
-      runtimeModules.add(module);
-      return this;
+  @Singleton
+  @Provides
+  Reader provideReader(ExecutionMode executionMode) {
+    if (executionMode.isReplMode()) {
+      return new InputStreamReader(System.in);
     }
 
-    public ClientModule build() {
-      return new ClientModule(runtimeModules.build());
-    }
+    String inlineCmd = Joiner.on(' ').join(inlineCommand.getArgs());
+    return new StringReader(inlineCmd);
   }
 }
