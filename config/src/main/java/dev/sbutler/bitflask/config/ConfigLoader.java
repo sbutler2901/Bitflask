@@ -21,9 +21,10 @@ public final class ConfigLoader {
     }
 
     String configJson = Files.readString(configOutputFile, StandardCharsets.UTF_8);
-    BitflaskConfig.Builder configBuilder = ConfigDefaults.BITFLASK_CONFIG.toBuilder();
-    JsonFormat.parser().merge(configJson, configBuilder);
-    return configBuilder.build();
+    BitflaskConfig.Builder configBuilder = BitflaskConfig.newBuilder();
+    JsonFormat.parser().ignoringUnknownFields().merge(configJson, configBuilder);
+    // Override defaults with loaded fields.
+    return ConfigDefaults.BITFLASK_CONFIG.toBuilder().mergeFrom(configBuilder.build()).build();
   }
 
   private ConfigLoader() {}
