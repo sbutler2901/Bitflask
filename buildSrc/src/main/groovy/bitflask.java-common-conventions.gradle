@@ -22,7 +22,7 @@ dependencies {
     implementation 'com.google.inject.extensions:guice-assistedinject:7.0.0'
     implementation 'com.google.inject.extensions:guice-throwingproviders:7.0.0'
 
-    implementation 'com.google.guava:guava:32.0.1-jre'
+    implementation 'com.google.guava:guava:32.1.2-jre'
 
     implementation 'com.google.mug:mug:6.6'
     implementation 'com.google.mug:mug-guava:6.6'
@@ -34,13 +34,13 @@ dependencies {
 
     // Testing
 
-    testImplementation 'com.google.guava:guava-testlib:32.0.1-jre'
+    testImplementation 'com.google.guava:guava-testlib:32.1.2-jre'
 
     testImplementation "com.google.truth:truth:1.1.5"
     testImplementation 'com.google.truth.extensions:truth-java8-extension:1.1.5'
 
-    testImplementation(platform('org.junit:junit-bom:5.9.3'))
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
+    testImplementation(platform('org.junit:junit-bom:5.10.0'))
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.4.0'
 }
 
