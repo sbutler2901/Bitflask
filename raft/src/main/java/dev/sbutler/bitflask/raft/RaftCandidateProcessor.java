@@ -12,7 +12,7 @@ import jakarta.inject.Inject;
  */
 final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
-  private final RaftConfigurations raftConfigurations;
+  private final RaftConfiguration raftConfiguration;
   private final RaftModeManager raftModeManager;
   private final RaftElectionTimer raftElectionTimer;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
@@ -22,14 +22,14 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   @Inject
   RaftCandidateProcessor(
-      RaftConfigurations raftConfigurations,
+      RaftConfiguration raftConfiguration,
       RaftModeManager raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
       RaftElectionTimer raftElectionTimer,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
-    this.raftConfigurations = raftConfigurations;
+    this.raftConfiguration = raftConfiguration;
     this.raftModeManager = raftModeManager;
     this.raftElectionTimer = raftElectionTimer;
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
@@ -95,7 +95,7 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
     LogEntryDetails lastLogEntryDetails = raftPersistentState.getRaftLog().getLastLogEntryDetails();
     RequestVoteRequest request =
         RequestVoteRequest.newBuilder()
-            .setCandidateId(raftConfigurations.thisRaftServerId().id())
+            .setCandidateId(raftConfiguration.thisRaftServerId().id())
             .setTerm(raftPersistentState.getCurrentTerm())
             .setLastLogIndex(lastLogEntryDetails.index())
             .setLastLogTerm(lastLogEntryDetails.term())

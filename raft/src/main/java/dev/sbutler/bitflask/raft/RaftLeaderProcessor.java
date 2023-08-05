@@ -35,7 +35,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   private final RaftLog raftLog;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
   private final RaftCommandConverter raftCommandConverter;
-  private final RaftConfigurations raftConfigurations;
+  private final RaftConfiguration raftConfiguration;
 
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersNextIndex =
       new ConcurrentHashMap<>();
@@ -56,16 +56,16 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       RaftLog raftLog,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager,
       RaftCommandConverter raftCommandConverter,
-      RaftConfigurations raftConfigurations) {
+      RaftConfiguration raftConfiguration) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
     this.executorService = executorService;
     this.raftLog = raftLog;
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
     this.raftCommandConverter = raftCommandConverter;
-    this.raftConfigurations = raftConfigurations;
+    this.raftConfiguration = raftConfiguration;
 
     int nextIndex = raftLog.getLastEntryIndex() + 1;
-    for (var followerServerId : raftConfigurations.getOtherServersInCluster().keySet()) {
+    for (var followerServerId : raftConfiguration.getOtherServersInCluster().keySet()) {
       followersNextIndex.put(followerServerId, new AtomicInteger(nextIndex));
       followersMatchIndex.put(followerServerId, new AtomicInteger(0));
     }
@@ -134,7 +134,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   /** Appends {@link Entry}s to any follower who is behind the log; otherwise, a heartbeat. */
   private void appendEntriesOrSendHeartbeat() {
     int lastEntryIndex = raftLog.getLastEntryIndex();
-    raftConfigurations
+    raftConfiguration
         .getOtherServersInCluster()
         .keySet()
         .forEach(
@@ -177,10 +177,10 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   /** Use to determine if an entry has been replicated to a majority of servers. */
   private boolean entryIndexHasMajorityMatch(int entryIndex) {
-    double halfOfServers = raftConfigurations.clusterServers().size() / 2.0;
+    double halfOfServers = raftConfiguration.clusterServers().size() / 2.0;
     long numServersWithEntryWithinMatch =
         1 // include this server
-            + raftConfigurations.getOtherServersInCluster().keySet().stream()
+            + raftConfiguration.getOtherServersInCluster().keySet().stream()
                 .map(followersMatchIndex::get)
                 .map(AtomicInteger::get)
                 .filter(matchIndex -> matchIndex >= entryIndex)
@@ -220,7 +220,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   /** Sends an {@link AppendEntriesRequest} with no {@link Entry}s to all followers. */
   private void sendHeartbeatToAll() {
-    raftConfigurations
+    raftConfiguration
         .getOtherServersInCluster()
         .keySet()
         .forEach(

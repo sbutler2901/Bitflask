@@ -11,22 +11,22 @@ import dev.sbutler.bitflask.common.guice.RootModule;
 /** Module for using the Raft Consensus protocol. */
 public class RaftModule extends RootModule {
 
-  private final RaftConfigurations raftConfigurations;
+  private final RaftConfiguration raftConfiguration;
   private final boolean standaloneMode;
 
-  private RaftModule(RaftConfigurations raftConfigurations, boolean standaloneMode) {
-    this.raftConfigurations = raftConfigurations;
+  private RaftModule(RaftConfiguration raftConfiguration, boolean standaloneMode) {
+    this.raftConfiguration = raftConfiguration;
     this.standaloneMode = standaloneMode;
   }
 
   /** Creates a Raft module for usage within another application. */
-  public RaftModule create(RaftConfigurations raftConfigurations) {
-    return new RaftModule(raftConfigurations, false);
+  public RaftModule create(RaftConfiguration raftConfiguration) {
+    return new RaftModule(raftConfiguration, false);
   }
 
   /** Creates a Raft module for operating in standalone mode. */
-  public RaftModule createStandalone(RaftConfigurations raftConfigurations) {
-    return new RaftModule(raftConfigurations, true);
+  public RaftModule createStandalone(RaftConfiguration raftConfiguration) {
+    return new RaftModule(raftConfiguration, true);
   }
 
   @Override
@@ -46,8 +46,8 @@ public class RaftModule extends RootModule {
   }
 
   @Provides
-  RaftConfigurations provideRaftClusterConfiguration() {
-    return raftConfigurations;
+  RaftConfiguration provideRaftClusterConfiguration() {
+    return raftConfiguration;
   }
 
   @Provides
