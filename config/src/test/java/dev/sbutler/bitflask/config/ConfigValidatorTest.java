@@ -14,8 +14,7 @@ public class ConfigValidatorTest {
     ServerConfig serverConfig =
         ServerConfig.newBuilder()
             .setThisServerId("server_0")
-            .putBitflaskServers(
-                "server_0",
+            .addBitflaskServers(
                 ServerConfig.ServerInfo.newBuilder()
                     .setServerId("server_0")
                     .setHost("host")
@@ -57,29 +56,17 @@ public class ConfigValidatorTest {
   }
 
   @Test
-  public void serverConfig_bitflaskServers_invalidKey() {
-    ServerConfig serverConfig =
-        ServerConfig.newBuilder()
-            .setThisServerId("server_0")
-            .putBitflaskServers("", ServerConfig.ServerInfo.getDefaultInstance())
-            .putBitflaskServers("server_0", ServerConfig.ServerInfo.getDefaultInstance())
-            .build();
-
-    InvalidConfigurationException e =
-        assertThrows(
-            InvalidConfigurationException.class,
-            () -> ConfigValidator.validateServerConfig(serverConfig));
-
-    assertThat(e).hasMessageThat().contains("key: server_id");
-  }
-
-  @Test
   public void serverConfig_bitflaskServers_serverInfo_invalidServerId() {
     ServerConfig serverConfig =
         ServerConfig.newBuilder()
             .setThisServerId("server_0")
-            .putBitflaskServers(
-                "server_0",
+            .addBitflaskServers(
+                ServerConfig.ServerInfo.newBuilder()
+                    .setServerId("server_0")
+                    .setHost("host")
+                    .setRespPort(1)
+                    .build())
+            .addBitflaskServers(
                 ServerConfig.ServerInfo.newBuilder()
                     .setServerId("")
                     .setHost("host")
@@ -92,29 +79,7 @@ public class ConfigValidatorTest {
             InvalidConfigurationException.class,
             () -> ConfigValidator.validateServerConfig(serverConfig));
 
-    assertThat(e).hasMessageThat().contains("value: server_id");
-  }
-
-  @Test
-  public void serverConfig_bitflaskServers_serverInfo_keyAndServerIdMismatch() {
-    ServerConfig serverConfig =
-        ServerConfig.newBuilder()
-            .setThisServerId("server_0")
-            .putBitflaskServers(
-                "server_0",
-                ServerConfig.ServerInfo.newBuilder()
-                    .setServerId("server_1")
-                    .setHost("host")
-                    .setRespPort(1)
-                    .build())
-            .build();
-
-    InvalidConfigurationException e =
-        assertThrows(
-            InvalidConfigurationException.class,
-            () -> ConfigValidator.validateServerConfig(serverConfig));
-
-    assertThat(e).hasMessageThat().contains("does not match");
+    assertThat(e).hasMessageThat().contains("server_id");
   }
 
   @Test
@@ -122,8 +87,7 @@ public class ConfigValidatorTest {
     ServerConfig serverConfig =
         ServerConfig.newBuilder()
             .setThisServerId("server_0")
-            .putBitflaskServers(
-                "server_0",
+            .addBitflaskServers(
                 ServerConfig.ServerInfo.newBuilder()
                     .setServerId("server_0")
                     .setHost("")
@@ -144,8 +108,7 @@ public class ConfigValidatorTest {
     ServerConfig serverConfig =
         ServerConfig.newBuilder()
             .setThisServerId("server_0")
-            .putBitflaskServers(
-                "server_0",
+            .addBitflaskServers(
                 ServerConfig.ServerInfo.newBuilder()
                     .setServerId("server_0")
                     .setHost("host")

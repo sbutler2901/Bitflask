@@ -1,15 +1,15 @@
 package dev.sbutler.bitflask.raft;
 
-import static com.google.mu.util.stream.GuavaCollectors.toImmutableMap;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.Converter;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
-import com.google.mu.util.stream.BiStream;
 import dev.sbutler.bitflask.config.RaftConfig;
 import dev.sbutler.bitflask.config.ServerConfig;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -36,10 +36,9 @@ final class RaftConfigurationProvider implements Provider<RaftConfiguration> {
 
   private RaftConfiguration supplyRaftConfiguration() {
     ImmutableMap<RaftServerId, RaftServerInfo> clusterServers =
-        BiStream.from(serverConfig.getBitflaskServersMap())
-            .mapKeys(RaftServerId::new)
-            .mapValues(ServerInfoConverter.INSTANCE::doForward)
-            .collect(toImmutableMap());
+        serverConfig.getBitflaskServersList().stream()
+            .map(ServerInfoConverter.INSTANCE::doForward)
+            .collect(toImmutableMap(RaftServerInfo::id, Function.identity()));
     return new RaftConfiguration(
         new RaftServerId(serverConfig.getThisServerId()),
         clusterServers,

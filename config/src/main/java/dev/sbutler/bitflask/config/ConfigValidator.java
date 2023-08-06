@@ -4,7 +4,6 @@ import dev.sbutler.bitflask.config.validators.AbsolutePathValidator;
 import dev.sbutler.bitflask.config.validators.NonBlankStringValidator;
 import dev.sbutler.bitflask.config.validators.PositiveIntegerValidator;
 import dev.sbutler.bitflask.config.validators.PositiveLongValidator;
-import java.util.Map;
 
 /** Handles validating the correctness of {@link BitflaskConfig}. */
 final class ConfigValidator {
@@ -25,24 +24,17 @@ final class ConfigValidator {
   static void validateServerConfig(ServerConfig serverConfig) {
     String thisServerId = serverConfig.getThisServerId();
     nonBlankStringValidator.validate("this_server_id", thisServerId);
-    if (!serverConfig.containsBitflaskServers(thisServerId)) {
+    if (serverConfig.getBitflaskServersList().stream()
+        .noneMatch(serverInfo -> thisServerId.equals(serverInfo.getServerId()))) {
       throw new InvalidConfigurationException(
           String.format(
               "this_server_id [%s] not found in bitflask_servers: %s",
-              thisServerId, serverConfig.getBitflaskServersMap().values()));
+              thisServerId, serverConfig.getBitflaskServersList()));
     }
-    for (Map.Entry<String, ServerConfig.ServerInfo> entry :
-        serverConfig.getBitflaskServersMap().entrySet()) {
-      nonBlankStringValidator.validate("key: server_id", entry.getKey());
-      nonBlankStringValidator.validate("value: server_id", entry.getValue().getServerId());
-      if (!entry.getKey().equals(entry.getValue().getServerId())) {
-        throw new InvalidConfigurationException(
-            String.format(
-                "bitflask_server key [%s] does not match ServerInfo.server_id [%s]",
-                entry.getKey(), entry.getValue().getServerId()));
-      }
-      nonBlankStringValidator.validate("host", entry.getValue().getHost());
-      positiveIntegerValidator.validate("resp_port", entry.getValue().getRespPort());
+    for (var serverInfo : serverConfig.getBitflaskServersList()) {
+      nonBlankStringValidator.validate("server_id", serverInfo.getServerId());
+      nonBlankStringValidator.validate("host", serverInfo.getHost());
+      positiveIntegerValidator.validate("resp_port", serverInfo.getRespPort());
     }
   }
 

@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.config;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -14,30 +14,23 @@ public final class ConfigDefaults {
   public static ServerConfig SERVER_CONFIG =
       ServerConfig.newBuilder()
           .setThisServerId("server_0")
-          .putAllBitflaskServers(
-              ImmutableMap.<String, ServerConfig.ServerInfo>builder()
-                  .put(
-                      "server_0",
-                      ServerConfig.ServerInfo.newBuilder()
-                          .setServerId("server_0")
-                          .setHost("localhost")
-                          .setRespPort(9090)
-                          .build())
-                  .put(
-                      "server_1",
-                      ServerConfig.ServerInfo.newBuilder()
-                          .setServerId("server_1")
-                          .setHost("localhost")
-                          .setRespPort(9091)
-                          .build())
-                  .put(
-                      "server_2",
-                      ServerConfig.ServerInfo.newBuilder()
-                          .setServerId("server_2")
-                          .setHost("localhost")
-                          .setRespPort(9091)
-                          .build())
-                  .build())
+          .addAllBitflaskServers(
+              ImmutableList.of(
+                  ServerConfig.ServerInfo.newBuilder()
+                      .setServerId("server_0")
+                      .setHost("localhost")
+                      .setRespPort(9090)
+                      .build(),
+                  ServerConfig.ServerInfo.newBuilder()
+                      .setServerId("server_1")
+                      .setHost("localhost")
+                      .setRespPort(9091)
+                      .build(),
+                  ServerConfig.ServerInfo.newBuilder()
+                      .setServerId("server_2")
+                      .setHost("localhost")
+                      .setRespPort(9091)
+                      .build()))
           .build();
 
   public static StorageConfig STORAGE_CONFIG =

@@ -15,6 +15,9 @@ message BitflaskConfig {
 
 // Configurations for Bitflask's Server.
 message ServerConfig {
+  // The server id of the running server.
+  string this_server_id = 1;
+
   // Info about a Bitflask Server.
   message ServerInfo {
     // A unique id for a Bitflask server.
@@ -24,11 +27,8 @@ message ServerConfig {
     // The port on which the server's RESP endpoint should listen.
     uint32 resp_port = 3;
   }
-  // The server id of the running server.
-  string this_server_id = 1;
-
-  // Map of all Bitflask server ids to their info.
-  map<string, ServerInfo> bitflask_servers = 2;
+  // All Bitflask servers in a cluster
+  repeated ServerInfo bitflask_servers = 2;
 }
 
 // Configurations for Bitflask's Storage system.
