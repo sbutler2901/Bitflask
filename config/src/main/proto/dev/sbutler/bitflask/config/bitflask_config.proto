@@ -55,7 +55,7 @@ message StorageConfig {
 // Configurations for Bitflask's Raft system.
 message RaftConfig {
   // The minimum time Raft's timer will wait.
-  uint64 timer_minimum_milliseconds = 1;
+  uint32 timer_minimum_milliseconds = 1;
   // The maximum time Raft's timer will wait.
-  uint64 timer_maximum_milliseconds = 2;
+  uint32 timer_maximum_milliseconds = 2;
 }

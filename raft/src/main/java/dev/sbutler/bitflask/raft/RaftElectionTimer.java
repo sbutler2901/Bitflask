@@ -37,7 +37,7 @@ final class RaftElectionTimer {
     timer.schedule(
         currentTimerTask,
         ThreadLocalRandom.current()
-            .nextLong(
+            .nextInt(
                 raftTimerInterval.minimumMilliSeconds(),
                 1 + raftTimerInterval.maximumMilliseconds()));
   }

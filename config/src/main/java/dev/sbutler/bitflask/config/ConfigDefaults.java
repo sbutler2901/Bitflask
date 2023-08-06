@@ -29,7 +29,7 @@ public final class ConfigDefaults {
                   ServerConfig.ServerInfo.newBuilder()
                       .setServerId("server_2")
                       .setHost("localhost")
-                      .setRespPort(9091)
+                      .setRespPort(9092)
                       .build()))
           .build();
 
