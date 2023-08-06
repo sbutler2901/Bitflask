@@ -58,9 +58,9 @@ final class ConfigValidator {
   }
 
   static void validateRaftConfig(RaftConfig raftConfig) {
-    positiveIntegerValidator.validate(
+    positiveLongValidator.validate(
         "timer_minimum_milliseconds", raftConfig.getTimerMinimumMilliseconds());
-    positiveIntegerValidator.validate(
+    positiveLongValidator.validate(
         "timer_maximum_milliseconds", raftConfig.getTimerMaximumMilliseconds());
   }
 
