@@ -36,7 +36,7 @@ final class RaftConfigurationProvider implements Provider<RaftConfiguration> {
   private RaftConfiguration supplyRaftConfiguration() {
     ImmutableMap<RaftServerId, RaftServerInfo> clusterServers =
         serverConfig.getBitflaskServersList().stream()
-            .map(RaftServerInfoConverter.INSTANCE::doForward)
+            .map(RaftServerInfoConverter.INSTANCE::convert)
             .collect(toImmutableMap(RaftServerInfo::id, Function.identity()));
     return new RaftConfiguration(
         new RaftServerId(serverConfig.getThisServerId()),

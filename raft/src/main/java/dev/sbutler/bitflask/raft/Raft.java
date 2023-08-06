@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.raft;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 
 import com.google.common.flogger.FluentLogger;
+import dev.sbutler.bitflask.config.ServerConfig;
 import dev.sbutler.bitflask.raft.exceptions.RaftException;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -29,8 +30,10 @@ public final class Raft implements RaftCommandSubmitter, RaftCommandSubjectRegis
   }
 
   /** Returns the {@link RaftServerInfo} of the current cluster leader, if one is known. */
-  public Optional<RaftServerInfo> getCurrentLeaderServerInfo() {
-    return raftModeManager.getCurrentLeaderServerInfo();
+  public Optional<ServerConfig.ServerInfo> getCurrentLeaderServerInfo() {
+    return raftModeManager
+        .getCurrentLeaderServerInfo()
+        .map(raftServerInfo -> RaftServerInfoConverter.INSTANCE.reverse().convert(raftServerInfo));
   }
 
   /** Submits a {@link RaftCommand} to be replicated. */
