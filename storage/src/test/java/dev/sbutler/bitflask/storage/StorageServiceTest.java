@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -8,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.sbutler.bitflask.storage.StorageCommandDTO.ReadDTO;
-import dev.sbutler.bitflask.storage.StorageResponse.Success;
 import dev.sbutler.bitflask.storage.commands.ClientCommand;
 import dev.sbutler.bitflask.storage.commands.ClientCommandMapper;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
@@ -40,11 +40,12 @@ class StorageServiceTest {
   public void processCommand() {
     ReadDTO dto = new ReadDTO("key");
     ClientCommand clientCommand = mock(ClientCommand.class);
-    StorageResponse expectedResponse = new Success("value");
+    StorageSubmitResults expectedResponse =
+        new StorageSubmitResults.Success(immediateFuture("value"));
     when(clientCommand.execute()).thenReturn(expectedResponse);
     when(clientCommandMapper.mapToCommand(any())).thenReturn(clientCommand);
 
-    StorageResponse response = storageService.processCommand(dto);
+    StorageSubmitResults response = storageService.processCommand(dto);
 
     assertThat(response).isEqualTo(expectedResponse);
   }

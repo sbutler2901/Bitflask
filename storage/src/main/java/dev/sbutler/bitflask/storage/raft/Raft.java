@@ -4,6 +4,7 @@ import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.config.ServerConfig;
+import dev.sbutler.bitflask.storage.StorageSubmitResults;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftException;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -31,21 +32,19 @@ public final class Raft implements RaftCommandSubmitter, RaftCommandSubjectRegis
 
   /** Returns the {@link RaftServerInfo} of the current cluster leader, if one is known. */
   public Optional<ServerConfig.ServerInfo> getCurrentLeaderServerInfo() {
-    return raftModeManager
-        .getCurrentLeaderServerInfo()
-        .map(raftServerInfo -> RaftServerInfoConverter.INSTANCE.reverse().convert(raftServerInfo));
+    return raftModeManager.getCurrentLeaderServerInfo();
   }
 
   /** Submits a {@link RaftCommand} to be replicated. */
-  public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
+  public StorageSubmitResults submitCommand(RaftCommand raftCommand) {
     try {
       return raftModeManager.submitCommand(raftCommand);
     } catch (RaftException e) {
       logger.atSevere().withCause(e).log("Failed to submit command [%s]", raftCommand);
-      return new RaftSubmitResults.Success(immediateFailedFuture(e));
+      return new StorageSubmitResults.Success(immediateFailedFuture(e));
     } catch (Exception e) {
       logger.atSevere().withCause(e).log("Failed to submit command [%s]", raftCommand);
-      return new RaftSubmitResults.Success(
+      return new StorageSubmitResults.Success(
           immediateFailedFuture(new RaftException("Unknown error while submitting.")));
     }
   }

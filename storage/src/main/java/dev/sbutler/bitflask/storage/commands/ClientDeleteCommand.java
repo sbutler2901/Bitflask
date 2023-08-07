@@ -1,12 +1,12 @@
 package dev.sbutler.bitflask.storage.commands;
 
+import static com.google.common.util.concurrent.Futures.immediateFuture;
+
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.StorageCommandDTO;
-import dev.sbutler.bitflask.storage.StorageResponse;
+import dev.sbutler.bitflask.storage.StorageSubmitResults;
 import dev.sbutler.bitflask.storage.raft.Raft;
 import dev.sbutler.bitflask.storage.raft.RaftCommand;
-import dev.sbutler.bitflask.storage.raft.RaftCommandSubmitter;
-import dev.sbutler.bitflask.storage.raft.RaftServerInfoConverter;
 
 /** Handles a client's request to delete to storage. */
 final class ClientDeleteCommand implements ClientCommand {
@@ -22,27 +22,23 @@ final class ClientDeleteCommand implements ClientCommand {
   }
 
   @Override
-  public StorageResponse execute() {
+  public StorageSubmitResults execute() {
     RaftCommand.DeleteCommand command = new RaftCommand.DeleteCommand(deleteDTO.key());
-    RaftCommandSubmitter.RaftSubmitResults submitResults = raft.submitCommand(command);
-    return switch (submitResults) {
-      case RaftCommandSubmitter.RaftSubmitResults.Success success -> handleSuccess(success);
-      case RaftCommandSubmitter.RaftSubmitResults.NotCurrentLeader
-      notCurrentLeader -> new StorageResponse.NotCurrentLeader(
-          RaftServerInfoConverter.INSTANCE.reverse().convert(notCurrentLeader.currentLeaderInfo()));
-      case RaftCommandSubmitter.RaftSubmitResults.NoKnownLeader ignored -> new StorageResponse
-          .NoKnownLeader();
-    };
+    StorageSubmitResults submitResults = raft.submitCommand(command);
+    if (submitResults instanceof StorageSubmitResults.Success successResults) {
+      return handleSuccess(successResults);
+    }
+    return submitResults;
   }
 
-  private StorageResponse handleSuccess(RaftCommandSubmitter.RaftSubmitResults.Success success) {
+  private StorageSubmitResults handleSuccess(StorageSubmitResults.Success success) {
     try {
       success.submitFuture().get();
     } catch (Exception e) {
       String message = String.format("Failed to delete [%s]", deleteDTO.key());
       logger.atSevere().withCause(e).log(message);
-      return new StorageResponse.Failed(message);
+      return new StorageSubmitResults.Success(immediateFuture(message));
     }
-    return new StorageResponse.Success("OK");
+    return new StorageSubmitResults.Success(immediateFuture("OK"));
   }
 }

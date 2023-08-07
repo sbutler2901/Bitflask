@@ -6,9 +6,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 import dev.sbutler.bitflask.storage.StorageCommandDTO.DeleteDTO;
-import dev.sbutler.bitflask.storage.StorageResponse;
-import dev.sbutler.bitflask.storage.StorageResponse.Failed;
-import dev.sbutler.bitflask.storage.StorageResponse.Success;
+import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Failed;
+import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import org.junit.jupiter.api.Test;
@@ -23,7 +22,7 @@ public class DeleteCommandTest {
 
   @Test
   void deleteSucceeds_returnsOk() {
-    StorageResponse response = command.execute();
+    StorageCommandResults response = command.execute();
 
     assertThat(response).isInstanceOf(Success.class);
     assertThat(((Success) response).message()).isEqualTo("OK");
@@ -33,7 +32,7 @@ public class DeleteCommandTest {
   void deleteThrowsStorageException_returnsFailed() {
     doThrow(StorageException.class).when(lsmTree).delete(anyString());
 
-    StorageResponse response = command.execute();
+    StorageCommandResults response = command.execute();
 
     assertThat(response).isInstanceOf(Failed.class);
     assertThat(((Failed) response).message())

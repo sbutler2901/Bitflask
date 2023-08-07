@@ -5,6 +5,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import dev.sbutler.bitflask.config.ServerConfig;
+import dev.sbutler.bitflask.storage.StorageSubmitResults;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.Optional;
@@ -75,15 +77,15 @@ final class RaftModeManager
     }
   }
 
-  public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
+  public StorageSubmitResults submitCommand(RaftCommand raftCommand) {
     transitionLock.lock();
     try {
       if (isCurrentLeader()) {
         return ((RaftLeaderProcessor) raftModeProcessor).submitCommand(raftCommand);
       } else {
         return getCurrentLeaderServerInfo()
-            .<RaftSubmitResults>map(RaftSubmitResults.NotCurrentLeader::new)
-            .orElseGet(RaftSubmitResults.NoKnownLeader::new);
+            .<StorageSubmitResults>map(StorageSubmitResults.NotCurrentLeader::new)
+            .orElseGet(StorageSubmitResults.NoKnownLeader::new);
       }
     } finally {
       transitionLock.unlock();
@@ -99,10 +101,11 @@ final class RaftModeManager
     }
   }
 
-  Optional<RaftServerInfo> getCurrentLeaderServerInfo() {
+  Optional<ServerConfig.ServerInfo> getCurrentLeaderServerInfo() {
     return raftVolatileState
         .getLeaderServerId()
-        .map(leaderServiceId -> raftConfiguration.clusterServers().get(leaderServiceId));
+        .map(leaderServiceId -> raftConfiguration.clusterServers().get(leaderServiceId))
+        .map(raftServerInfo -> RaftServerInfoConverter.INSTANCE.reverse().convert(raftServerInfo));
   }
 
   /**

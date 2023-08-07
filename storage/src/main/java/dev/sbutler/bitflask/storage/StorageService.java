@@ -32,7 +32,7 @@ public final class StorageService extends AbstractIdleService {
     logger.atInfo().log("storage loaded.");
   }
 
-  public StorageResponse processCommand(StorageCommandDTO commandDTO) {
+  public StorageSubmitResults processCommand(StorageCommandDTO commandDTO) {
     ClientCommand command = clientCommandMapper.mapToCommand(commandDTO);
     return command.execute();
   }

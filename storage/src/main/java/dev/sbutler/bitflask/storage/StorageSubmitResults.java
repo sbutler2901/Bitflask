@@ -11,7 +11,7 @@ public sealed interface StorageSubmitResults {
    *
    * @param submitFuture resolves once the command has been safely replicated and applied.
    */
-  record Success(ListenableFuture<Void> submitFuture) implements StorageSubmitResults {}
+  record Success(ListenableFuture<String> submitFuture) implements StorageSubmitResults {}
 
   /**
    * Indicates this storage server instance is not the current leader.

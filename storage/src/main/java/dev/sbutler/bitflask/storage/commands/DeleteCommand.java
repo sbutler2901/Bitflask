@@ -2,9 +2,8 @@ package dev.sbutler.bitflask.storage.commands;
 
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.StorageCommandDTO.DeleteDTO;
-import dev.sbutler.bitflask.storage.StorageResponse;
-import dev.sbutler.bitflask.storage.StorageResponse.Failed;
-import dev.sbutler.bitflask.storage.StorageResponse.Success;
+import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Failed;
+import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 
@@ -25,7 +24,7 @@ public class DeleteCommand implements StorageCommand {
   }
 
   @Override
-  public StorageResponse execute() {
+  public StorageCommandResults execute() {
     logger.atInfo().log("Submitting delete for [%s]", deleteDTO.key());
 
     try {

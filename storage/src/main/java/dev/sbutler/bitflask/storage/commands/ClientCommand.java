@@ -1,8 +1,8 @@
 package dev.sbutler.bitflask.storage.commands;
 
-import dev.sbutler.bitflask.storage.StorageResponse;
+import dev.sbutler.bitflask.storage.StorageSubmitResults;
 
 public interface ClientCommand {
   /** A blocking call that executes the corresponding command returning the results. */
-  StorageResponse execute();
+  StorageSubmitResults execute();
 }

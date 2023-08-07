@@ -2,9 +2,8 @@ package dev.sbutler.bitflask.storage.commands;
 
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.StorageCommandDTO.ReadDTO;
-import dev.sbutler.bitflask.storage.StorageResponse;
-import dev.sbutler.bitflask.storage.StorageResponse.Failed;
-import dev.sbutler.bitflask.storage.StorageResponse.Success;
+import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Failed;
+import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import java.util.Optional;
@@ -23,7 +22,7 @@ final class ReadCommand implements StorageCommand {
   }
 
   @Override
-  public StorageResponse execute() {
+  public StorageCommandResults execute() {
     logger.atInfo().log("Submitting read for [%s]", readDTO.key());
 
     Optional<String> readValue;

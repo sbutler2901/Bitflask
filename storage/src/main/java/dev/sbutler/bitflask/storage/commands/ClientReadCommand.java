@@ -1,6 +1,8 @@
 package dev.sbutler.bitflask.storage.commands;
 
-import dev.sbutler.bitflask.storage.StorageResponse;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
+
+import dev.sbutler.bitflask.storage.StorageSubmitResults;
 import dev.sbutler.bitflask.storage.raft.Raft;
 
 /** Handles a client's request to read from storage. */
@@ -15,12 +17,18 @@ final class ClientReadCommand implements ClientCommand {
   }
 
   @Override
-  public StorageResponse execute() {
+  public StorageSubmitResults execute() {
     if (!raft.isCurrentLeader()) {
       raft.getCurrentLeaderServerInfo()
-          .<StorageResponse>map(StorageResponse.NotCurrentLeader::new)
-          .orElseGet(StorageResponse.NoKnownLeader::new);
+          .<StorageSubmitResults>map(StorageSubmitResults.NotCurrentLeader::new)
+          .orElseGet(StorageSubmitResults.NoKnownLeader::new);
     }
-    return readCommand.execute();
+    StorageCommandResults storageCommandResults = readCommand.execute();
+    return switch (storageCommandResults) {
+      case StorageCommandResults.Success success -> new StorageSubmitResults.Success(
+          immediateFuture(success.message()));
+      case StorageCommandResults.Failed failed -> new StorageSubmitResults.Success(
+          immediateFuture(failed.message()));
+    };
   }
 }

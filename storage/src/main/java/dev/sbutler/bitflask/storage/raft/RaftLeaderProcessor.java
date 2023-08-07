@@ -9,6 +9,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
+import dev.sbutler.bitflask.storage.StorageSubmitResults;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftLeaderException;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftUnknownLeaderException;
 import io.grpc.protobuf.StatusProto;
@@ -102,16 +103,16 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   }
 
   @Override
-  public RaftSubmitResults submitCommand(RaftCommand raftCommand) {
+  public StorageSubmitResults submitCommand(RaftCommand raftCommand) {
     Entry newEntry = raftCommandConverter.convert(raftCommand);
     int newEntryIndex = raftLog.appendEntry(newEntry);
-    SettableFuture<Void> clientSubmitFuture = SettableFuture.create();
+    SettableFuture<String> clientSubmitFuture = SettableFuture.create();
     waitingSubmissions.add(new WaitingSubmission(newEntryIndex, clientSubmitFuture));
-    return new RaftSubmitResults.Success(clientSubmitFuture);
+    return new StorageSubmitResults.Success(clientSubmitFuture);
   }
 
   /** Holds a submission future that cannot be resolved until the associated entry is applied. */
-  private record WaitingSubmission(int entryIndex, SettableFuture<Void> submissionFuture)
+  private record WaitingSubmission(int entryIndex, SettableFuture<String> submissionFuture)
       implements Comparable<WaitingSubmission> {
 
     @Override

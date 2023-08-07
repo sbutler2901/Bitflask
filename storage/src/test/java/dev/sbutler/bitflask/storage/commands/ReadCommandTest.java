@@ -6,9 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.sbutler.bitflask.storage.StorageCommandDTO.ReadDTO;
-import dev.sbutler.bitflask.storage.StorageResponse;
-import dev.sbutler.bitflask.storage.StorageResponse.Failed;
-import dev.sbutler.bitflask.storage.StorageResponse.Success;
+import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Failed;
+import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import java.util.Optional;
@@ -29,7 +28,7 @@ public class ReadCommandTest {
   public void valueFound() {
     when(lsmTree.read(anyString())).thenReturn(Optional.of("value"));
 
-    StorageResponse response = command.execute();
+    StorageCommandResults response = command.execute();
 
     assertThat(response).isInstanceOf(Success.class);
     assertThat(((Success) response).message()).isEqualTo("value");
@@ -39,7 +38,7 @@ public class ReadCommandTest {
   public void valueNotFound() {
     when(lsmTree.read(anyString())).thenReturn(Optional.empty());
 
-    StorageResponse response = command.execute();
+    StorageCommandResults response = command.execute();
 
     assertThat(response).isInstanceOf(Success.class);
     assertThat(((Success) response).message())
@@ -50,7 +49,7 @@ public class ReadCommandTest {
   public void readThrowsStorageException_returnsFailed() {
     when(lsmTree.read(anyString())).thenThrow(StorageException.class);
 
-    StorageResponse response = command.execute();
+    StorageCommandResults response = command.execute();
 
     assertThat(response).isInstanceOf(Failed.class);
     assertThat(((Failed) response).message())

@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.integration;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
@@ -10,8 +11,9 @@ import dev.sbutler.bitflask.storage.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.StorageCommandDTO.WriteDTO;
-import dev.sbutler.bitflask.storage.StorageResponse;
 import dev.sbutler.bitflask.storage.StorageService;
+import dev.sbutler.bitflask.storage.StorageSubmitResults;
+import dev.sbutler.bitflask.storage.commands.StorageCommandResults;
 import dev.sbutler.bitflask.storage.integration.extensions.ListeningExecutorServiceExtension;
 import dev.sbutler.bitflask.storage.integration.extensions.StorageExtension;
 import org.junit.jupiter.api.Test;
@@ -30,53 +32,55 @@ public class StorageTest {
   }
 
   @Test
-  public void write() {
+  public void write() throws Exception {
     StorageCommandDTO dto = new WriteDTO("key", "value");
 
-    StorageResponse.Success response = getResponseAsSuccess(storageService.processCommand(dto));
+    StorageSubmitResults.Success response =
+        getResponseAsSuccess(storageService.processCommand(dto));
 
-    assertThat(response.message()).isEqualTo("OK");
+    assertThat(response.submitFuture().get()).isEqualTo("OK");
   }
 
   @Test
-  public void read_notFound() {
+  public void read_notFound() throws Exception {
     StorageCommandDTO dto = new ReadDTO("unknownKey");
 
-    StorageResponse.Success response = getResponseAsSuccess(storageService.processCommand(dto));
+    StorageSubmitResults.Success response =
+        getResponseAsSuccess(storageService.processCommand(dto));
 
-    assertThat(response.message()).isEqualTo("[unknownKey] not found");
+    assertThat(response.submitFuture().get()).isEqualTo("[unknownKey] not found");
   }
 
   @Test
-  public void read_found() {
+  public void read_found() throws Exception {
     StorageCommandDTO writeDto = new WriteDTO("key", "value");
     StorageCommandDTO readDto = new ReadDTO("key");
 
-    StorageResponse.Success writeResponse =
+    StorageSubmitResults.Success writeResponse =
         getResponseAsSuccess(storageService.processCommand(writeDto));
-    StorageResponse.Success readResponse =
+    StorageSubmitResults.Success readResponse =
         getResponseAsSuccess(storageService.processCommand(readDto));
 
-    assertThat(writeResponse.message()).isEqualTo("OK");
-    assertThat(readResponse.message()).isEqualTo("value");
+    assertThat(writeResponse.submitFuture().get()).isEqualTo("OK");
+    assertThat(readResponse.submitFuture().get()).isEqualTo("value");
   }
 
   @Test
-  public void delete() {
+  public void delete() throws Exception {
     StorageCommandDTO writeDto = new WriteDTO("key", "value");
     StorageCommandDTO deleteDto = new DeleteDTO("key");
     StorageCommandDTO readDto = new ReadDTO("key");
 
-    StorageResponse.Success writeResponse =
+    StorageSubmitResults.Success writeResponse =
         getResponseAsSuccess(storageService.processCommand(writeDto));
-    StorageResponse.Success deleteResponse =
+    StorageSubmitResults.Success deleteResponse =
         getResponseAsSuccess(storageService.processCommand(deleteDto));
-    StorageResponse.Success readResponse =
+    StorageSubmitResults.Success readResponse =
         getResponseAsSuccess(storageService.processCommand(readDto));
 
-    assertThat(writeResponse.message()).isEqualTo("OK");
-    assertThat(deleteResponse.message()).isEqualTo("OK");
-    assertThat(readResponse.message()).isEqualTo("[key] not found");
+    assertThat(writeResponse.submitFuture().get()).isEqualTo("OK");
+    assertThat(deleteResponse.submitFuture().get()).isEqualTo("OK");
+    assertThat(readResponse.submitFuture().get()).isEqualTo("[key] not found");
   }
 
   @Test
@@ -103,13 +107,13 @@ public class StorageTest {
                     .map(Futures::getUnchecked)
                     .forEach(
                         response ->
-                            assertThat(response).isInstanceOf(StorageResponse.Success.class)),
+                            assertThat(response).isInstanceOf(StorageCommandResults.Success.class)),
             listeningExecutorService);
   }
 
-  private static StorageResponse.Success getResponseAsSuccess(StorageResponse response) {
-    assertThat(response).isInstanceOf(StorageResponse.Success.class);
-    return (StorageResponse.Success) response;
+  private static StorageSubmitResults.Success getResponseAsSuccess(StorageSubmitResults response) {
+    assertThat(response).isInstanceOf(StorageSubmitResults.Success.class);
+    return (StorageSubmitResults.Success) response;
   }
 
   private static ImmutableList<StorageCommandDTO.WriteDTO> generateWriteCommands(int num) {
