@@ -9,19 +9,19 @@ import static org.mockito.Mockito.when;
 
 import dev.sbutler.bitflask.storage.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.StorageResponse.Success;
-import dev.sbutler.bitflask.storage.commands.CommandMapper;
-import dev.sbutler.bitflask.storage.commands.StorageCommand;
+import dev.sbutler.bitflask.storage.commands.ClientCommand;
+import dev.sbutler.bitflask.storage.commands.ClientCommandMapper;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import org.junit.jupiter.api.Test;
 
 class StorageServiceTest {
 
   private final LSMTree lsmTree = mock(LSMTree.class);
-  private final CommandMapper commandMapper = mock(CommandMapper.class);
+  private final ClientCommandMapper clientCommandMapper = mock(ClientCommandMapper.class);
   private final StorageLoader storageLoader = mock(StorageLoader.class);
 
   private final StorageService storageService =
-      new StorageService(lsmTree, commandMapper, storageLoader);
+      new StorageService(lsmTree, clientCommandMapper, storageLoader);
 
   @Test
   public void startUp() {
@@ -39,10 +39,10 @@ class StorageServiceTest {
   @Test
   public void processCommand() {
     ReadDTO dto = new ReadDTO("key");
-    StorageCommand command = mock(StorageCommand.class);
+    ClientCommand clientCommand = mock(ClientCommand.class);
     StorageResponse expectedResponse = new Success("value");
-    when(command.execute()).thenReturn(expectedResponse);
-    when(commandMapper.mapToCommand(any())).thenReturn(command);
+    when(clientCommand.execute()).thenReturn(expectedResponse);
+    when(clientCommandMapper.mapToCommand(any())).thenReturn(clientCommand);
 
     StorageResponse response = storageService.processCommand(dto);
 

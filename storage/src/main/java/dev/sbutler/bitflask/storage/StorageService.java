@@ -33,7 +33,7 @@ public final class StorageService extends AbstractIdleService {
   }
 
   public StorageResponse processCommand(StorageCommandDTO commandDTO) {
-    ClientCommand command = clientCommandMapper.mapToClientCommand(commandDTO);
+    ClientCommand command = clientCommandMapper.mapToCommand(commandDTO);
     return command.execute();
   }
 

@@ -8,7 +8,7 @@ public sealed interface StorageResponse {
 
   record Failed(String message) implements StorageResponse {}
 
-  record NotCurrentLeader(ServerConfig.ServerInfo serverInfo) implements StorageResponse {}
+  record NotCurrentLeader(ServerConfig.ServerInfo currentLeaderInfo) implements StorageResponse {}
 
   record NoKnownLeader() implements StorageResponse {}
 }

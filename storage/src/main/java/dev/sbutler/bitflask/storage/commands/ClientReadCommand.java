@@ -1,18 +1,26 @@
 package dev.sbutler.bitflask.storage.commands;
 
-import dev.sbutler.bitflask.storage.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.StorageResponse;
+import dev.sbutler.bitflask.storage.raft.Raft;
 
+/** Handles a client's request to read from storage. */
 final class ClientReadCommand implements ClientCommand {
 
-  private final StorageCommandDTO.ReadDTO readDTO;
+  private final Raft raft;
+  private final ReadCommand readCommand;
 
-  ClientReadCommand(StorageCommandDTO.ReadDTO readDTO) {
-    this.readDTO = readDTO;
+  ClientReadCommand(Raft raft, ReadCommand readCommand) {
+    this.raft = raft;
+    this.readCommand = readCommand;
   }
 
   @Override
   public StorageResponse execute() {
-    return null;
+    if (!raft.isCurrentLeader()) {
+      raft.getCurrentLeaderServerInfo()
+          .<StorageResponse>map(StorageResponse.NotCurrentLeader::new)
+          .orElseGet(StorageResponse.NoKnownLeader::new);
+    }
+    return readCommand.execute();
   }
 }

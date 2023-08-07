@@ -9,10 +9,7 @@ import dev.sbutler.bitflask.storage.exceptions.StorageException;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import java.util.Optional;
 
-/**
- * Handles submitting an asynchronous task to the storage engine for reading the value of a provided
- * key.
- */
+/** Handles submitting a read of the provided key to the storage engine. */
 final class ReadCommand implements StorageCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
