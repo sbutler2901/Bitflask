@@ -1,2 +1,2 @@
 rootProject.name = 'Bitflask'
-include('storage', 'server', 'client', 'resp', 'common', 'raft', 'config')
+include('storage', 'server', 'client', 'resp', 'common', 'config')
