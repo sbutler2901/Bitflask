@@ -4,7 +4,8 @@ import com.google.common.base.Converter;
 import dev.sbutler.bitflask.config.ServerConfig;
 
 /** Handles converting between {@link ServerConfig.ServerInfo} and {@link RaftServerInfo}. */
-final class RaftServerInfoConverter extends Converter<ServerConfig.ServerInfo, RaftServerInfo> {
+public final class RaftServerInfoConverter
+    extends Converter<ServerConfig.ServerInfo, RaftServerInfo> {
 
   public static final RaftServerInfoConverter INSTANCE = new RaftServerInfoConverter();
 

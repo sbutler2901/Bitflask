@@ -19,7 +19,7 @@ public class ClientCommandMapper {
     return switch (storageCommandDTO) {
       case StorageCommandDTO.ReadDTO readDTO -> new ClientReadCommand(
           raft, storageCommandFactory.createReadCommand(readDTO));
-      case StorageCommandDTO.WriteDTO writeDTO -> new ClientWriteCommand(writeDTO);
+      case StorageCommandDTO.WriteDTO writeDTO -> new ClientWriteCommand(raft, writeDTO);
       case StorageCommandDTO.DeleteDTO deleteDTO -> new ClientDeleteCommand(deleteDTO);
     };
   }
