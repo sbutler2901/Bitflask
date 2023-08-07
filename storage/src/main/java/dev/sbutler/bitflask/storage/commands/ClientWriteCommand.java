@@ -40,7 +40,7 @@ final class ClientWriteCommand implements ClientCommand {
       success.submitFuture().get();
     } catch (Exception e) {
       String message = String.format("Failed to write [%s]:%s]", writeDTO.key(), writeDTO.key());
-      logger.atSevere().withCause(e).log();
+      logger.atSevere().withCause(e).log(message);
       return new StorageResponse.Failed(message);
     }
     return new StorageResponse.Success("OK");
