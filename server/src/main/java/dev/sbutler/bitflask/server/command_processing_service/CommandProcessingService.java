@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.collect.ImmutableList;
+import dev.sbutler.bitflask.storage.commands.ClientCommandResults;
 import jakarta.inject.Inject;
 
 /**
@@ -34,6 +35,16 @@ public final class CommandProcessingService {
     }
 
     ImmutableList<String> args = commandMessage.subList(1, commandMessage.size());
-    return commandFactory.createCommand(commandType, args).execute();
+    ServerCommand command = commandFactory.createCommand(commandType, args);
+    ClientCommandResults commandResults = command.execute();
+    return switch (commandResults) {
+      case ClientCommandResults.Success success -> success.message();
+      case ClientCommandResults.Failure failure -> failure.message();
+        // TODO: improve handling of these cases
+      case ClientCommandResults.NotCurrentLeader notCurrentLeader -> notCurrentLeader
+          .currentLeaderInfo()
+          .toString();
+      case ClientCommandResults.NoKnownLeader noKnownLeader -> "Unknown leader!";
+    };
   }
 }

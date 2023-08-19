@@ -1,18 +1,18 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.storage.StorageService;
+import dev.sbutler.bitflask.storage.commands.ClientCommandFactory;
 import jakarta.inject.Inject;
 import java.util.List;
 
 /** Handles creating {@link ServerCommand}s. */
 final class CommandFactory {
 
-  private final StorageService storageService;
+  private final ClientCommandFactory clientCommandFactory;
 
   @Inject
-  CommandFactory(StorageService storageService) {
-    this.storageService = storageService;
+  CommandFactory(ClientCommandFactory clientCommandFactory) {
+    this.clientCommandFactory = clientCommandFactory;
   }
 
   /** */
@@ -35,15 +35,15 @@ final class CommandFactory {
   }
 
   private GetCommand createGetCommand(String key) {
-    return new GetCommand(storageService, key);
+    return new GetCommand(clientCommandFactory, key);
   }
 
   private SetCommand createSetCommand(String key, String value) {
-    return new SetCommand(storageService, key, value);
+    return new SetCommand(clientCommandFactory, key, value);
   }
 
   private DeleteCommand createDeleteCommand(String key) {
-    return new DeleteCommand(storageService, key);
+    return new DeleteCommand(clientCommandFactory, key);
   }
 
   private static boolean isValidCommandArgs(CommandType commandType, List<String> args) {
