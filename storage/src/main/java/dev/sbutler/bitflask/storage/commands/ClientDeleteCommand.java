@@ -3,10 +3,8 @@ package dev.sbutler.bitflask.storage.commands;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.StorageSubmitResults;
 import dev.sbutler.bitflask.storage.raft.Raft;
-import dev.sbutler.bitflask.storage.raft.RaftCommand;
 
 /** Handles a client's request to delete to storage. */
 final class ClientDeleteCommand implements ClientCommand {
@@ -14,17 +12,16 @@ final class ClientDeleteCommand implements ClientCommand {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final Raft raft;
-  private final StorageCommandDTO.DeleteDTO deleteDTO;
+  private final DeleteCommand deleteCommand;
 
-  ClientDeleteCommand(Raft raft, StorageCommandDTO.DeleteDTO deleteDTO) {
+  ClientDeleteCommand(Raft raft, DeleteCommand deleteCommand) {
     this.raft = raft;
-    this.deleteDTO = deleteDTO;
+    this.deleteCommand = deleteCommand;
   }
 
   @Override
   public StorageSubmitResults execute() {
-    RaftCommand.DeleteCommand command = new RaftCommand.DeleteCommand(deleteDTO.key());
-    StorageSubmitResults submitResults = raft.submitCommand(command);
+    StorageSubmitResults submitResults = raft.submitCommand(deleteCommand);
     if (submitResults instanceof StorageSubmitResults.Success successResults) {
       return handleSuccess(successResults);
     }
@@ -35,7 +32,7 @@ final class ClientDeleteCommand implements ClientCommand {
     try {
       success.submitFuture().get();
     } catch (Exception e) {
-      String message = String.format("Failed to delete [%s]", deleteDTO.key());
+      String message = String.format("Failed to delete [%s]", deleteCommand.getDTO().key());
       logger.atSevere().withCause(e).log(message);
       return new StorageSubmitResults.Success(immediateFuture(message));
     }

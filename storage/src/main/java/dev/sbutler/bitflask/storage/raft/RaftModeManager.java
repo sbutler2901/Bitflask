@@ -7,6 +7,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import dev.sbutler.bitflask.config.ServerConfig;
 import dev.sbutler.bitflask.storage.StorageSubmitResults;
+import dev.sbutler.bitflask.storage.commands.StorageCommand;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.Optional;
@@ -77,11 +78,11 @@ final class RaftModeManager
     }
   }
 
-  public StorageSubmitResults submitCommand(RaftCommand raftCommand) {
+  public StorageSubmitResults submitCommand(StorageCommand storageCommand) {
     transitionLock.lock();
     try {
       if (isCurrentLeader()) {
-        return ((RaftLeaderProcessor) raftModeProcessor).submitCommand(raftCommand);
+        return ((RaftLeaderProcessor) raftModeProcessor).submitCommand(storageCommand);
       } else {
         return getCurrentLeaderServerInfo()
             .<StorageSubmitResults>map(StorageSubmitResults.NotCurrentLeader::new)

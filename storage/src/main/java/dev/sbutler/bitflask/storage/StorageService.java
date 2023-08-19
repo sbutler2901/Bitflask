@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.storage;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractIdleService;
 import dev.sbutler.bitflask.storage.commands.ClientCommand;
-import dev.sbutler.bitflask.storage.commands.ClientCommandMapper;
+import dev.sbutler.bitflask.storage.commands.ClientCommandFactory;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -15,14 +15,14 @@ public final class StorageService extends AbstractIdleService {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final LSMTree lsmTree;
-  private final ClientCommandMapper clientCommandMapper;
+  private final ClientCommandFactory clientCommandFactory;
   private final StorageLoader storageLoader;
 
   @Inject
   StorageService(
-      LSMTree lsmTree, ClientCommandMapper clientCommandMapper, StorageLoader storageLoader) {
+      LSMTree lsmTree, ClientCommandFactory clientCommandFactory, StorageLoader storageLoader) {
     this.lsmTree = lsmTree;
-    this.clientCommandMapper = clientCommandMapper;
+    this.clientCommandFactory = clientCommandFactory;
     this.storageLoader = storageLoader;
   }
 
@@ -33,7 +33,7 @@ public final class StorageService extends AbstractIdleService {
   }
 
   public StorageSubmitResults processCommand(StorageCommandDTO commandDTO) {
-    ClientCommand command = clientCommandMapper.mapToCommand(commandDTO);
+    ClientCommand command = clientCommandFactory.createClientCommand(commandDTO);
     return command.execute();
   }
 

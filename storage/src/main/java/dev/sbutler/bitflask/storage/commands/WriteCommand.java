@@ -10,7 +10,7 @@ import dev.sbutler.bitflask.storage.lsm.LSMTree;
 /**
  * Handles submitting an asynchronous task to the storage engine for writing a key:value mapping.
  */
-public class WriteCommand implements StorageCommand {
+final class WriteCommand implements StorageCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -37,5 +37,10 @@ public class WriteCommand implements StorageCommand {
 
     logger.atInfo().log("Successful write of [%s]:[%s]", writeDTO.key(), writeDTO.value());
     return new Success("OK");
+  }
+
+  @Override
+  public WriteDTO getDTO() {
+    return writeDTO;
   }
 }

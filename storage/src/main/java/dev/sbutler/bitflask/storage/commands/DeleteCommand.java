@@ -11,7 +11,7 @@ import dev.sbutler.bitflask.storage.lsm.LSMTree;
  * Handles submitting an asynchronous task to the storage engine for deleting any mappings for the
  * provided key.
  */
-public class DeleteCommand implements StorageCommand {
+final class DeleteCommand implements StorageCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -37,5 +37,10 @@ public class DeleteCommand implements StorageCommand {
 
     logger.atInfo().log("Successful delete of [%s]", deleteDTO.key());
     return new Success("OK");
+  }
+
+  @Override
+  public DeleteDTO getDTO() {
+    return deleteDTO;
   }
 }
