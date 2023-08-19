@@ -1,7 +1,5 @@
 package dev.sbutler.bitflask.storage.commands;
 
-import static com.google.common.util.concurrent.Futures.immediateFuture;
-
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.StorageSubmitResults;
 import dev.sbutler.bitflask.storage.raft.Raft;
@@ -20,23 +18,26 @@ public final class ClientCommand {
   }
 
   /** A blocking call that executes the corresponding command returning the results. */
-  public StorageSubmitResults execute() {
+  public ClientCommandResults execute() {
     StorageSubmitResults submitResults = raft.submitCommand(storageCommand);
-    if (submitResults instanceof StorageSubmitResults.Success successResults) {
-      return handleSuccess(successResults);
-    }
-    return submitResults;
+    return switch (submitResults) {
+      case StorageSubmitResults.Success success -> handleSuccessfulSubmission(success);
+      case StorageSubmitResults.NotCurrentLeader notCurrentLeader -> new ClientCommandResults
+          .NotCurrentLeader(notCurrentLeader.currentLeaderInfo());
+      case StorageSubmitResults.NoKnownLeader noKnownLeader -> new ClientCommandResults
+          .NoKnownLeader();
+    };
   }
 
-  private StorageSubmitResults handleSuccess(StorageSubmitResults.Success success) {
+  private ClientCommandResults handleSuccessfulSubmission(StorageSubmitResults.Success success) {
     try {
       success.submitFuture().get();
     } catch (Exception e) {
       String failureMessage = getFailureMessage();
       logger.atSevere().withCause(e).log(failureMessage);
-      return new StorageSubmitResults.Success(immediateFuture(failureMessage));
+      return new ClientCommandResults.Failure(failureMessage);
     }
-    return new StorageSubmitResults.Success(immediateFuture("OK"));
+    return new ClientCommandResults.Success("OK");
   }
 
   /** Returns a client friendly message when there is a failure submitting to storage. */
