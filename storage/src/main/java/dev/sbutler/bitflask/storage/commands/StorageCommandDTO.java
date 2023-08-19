@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.storage;
+package dev.sbutler.bitflask.storage.commands;
 
 /**
  * The various commands that the storage engine can accept.

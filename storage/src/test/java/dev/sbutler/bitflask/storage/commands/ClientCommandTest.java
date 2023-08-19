@@ -1,4 +1,4 @@
 package dev.sbutler.bitflask.storage.commands;
 
-/** Unit tests for {@link dev.sbutler.bitflask.storage.commands.ClientCommand}. */
+/** Unit tests for {@link ClientCommand}. */
 public class ClientCommandTest {}

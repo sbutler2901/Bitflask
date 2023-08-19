@@ -6,7 +6,7 @@ import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.StorageSubmitResults;
 import dev.sbutler.bitflask.storage.raft.Raft;
 
-/** Handles command execution requests from clients. */
+/** Command for executing the desired action against the storage engine. */
 public final class ClientCommand {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();

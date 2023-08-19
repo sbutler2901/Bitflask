@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.storage.StorageCommandDTO.ReadDTO;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Failed;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
