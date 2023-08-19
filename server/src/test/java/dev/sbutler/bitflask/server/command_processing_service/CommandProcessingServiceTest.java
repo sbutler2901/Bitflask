@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import dev.sbutler.bitflask.storage.commands.ClientCommandResults;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,14 +19,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class CommandProcessingServiceTest {
 
   @InjectMocks private CommandProcessingService commandProcessingService;
-  @Mock private CommandFactory commandFactory;
+  @Mock private ServerCommandFactory serverCommandFactory;
 
   @Test
   void executesCommand() {
     ImmutableList<String> message = ImmutableList.of("ping");
     ServerCommand serverCommand = mock(ServerCommand.class);
-    when(commandFactory.createCommand(any(), any())).thenReturn(serverCommand);
-    String expectedResult = "pong";
+    when(serverCommandFactory.createCommand(any(), any())).thenReturn(serverCommand);
+    var expectedResult = new ClientCommandResults.Success("pong");
     when(serverCommand.execute()).thenReturn(expectedResult);
 
     String result = commandProcessingService.processCommandMessage(message);

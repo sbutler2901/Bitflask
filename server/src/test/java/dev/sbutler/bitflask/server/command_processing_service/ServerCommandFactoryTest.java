@@ -5,28 +5,24 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.storage.StorageService;
-import org.junit.jupiter.api.BeforeEach;
+import dev.sbutler.bitflask.storage.commands.ClientCommandFactory;
 import org.junit.jupiter.api.Test;
 
-/** Unit tests for {@link CommandFactory}. */
-public class CommandFactoryTest {
+/** Unit tests for {@link ServerCommandFactory}. */
+public class ServerCommandFactoryTest {
 
-  private CommandFactory commandFactory;
-  private final StorageService storageService = mock(StorageService.class);
+  private final ClientCommandFactory clientCommandFactory = mock(ClientCommandFactory.class);
 
-  @BeforeEach
-  void beforeEach() {
-    commandFactory = new CommandFactory(storageService);
-  }
+  private final ServerCommandFactory serverCommandFactory =
+      new ServerCommandFactory(clientCommandFactory);
 
   @Test
   void ping() {
     // Act
     ServerCommand serverCommand =
-        commandFactory.createCommand(CommandType.PING, ImmutableList.of());
+        serverCommandFactory.createCommand(ServerCommandType.PING, ImmutableList.of());
     // Assert
-    assertThat(serverCommand).isInstanceOf(PingCommand.class);
+    assertThat(serverCommand).isInstanceOf(ServerPingCommand.class);
   }
 
   @Test
@@ -35,7 +31,9 @@ public class CommandFactoryTest {
     InvalidCommandException e =
         assertThrows(
             InvalidCommandException.class,
-            () -> commandFactory.createCommand(CommandType.PING, ImmutableList.of("invalidArg")));
+            () ->
+                serverCommandFactory.createCommand(
+                    ServerCommandType.PING, ImmutableList.of("invalidArg")));
     // Assert
     assertThat(e).hasMessageThat().ignoringCase().contains("ping");
     assertThat(e).hasMessageThat().ignoringCase().contains("invalidArg");
@@ -45,9 +43,9 @@ public class CommandFactoryTest {
   void get() {
     // Act
     ServerCommand serverCommand =
-        commandFactory.createCommand(CommandType.GET, ImmutableList.of("key"));
+        serverCommandFactory.createCommand(ServerCommandType.GET, ImmutableList.of("key"));
     // Assert
-    assertThat(serverCommand).isInstanceOf(GetCommand.class);
+    assertThat(serverCommand).isInstanceOf(ServerStorageCommand.class);
   }
 
   @Test
@@ -57,8 +55,8 @@ public class CommandFactoryTest {
         assertThrows(
             InvalidCommandException.class,
             () ->
-                commandFactory.createCommand(
-                    CommandType.GET, ImmutableList.of("key", "invalidArg")));
+                serverCommandFactory.createCommand(
+                    ServerCommandType.GET, ImmutableList.of("key", "invalidArg")));
     // Assert
     assertThat(e).hasMessageThat().ignoringCase().contains("get");
     assertThat(e).hasMessageThat().ignoringCase().contains("invalidArg");
@@ -68,9 +66,9 @@ public class CommandFactoryTest {
   void set() {
     // Act
     ServerCommand serverCommand =
-        commandFactory.createCommand(CommandType.SET, ImmutableList.of("key", "value"));
+        serverCommandFactory.createCommand(ServerCommandType.SET, ImmutableList.of("key", "value"));
     // Assert
-    assertThat(serverCommand).isInstanceOf(SetCommand.class);
+    assertThat(serverCommand).isInstanceOf(ServerStorageCommand.class);
   }
 
   @Test
@@ -80,8 +78,8 @@ public class CommandFactoryTest {
         assertThrows(
             InvalidCommandException.class,
             () ->
-                commandFactory.createCommand(
-                    CommandType.SET, ImmutableList.of("key", "value", "invalidArg")));
+                serverCommandFactory.createCommand(
+                    ServerCommandType.SET, ImmutableList.of("key", "value", "invalidArg")));
     // Assert
     assertThat(e).hasMessageThat().ignoringCase().contains("set");
     assertThat(e).hasMessageThat().ignoringCase().contains("invalidArg");
@@ -91,9 +89,9 @@ public class CommandFactoryTest {
   void delete() {
     // Act
     ServerCommand serverCommand =
-        commandFactory.createCommand(CommandType.DEL, ImmutableList.of("key"));
+        serverCommandFactory.createCommand(ServerCommandType.DEL, ImmutableList.of("key"));
     // Assert
-    assertThat(serverCommand).isInstanceOf(DeleteCommand.class);
+    assertThat(serverCommand).isInstanceOf(ServerStorageCommand.class);
   }
 
   @Test
@@ -103,8 +101,8 @@ public class CommandFactoryTest {
         assertThrows(
             InvalidCommandException.class,
             () ->
-                commandFactory.createCommand(
-                    CommandType.DEL, ImmutableList.of("key", "invalidArg")));
+                serverCommandFactory.createCommand(
+                    ServerCommandType.DEL, ImmutableList.of("key", "invalidArg")));
     // Assert
     assertThat(e).hasMessageThat().ignoringCase().contains("del");
     assertThat(e).hasMessageThat().ignoringCase().contains("invalidArg");

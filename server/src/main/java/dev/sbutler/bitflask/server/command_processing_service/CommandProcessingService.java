@@ -10,11 +10,11 @@ import jakarta.inject.Inject;
  */
 public final class CommandProcessingService {
 
-  private final CommandFactory commandFactory;
+  private final ServerCommandFactory serverCommandFactory;
 
   @Inject
-  CommandProcessingService(CommandFactory commandFactory) {
-    this.commandFactory = commandFactory;
+  CommandProcessingService(ServerCommandFactory serverCommandFactory) {
+    this.serverCommandFactory = serverCommandFactory;
   }
 
   /**
@@ -26,17 +26,15 @@ public final class CommandProcessingService {
       throw new InvalidCommandException("Message must contain at least one argument");
     }
 
-    String messageCommand = commandMessage.get(0).trim();
-    CommandType commandType;
-    try {
-      commandType = CommandType.valueOf(messageCommand.toUpperCase());
-    } catch (IllegalArgumentException e) {
-      throw new InvalidCommandException(String.format("Invalid command [%s]", messageCommand));
-    }
-
+    ServerCommandType serverCommandType = getCommandType(commandMessage.get(0).trim());
     ImmutableList<String> args = commandMessage.subList(1, commandMessage.size());
-    ServerCommand command = commandFactory.createCommand(commandType, args);
+
+    ServerCommand command = serverCommandFactory.createCommand(serverCommandType, args);
     ClientCommandResults commandResults = command.execute();
+    return handleCommandResults(commandResults);
+  }
+
+  private String handleCommandResults(ClientCommandResults commandResults) {
     return switch (commandResults) {
       case ClientCommandResults.Success success -> success.message();
       case ClientCommandResults.Failure failure -> failure.message();
@@ -46,5 +44,13 @@ public final class CommandProcessingService {
           .toString();
       case ClientCommandResults.NoKnownLeader noKnownLeader -> "Unknown leader!";
     };
+  }
+
+  private ServerCommandType getCommandType(String messageCommand) {
+    try {
+      return ServerCommandType.valueOf(messageCommand.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      throw new InvalidCommandException(String.format("Invalid command [%s]", messageCommand));
+    }
   }
 }

@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
-enum CommandType {
+enum ServerCommandType {
   PING,
   GET,
   SET,
