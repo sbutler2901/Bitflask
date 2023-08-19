@@ -10,14 +10,13 @@ import static org.mockito.Mockito.when;
 
 import dev.sbutler.bitflask.storage.StorageCommandDTO.ReadDTO;
 import dev.sbutler.bitflask.storage.commands.ClientCommand;
-import dev.sbutler.bitflask.storage.commands.ClientCommandFactory;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import org.junit.jupiter.api.Test;
 
 class StorageServiceTest {
 
   private final LSMTree lsmTree = mock(LSMTree.class);
-  private final ClientCommandFactory clientCommandFactory = mock(ClientCommandFactory.class);
+  private final ClientCommand.Factory clientCommandFactory = mock(ClientCommand.Factory.class);
   private final StorageLoader storageLoader = mock(StorageLoader.class);
 
   private final StorageService storageService =
@@ -43,7 +42,7 @@ class StorageServiceTest {
     StorageSubmitResults expectedResponse =
         new StorageSubmitResults.Success(immediateFuture("value"));
     when(clientCommand.execute()).thenReturn(expectedResponse);
-    when(clientCommandFactory.createClientCommand(any())).thenReturn(clientCommand);
+    when(clientCommandFactory.create(any())).thenReturn(clientCommand);
 
     StorageSubmitResults response = storageService.processCommand(dto);
 
