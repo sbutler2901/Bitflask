@@ -105,7 +105,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   @Override
   public StorageSubmitResults submitCommand(StorageCommand storageCommand) {
-    Entry newEntry = raftCommandConverter.convert(raftCommand);
+    Entry newEntry = raftCommandConverter.convert(null);
     int newEntryIndex = raftLog.appendEntry(newEntry);
     SettableFuture<String> clientSubmitFuture = SettableFuture.create();
     waitingSubmissions.add(new WaitingSubmission(newEntryIndex, clientSubmitFuture));

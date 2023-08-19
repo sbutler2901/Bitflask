@@ -7,8 +7,9 @@ import static com.google.common.truth.Truth8.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.StorageService;
 import dev.sbutler.bitflask.storage.StorageSubmitResults;
+import dev.sbutler.bitflask.storage.commands.ClientCommand;
+import dev.sbutler.bitflask.storage.commands.ClientCommandFactory;
 import dev.sbutler.bitflask.storage.commands.StorageCommandDTO;
 import dev.sbutler.bitflask.storage.commands.StorageCommandDTO.DeleteDTO;
 import dev.sbutler.bitflask.storage.commands.StorageCommandDTO.ReadDTO;
@@ -22,21 +23,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith({ListeningExecutorServiceExtension.class, StorageExtension.class})
 public class StorageTest {
 
-  private final StorageService storageService;
+  private final ClientCommandFactory clientCommandFactory;
   private final ListeningExecutorService listeningExecutorService;
 
   public StorageTest(
-      StorageService storageService, ListeningExecutorService listeningExecutorService) {
-    this.storageService = storageService;
+      ClientCommandFactory clientCommandFactory,
+      ListeningExecutorService listeningExecutorService) {
+    this.clientCommandFactory = clientCommandFactory;
     this.listeningExecutorService = listeningExecutorService;
   }
 
   @Test
   public void write() throws Exception {
     StorageCommandDTO dto = new WriteDTO("key", "value");
+    ClientCommand command = clientCommandFactory.create(dto);
 
-    StorageSubmitResults.Success response =
-        getResponseAsSuccess(storageService.processCommand(dto));
+    StorageSubmitResults.Success response = getResponseAsSuccess(command.execute());
 
     assertThat(response.submitFuture().get()).isEqualTo("OK");
   }
@@ -44,9 +46,9 @@ public class StorageTest {
   @Test
   public void read_notFound() throws Exception {
     StorageCommandDTO dto = new ReadDTO("unknownKey");
+    ClientCommand command = clientCommandFactory.create(dto);
 
-    StorageSubmitResults.Success response =
-        getResponseAsSuccess(storageService.processCommand(dto));
+    StorageSubmitResults.Success response = getResponseAsSuccess(command.execute());
 
     assertThat(response.submitFuture().get()).isEqualTo("[unknownKey] not found");
   }
@@ -54,12 +56,12 @@ public class StorageTest {
   @Test
   public void read_found() throws Exception {
     StorageCommandDTO writeDto = new WriteDTO("key", "value");
+    ClientCommand writeCommand = clientCommandFactory.create(writeDto);
     StorageCommandDTO readDto = new ReadDTO("key");
+    ClientCommand readCommand = clientCommandFactory.create(readDto);
 
-    StorageSubmitResults.Success writeResponse =
-        getResponseAsSuccess(storageService.processCommand(writeDto));
-    StorageSubmitResults.Success readResponse =
-        getResponseAsSuccess(storageService.processCommand(readDto));
+    StorageSubmitResults.Success writeResponse = getResponseAsSuccess(writeCommand.execute());
+    StorageSubmitResults.Success readResponse = getResponseAsSuccess(readCommand.execute());
 
     assertThat(writeResponse.submitFuture().get()).isEqualTo("OK");
     assertThat(readResponse.submitFuture().get()).isEqualTo("value");
@@ -68,15 +70,15 @@ public class StorageTest {
   @Test
   public void delete() throws Exception {
     StorageCommandDTO writeDto = new WriteDTO("key", "value");
+    ClientCommand writeCommand = clientCommandFactory.create(writeDto);
     StorageCommandDTO deleteDto = new DeleteDTO("key");
+    ClientCommand deleteCommand = clientCommandFactory.create(deleteDto);
     StorageCommandDTO readDto = new ReadDTO("key");
+    ClientCommand readCommand = clientCommandFactory.create(readDto);
 
-    StorageSubmitResults.Success writeResponse =
-        getResponseAsSuccess(storageService.processCommand(writeDto));
-    StorageSubmitResults.Success deleteResponse =
-        getResponseAsSuccess(storageService.processCommand(deleteDto));
-    StorageSubmitResults.Success readResponse =
-        getResponseAsSuccess(storageService.processCommand(readDto));
+    StorageSubmitResults.Success writeResponse = getResponseAsSuccess(writeCommand.execute());
+    StorageSubmitResults.Success deleteResponse = getResponseAsSuccess(deleteCommand.execute());
+    StorageSubmitResults.Success readResponse = getResponseAsSuccess(readCommand.execute());
 
     assertThat(writeResponse.submitFuture().get()).isEqualTo("OK");
     assertThat(deleteResponse.submitFuture().get()).isEqualTo("OK");
@@ -85,7 +87,7 @@ public class StorageTest {
 
   @Test
   public void compactionStress() {
-    var commands =
+    var dtos =
         ImmutableList.<StorageCommandDTO>builder()
             .addAll(generateWriteCommands(50))
             .addAll(generateDeleteCommands(25))
@@ -93,11 +95,9 @@ public class StorageTest {
             .build();
 
     var responseFutures =
-        commands.stream()
-            .map(
-                dto ->
-                    Futures.submit(
-                        () -> storageService.processCommand(dto), listeningExecutorService))
+        dtos.stream()
+            .map(clientCommandFactory::create)
+            .map(command -> Futures.submit(command::execute, listeningExecutorService))
             .collect(toImmutableList());
 
     Futures.whenAllSucceed(responseFutures)

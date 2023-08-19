@@ -14,6 +14,7 @@ import dev.sbutler.bitflask.config.ConfigModule;
 import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.StorageService;
 import dev.sbutler.bitflask.storage.StorageServiceModule;
+import dev.sbutler.bitflask.storage.commands.ClientCommandFactory;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -113,7 +114,7 @@ public class StorageExtension implements ParameterResolver, BeforeAllCallback, A
   public boolean supportsParameter(
       ParameterContext parameterContext, ExtensionContext extensionContext)
       throws ParameterResolutionException {
-    return StorageService.class.equals(parameterContext.getParameter().getType())
+    return ClientCommandFactory.class.equals(parameterContext.getParameter().getType())
         || StorageConfig.class.equals(parameterContext.getParameter().getType());
   }
 

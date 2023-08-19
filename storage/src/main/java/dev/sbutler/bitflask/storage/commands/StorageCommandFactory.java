@@ -13,7 +13,7 @@ final class StorageCommandFactory {
     this.lsmTree = lsmTree;
   }
 
-  StorageCommand createStorageCommand(StorageCommandDTO commandDTO) {
+  StorageCommand create(StorageCommandDTO commandDTO) {
     return switch (commandDTO) {
       case StorageCommandDTO.ReadDTO readDTO -> new ReadCommand(lsmTree, readDTO);
       case StorageCommandDTO.WriteDTO writeDTO -> new WriteCommand(lsmTree, writeDTO);

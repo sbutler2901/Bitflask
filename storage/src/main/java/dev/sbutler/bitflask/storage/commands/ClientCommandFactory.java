@@ -16,7 +16,7 @@ public class ClientCommandFactory {
   }
 
   public ClientCommand create(StorageCommandDTO commandDTO) {
-    StorageCommand storageCommand = storageCommandFactory.createStorageCommand(commandDTO);
+    StorageCommand storageCommand = storageCommandFactory.create(commandDTO);
     return new ClientCommand(raft, storageCommand);
   }
 }
