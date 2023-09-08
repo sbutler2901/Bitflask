@@ -11,17 +11,15 @@ import jakarta.inject.Singleton;
 
 /** The interface for using the Raft Consensus protocol. */
 @Singleton
-public final class Raft implements RaftCommandSubmitter, RaftCommandSubjectRegistrar {
+public final class Raft implements RaftCommandSubmitter {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final RaftModeManager raftModeManager;
-  private final RaftCommandTopic raftCommandTopic;
 
   @Inject
-  Raft(RaftModeManager raftModeManager, RaftCommandTopic raftCommandTopic) {
+  Raft(RaftModeManager raftModeManager) {
     this.raftModeManager = raftModeManager;
-    this.raftCommandTopic = raftCommandTopic;
   }
 
   /** Submits a {@link RaftCommand} to be replicated. */
@@ -36,20 +34,5 @@ public final class Raft implements RaftCommandSubmitter, RaftCommandSubjectRegis
       return new StorageSubmitResults.Success(
           immediateFailedFuture(new RaftException("Unknown error while submitting.")));
     }
-  }
-
-  /**
-   * Registers a {@link RaftCommandObserver} that will be called whenever a {@link RaftCommand} is
-   * committed.
-   */
-  @Override
-  public void register(RaftCommandObserver observer) {
-    raftCommandTopic.register(observer);
-  }
-
-  /** Unregisters a {@link RaftCommandObserver}, if it was previously registered. */
-  @Override
-  public void unregister(RaftCommandObserver observer) {
-    raftCommandTopic.unregister(observer);
   }
 }
