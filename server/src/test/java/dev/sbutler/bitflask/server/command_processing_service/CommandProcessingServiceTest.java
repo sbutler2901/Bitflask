@@ -31,7 +31,7 @@ public class CommandProcessingServiceTest {
 
     String result = commandProcessingService.processCommandMessage(message);
 
-    assertThat(result).isEqualTo(expectedResult);
+    assertThat(result).isEqualTo(expectedResult.message());
   }
 
   @Test

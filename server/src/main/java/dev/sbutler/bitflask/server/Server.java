@@ -82,7 +82,10 @@ public final class Server {
       throws IOException {
     ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
     ServerConfig.ServerInfo thisServerInfo =
-        serverConfig.getBitflaskServersMap().get(serverConfig.getThisServerId());
+        serverConfig.getBitflaskServersList().stream()
+            .filter(info -> info.getServerId().equals(serverConfig.getThisServerId()))
+            .findFirst()
+            .orElseThrow();
     InetSocketAddress inetSocketAddress = new InetSocketAddress(thisServerInfo.getRespPort());
     serverSocketChannel.bind(inetSocketAddress);
     return serverSocketChannel;

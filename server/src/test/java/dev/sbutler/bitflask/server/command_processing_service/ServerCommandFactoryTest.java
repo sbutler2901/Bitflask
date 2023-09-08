@@ -5,13 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.storage.commands.ClientCommandFactory;
+import dev.sbutler.bitflask.storage.commands.ClientCommand;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link ServerCommandFactory}. */
 public class ServerCommandFactoryTest {
 
-  private final ClientCommandFactory clientCommandFactory = mock(ClientCommandFactory.class);
+  private final ClientCommand.Factory clientCommandFactory = mock(ClientCommand.Factory.class);
 
   private final ServerCommandFactory serverCommandFactory =
       new ServerCommandFactory(clientCommandFactory);

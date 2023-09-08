@@ -18,11 +18,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith({ListeningExecutorServiceExtension.class, StorageExtension.class})
 public class StorageTest {
 
-  private final ClientCommandFactory clientCommandFactory;
+  private final ClientCommand.Factory clientCommandFactory;
   private final ListeningExecutorService listeningExecutorService;
 
   public StorageTest(
-      ClientCommandFactory clientCommandFactory,
+      ClientCommand.Factory clientCommandFactory,
       ListeningExecutorService listeningExecutorService) {
     this.clientCommandFactory = clientCommandFactory;
     this.listeningExecutorService = listeningExecutorService;
