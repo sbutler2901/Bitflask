@@ -5,7 +5,7 @@ import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.config.ServerConfig;
 import dev.sbutler.bitflask.storage.StorageSubmitResults;
-import dev.sbutler.bitflask.storage.commands.StorageCommand;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftException;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -37,14 +37,14 @@ public final class Raft implements RaftCommandSubmitter, RaftCommandSubjectRegis
   }
 
   /** Submits a {@link RaftCommand} to be replicated. */
-  public StorageSubmitResults submitCommand(StorageCommand storageCommand) {
+  public StorageSubmitResults submitCommand(StorageCommandDto storageCommandDto) {
     try {
-      return raftModeManager.submitCommand(storageCommand);
+      return raftModeManager.submitCommand(storageCommandDto);
     } catch (RaftException e) {
-      logger.atSevere().withCause(e).log("Failed to submit command [%s]", storageCommand);
+      logger.atSevere().withCause(e).log("Failed to submit command [%s]", storageCommandDto);
       return new StorageSubmitResults.Success(immediateFailedFuture(e));
     } catch (Exception e) {
-      logger.atSevere().withCause(e).log("Failed to submit command [%s]", storageCommand);
+      logger.atSevere().withCause(e).log("Failed to submit command [%s]", storageCommandDto);
       return new StorageSubmitResults.Success(
           immediateFailedFuture(new RaftException("Unknown error while submitting.")));
     }

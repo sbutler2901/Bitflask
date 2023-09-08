@@ -33,15 +33,12 @@ public final class ClientCommand {
 
   /** A blocking call that executes the corresponding command returning the results. */
   public ClientCommandResults execute() {
-    //    StorageSubmitResults submitResults = raft.submitCommand(storageCommandDto);
-    // TODO: update raft to accept dto
-    StorageSubmitResults submitResults = new StorageSubmitResults.NoKnownLeader();
+    StorageSubmitResults submitResults = raft.submitCommand(storageCommandDto);
     return switch (submitResults) {
       case StorageSubmitResults.Success success -> handleSuccessfulSubmission(success);
       case StorageSubmitResults.NotCurrentLeader notCurrentLeader -> new ClientCommandResults
           .NotCurrentLeader(notCurrentLeader.currentLeaderInfo());
-      case StorageSubmitResults.NoKnownLeader noKnownLeader -> new ClientCommandResults
-          .NoKnownLeader();
+      case StorageSubmitResults.NoKnownLeader _unused -> new ClientCommandResults.NoKnownLeader();
     };
   }
 

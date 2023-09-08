@@ -10,7 +10,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import dev.sbutler.bitflask.storage.StorageSubmitResults;
-import dev.sbutler.bitflask.storage.commands.StorageCommand;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftLeaderException;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftUnknownLeaderException;
 import io.grpc.protobuf.StatusProto;
@@ -104,7 +104,8 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   }
 
   @Override
-  public StorageSubmitResults submitCommand(StorageCommand storageCommand) {
+  public StorageSubmitResults submitCommand(StorageCommandDto storageCommandDto) {
+    // TODO: update conversion to use dto
     Entry newEntry = raftCommandConverter.convert(null);
     int newEntryIndex = raftLog.appendEntry(newEntry);
     SettableFuture<String> clientSubmitFuture = SettableFuture.create();
