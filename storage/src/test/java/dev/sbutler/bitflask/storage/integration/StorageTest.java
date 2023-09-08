@@ -7,9 +7,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.commands.*;
-import dev.sbutler.bitflask.storage.commands.StorageCommandDTO.DeleteDTO;
-import dev.sbutler.bitflask.storage.commands.StorageCommandDTO.ReadDTO;
-import dev.sbutler.bitflask.storage.commands.StorageCommandDTO.WriteDTO;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto.DeleteDto;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto.ReadDto;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto.WriteDto;
 import dev.sbutler.bitflask.storage.integration.extensions.ListeningExecutorServiceExtension;
 import dev.sbutler.bitflask.storage.integration.extensions.StorageExtension;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ public class StorageTest {
 
   @Test
   public void write() throws Exception {
-    StorageCommandDTO dto = new WriteDTO("key", "value");
+    StorageCommandDto dto = new WriteDto("key", "value");
     ClientCommand command = clientCommandFactory.create(dto);
 
     ClientCommandResults.Success response = getResponseAsSuccess(command.execute());
@@ -40,7 +40,7 @@ public class StorageTest {
 
   @Test
   public void read_notFound() {
-    StorageCommandDTO dto = new ReadDTO("unknownKey");
+    StorageCommandDto dto = new ReadDto("unknownKey");
     ClientCommand command = clientCommandFactory.create(dto);
 
     ClientCommandResults.Success response = getResponseAsSuccess(command.execute());
@@ -50,9 +50,9 @@ public class StorageTest {
 
   @Test
   public void read_found() {
-    StorageCommandDTO writeDto = new WriteDTO("key", "value");
+    StorageCommandDto writeDto = new WriteDto("key", "value");
     ClientCommand writeCommand = clientCommandFactory.create(writeDto);
-    StorageCommandDTO readDto = new ReadDTO("key");
+    StorageCommandDto readDto = new ReadDto("key");
     ClientCommand readCommand = clientCommandFactory.create(readDto);
 
     ClientCommandResults.Success writeResponse = getResponseAsSuccess(writeCommand.execute());
@@ -64,11 +64,11 @@ public class StorageTest {
 
   @Test
   public void delete() {
-    StorageCommandDTO writeDto = new WriteDTO("key", "value");
+    StorageCommandDto writeDto = new WriteDto("key", "value");
     ClientCommand writeCommand = clientCommandFactory.create(writeDto);
-    StorageCommandDTO deleteDto = new DeleteDTO("key");
+    StorageCommandDto deleteDto = new DeleteDto("key");
     ClientCommand deleteCommand = clientCommandFactory.create(deleteDto);
-    StorageCommandDTO readDto = new ReadDTO("key");
+    StorageCommandDto readDto = new ReadDto("key");
     ClientCommand readCommand = clientCommandFactory.create(readDto);
 
     ClientCommandResults.Success writeResponse = getResponseAsSuccess(writeCommand.execute());
@@ -83,7 +83,7 @@ public class StorageTest {
   @Test
   public void compactionStress() {
     var dtos =
-        ImmutableList.<StorageCommandDTO>builder()
+        ImmutableList.<StorageCommandDto>builder()
             .addAll(generateWriteCommands(50))
             .addAll(generateDeleteCommands(25))
             .addAll(generateReadCommands(50))
@@ -111,26 +111,26 @@ public class StorageTest {
     return (ClientCommandResults.Success) response;
   }
 
-  private static ImmutableList<StorageCommandDTO.WriteDTO> generateWriteCommands(int num) {
-    ImmutableList.Builder<StorageCommandDTO.WriteDTO> commands = ImmutableList.builder();
+  private static ImmutableList<WriteDto> generateWriteCommands(int num) {
+    ImmutableList.Builder<WriteDto> commands = ImmutableList.builder();
     for (int i = 0; i < num; i++) {
-      commands.add(new WriteDTO("key_" + i, "value_" + i));
+      commands.add(new WriteDto("key_" + i, "value_" + i));
     }
     return commands.build();
   }
 
-  private static ImmutableList<StorageCommandDTO.DeleteDTO> generateDeleteCommands(int num) {
-    ImmutableList.Builder<StorageCommandDTO.DeleteDTO> commands = ImmutableList.builder();
+  private static ImmutableList<DeleteDto> generateDeleteCommands(int num) {
+    ImmutableList.Builder<DeleteDto> commands = ImmutableList.builder();
     for (int i = 0; i < num; i++) {
-      commands.add(new DeleteDTO("key_" + i));
+      commands.add(new DeleteDto("key_" + i));
     }
     return commands.build();
   }
 
-  private static ImmutableList<StorageCommandDTO.ReadDTO> generateReadCommands(int num) {
-    ImmutableList.Builder<StorageCommandDTO.ReadDTO> commands = ImmutableList.builder();
+  private static ImmutableList<ReadDto> generateReadCommands(int num) {
+    ImmutableList.Builder<ReadDto> commands = ImmutableList.builder();
     for (int i = 0; i < num; i++) {
-      commands.add(new ReadDTO("key_" + i));
+      commands.add(new ReadDto("key_" + i));
     }
     return commands.build();
   }

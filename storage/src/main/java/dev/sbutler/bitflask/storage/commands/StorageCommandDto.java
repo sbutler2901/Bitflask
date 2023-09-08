@@ -9,12 +9,12 @@ package dev.sbutler.bitflask.storage.commands;
  * <p>A key or value must not be blank, defined by {@code string.isBlank()}. A key or value cannot
  * be longer than 255 each.
  */
-public sealed interface StorageCommandDTO {
+public sealed interface StorageCommandDto {
 
   /** Use when the value mapped by the provided {@code key} should be read. */
-  record ReadDTO(String key) implements StorageCommandDTO {
+  record ReadDto(String key) implements StorageCommandDto {
 
-    public ReadDTO {
+    public ReadDto {
       CommandInputValidator.validateKey(key);
     }
   }
@@ -23,18 +23,18 @@ public sealed interface StorageCommandDTO {
    * Use when the provided {@code key} should be written with a mapping to the provided {@code
    * value}.
    */
-  record WriteDTO(String key, String value) implements StorageCommandDTO {
+  record WriteDto(String key, String value) implements StorageCommandDto {
 
-    public WriteDTO {
+    public WriteDto {
       CommandInputValidator.validateKey(key);
       CommandInputValidator.validateValue(value);
     }
   }
 
   /** Use when the provides {@code key}'s mapping should be deleted. */
-  record DeleteDTO(String key) implements StorageCommandDTO {
+  record DeleteDto(String key) implements StorageCommandDto {
 
-    public DeleteDTO {
+    public DeleteDto {
       CommandInputValidator.validateKey(key);
     }
   }

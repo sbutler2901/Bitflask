@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.commands;
 
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.commands.StorageCommandDTO.ReadDTO;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto.ReadDto;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Failed;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
@@ -14,9 +14,9 @@ final class ReadCommand implements StorageCommand {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final LSMTree lsmTree;
-  private final ReadDTO readDTO;
+  private final ReadDto readDTO;
 
-  public ReadCommand(LSMTree lsmTree, ReadDTO readDTO) {
+  public ReadCommand(LSMTree lsmTree, ReadDto readDTO) {
     this.lsmTree = lsmTree;
     this.readDTO = readDTO;
   }
@@ -44,7 +44,7 @@ final class ReadCommand implements StorageCommand {
   }
 
   @Override
-  public ReadDTO getDTO() {
+  public ReadDto getDTO() {
     return readDTO;
   }
 }

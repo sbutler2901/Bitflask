@@ -2,7 +2,7 @@ package dev.sbutler.bitflask.server.command_processing_service;
 
 import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.storage.commands.ClientCommand;
-import dev.sbutler.bitflask.storage.commands.StorageCommandDTO;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import jakarta.inject.Inject;
 import java.util.List;
 
@@ -26,15 +26,15 @@ final class ServerCommandFactory {
     return switch (serverCommandType) {
       case PING -> new ServerPingCommand();
       case GET -> {
-        var storageCommandDTO = new StorageCommandDTO.ReadDTO(args.get(0));
+        var storageCommandDTO = new StorageCommandDto.ReadDto(args.get(0));
         yield new ServerStorageCommand(clientCommandFactory.create(storageCommandDTO));
       }
       case SET -> {
-        var storageCommandDTO = new StorageCommandDTO.WriteDTO(args.get(0), args.get(1));
+        var storageCommandDTO = new StorageCommandDto.WriteDto(args.get(0), args.get(1));
         yield new ServerStorageCommand(clientCommandFactory.create(storageCommandDTO));
       }
       case DEL -> {
-        var storageCommandDTO = new StorageCommandDTO.DeleteDTO(args.get(0));
+        var storageCommandDTO = new StorageCommandDto.DeleteDto(args.get(0));
         yield new ServerStorageCommand(clientCommandFactory.create(storageCommandDTO));
       }
     };

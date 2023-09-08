@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
-import dev.sbutler.bitflask.storage.commands.StorageCommandDTO.DeleteDTO;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto.DeleteDto;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Failed;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 public class DeleteCommandTest {
 
-  private final DeleteDTO DTO = new DeleteDTO("key");
+  private final DeleteDto DTO = new DeleteDto("key");
 
   private final LSMTree lsmTree = mock(LSMTree.class);
 

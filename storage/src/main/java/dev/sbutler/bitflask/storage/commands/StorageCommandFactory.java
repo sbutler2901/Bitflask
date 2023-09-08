@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.storage.commands;
 import dev.sbutler.bitflask.storage.lsm.LSMTree;
 import jakarta.inject.Inject;
 
-/** Handles creating a {@link StorageCommand} from a {@link StorageCommandDTO}. */
+/** Handles creating a {@link StorageCommand} from a {@link StorageCommandDto}. */
 final class StorageCommandFactory {
 
   private final LSMTree lsmTree;
@@ -13,11 +13,11 @@ final class StorageCommandFactory {
     this.lsmTree = lsmTree;
   }
 
-  StorageCommand create(StorageCommandDTO commandDTO) {
+  StorageCommand create(StorageCommandDto commandDTO) {
     return switch (commandDTO) {
-      case StorageCommandDTO.ReadDTO readDTO -> new ReadCommand(lsmTree, readDTO);
-      case StorageCommandDTO.WriteDTO writeDTO -> new WriteCommand(lsmTree, writeDTO);
-      case StorageCommandDTO.DeleteDTO deleteDTO -> new DeleteCommand(lsmTree, deleteDTO);
+      case StorageCommandDto.ReadDto readDTO -> new ReadCommand(lsmTree, readDTO);
+      case StorageCommandDto.WriteDto writeDTO -> new WriteCommand(lsmTree, writeDTO);
+      case StorageCommandDto.DeleteDto deleteDTO -> new DeleteCommand(lsmTree, deleteDTO);
     };
   }
 }

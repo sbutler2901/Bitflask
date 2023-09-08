@@ -11,9 +11,9 @@ public final class ClientCommand {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final Raft raft;
-  private final StorageCommandDTO storageCommandDto;
+  private final StorageCommandDto storageCommandDto;
 
-  public ClientCommand(Raft raft, StorageCommandDTO storageCommandDto) {
+  public ClientCommand(Raft raft, StorageCommandDto storageCommandDto) {
     this.raft = raft;
     this.storageCommandDto = storageCommandDto;
   }
@@ -26,7 +26,7 @@ public final class ClientCommand {
       this.raft = raft;
     }
 
-    public ClientCommand create(StorageCommandDTO commandDTO) {
+    public ClientCommand create(StorageCommandDto commandDTO) {
       return new ClientCommand(raft, commandDTO);
     }
   }
@@ -59,10 +59,10 @@ public final class ClientCommand {
   /** Returns a client friendly message when there is a failure submitting to storage. */
   private String getFailureMessage() {
     return switch (storageCommandDto) {
-      case StorageCommandDTO.ReadDTO dto -> String.format("Failed to read [%s]", dto.key());
-      case StorageCommandDTO.WriteDTO dto -> String.format(
+      case StorageCommandDto.ReadDto dto -> String.format("Failed to read [%s]", dto.key());
+      case StorageCommandDto.WriteDto dto -> String.format(
           "Failed to write [%s]:[%s]", dto.key(), dto.value());
-      case StorageCommandDTO.DeleteDTO deleteDTO -> String.format(
+      case StorageCommandDto.DeleteDto deleteDTO -> String.format(
           "Failed to delete [%s]", deleteDTO.key());
     };
   }

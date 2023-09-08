@@ -6,6 +6,6 @@ public sealed interface StorageCommand permits ReadCommand, WriteCommand, Delete
   /** Executes the corresponding command returning the result. */
   StorageCommandResults execute();
 
-  /** Returns the {@link StorageCommandDTO used for this command. */
-  StorageCommandDTO getDTO();
+  /** Returns the {@link StorageCommandDto used for this command. */
+  StorageCommandDto getDTO();
 }

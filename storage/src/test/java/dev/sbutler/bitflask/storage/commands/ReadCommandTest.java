@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.sbutler.bitflask.storage.commands.StorageCommandDTO.ReadDTO;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto.ReadDto;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Failed;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
@@ -18,7 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ReadCommandTest {
 
-  private final ReadDTO DTO = new ReadDTO("key");
+  private final ReadDto DTO = new ReadDto("key");
 
   private final LSMTree lsmTree = mock(LSMTree.class);
 

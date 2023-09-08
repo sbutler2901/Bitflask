@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
-import dev.sbutler.bitflask.storage.commands.StorageCommandDTO.WriteDTO;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto.WriteDto;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Failed;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
@@ -17,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class WriteCommandTest {
 
-  private final WriteDTO DTO = new WriteDTO("key", "value");
+  private final WriteDto DTO = new WriteDto("key", "value");
 
   private final LSMTree lsmTree = mock(LSMTree.class);
 

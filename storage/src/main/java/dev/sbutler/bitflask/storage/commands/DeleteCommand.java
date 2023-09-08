@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.commands;
 
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.commands.StorageCommandDTO.DeleteDTO;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto.DeleteDto;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Failed;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults.Success;
 import dev.sbutler.bitflask.storage.exceptions.StorageException;
@@ -16,9 +16,9 @@ final class DeleteCommand implements StorageCommand {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final LSMTree lsmTree;
-  private final DeleteDTO deleteDTO;
+  private final DeleteDto deleteDTO;
 
-  public DeleteCommand(LSMTree lsmTree, DeleteDTO deleteDTO) {
+  public DeleteCommand(LSMTree lsmTree, DeleteDto deleteDTO) {
     this.lsmTree = lsmTree;
     this.deleteDTO = deleteDTO;
   }
@@ -40,7 +40,7 @@ final class DeleteCommand implements StorageCommand {
   }
 
   @Override
-  public DeleteDTO getDTO() {
+  public DeleteDto getDTO() {
     return deleteDTO;
   }
 }
