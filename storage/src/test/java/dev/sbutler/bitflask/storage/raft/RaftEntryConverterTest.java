@@ -4,24 +4,24 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftCommandConversionException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-/** Unit tests for {@link RaftCommandConverter}. */
-public class RaftCommandConverterTest {
+/** Unit tests for {@link RaftEntryConverter}. */
+public class RaftEntryConverterTest {
 
   private final RaftPersistentState raftPersistentState = Mockito.mock(RaftPersistentState.class);
 
-  private final RaftCommandConverter raftCommandConverter =
-      new RaftCommandConverter(raftPersistentState);
+  private final RaftEntryConverter raftEntryConverter = new RaftEntryConverter(raftPersistentState);
 
   @Test
-  public void convertRaftCommand_set() {
+  public void convertStorageCommandDto_write() {
     when(raftPersistentState.getCurrentTerm()).thenReturn(1);
-    var command = new RaftCommand.SetCommand("key", "value");
+    var command = new StorageCommandDto.WriteDto("key", "value");
 
-    var entry = raftCommandConverter.convert(command);
+    var entry = raftEntryConverter.convert(command);
 
     assertThat(entry)
         .isEqualTo(
@@ -33,11 +33,11 @@ public class RaftCommandConverterTest {
   }
 
   @Test
-  public void convertRaftCommand_delete() {
+  public void convertStorageCommandDto_delete() {
     when(raftPersistentState.getCurrentTerm()).thenReturn(1);
-    var command = new RaftCommand.DeleteCommand("key");
+    var command = new StorageCommandDto.DeleteDto("key");
 
-    var entry = raftCommandConverter.convert(command);
+    var entry = raftEntryConverter.convert(command);
 
     assertThat(entry)
         .isEqualTo(
@@ -48,6 +48,16 @@ public class RaftCommandConverterTest {
   }
 
   @Test
+  public void convertStorageCommandDto_unknown_throwsRaftCommandConversionException() {
+    var dto = new StorageCommandDto.ReadDto("key");
+
+    RaftCommandConversionException exception =
+        assertThrows(RaftCommandConversionException.class, () -> raftEntryConverter.convert(dto));
+
+    assertThat(exception).hasMessageThat().ignoringCase().contains("Unknown StorageCommandDto");
+  }
+
+  @Test
   public void convertEntry_set() {
     var entry =
         Entry.newBuilder()
@@ -55,13 +65,13 @@ public class RaftCommandConverterTest {
             .setSetCommand(SetCommand.newBuilder().setKey("key").setValue("value"))
             .build();
 
-    var command = raftCommandConverter.reverse().convert(entry);
+    var command = raftEntryConverter.reverse().convert(entry);
 
     assertThat(command).isNotNull();
-    assertThat(command).isInstanceOf(RaftCommand.SetCommand.class);
-    RaftCommand.SetCommand setCommand = (RaftCommand.SetCommand) command;
-    assertThat(setCommand.key()).isEqualTo(entry.getSetCommand().getKey());
-    assertThat(setCommand.value()).isEqualTo(entry.getSetCommand().getValue());
+    assertThat(command).isInstanceOf(StorageCommandDto.WriteDto.class);
+    StorageCommandDto.WriteDto writeDto = (StorageCommandDto.WriteDto) command;
+    assertThat(writeDto.key()).isEqualTo(entry.getSetCommand().getKey());
+    assertThat(writeDto.value()).isEqualTo(entry.getSetCommand().getValue());
   }
 
   @Test
@@ -72,12 +82,12 @@ public class RaftCommandConverterTest {
             .setDeleteCommand(DeleteCommand.newBuilder().setKey("key").build())
             .build();
 
-    var command = raftCommandConverter.reverse().convert(entry);
+    var command = raftEntryConverter.reverse().convert(entry);
 
     assertThat(command).isNotNull();
-    assertThat(command).isInstanceOf(RaftCommand.DeleteCommand.class);
-    RaftCommand.DeleteCommand setCommand = (RaftCommand.DeleteCommand) command;
-    assertThat(setCommand.key()).isEqualTo(entry.getDeleteCommand().getKey());
+    assertThat(command).isInstanceOf(StorageCommandDto.DeleteDto.class);
+    StorageCommandDto.DeleteDto deleteDto = (StorageCommandDto.DeleteDto) command;
+    assertThat(deleteDto.key()).isEqualTo(entry.getDeleteCommand().getKey());
   }
 
   @Test
@@ -87,7 +97,7 @@ public class RaftCommandConverterTest {
     RaftCommandConversionException exception =
         assertThrows(
             RaftCommandConversionException.class,
-            () -> raftCommandConverter.reverse().convert(entry));
+            () -> raftEntryConverter.reverse().convert(entry));
 
     assertThat(exception).hasMessageThat().ignoringCase().contains("Unknown Entry command case");
   }

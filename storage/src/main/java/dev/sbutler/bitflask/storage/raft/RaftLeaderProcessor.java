@@ -36,7 +36,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
   private final ListeningExecutorService executorService;
   private final RaftLog raftLog;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
-  private final RaftCommandConverter raftCommandConverter;
+  private final RaftEntryConverter raftEntryConverter;
   private final RaftConfiguration raftConfiguration;
 
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersNextIndex =
@@ -57,13 +57,13 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
       ListeningExecutorService executorService,
       RaftLog raftLog,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager,
-      RaftCommandConverter raftCommandConverter,
+      RaftEntryConverter raftEntryConverter,
       RaftConfiguration raftConfiguration) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
     this.executorService = executorService;
     this.raftLog = raftLog;
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
-    this.raftCommandConverter = raftCommandConverter;
+    this.raftEntryConverter = raftEntryConverter;
     this.raftConfiguration = raftConfiguration;
 
     int nextIndex = raftLog.getLastEntryIndex() + 1;
@@ -105,8 +105,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   @Override
   public StorageSubmitResults submitCommand(StorageCommandDto storageCommandDto) {
-    // TODO: update conversion to use dto
-    Entry newEntry = raftCommandConverter.convert(null);
+    Entry newEntry = raftEntryConverter.convert(storageCommandDto);
     int newEntryIndex = raftLog.appendEntry(newEntry);
     SettableFuture<String> clientSubmitFuture = SettableFuture.create();
     waitingSubmissions.add(new WaitingSubmission(newEntryIndex, clientSubmitFuture));

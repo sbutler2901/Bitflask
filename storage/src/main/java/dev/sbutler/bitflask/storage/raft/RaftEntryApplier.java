@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.raft;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftException;
 import jakarta.inject.Inject;
 
@@ -13,7 +14,7 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
   private final RaftLog raftLog;
   private final RaftCommandTopic raftCommandTopic;
   private final RaftVolatileState raftVolatileState;
-  private final RaftCommandConverter raftCommandConverter;
+  private final RaftEntryConverter raftEntryConverter;
 
   private volatile boolean shouldContinueExecuting = true;
 
@@ -22,11 +23,11 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
       RaftLog raftLog,
       RaftCommandTopic raftCommandTopic,
       RaftVolatileState raftVolatileState,
-      RaftCommandConverter raftCommandConverter) {
+      RaftEntryConverter raftEntryConverter) {
     this.raftLog = raftLog;
     this.raftCommandTopic = raftCommandTopic;
     this.raftVolatileState = raftVolatileState;
-    this.raftCommandConverter = raftCommandConverter;
+    this.raftEntryConverter = raftEntryConverter;
   }
 
   @Override
@@ -52,8 +53,10 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
         nextIndexToApply++) {
       try {
         raftVolatileState.setHighestAppliedEntryIndex(nextIndexToApply);
-        raftCommandTopic.notifyObservers(
-            raftCommandConverter.reverse().convert(raftLog.getEntryAtIndex(nextIndexToApply)));
+        Entry entry = raftLog.getEntryAtIndex(nextIndexToApply);
+        StorageCommandDto dto = raftEntryConverter.reverse().convert(entry);
+        // TODO: convert to StorageCommand and execute
+        // raftCommandTopic.notifyObservers();
       } catch (Exception e) {
         raftVolatileState.setHighestAppliedEntryIndex(nextIndexToApply - 1);
         logger.atSevere().withCause(e).log(
