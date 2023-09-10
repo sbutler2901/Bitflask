@@ -28,12 +28,12 @@ public final class StorageService extends AbstractIdleService {
   protected void startUp() {
     storageLoader.load();
     raftLoader.load();
-    logger.atInfo().log("storage loaded.");
+    logger.atInfo().log("Storage loaded.");
   }
 
   @Override
   protected void shutDown() {
     lsmTree.close();
-    logger.atInfo().log("storage shutdown");
+    logger.atInfo().log("Storage shutdown");
   }
 }

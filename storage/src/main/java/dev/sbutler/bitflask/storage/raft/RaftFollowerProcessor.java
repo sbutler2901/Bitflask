@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import com.google.common.flogger.FluentLogger;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 
@@ -10,6 +11,8 @@ import jakarta.inject.Provider;
  * follower mode.
  */
 public final class RaftFollowerProcessor extends RaftModeProcessorBase {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final RaftElectionTimer raftElectionTimer;
 
@@ -35,11 +38,13 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
 
   @Override
   public void handleElectionTimeout() {
+    logger.atInfo().log("Handling election timeout.");
     raftModeManager.get().transitionToCandidateState();
   }
 
   @Override
   public void run() {
+    raftElectionTimer.restart();
     // Nothing for follower to do besides process incoming RPCs
   }
 }

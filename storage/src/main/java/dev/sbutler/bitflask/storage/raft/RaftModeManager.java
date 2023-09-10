@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import com.google.common.base.Preconditions;
+import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -21,6 +22,8 @@ import java.util.concurrent.locks.ReentrantLock;
 @Singleton
 final class RaftModeManager
     implements RaftRpcHandler, RaftElectionTimeoutHandler, RaftCommandSubmitter {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final RaftConfiguration raftConfiguration;
   private final RaftModeProcessor.Factory raftModeProcessorFactory;
@@ -119,6 +122,7 @@ final class RaftModeManager
         !RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
         "The Raft server must be in the CANDIDATE or LEADER state to transition to the FOLLOWER state.");
 
+    logger.atInfo().log("Transitioning to Follower state.");
     transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
   }
 
@@ -133,6 +137,7 @@ final class RaftModeManager
         RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
         "The Raft server must be in the FOLLOWER state to transition to the CANDIDATE state.");
 
+    logger.atInfo().log("Transitioning to Candidate state.");
     transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftCandidateProcessor());
   }
 
@@ -147,6 +152,7 @@ final class RaftModeManager
         RaftMode.CANDIDATE.equals(getCurrentRaftMode()),
         "The Raft server must be in the CANDIDATE state to transition to the LEADER state.");
 
+    logger.atInfo().log("Transitioning to Leader state.");
     transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftLeaderProcessor());
   }
 

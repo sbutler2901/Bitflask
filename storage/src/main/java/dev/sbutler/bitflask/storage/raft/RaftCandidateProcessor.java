@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.raft.RaftClusterCandidateRpcClient.RequestVotesResults;
 import dev.sbutler.bitflask.storage.raft.RaftLog.LogEntryDetails;
 import jakarta.inject.Inject;
@@ -12,6 +13,8 @@ import jakarta.inject.Provider;
  * Candidate mode.
  */
 public final class RaftCandidateProcessor extends RaftModeProcessorBase {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final RaftConfiguration raftConfiguration;
   private final Provider<RaftModeManager> raftModeManager;
@@ -51,6 +54,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
   }
 
   public void handleElectionTimeout() {
+    logger.atInfo().log("Handling election timeout.");
     hasElectionTimeoutOccurred = true;
   }
 
@@ -71,6 +75,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   /** Starts and handles a single election cycle. */
   private void startNewElection() {
+    logger.atInfo().log("Starting new election");
     raftPersistentState.incrementTermAndVoteForSelf();
     raftElectionTimer.restart();
     hasElectionTimeoutOccurred = false;

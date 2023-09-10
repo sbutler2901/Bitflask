@@ -26,6 +26,6 @@ public final class RaftLoader {
     raftPersistentState.initialize(0, Optional.empty());
     raftVolatileState.initialize(0, 0);
     logger.atInfo().log(
-        "Loaded Storage in [%d]ms", Duration.between(startInstant, Instant.now()).toMillis());
+        "Loaded Raft in [%d]ms", Duration.between(startInstant, Instant.now()).toMillis());
   }
 }

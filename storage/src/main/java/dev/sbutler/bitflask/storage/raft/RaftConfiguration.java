@@ -15,7 +15,7 @@ public record RaftConfiguration(
   /** Gets the other servers in the Raft cluster besides this instance. */
   ImmutableMap<RaftServerId, ServerConfig.ServerInfo> getOtherServersInCluster() {
     return BiStream.from(clusterServers)
-        .filterKeys(raftServerId -> raftServerId != thisRaftServerId)
+        .filterKeys(raftServerId -> !raftServerId.equals(thisRaftServerId))
         .collect(toImmutableMap());
   }
 

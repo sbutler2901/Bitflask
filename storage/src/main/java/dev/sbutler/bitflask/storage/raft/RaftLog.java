@@ -59,7 +59,7 @@ final class RaftLog {
   /** Returns true if the log has an {@link Entry} matching the provided {@link LogEntryDetails}. */
   private boolean logHasMatchingEntry(LogEntryDetails logEntryDetails) {
     if (LogEntryDetails.isEmptyLogSentinel(logEntryDetails)) {
-      return entries.size() == 0;
+      return entries.isEmpty();
     }
     if (logEntryDetails.index() >= entries.size()) {
       return false;
@@ -81,6 +81,9 @@ final class RaftLog {
   /** Returns {@link LogEntryDetails} about the last entry in the log. */
   LogEntryDetails getLastLogEntryDetails() {
     int lastEntryIndex = getLastEntryIndex();
+    if (lastEntryIndex < 0) {
+      return LogEntryDetails.EMPTY_LOG_SENTINEL;
+    }
     Entry lastEntry = entries.get(lastEntryIndex);
     return new LogEntryDetails(lastEntry.getTerm(), lastEntryIndex);
   }
