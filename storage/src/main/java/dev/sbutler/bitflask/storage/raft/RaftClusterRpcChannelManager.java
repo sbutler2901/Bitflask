@@ -37,7 +37,8 @@ final class RaftClusterRpcChannelManager extends AbstractIdleService {
         ImmutableMap.builder();
     for (var serverEntry : raftConfiguration.getOtherServersInCluster().entrySet()) {
       String target =
-          String.format("%s:%s", serverEntry.getValue().host(), serverEntry.getValue().port());
+          String.format(
+              "%s:%s", serverEntry.getValue().getHost(), serverEntry.getValue().getRaftPort());
       ManagedChannel managedChannel =
           Grpc.newChannelBuilder(target, InsecureChannelCredentials.create()).build();
       managedChannelsBuilder.put(serverEntry.getKey(), managedChannel);

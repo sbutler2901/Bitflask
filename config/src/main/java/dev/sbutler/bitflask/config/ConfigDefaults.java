@@ -16,24 +16,26 @@ public final class ConfigDefaults {
           .setThisServerId("server_0")
           .addAllBitflaskServers(
               ImmutableList.of(
-                  ServerConfig.ServerInfo.newBuilder()
-                      .setServerId("server_0")
-                      .setHost("localhost")
-                      .setRespPort(9090)
-                      .setRaftPort(9080)
-                      .build(),
-                  ServerConfig.ServerInfo.newBuilder()
-                      .setServerId("server_1")
-                      .setHost("localhost")
-                      .setRespPort(9091)
-                      .setRaftPort(9081)
-                      .build(),
-                  ServerConfig.ServerInfo.newBuilder()
-                      .setServerId("server_2")
-                      .setHost("localhost")
-                      .setRespPort(9092)
-                      .setRaftPort(9082)
-                      .build()))
+                  // TODO: Update so that the defaults doesn't supersede loaded configs.
+                  //                  ServerConfig.ServerInfo.newBuilder()
+                  //                      .setServerId("server_0")
+                  //                      .setHost("localhost")
+                  //                      .setRespPort(9090)
+                  //                      .setRaftPort(9080)
+                  //                      .build(),
+                  //                  ServerConfig.ServerInfo.newBuilder()
+                  //                      .setServerId("server_1")
+                  //                      .setHost("localhost")
+                  //                      .setRespPort(9091)
+                  //                      .setRaftPort(9081)
+                  //                      .build(),
+                  //                  ServerConfig.ServerInfo.newBuilder()
+                  //                      .setServerId("server_2")
+                  //                      .setHost("localhost")
+                  //                      .setRespPort(9092)
+                  //                      .setRaftPort(9082)
+                  //                      .build()
+                  ))
           .build();
 
   public static StorageConfig STORAGE_CONFIG =

@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.raft;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractIdleService;
+import dev.sbutler.bitflask.config.ServerConfig;
 import io.grpc.Grpc;
 import io.grpc.InsecureServerCredentials;
 import io.grpc.Server;
@@ -28,15 +29,18 @@ public final class RaftServer extends AbstractIdleService {
 
   @Override
   protected void startUp() throws Exception {
-    RaftServerInfo thisRaftServerInfo = raftConfiguration.getThisRaftServerInfo();
+    ServerConfig.ServerInfo thisRaftServerInfo = raftConfiguration.getThisServerInfo();
     server =
-        Grpc.newServerBuilderForPort(thisRaftServerInfo.port(), InsecureServerCredentials.create())
+        Grpc.newServerBuilderForPort(
+                thisRaftServerInfo.getRaftPort(), InsecureServerCredentials.create())
             .addService(raftService)
             .build();
     server.start();
     logger.atInfo().log(
         "RaftServer [%s] started on [%s:%s]",
-        thisRaftServerInfo.id(), thisRaftServerInfo.host(), thisRaftServerInfo.port());
+        thisRaftServerInfo.getServerId(),
+        thisRaftServerInfo.getHost(),
+        thisRaftServerInfo.getRaftPort());
   }
 
   @Override

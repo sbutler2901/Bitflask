@@ -105,8 +105,7 @@ final class RaftModeManager
   Optional<ServerConfig.ServerInfo> getCurrentLeaderServerInfo() {
     return raftVolatileState
         .getLeaderServerId()
-        .map(leaderServiceId -> raftConfiguration.clusterServers().get(leaderServiceId))
-        .map(raftServerInfo -> RaftServerInfoConverter.INSTANCE.reverse().convert(raftServerInfo));
+        .map(leaderServiceId -> raftConfiguration.clusterServers().get(leaderServiceId));
   }
 
   /**
