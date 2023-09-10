@@ -4,6 +4,8 @@ import dev.sbutler.bitflask.config.validators.AbsolutePathValidator;
 import dev.sbutler.bitflask.config.validators.NonBlankStringValidator;
 import dev.sbutler.bitflask.config.validators.PositiveIntegerValidator;
 import dev.sbutler.bitflask.config.validators.PositiveLongValidator;
+import java.util.HashSet;
+import java.util.Set;
 
 /** Handles validating the correctness of {@link BitflaskConfig}. */
 final class ConfigValidator {
@@ -24,6 +26,13 @@ final class ConfigValidator {
   static void validateServerConfig(ServerConfig serverConfig) {
     String thisServerId = serverConfig.getThisServerId();
     nonBlankStringValidator.validate("this_server_id", thisServerId);
+    Set<ServerConfig.ServerInfo> uniqueServerInfo = new HashSet<>();
+    for (var info : serverConfig.getBitflaskServersList()) {
+      if (!uniqueServerInfo.add(info)) {
+        throw new InvalidConfigurationException(
+            String.format("Duplicate ServerInfo instance found:\n[%s]", info));
+      }
+    }
     if (serverConfig.getBitflaskServersList().stream()
         .noneMatch(serverInfo -> thisServerId.equals(serverInfo.getServerId()))) {
       throw new InvalidConfigurationException(

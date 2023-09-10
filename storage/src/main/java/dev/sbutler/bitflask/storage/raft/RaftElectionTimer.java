@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -11,13 +12,14 @@ import java.util.concurrent.ThreadLocalRandom;
 final class RaftElectionTimer {
 
   private final RaftTimerInterval raftTimerInterval;
-  private final RaftModeManager raftModeManager;
+  private final Provider<RaftModeManager> raftModeManager;
   private final Timer timer = new Timer("raft-election-timer", true);
 
   private volatile TimerTask currentTimerTask;
 
   @Inject
-  RaftElectionTimer(RaftConfiguration raftConfiguration, RaftModeManager raftModeManager) {
+  RaftElectionTimer(
+      RaftConfiguration raftConfiguration, Provider<RaftModeManager> raftModeManager) {
     this.raftTimerInterval = raftConfiguration.raftTimerInterval();
     this.raftModeManager = raftModeManager;
   }
@@ -30,7 +32,7 @@ final class RaftElectionTimer {
         new TimerTask() {
           @Override
           public void run() {
-            raftModeManager.handleElectionTimeout();
+            raftModeManager.get().handleElectionTimeout();
           }
         };
 

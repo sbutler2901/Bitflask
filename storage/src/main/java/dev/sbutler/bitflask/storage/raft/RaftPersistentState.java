@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import com.google.common.base.Preconditions;
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,8 +18,10 @@ final class RaftPersistentState {
   // Persisted fields
   /** The RaftLog for this server. */
   private final RaftLog raftLog;
+
   /** Latest term server has seen. */
   private final AtomicInteger currentTerm = new AtomicInteger(0);
+
   /** Candidate ID that received vote in current term (or null if none). */
   private volatile RaftServerId votedForCandidateId;
 
@@ -27,15 +30,21 @@ final class RaftPersistentState {
   private final ReentrantLock voteLock = new ReentrantLock();
   private volatile int termWhenVotedForCandidate = 0;
 
-  RaftPersistentState(
-      RaftConfiguration raftConfiguration,
-      RaftLog raftLog,
-      int latestTermSeen,
-      RaftServerId votedForCandidateId) {
+  @Inject
+  RaftPersistentState(RaftConfiguration raftConfiguration, RaftLog raftLog) {
     this.raftConfiguration = raftConfiguration;
     this.raftLog = raftLog;
-    this.currentTerm.set(latestTermSeen);
-    this.votedForCandidateId = votedForCandidateId;
+  }
+
+  /** Used to initialize state at startup. */
+  void initialize(int latestTermSeen, Optional<RaftServerId> votedForCandidateId) {
+    voteLock.lock();
+    try {
+      currentTerm.set(latestTermSeen);
+      this.votedForCandidateId = votedForCandidateId.orElse(null);
+    } finally {
+      voteLock.unlock();
+    }
   }
 
   /** Retrieves the Raft log. */

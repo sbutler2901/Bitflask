@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -13,12 +14,17 @@ final class RaftVolatileState {
 
   /** Index of highest log entry known to be committed. */
   private final AtomicInteger highestCommittedEntryIndex = new AtomicInteger(0);
+
   /** Index of highest log entry applied to state machine. */
   private final AtomicInteger highestAppliedEntryIndex = new AtomicInteger(0);
 
   private volatile RaftServerId leaderServerId;
 
-  RaftVolatileState(int highestCommittedEntryIndex, int highestAppliedEntryIndex) {
+  @Inject
+  RaftVolatileState() {}
+
+  /** Used to initialize state at startup. */
+  void initialize(int highestCommittedEntryIndex, int highestAppliedEntryIndex) {
     this.highestCommittedEntryIndex.set(highestCommittedEntryIndex);
     this.highestAppliedEntryIndex.set(highestAppliedEntryIndex);
   }

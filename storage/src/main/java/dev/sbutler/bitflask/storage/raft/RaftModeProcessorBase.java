@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import dev.sbutler.bitflask.storage.raft.RaftLog.LogEntryDetails;
+import jakarta.inject.Provider;
 
 /**
  * Base implementation of {@link RaftModeProcessor} providing some generic implementations of
@@ -9,12 +10,12 @@ import dev.sbutler.bitflask.storage.raft.RaftLog.LogEntryDetails;
 abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     permits RaftFollowerProcessor, RaftCandidateProcessor, RaftLeaderProcessor {
 
-  protected final RaftModeManager raftModeManager;
+  protected final Provider<RaftModeManager> raftModeManager;
   protected final RaftPersistentState raftPersistentState;
   protected final RaftVolatileState raftVolatileState;
 
   RaftModeProcessorBase(
-      RaftModeManager raftModeManager,
+      Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState) {
     this.raftModeManager = raftModeManager;
@@ -54,7 +55,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     beforeUpdateTermAndTransitionToFollower(rpcTerm);
     raftPersistentState.setCurrentTermAndResetVote(rpcTerm);
     if (!this.getClass().isInstance(RaftFollowerProcessor.class)) {
-      raftModeManager.transitionToFollowerState();
+      raftModeManager.get().transitionToFollowerState();
     }
   }
 

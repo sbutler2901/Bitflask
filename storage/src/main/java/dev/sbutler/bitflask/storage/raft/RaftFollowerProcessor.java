@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 /**
  * Handles the {@link RaftModeManager.RaftMode#FOLLOWER} mode of the Raft server.
@@ -8,13 +9,13 @@ import jakarta.inject.Inject;
  * <p>A new instance of this class should be created each time the server transitions to the
  * follower mode.
  */
-final class RaftFollowerProcessor extends RaftModeProcessorBase {
+public final class RaftFollowerProcessor extends RaftModeProcessorBase {
 
   private final RaftElectionTimer raftElectionTimer;
 
   @Inject
   RaftFollowerProcessor(
-      RaftModeManager raftModeManager,
+      Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
       RaftElectionTimer raftElectionTimer) {
@@ -34,7 +35,7 @@ final class RaftFollowerProcessor extends RaftModeProcessorBase {
 
   @Override
   public void handleElectionTimeout() {
-    raftModeManager.transitionToCandidateState();
+    raftModeManager.get().transitionToCandidateState();
   }
 
   @Override

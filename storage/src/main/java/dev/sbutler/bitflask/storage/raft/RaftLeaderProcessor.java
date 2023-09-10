@@ -15,6 +15,7 @@ import dev.sbutler.bitflask.storage.raft.exceptions.RaftLeaderException;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftUnknownLeaderException;
 import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
@@ -29,7 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>A new instance of this class should be created each time the server transitions to the Leader
  * mode.
  */
-final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCommandSubmitter {
+public final class RaftLeaderProcessor extends RaftModeProcessorBase
+    implements RaftCommandSubmitter {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -51,7 +53,7 @@ final class RaftLeaderProcessor extends RaftModeProcessorBase implements RaftCom
 
   @Inject
   RaftLeaderProcessor(
-      RaftModeManager raftModeManager,
+      Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
       ListeningExecutorService executorService,

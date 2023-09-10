@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.storage.raft;
 import dev.sbutler.bitflask.storage.raft.RaftClusterCandidateRpcClient.RequestVotesResults;
 import dev.sbutler.bitflask.storage.raft.RaftLog.LogEntryDetails;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 /**
  * Handles the {@link RaftModeManager.RaftMode#CANDIDATE} mode of the Raft server.
@@ -10,10 +11,10 @@ import jakarta.inject.Inject;
  * <p>A new instance of this class should be created each time the server transitions to the
  * Candidate mode.
  */
-final class RaftCandidateProcessor extends RaftModeProcessorBase {
+public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   private final RaftConfiguration raftConfiguration;
-  private final RaftModeManager raftModeManager;
+  private final Provider<RaftModeManager> raftModeManager;
   private final RaftElectionTimer raftElectionTimer;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
 
@@ -23,7 +24,7 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
   @Inject
   RaftCandidateProcessor(
       RaftConfiguration raftConfiguration,
-      RaftModeManager raftModeManager,
+      Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
       RaftElectionTimer raftElectionTimer,
@@ -108,7 +109,7 @@ final class RaftCandidateProcessor extends RaftModeProcessorBase {
         updateTermAndTransitionToFollower(requestVotesResults.largestTermSeen());
       } else if (requestVotesResults.receivedMajorityVotes()) {
         shouldContinueElections = false;
-        raftModeManager.transitionToLeaderState();
+        raftModeManager.get().transitionToLeaderState();
       } else if (requestVotesResults.allResponsesReceived()) {
         break;
       }

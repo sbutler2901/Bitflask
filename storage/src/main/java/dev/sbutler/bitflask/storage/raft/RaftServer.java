@@ -15,27 +15,28 @@ public final class RaftServer extends AbstractIdleService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final RaftServerInfo raftServerInfo;
+  private final RaftConfiguration raftConfiguration;
   private final RaftService raftService;
 
   private Server server;
 
   @Inject
-  RaftServer(RaftServerInfo raftServerInfo, RaftService raftService) {
-    this.raftServerInfo = raftServerInfo;
+  RaftServer(RaftConfiguration raftConfiguration, RaftService raftService) {
+    this.raftConfiguration = raftConfiguration;
     this.raftService = raftService;
   }
 
   @Override
   protected void startUp() throws Exception {
+    RaftServerInfo thisRaftServerInfo = raftConfiguration.getThisRaftServerInfo();
     server =
-        Grpc.newServerBuilderForPort(raftServerInfo.port(), InsecureServerCredentials.create())
+        Grpc.newServerBuilderForPort(thisRaftServerInfo.port(), InsecureServerCredentials.create())
             .addService(raftService)
             .build();
     server.start();
     logger.atInfo().log(
         "RaftServer [%s] started on [%s:%s]",
-        raftServerInfo.id(), raftServerInfo.host(), raftServerInfo.port());
+        thisRaftServerInfo.id(), thisRaftServerInfo.host(), thisRaftServerInfo.port());
   }
 
   @Override

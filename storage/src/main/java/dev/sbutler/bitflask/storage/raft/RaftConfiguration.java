@@ -17,4 +17,8 @@ public record RaftConfiguration(
         .filterKeys(raftServerId -> raftServerId != thisRaftServerId)
         .collect(toImmutableMap());
   }
+
+  RaftServerInfo getThisRaftServerInfo() {
+    return clusterServers.get(thisRaftServerId);
+  }
 }
