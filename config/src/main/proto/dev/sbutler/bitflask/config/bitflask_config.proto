@@ -26,6 +26,8 @@ message ServerConfig {
     string host = 2;
     // The port on which the server's RESP endpoint should listen.
     uint32 resp_port = 3;
+    // The port on which the server's Raft endpoint should listen.
+    uint32 raft_port = 4;
   }
   // All Bitflask servers in a cluster
   repeated ServerInfo bitflask_servers = 2;
