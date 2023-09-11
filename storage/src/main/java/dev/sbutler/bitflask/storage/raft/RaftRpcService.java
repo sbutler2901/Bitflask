@@ -8,12 +8,12 @@ import io.grpc.stub.StreamObserver;
 import jakarta.inject.Inject;
 
 /** The service implementing Raft RPC endpoints. */
-final class RaftService extends RaftGrpc.RaftImplBase {
+final class RaftRpcService extends RaftGrpc.RaftImplBase {
 
   private final RaftModeManager raftModeManager;
 
   @Inject
-  RaftService(RaftModeManager raftModeManager) {
+  RaftRpcService(RaftModeManager raftModeManager) {
     this.raftModeManager = raftModeManager;
   }
 

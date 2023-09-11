@@ -12,19 +12,19 @@ import java.util.concurrent.TimeUnit;
 
 /** The Raft gRPC server. */
 @Singleton
-public final class RaftServer extends AbstractIdleService {
+public final class RaftRpcServer extends AbstractIdleService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final RaftConfiguration raftConfiguration;
-  private final RaftService raftService;
+  private final RaftRpcService raftRpcService;
 
   private Server server;
 
   @Inject
-  RaftServer(RaftConfiguration raftConfiguration, RaftService raftService) {
+  RaftRpcServer(RaftConfiguration raftConfiguration, RaftRpcService raftRpcService) {
     this.raftConfiguration = raftConfiguration;
-    this.raftService = raftService;
+    this.raftRpcService = raftRpcService;
   }
 
   @Override
@@ -33,11 +33,11 @@ public final class RaftServer extends AbstractIdleService {
     server =
         Grpc.newServerBuilderForPort(
                 thisRaftServerInfo.getRaftPort(), InsecureServerCredentials.create())
-            .addService(raftService)
+            .addService(raftRpcService)
             .build();
     server.start();
     logger.atInfo().log(
-        "RaftServer [%s] started on [%s:%s]",
+        "RaftRpcServer [%s] started on [%s:%s]",
         thisRaftServerInfo.getServerId(),
         thisRaftServerInfo.getHost(),
         thisRaftServerInfo.getRaftPort());
