@@ -64,7 +64,7 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
         raftVolatileState.setHighestAppliedEntryIndex(nextIndexToApply - 1);
         logger.atSevere().withCause(e).log(
             "Failed to apply command at index [%d].", nextIndexToApply);
-        // TODO: terminate server if unrecoverable?
+        // TODO: terminate server
         break;
       }
     }

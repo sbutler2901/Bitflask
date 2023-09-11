@@ -11,14 +11,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Singleton
 final class RaftLog {
 
-  private final RaftVolatileState raftVolatileState;
-
   private final List<Entry> entries = new CopyOnWriteArrayList<>();
 
   @Inject
-  RaftLog(RaftVolatileState raftVolatileState) {
-    this.raftVolatileState = raftVolatileState;
-  }
+  RaftLog() {}
 
   /**
    * Inserts the provided {@link Entry}s after the entry provided by {@code prevLogEntryDetails}.
@@ -71,19 +67,21 @@ final class RaftLog {
   /** Appends the entry to the log returning its index. */
   int appendEntry(Entry newEntry) {
     entries.add(newEntry);
-    return entries.lastIndexOf(newEntry);
+    // Externally, first index is 1
+    return entries.lastIndexOf(newEntry) + 1;
   }
 
   int getLastEntryIndex() {
-    return entries.size() - 1;
+    // Externally, first index is 1
+    return entries.size();
   }
 
   /** Returns {@link LogEntryDetails} about the last entry in the log. */
   LogEntryDetails getLastLogEntryDetails() {
-    int lastEntryIndex = getLastEntryIndex();
-    if (lastEntryIndex < 0) {
+    if (entries.isEmpty()) {
       return LogEntryDetails.EMPTY_LOG_SENTINEL;
     }
+    int lastEntryIndex = getLastEntryIndex();
     Entry lastEntry = entries.get(lastEntryIndex);
     return new LogEntryDetails(lastEntry.getTerm(), lastEntryIndex);
   }
@@ -95,7 +93,8 @@ final class RaftLog {
 
   /** Returns the {@link Entry} at the provided index. */
   Entry getEntryAtIndex(int index) {
-    return entries.get(index);
+    // Externally, first index is 1
+    return entries.get(index - 1);
   }
 
   /** Returns a list of {@link Entry}s starting from the provided index to the last one. */

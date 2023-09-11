@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import com.google.common.base.Preconditions;
+import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.inject.Singleton;
@@ -13,17 +14,22 @@ import java.util.concurrent.ConcurrentSkipListSet;
 @Singleton
 final class RaftSubmissionManager {
 
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
   private final NavigableSet<WaitingSubmission> waitingSubmissions = new ConcurrentSkipListSet<>();
 
   @Inject
   RaftSubmissionManager() {}
 
+  /** Adds a new submission for an Entry at the provided index. */
   ListenableFuture<StorageCommandResults> addNewSubmission(int newEntryIndex) {
     SettableFuture<StorageCommandResults> clientSubmitFuture = SettableFuture.create();
     waitingSubmissions.add(new WaitingSubmission(newEntryIndex, clientSubmitFuture));
+    logger.atInfo().log("Added new submission for Entry at index [%d].", newEntryIndex);
     return clientSubmitFuture;
   }
 
+  /** Completes the submission with {@code results} for the Entry at {@code entryIndex}. */
   void completeSubmission(int entryIndex, StorageCommandResults results) {
     Preconditions.checkState(
         !waitingSubmissions.isEmpty(), "There are no waiting submission to complete");
@@ -36,9 +42,12 @@ final class RaftSubmissionManager {
 
     firstSubmission = waitingSubmissions.pollFirst();
     firstSubmission.submissionFuture().set(results);
+    logger.atInfo().log("Completed submission for Entry at index [%d].", entryIndex);
   }
 
   void completeAllSubmissionsWithFailure(Exception failure) {
+    logger.atWarning().withCause(failure).log(
+        "Completing all [%d] waiting submissions with failure.", waitingSubmissions.size());
     for (var waitingSubmission : waitingSubmissions) {
       waitingSubmission.submissionFuture().setException(failure);
       waitingSubmissions.remove(waitingSubmission);
