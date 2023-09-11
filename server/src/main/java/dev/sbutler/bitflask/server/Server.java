@@ -96,7 +96,7 @@ public final class Server {
     serviceManager.addListener(
         new Listener() {
           public void stopped() {
-            System.out.println("Server: All services have stopped.");
+            System.out.println("All services have stopped.");
           }
 
           public void healthy() {
@@ -105,8 +105,6 @@ public final class Server {
           }
 
           public void failure(@Nonnull Service service) {
-            logger.atSevere().withCause(service.failureCause()).log(
-                "[%s] failed.", service.getClass());
             serviceManager.stopAsync();
           }
         },
@@ -124,13 +122,15 @@ public final class Server {
                       // Give the services 5 seconds to stop to ensure that we are responsive to
                       // shut down requests.
                       try {
+                        System.out.println("Shutting down ServiceManager.");
                         serviceManager.stopAsync().awaitStopped(5, TimeUnit.SECONDS);
                       } catch (TimeoutException timeout) {
                         // stopping timed out
                         System.err.println("ServiceManager timed out while stopping" + timeout);
                       }
+                      System.out.println("Shutting down ExecutorService.");
                       shutdownAndAwaitTermination(listeningExecutorService, Duration.ofSeconds(5));
-                      System.out.println("Shutdown hook completed");
+                      System.out.println("Shutdown hook completed.");
                     }));
   }
 

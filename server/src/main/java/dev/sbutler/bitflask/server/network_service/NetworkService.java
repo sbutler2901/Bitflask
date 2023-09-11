@@ -6,15 +6,14 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.io.IOException;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 
-/**
- * Handles accepting incoming client requests and submitting them for processing.
- */
+/** Handles accepting incoming client requests and submitting them for processing. */
 @Singleton
 public final class NetworkService extends AbstractExecutionThreadService {
 
@@ -26,7 +25,8 @@ public final class NetworkService extends AbstractExecutionThreadService {
     private final ClientHandlingService.Factory clientHandlingServiceFactory;
 
     @Inject
-    Factory(ListeningExecutorService listeningExecutorService,
+    Factory(
+        ListeningExecutorService listeningExecutorService,
         ClientHandlingService.Factory clientHandlingServiceFactory) {
       this.listeningExecutorService = listeningExecutorService;
       this.clientHandlingServiceFactory = clientHandlingServiceFactory;
@@ -34,20 +34,20 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
     public NetworkService create(ServerSocketChannel serverSocketChannel) {
       return new NetworkService(
-          listeningExecutorService,
-          serverSocketChannel,
-          clientHandlingServiceFactory);
+          listeningExecutorService, serverSocketChannel, clientHandlingServiceFactory);
     }
   }
 
   private final ListeningExecutorService listeningExecutorService;
   private final ServerSocketChannel serverSocketChannel;
   private final ClientHandlingService.Factory clientHandlingServiceFactory;
-  private final Set<ClientHandlingService> runningClientHandlingServices = ConcurrentHashMap.newKeySet();
+  private final Set<ClientHandlingService> runningClientHandlingServices =
+      ConcurrentHashMap.newKeySet();
 
   private volatile boolean isRunning = true;
 
-  NetworkService(ListeningExecutorService listeningExecutorService,
+  NetworkService(
+      ListeningExecutorService listeningExecutorService,
       ServerSocketChannel serverSocketChannel,
       ClientHandlingService.Factory clientHandlingServiceFactory) {
     this.listeningExecutorService = listeningExecutorService;
@@ -58,17 +58,17 @@ public final class NetworkService extends AbstractExecutionThreadService {
   @Override
   protected void run() throws IOException {
     try {
-      while (isRunning && serverSocketChannel.isOpen()
-          && !Thread.currentThread().isInterrupted()) {
+      while (isRunning && serverSocketChannel.isOpen() && !Thread.currentThread().isInterrupted()) {
         SocketChannel socketChannel = serverSocketChannel.accept();
         logger.atInfo().log(
-            "Received incoming client connection from [%s]",
-            socketChannel.getRemoteAddress());
+            "Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
 
         ClientHandlingService clientHandlingService =
             clientHandlingServiceFactory.create(socketChannel);
         startClientHandlingService(clientHandlingService);
       }
+    } catch (AsynchronousCloseException ignored) {
+      // Service shutdown externally
     } finally {
       triggerShutdown();
     }
@@ -80,20 +80,21 @@ public final class NetworkService extends AbstractExecutionThreadService {
     // Clean up after service has reached a terminal state on its own
     clientHandlingService
         .startAsync()
-        .addListener(new Listener() {
-          @Override
-          public void terminated(@Nonnull State from) {
-            runningClientHandlingServices.remove(clientHandlingService);
-          }
+        .addListener(
+            new Listener() {
+              @Override
+              public void terminated(@Nonnull State from) {
+                runningClientHandlingServices.remove(clientHandlingService);
+              }
 
-          @Override
-          public void failed(@Nonnull State from, @Nonnull Throwable failure) {
-            runningClientHandlingServices.remove(clientHandlingService);
-          }
-        }, listeningExecutorService);
+              @Override
+              public void failed(@Nonnull State from, @Nonnull Throwable failure) {
+                runningClientHandlingServices.remove(clientHandlingService);
+              }
+            },
+            listeningExecutorService);
   }
 
-  @SuppressWarnings("UnstableApiUsage")
   @Override
   protected void triggerShutdown() {
     isRunning = false;
@@ -105,8 +106,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
     try {
       serverSocketChannel.close();
     } catch (IOException e) {
-      logger.atWarning().withCause(e)
-          .log("Error closing the ServerSocketChannel");
+      logger.atWarning().withCause(e).log("Error closing the ServerSocketChannel");
     }
   }
 

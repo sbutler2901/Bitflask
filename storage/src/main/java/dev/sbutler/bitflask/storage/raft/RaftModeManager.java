@@ -8,7 +8,9 @@ import dev.sbutler.bitflask.storage.StorageSubmitResults;
 import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -17,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * requests and election timeouts to the current one.
  */
 @Singleton
-final class RaftModeManager extends AbstractIdleService
+final class RaftModeManager extends AbstractService
     implements RaftRpcHandler, RaftElectionTimeoutHandler, RaftCommandSubmitter {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -47,15 +49,26 @@ final class RaftModeManager extends AbstractIdleService
   }
 
   @Override
-  protected void startUp() {
+  protected void doStart() {
     // TODO: handle starting from persisted state
     transitionToFollowerState();
-    //    transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
+    notifyStarted();
   }
 
   @Override
-  protected void shutDown() {
-    runningProcessorFuture.cancel(false);
+  protected void doStop() {
+    shutdown();
+    notifyStopped();
+  }
+
+  private void doStopWithFailure(Throwable t) {
+    shutdown();
+    notifyFailed(t);
+  }
+
+  private void shutdown() {
+    raftElectionTimer.cancel();
+    MoreExecutors.shutdownAndAwaitTermination(executorService, Duration.ofSeconds(5));
   }
 
   @Override
@@ -203,8 +216,12 @@ final class RaftModeManager extends AbstractIdleService
 
     @Override
     public void onFailure(Throwable t) {
-      logger.atSevere().withCause(t).log("[%s] processor failed. Shutting down.", processorType);
-      shutDown();
+      if (t instanceof CancellationException) {
+        // Tasks are manually cancelled
+        return;
+      }
+      logger.atSevere().log("[%s] processor failed.", processorType);
+      doStopWithFailure(t);
     }
   }
 }
