@@ -15,6 +15,7 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
   private final RaftVolatileState raftVolatileState;
   private final RaftEntryConverter raftEntryConverter;
   private final StorageCommandExecutor storageCommandExecutor;
+  private final RaftSubmissionManager raftSubmissionManager;
 
   private volatile boolean shouldContinueExecuting = true;
 
@@ -23,11 +24,13 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
       RaftLog raftLog,
       RaftVolatileState raftVolatileState,
       RaftEntryConverter raftEntryConverter,
-      StorageCommandExecutor storageCommandExecutor) {
+      StorageCommandExecutor storageCommandExecutor,
+      RaftSubmissionManager raftSubmissionManager) {
     this.raftLog = raftLog;
     this.raftVolatileState = raftVolatileState;
     this.raftEntryConverter = raftEntryConverter;
     this.storageCommandExecutor = storageCommandExecutor;
+    this.raftSubmissionManager = raftSubmissionManager;
   }
 
   @Override
@@ -55,8 +58,8 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
         raftVolatileState.setHighestAppliedEntryIndex(nextIndexToApply);
         Entry entry = raftLog.getEntryAtIndex(nextIndexToApply);
         StorageCommandDto dto = raftEntryConverter.reverse().convert(entry);
-        // TODO: propagate results
-        StorageCommandResults ignored = storageCommandExecutor.executeDto(dto);
+        StorageCommandResults results = storageCommandExecutor.executeDto(dto);
+        raftSubmissionManager.completeSubmission(nextIndexToApply, results);
       } catch (Exception e) {
         raftVolatileState.setHighestAppliedEntryIndex(nextIndexToApply - 1);
         logger.atSevere().withCause(e).log(

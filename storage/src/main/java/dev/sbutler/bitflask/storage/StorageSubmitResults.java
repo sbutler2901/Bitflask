@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import dev.sbutler.bitflask.config.ServerConfig;
+import dev.sbutler.bitflask.storage.commands.StorageCommandResults;
 
 /** The results of submitting a command to Storage. */
 public sealed interface StorageSubmitResults {
@@ -11,7 +12,8 @@ public sealed interface StorageSubmitResults {
    *
    * @param submitFuture resolves once the command has been safely replicated and applied.
    */
-  record Success(ListenableFuture<String> submitFuture) implements StorageSubmitResults {}
+  record Success(ListenableFuture<StorageCommandResults> submitFuture)
+      implements StorageSubmitResults {}
 
   /**
    * Indicates this storage server instance is not the current leader.

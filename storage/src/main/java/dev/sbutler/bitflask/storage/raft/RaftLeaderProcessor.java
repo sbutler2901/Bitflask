@@ -1,14 +1,11 @@
 package dev.sbutler.bitflask.storage.raft;
 
-import static com.google.common.util.concurrent.Futures.immediateFuture;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import dev.sbutler.bitflask.storage.StorageSubmitResults;
@@ -20,12 +17,10 @@ import dev.sbutler.bitflask.storage.raft.exceptions.RaftUnknownLeaderException;
 import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
-import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 
@@ -46,6 +41,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   private final RaftConfiguration raftConfiguration;
   private final RaftLog raftLog;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
+  private final RaftSubmissionManager raftSubmissionManager;
   private final RaftEntryConverter raftEntryConverter;
   private final StorageCommandExecutor storageCommandExecutor;
 
@@ -53,7 +49,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       new ConcurrentHashMap<>();
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersMatchIndex =
       new ConcurrentHashMap<>();
-  private final NavigableSet<WaitingSubmission> waitingSubmissions = new ConcurrentSkipListSet<>();
   private final Set<ListenableFuture<AppendEntriesResponse>> responseFutures =
       ConcurrentHashMap.newKeySet();
 
@@ -68,6 +63,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       RaftConfiguration raftConfiguration,
       RaftLog raftLog,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager,
+      RaftSubmissionManager raftSubmissionManager,
       RaftEntryConverter raftEntryConverter,
       StorageCommandExecutor storageCommandExecutor) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
@@ -75,6 +71,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     this.raftConfiguration = raftConfiguration;
     this.raftLog = raftLog;
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
+    this.raftSubmissionManager = raftSubmissionManager;
     this.raftEntryConverter = raftEntryConverter;
     this.storageCommandExecutor = storageCommandExecutor;
 
@@ -123,30 +120,15 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   @Override
   public StorageSubmitResults submitCommand(StorageCommandDto storageCommandDto) {
     if (!storageCommandDto.isPersistable()) {
-      // TODO: propagate results
-      ListenableFuture<StorageCommandResults> ignored =
+      ListenableFuture<StorageCommandResults> results =
           storageCommandExecutor.submitDto(storageCommandDto);
-      return new StorageSubmitResults.Success(immediateFuture("OK"));
+      return new StorageSubmitResults.Success(results);
     } else {
-      return replicateCommand(storageCommandDto);
-    }
-  }
-
-  private StorageSubmitResults replicateCommand(StorageCommandDto storageCommandDto) {
-    Entry newEntry = raftEntryConverter.convert(storageCommandDto);
-    int newEntryIndex = raftLog.appendEntry(newEntry);
-    SettableFuture<String> clientSubmitFuture = SettableFuture.create();
-    waitingSubmissions.add(new WaitingSubmission(newEntryIndex, clientSubmitFuture));
-    return new StorageSubmitResults.Success(clientSubmitFuture);
-  }
-
-  /** Holds a submission future that cannot be resolved until the associated entry is applied. */
-  private record WaitingSubmission(int entryIndex, SettableFuture<String> submissionFuture)
-      implements Comparable<WaitingSubmission> {
-
-    @Override
-    public int compareTo(WaitingSubmission waitingSubmission) {
-      return Integer.compare(this.entryIndex(), waitingSubmission.entryIndex());
+      Entry newEntry = raftEntryConverter.convert(storageCommandDto);
+      int newEntryIndex = raftLog.appendEntry(newEntry);
+      ListenableFuture<StorageCommandResults> results =
+          raftSubmissionManager.addNewSubmission(newEntryIndex);
+      return new StorageSubmitResults.Success(results);
     }
   }
 
@@ -156,7 +138,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     while (shouldContinueExecuting) {
       appendEntriesOrSendHeartbeat();
       checkAndUpdateCommitIndex();
-      checkAppliedEntriesAndRespondToClients();
     }
     cleanupBeforeTerminating();
   }
@@ -216,20 +197,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
                 .filter(matchIndex -> matchIndex >= entryIndex)
                 .count();
     return numServersWithEntryWithinMatch > halfOfServers;
-  }
-
-  /**
-   * Responds to clients who submitted a {@link RaftCommand} and are waiting for it to be applied.
-   */
-  private void checkAppliedEntriesAndRespondToClients() {
-    int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
-    for (var waitingSubmission : waitingSubmissions) {
-      if (waitingSubmission.entryIndex() > highestAppliedIndex) {
-        break;
-      }
-      waitingSubmission.submissionFuture().set(null);
-      waitingSubmissions.remove(waitingSubmission);
-    }
   }
 
   /**
@@ -360,11 +327,8 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
    * Cleans up any unresolved client or {@link AppendEntriesResponse} futures before terminating.
    */
   private void cleanupBeforeTerminating() {
-    RaftLeaderException exception = new RaftLeaderException("Another leader was discovered");
-    for (var waitingSubmission : waitingSubmissions) {
-      waitingSubmission.submissionFuture().setException(exception);
-      waitingSubmissions.remove(waitingSubmission);
-    }
+    raftSubmissionManager.completeAllSubmissionsWithFailure(
+        new RaftLeaderException("Another leader was discovered"));
     for (var requestFuture : responseFutures) {
       requestFuture.cancel(true);
       responseFutures.remove(requestFuture);

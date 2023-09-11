@@ -44,13 +44,17 @@ public final class ClientCommand {
 
   private ClientCommandResults handleSuccessfulSubmission(StorageSubmitResults.Success success) {
     try {
-      success.submitFuture().get();
+      return switch (success.submitFuture().get()) {
+        case StorageCommandResults.Success results -> new ClientCommandResults.Success(
+            results.message());
+        case StorageCommandResults.Failed results -> new ClientCommandResults.Failure(
+            results.message());
+      };
     } catch (Exception e) {
       String failureMessage = getFailureMessage();
       logger.atSevere().withCause(e).log(failureMessage);
       return new ClientCommandResults.Failure(failureMessage);
     }
-    return new ClientCommandResults.Success("OK");
   }
 
   /** Returns a client friendly message when there is a failure submitting to storage. */
