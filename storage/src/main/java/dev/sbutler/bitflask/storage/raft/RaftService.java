@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 /** The Raft gRPC server. */
 @Singleton
-public final class RaftRpcServer extends AbstractIdleService {
+public final class RaftService extends AbstractIdleService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -22,7 +22,7 @@ public final class RaftRpcServer extends AbstractIdleService {
   private Server server;
 
   @Inject
-  RaftRpcServer(RaftConfiguration raftConfiguration, RaftRpcService raftRpcService) {
+  RaftService(RaftConfiguration raftConfiguration, RaftRpcService raftRpcService) {
     this.raftConfiguration = raftConfiguration;
     this.raftRpcService = raftRpcService;
   }
@@ -37,7 +37,7 @@ public final class RaftRpcServer extends AbstractIdleService {
             .build();
     server.start();
     logger.atInfo().log(
-        "RaftRpcServer [%s] started on [%s:%s]",
+        "RaftService [%s] started on [%s:%s]",
         thisRaftServerInfo.getServerId(),
         thisRaftServerInfo.getHost(),
         thisRaftServerInfo.getRaftPort());
