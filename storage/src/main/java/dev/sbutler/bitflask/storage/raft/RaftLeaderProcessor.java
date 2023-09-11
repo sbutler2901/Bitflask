@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nonnull;
 
 /**
  * Handles the {@link RaftMode#LEADER} mode of the Raft server.
@@ -35,7 +36,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private static final RaftMode RAFT_MODE = RaftMode.CANDIDATE;
+  private static final RaftMode RAFT_MODE = RaftMode.LEADER;
 
   private final ListeningExecutorService executorService;
   private final RaftLog raftLog;
@@ -300,7 +301,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
           }
 
           @Override
-          public void onFailure(Throwable t) {
+          public void onFailure(@Nonnull Throwable t) {
             responseFutures.remove(responseFuture);
             lastEntryIndex.ifPresentOrElse(
                 index ->

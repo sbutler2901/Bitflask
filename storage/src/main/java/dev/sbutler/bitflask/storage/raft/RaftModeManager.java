@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
+import javax.annotation.Nonnull;
 
 /**
  * Handles the server's {@link RaftModeProcessor}s, transitioning between them, and relaying RPC
@@ -183,17 +184,17 @@ final class RaftModeManager extends AbstractService
   private void transitionToNewRaftModeProcessor(RaftModeProcessor newRaftModeProcessor) {
     transitionLock.lock();
     try {
-      runningProcessorFuture.cancel(false);
       raftElectionTimer.cancel();
+      runningProcessorFuture.cancel(false);
       raftModeProcessor = newRaftModeProcessor;
-      if (isCurrentLeader()) {
-        raftVolatileState.setLeaderId(raftConfiguration.thisRaftServerId());
-      }
       runningProcessorFuture = Futures.submit(raftModeProcessor, executorService);
       Futures.addCallback(
           runningProcessorFuture,
           new ProcessorFutureCallback(getCurrentRaftMode()),
           executorService);
+      if (isCurrentLeader()) {
+        raftVolatileState.setLeaderId(raftConfiguration.thisRaftServerId());
+      }
     } finally {
       transitionLock.unlock();
     }
@@ -215,7 +216,7 @@ final class RaftModeManager extends AbstractService
     }
 
     @Override
-    public void onFailure(Throwable t) {
+    public void onFailure(@Nonnull Throwable t) {
       if (t instanceof CancellationException) {
         // Tasks are manually cancelled
         return;
