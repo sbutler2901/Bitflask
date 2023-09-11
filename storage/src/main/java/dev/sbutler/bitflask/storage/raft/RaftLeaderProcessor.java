@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Handles the {@link RaftModeManager.RaftMode#LEADER} mode of the Raft server.
+ * Handles the {@link RaftMode#LEADER} mode of the Raft server.
  *
  * <p>A new instance of this class should be created each time the server transitions to the Leader
  * mode.
@@ -34,6 +34,8 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     implements RaftCommandSubmitter {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
+  private static final RaftMode RAFT_MODE = RaftMode.CANDIDATE;
 
   private final ListeningExecutorService executorService;
   private final RaftLog raftLog;
@@ -73,6 +75,11 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       followersNextIndex.put(followerServerId, new AtomicInteger(nextIndex));
       followersMatchIndex.put(followerServerId, new AtomicInteger(0));
     }
+  }
+
+  @Override
+  public RaftMode getRaftMode() {
+    return RAFT_MODE;
   }
 
   private void handleUnexpectedRequest() {

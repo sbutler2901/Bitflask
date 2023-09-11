@@ -2,10 +2,7 @@ package dev.sbutler.bitflask.storage.raft;
 
 import com.google.common.base.Preconditions;
 import com.google.common.flogger.FluentLogger;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.*;
 import dev.sbutler.bitflask.config.ServerConfig;
 import dev.sbutler.bitflask.storage.StorageSubmitResults;
 import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
@@ -20,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * requests and election timeouts to the current one.
  */
 @Singleton
-final class RaftModeManager
+final class RaftModeManager extends AbstractIdleService
     implements RaftRpcHandler, RaftElectionTimeoutHandler, RaftCommandSubmitter {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -35,7 +32,7 @@ final class RaftModeManager
   private final ReentrantLock transitionLock = new ReentrantLock();
 
   private volatile RaftModeProcessor raftModeProcessor;
-  private volatile ListenableFuture<?> runningProcessorFuture = Futures.immediateVoidFuture();
+  private volatile ListenableFuture<Void> runningProcessorFuture = Futures.immediateVoidFuture();
 
   @Inject
   RaftModeManager(
@@ -47,8 +44,18 @@ final class RaftModeManager
     this.raftModeProcessorFactory = raftModeProcessorFactory;
     this.raftElectionTimer = raftElectionTimer;
     this.raftVolatileState = raftVolatileState;
+  }
+
+  @Override
+  protected void startUp() {
     // TODO: handle starting from persisted state
-    transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
+    transitionToFollowerState();
+    //    transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
+  }
+
+  @Override
+  protected void shutDown() {
+    runningProcessorFuture.cancel(false);
   }
 
   @Override
@@ -96,7 +103,11 @@ final class RaftModeManager
     }
   }
 
-  boolean isCurrentLeader() {
+  private RaftMode getCurrentRaftMode() {
+    return raftModeProcessor.getRaftMode();
+  }
+
+  private boolean isCurrentLeader() {
     transitionLock.lock();
     try {
       return RaftMode.LEADER.equals(getCurrentRaftMode());
@@ -105,7 +116,7 @@ final class RaftModeManager
     }
   }
 
-  Optional<ServerConfig.ServerInfo> getCurrentLeaderServerInfo() {
+  private Optional<ServerConfig.ServerInfo> getCurrentLeaderServerInfo() {
     return raftVolatileState
         .getLeaderServerId()
         .map(leaderServiceId -> raftConfiguration.clusterServers().get(leaderServiceId));
@@ -119,7 +130,7 @@ final class RaftModeManager
    */
   void transitionToFollowerState() {
     Preconditions.checkState(
-        !RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
+        raftModeProcessor == null || !RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
         "The Raft server must be in the CANDIDATE or LEADER state to transition to the FOLLOWER state.");
 
     logger.atInfo().log("Transitioning to Follower state.");
@@ -134,7 +145,7 @@ final class RaftModeManager
    */
   void transitionToCandidateState() {
     Preconditions.checkState(
-        RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
+        raftModeProcessor == null || RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
         "The Raft server must be in the FOLLOWER state to transition to the CANDIDATE state.");
 
     logger.atInfo().log("Transitioning to Candidate state.");
@@ -149,7 +160,7 @@ final class RaftModeManager
    */
   void transitionToLeaderState() {
     Preconditions.checkState(
-        RaftMode.CANDIDATE.equals(getCurrentRaftMode()),
+        raftModeProcessor == null || RaftMode.CANDIDATE.equals(getCurrentRaftMode()),
         "The Raft server must be in the CANDIDATE state to transition to the LEADER state.");
 
     logger.atInfo().log("Transitioning to Leader state.");
@@ -165,28 +176,35 @@ final class RaftModeManager
       if (isCurrentLeader()) {
         raftVolatileState.setLeaderId(raftConfiguration.thisRaftServerId());
       }
-      runningProcessorFuture = executorService.submit(raftModeProcessor);
+      runningProcessorFuture = Futures.submit(raftModeProcessor, executorService);
+      Futures.addCallback(
+          runningProcessorFuture,
+          new ProcessorFutureCallback(getCurrentRaftMode()),
+          executorService);
     } finally {
       transitionLock.unlock();
     }
   }
 
-  /** Returns the current {@link RaftMode} of the server. */
-  private RaftMode getCurrentRaftMode() {
-    return switch (raftModeProcessor) {
-      case RaftFollowerProcessor _unused -> RaftMode.FOLLOWER;
-      case RaftCandidateProcessor _unused -> RaftMode.CANDIDATE;
-      case RaftLeaderProcessor _unused -> RaftMode.LEADER;
-    };
-  }
+  /**
+   * Callback for handling the currently executing {@link RaftModeProcessor}'s execution results.
+   */
+  private final class ProcessorFutureCallback implements FutureCallback<Void> {
+    private final RaftMode processorType;
 
-  /** Represents the modes a Raft server can be in. */
-  enum RaftMode {
-    /** The server is only listening from incoming RPCs. */
-    FOLLOWER,
-    /** The server is attempting to become the leader of the cluster. */
-    CANDIDATE,
-    /** The server is receiving client requests and replicating across the cluster. */
-    LEADER
+    private ProcessorFutureCallback(RaftMode processorType) {
+      this.processorType = processorType;
+    }
+
+    @Override
+    public void onSuccess(Void result) {
+      logger.atInfo().log("[%s] processor completed successfully.", processorType);
+    }
+
+    @Override
+    public void onFailure(Throwable t) {
+      logger.atSevere().withCause(t).log("[%s] processor failed. Shutting down.", processorType);
+      shutDown();
+    }
   }
 }

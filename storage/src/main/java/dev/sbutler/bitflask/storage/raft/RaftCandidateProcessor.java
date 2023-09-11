@@ -7,7 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 
 /**
- * Handles the {@link RaftModeManager.RaftMode#CANDIDATE} mode of the Raft server.
+ * Handles the {@link RaftMode#CANDIDATE} mode of the Raft server.
  *
  * <p>A new instance of this class should be created each time the server transitions to the
  * Candidate mode.
@@ -16,8 +16,9 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private static final RaftMode RAFT_MODE = RaftMode.CANDIDATE;
+
   private final RaftConfiguration raftConfiguration;
-  private final Provider<RaftModeManager> raftModeManager;
   private final RaftElectionTimer raftElectionTimer;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
 
@@ -34,9 +35,13 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
       RaftClusterRpcChannelManager raftClusterRpcChannelManager) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
     this.raftConfiguration = raftConfiguration;
-    this.raftModeManager = raftModeManager;
     this.raftElectionTimer = raftElectionTimer;
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
+  }
+
+  @Override
+  public RaftMode getRaftMode() {
+    return RAFT_MODE;
   }
 
   @Override

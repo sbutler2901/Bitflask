@@ -5,7 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 
 /**
- * Handles the {@link RaftModeManager.RaftMode#FOLLOWER} mode of the Raft server.
+ * Handles the {@link RaftMode#FOLLOWER} mode of the Raft server.
  *
  * <p>A new instance of this class should be created each time the server transitions to the
  * follower mode.
@@ -13,6 +13,8 @@ import jakarta.inject.Provider;
 public final class RaftFollowerProcessor extends RaftModeProcessorBase {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
+  private static final RaftMode RAFT_MODE = RaftMode.FOLLOWER;
 
   private final RaftElectionTimer raftElectionTimer;
 
@@ -24,6 +26,11 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
       RaftElectionTimer raftElectionTimer) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
     this.raftElectionTimer = raftElectionTimer;
+  }
+
+  @Override
+  public RaftMode getRaftMode() {
+    return RAFT_MODE;
   }
 
   @Override

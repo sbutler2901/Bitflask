@@ -4,6 +4,9 @@ package dev.sbutler.bitflask.storage.raft;
 sealed interface RaftModeProcessor extends RaftRpcHandler, RaftElectionTimeoutHandler, Runnable
     permits RaftModeProcessorBase {
 
+  /** Returns the {@link RaftMode} representing the current {@link RaftModeProcessor}. */
+  RaftMode getRaftMode();
+
   /**
    * Commits an entry with the provided {@link SetCommand}. Returns false if the server is not the
    * cluster's leader

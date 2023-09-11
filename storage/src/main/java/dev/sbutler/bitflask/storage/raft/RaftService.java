@@ -8,6 +8,7 @@ import io.grpc.InsecureServerCredentials;
 import io.grpc.Server;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /** The Raft gRPC server. */
@@ -18,24 +19,32 @@ public final class RaftService extends AbstractIdleService {
 
   private final RaftConfiguration raftConfiguration;
   private final RaftRpcService raftRpcService;
+  private final RaftLoader raftLoader;
 
-  private Server server;
+  private Server rpcServer;
 
   @Inject
-  RaftService(RaftConfiguration raftConfiguration, RaftRpcService raftRpcService) {
+  RaftService(
+      RaftConfiguration raftConfiguration, RaftRpcService raftRpcService, RaftLoader raftLoader) {
     this.raftConfiguration = raftConfiguration;
     this.raftRpcService = raftRpcService;
+    this.raftLoader = raftLoader;
   }
 
   @Override
-  protected void startUp() throws Exception {
+  protected void startUp() throws IOException {
+    raftLoader.load();
+    startRpcServer();
+  }
+
+  private void startRpcServer() throws IOException {
     ServerConfig.ServerInfo thisRaftServerInfo = raftConfiguration.getThisServerInfo();
-    server =
+    rpcServer =
         Grpc.newServerBuilderForPort(
                 thisRaftServerInfo.getRaftPort(), InsecureServerCredentials.create())
             .addService(raftRpcService)
             .build();
-    server.start();
+    rpcServer.start();
     logger.atInfo().log(
         "RaftService [%s] started on [%s:%s]",
         thisRaftServerInfo.getServerId(),
@@ -45,6 +54,6 @@ public final class RaftService extends AbstractIdleService {
 
   @Override
   protected void shutDown() throws Exception {
-    server.shutdown().awaitTermination(30, TimeUnit.SECONDS);
+    rpcServer.shutdown().awaitTermination(30, TimeUnit.SECONDS);
   }
 }

@@ -18,8 +18,9 @@ public class RaftModule extends RootModule {
   @Override
   public ImmutableSet<Service> getServices(Injector injector) {
     return ImmutableSet.of(
+        injector.getInstance(RaftService.class),
+        injector.getInstance(RaftModeManager.class),
         injector.getInstance(RaftClusterRpcChannelManager.class),
-        injector.getInstance(RaftEntryApplier.class),
-        injector.getInstance(RaftService.class));
+        injector.getInstance(RaftEntryApplier.class));
   }
 }
