@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import static com.google.common.util.concurrent.Futures.immediateFuture;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.FutureCallback;
@@ -11,6 +13,8 @@ import com.google.rpc.Code;
 import com.google.rpc.Status;
 import dev.sbutler.bitflask.storage.StorageSubmitResults;
 import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
+import dev.sbutler.bitflask.storage.commands.StorageCommandExecutor;
+import dev.sbutler.bitflask.storage.commands.StorageCommandResults;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftLeaderException;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftUnknownLeaderException;
 import io.grpc.protobuf.StatusProto;
@@ -39,10 +43,11 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   private static final RaftMode RAFT_MODE = RaftMode.LEADER;
 
   private final ListeningExecutorService executorService;
+  private final RaftConfiguration raftConfiguration;
   private final RaftLog raftLog;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
   private final RaftEntryConverter raftEntryConverter;
-  private final RaftConfiguration raftConfiguration;
+  private final StorageCommandExecutor storageCommandExecutor;
 
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersNextIndex =
       new ConcurrentHashMap<>();
@@ -60,16 +65,18 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
       ListeningExecutorService executorService,
+      RaftConfiguration raftConfiguration,
       RaftLog raftLog,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager,
       RaftEntryConverter raftEntryConverter,
-      RaftConfiguration raftConfiguration) {
+      StorageCommandExecutor storageCommandExecutor) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
     this.executorService = executorService;
+    this.raftConfiguration = raftConfiguration;
     this.raftLog = raftLog;
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
     this.raftEntryConverter = raftEntryConverter;
-    this.raftConfiguration = raftConfiguration;
+    this.storageCommandExecutor = storageCommandExecutor;
 
     int nextIndex = raftLog.getLastEntryIndex() + 1;
     for (var followerServerId : raftConfiguration.getOtherServersInCluster().keySet()) {
@@ -115,6 +122,17 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
 
   @Override
   public StorageSubmitResults submitCommand(StorageCommandDto storageCommandDto) {
+    if (!storageCommandDto.isPersistable()) {
+      // TODO: propagate results
+      ListenableFuture<StorageCommandResults> ignored =
+          storageCommandExecutor.submitDto(storageCommandDto);
+      return new StorageSubmitResults.Success(immediateFuture("OK"));
+    } else {
+      return replicateCommand(storageCommandDto);
+    }
+  }
+
+  private StorageSubmitResults replicateCommand(StorageCommandDto storageCommandDto) {
     Entry newEntry = raftEntryConverter.convert(storageCommandDto);
     int newEntryIndex = raftLog.appendEntry(newEntry);
     SettableFuture<String> clientSubmitFuture = SettableFuture.create();

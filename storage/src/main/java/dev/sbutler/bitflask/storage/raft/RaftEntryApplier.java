@@ -2,9 +2,7 @@ package dev.sbutler.bitflask.storage.raft;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
-import dev.sbutler.bitflask.storage.commands.StorageCommand;
-import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
-import dev.sbutler.bitflask.storage.commands.StorageCommandFactory;
+import dev.sbutler.bitflask.storage.commands.*;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftException;
 import jakarta.inject.Inject;
 
@@ -16,7 +14,7 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
   private final RaftLog raftLog;
   private final RaftVolatileState raftVolatileState;
   private final RaftEntryConverter raftEntryConverter;
-  private final StorageCommandFactory storageCommandFactory;
+  private final StorageCommandExecutor storageCommandExecutor;
 
   private volatile boolean shouldContinueExecuting = true;
 
@@ -25,11 +23,11 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
       RaftLog raftLog,
       RaftVolatileState raftVolatileState,
       RaftEntryConverter raftEntryConverter,
-      StorageCommandFactory storageCommandFactory) {
+      StorageCommandExecutor storageCommandExecutor) {
     this.raftLog = raftLog;
     this.raftVolatileState = raftVolatileState;
     this.raftEntryConverter = raftEntryConverter;
-    this.storageCommandFactory = storageCommandFactory;
+    this.storageCommandExecutor = storageCommandExecutor;
   }
 
   @Override
@@ -57,8 +55,8 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
         raftVolatileState.setHighestAppliedEntryIndex(nextIndexToApply);
         Entry entry = raftLog.getEntryAtIndex(nextIndexToApply);
         StorageCommandDto dto = raftEntryConverter.reverse().convert(entry);
-        StorageCommand storageCommand = storageCommandFactory.create(dto);
-        storageCommand.execute();
+        // TODO: propagate results
+        StorageCommandResults ignored = storageCommandExecutor.executeDto(dto);
       } catch (Exception e) {
         raftVolatileState.setHighestAppliedEntryIndex(nextIndexToApply - 1);
         logger.atSevere().withCause(e).log(

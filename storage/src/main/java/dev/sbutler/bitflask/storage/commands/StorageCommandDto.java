@@ -11,11 +11,22 @@ package dev.sbutler.bitflask.storage.commands;
  */
 public sealed interface StorageCommandDto {
 
+  /**
+   * Indicates if this DTO represents a command that is results in persistence changes and should be
+   * replicated.
+   */
+  boolean isPersistable();
+
   /** Use when the value mapped by the provided {@code key} should be read. */
   record ReadDto(String key) implements StorageCommandDto {
 
     public ReadDto {
       CommandInputValidator.validateKey(key);
+    }
+
+    @Override
+    public boolean isPersistable() {
+      return false;
     }
   }
 
@@ -29,6 +40,11 @@ public sealed interface StorageCommandDto {
       CommandInputValidator.validateKey(key);
       CommandInputValidator.validateValue(value);
     }
+
+    @Override
+    public boolean isPersistable() {
+      return true;
+    }
   }
 
   /** Use when the provides {@code key}'s mapping should be deleted. */
@@ -36,6 +52,11 @@ public sealed interface StorageCommandDto {
 
     public DeleteDto {
       CommandInputValidator.validateKey(key);
+    }
+
+    @Override
+    public boolean isPersistable() {
+      return true;
     }
   }
 }
