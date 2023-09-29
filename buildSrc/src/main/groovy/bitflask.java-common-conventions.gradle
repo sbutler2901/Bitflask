@@ -14,8 +14,8 @@ repositories {
 }
 
 compileJava {
-    sourceCompatibility = '20'
-    targetCompatibility = '20'
+    sourceCompatibility = '21'
+    targetCompatibility = '21'
 }
 
 def guiceVersion = '7.0.0'
@@ -60,21 +60,14 @@ dependencies {
 
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs.addAll(['--enable-preview'])
-    options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.concurrent'])
 }
 
 tasks.withType(Test).configureEach {
-    // gradle-8.1-rc-2 throws when addAll() used
     jvmArgs += "--enable-preview"
-    jvmArgs += "--add-modules"
-    jvmArgs += "jdk.incubator.concurrent"
 }
 
 tasks.withType(JavaExec).configureEach {
-    // gradle-8.1-rc-2 throws when addAll() used
     jvmArgs += "--enable-preview"
-    jvmArgs += "--add-modules"
-    jvmArgs += "jdk.incubator.concurrent"
 }
 
 // Gradle protobuf plugin

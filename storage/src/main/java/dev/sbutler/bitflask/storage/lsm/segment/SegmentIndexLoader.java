@@ -10,9 +10,8 @@ import jakarta.inject.Inject;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.ThreadFactory;
-import jdk.incubator.concurrent.StructuredTaskScope;
 
 /** Handles loading all {@link SegmentIndex} in the storage directory. */
 final class SegmentIndexLoader {
@@ -40,7 +39,8 @@ final class SegmentIndexLoader {
             Path.of(storageConfig.getStoreDirectoryPath()), INDEX_GLOB);
 
     try (var scope = new StructuredTaskScope.ShutdownOnFailure("load-index-scope", threadFactory)) {
-      List<Future<SegmentIndex>> indexFutures = new ArrayList<>(indexPaths.size());
+      List<StructuredTaskScope.Subtask<SegmentIndex>> indexFutures =
+          new ArrayList<>(indexPaths.size());
       for (var path : indexPaths) {
         indexFutures.add(scope.fork(() -> segmentIndexFactory.loadFromPath(path)));
       }
@@ -53,7 +53,7 @@ final class SegmentIndexLoader {
         throw new StorageLoadException("Interrupted while loading SegmentIndexes", e);
       }
 
-      return indexFutures.stream().map(Future::resultNow).collect(toImmutableList());
+      return indexFutures.stream().map(StructuredTaskScope.Subtask::get).collect(toImmutableList());
     }
   }
 

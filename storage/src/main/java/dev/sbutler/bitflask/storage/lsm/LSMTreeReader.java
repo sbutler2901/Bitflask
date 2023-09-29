@@ -9,9 +9,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Future;
+import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.ThreadFactory;
-import jdk.incubator.concurrent.StructuredTaskScope;
 
 /** Handles read related tasks for the {@link LSMTree}. */
 final class LSMTreeReader {
@@ -53,7 +52,7 @@ final class LSMTreeReader {
       SegmentLevelMultiMap segmentLevelMultiMap, String key, int segmentLevel) {
     try (var scope =
         new StructuredTaskScope.ShutdownOnFailure("read-segments-scope", threadFactory)) {
-      List<Future<Optional<Entry>>> segmentReadFutures = new ArrayList<>();
+      List<StructuredTaskScope.Subtask<Optional<Entry>>> segmentReadFutures = new ArrayList<>();
       for (Segment segment : segmentLevelMultiMap.getSegmentsInLevel(segmentLevel)) {
         if (segment.mightContain(key)) {
           segmentReadFutures.add(scope.fork(() -> segment.readEntry(key)));
@@ -72,7 +71,7 @@ final class LSMTreeReader {
       }
 
       return segmentReadFutures.stream()
-          .map(Future::resultNow)
+          .map(StructuredTaskScope.Subtask::get)
           .flatMap(Optional::stream)
           .min(Comparator.comparingLong(Entry::creationEpochSeconds));
     }

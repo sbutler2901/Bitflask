@@ -16,7 +16,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.ThreadFactory;
 import javax.annotation.Nonnull;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,8 +38,8 @@ public class FilesHelperTest {
     // Arrange
     ImmutableList<Path> paths = ImmutableList.of(Path.of("path0.txt"), Path.of("path1.txt"));
     // Act
-    ImmutableMap<Path, Future<FileTime>> pathFileTimeFutures = filesHelper.getLastModifiedTimeOfFiles(
-        paths);
+    ImmutableMap<Path, StructuredTaskScope.Subtask<FileTime>> pathFileTimeFutures =
+        filesHelper.getLastModifiedTimeOfFiles(paths);
     // Assert
     assertThat(pathFileTimeFutures).hasSize(2);
     assertThat(pathFileTimeFutures).containsKey(paths.get(0));
@@ -53,7 +53,7 @@ public class FilesHelperTest {
     ImmutableSet<StandardOpenOption> openOptions =
         ImmutableSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE);
     // Act
-    ImmutableMap<Path, Future<FileChannel>> pathFileTimeFutures =
+    ImmutableMap<Path, StructuredTaskScope.Subtask<FileChannel>> pathFileTimeFutures =
         filesHelper.openFileChannels(paths, openOptions);
     // Assert
     assertThat(pathFileTimeFutures).hasSize(2);
@@ -83,8 +83,7 @@ public class FilesHelperTest {
 
     @Override
     public Thread newThread(@Nonnull Runnable r) {
-      return new Thread(() -> {
-      });
+      return new Thread(() -> {});
     }
   }
 }

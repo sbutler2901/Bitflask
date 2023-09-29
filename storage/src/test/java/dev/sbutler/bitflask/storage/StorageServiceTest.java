@@ -12,17 +12,14 @@ class StorageServiceTest {
 
   private final LSMTree lsmTree = mock(LSMTree.class);
   private final StorageLoader storageLoader = mock(StorageLoader.class);
-  private final RaftLoader raftLoader = mock(RaftLoader.class);
 
-  private final StorageService storageService =
-      new StorageService(lsmTree, storageLoader, raftLoader);
+  private final StorageService storageService = new StorageService(lsmTree, storageLoader);
 
   @Test
   public void startUp() {
     storageService.startUp();
 
     verify(storageLoader, times(1)).load();
-    verify(raftLoader, times(1)).load();
   }
 
   @Test

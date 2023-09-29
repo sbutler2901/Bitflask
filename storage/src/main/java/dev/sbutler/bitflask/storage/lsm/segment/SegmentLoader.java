@@ -11,9 +11,8 @@ import jakarta.inject.Inject;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.ThreadFactory;
-import jdk.incubator.concurrent.StructuredTaskScope;
 
 /** Handles loading all {@link Segment}s in the storage directory. */
 final class SegmentLoader {
@@ -44,7 +43,8 @@ final class SegmentLoader {
 
     try (var scope =
         new StructuredTaskScope.ShutdownOnFailure("load-segment-scope", threadFactory)) {
-      List<Future<Segment>> segmentFutures = new ArrayList<>(segmentPaths.size());
+      List<StructuredTaskScope.Subtask<Segment>> segmentFutures =
+          new ArrayList<>(segmentPaths.size());
       for (var path : segmentPaths) {
         segmentFutures.add(
             scope.fork(() -> segmentFactory.loadFromPath(path, segmentNumberToIndexMap)));
@@ -58,7 +58,9 @@ final class SegmentLoader {
         throw new StorageLoadException("Interrupted while loading Segments", e);
       }
 
-      return segmentFutures.stream().map(Future::resultNow).collect(toImmutableList());
+      return segmentFutures.stream()
+          .map(StructuredTaskScope.Subtask::get)
+          .collect(toImmutableList());
     }
   }
 

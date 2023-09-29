@@ -11,9 +11,8 @@ import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMapLoader;
 import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.Future;
+import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.ThreadFactory;
-import jdk.incubator.concurrent.StructuredTaskScope;
 
 /** Handles loading all necessary resources at start up for the {@link LSMTree}. */
 public final class LSMTreeLoader {
@@ -59,8 +58,9 @@ public final class LSMTreeLoader {
 
   private void loadMemtableAndSegmentLevelMultiMap() {
     try (var scope = new StructuredTaskScope.ShutdownOnFailure("lsm-tree-loader", threadFactory)) {
-      Future<Memtable> memtable = scope.fork(memtableLoader::load);
-      Future<SegmentLevelMultiMap> multiMap = scope.fork(segmentLevelMultiMapLoader::load);
+      StructuredTaskScope.Subtask<Memtable> memtable = scope.fork(memtableLoader::load);
+      StructuredTaskScope.Subtask<SegmentLevelMultiMap> multiMap =
+          scope.fork(segmentLevelMultiMapLoader::load);
 
       try {
         scope.join();
@@ -71,7 +71,7 @@ public final class LSMTreeLoader {
       }
 
       try (var ignored = stateManager.getAndLockCurrentState()) {
-        stateManager.updateCurrentState(memtable.resultNow(), multiMap.resultNow());
+        stateManager.updateCurrentState(memtable.get(), multiMap.get());
       }
     }
   }

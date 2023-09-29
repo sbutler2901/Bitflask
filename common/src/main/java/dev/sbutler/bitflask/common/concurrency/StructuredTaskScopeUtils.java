@@ -7,9 +7,7 @@ import com.google.mu.util.stream.BiStream;
 import java.util.concurrent.Future;
 import java.util.concurrent.Future.State;
 
-/**
- * Utility methods for code that utilizes {@link jdk.incubator.concurrent.StructuredTaskScope}
- */
+/** Utility methods for code that utilizes {@link java.util.concurrent.StructuredTaskScope}. */
 public class StructuredTaskScopeUtils {
 
   public static <K, V> ImmutableMap<K, V> getSuccessfulFutureValuesFromMap(
@@ -28,7 +26,5 @@ public class StructuredTaskScopeUtils {
         .collect(toImmutableMap());
   }
 
-  private StructuredTaskScopeUtils() {
-
-  }
+  private StructuredTaskScopeUtils() {}
 }

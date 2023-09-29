@@ -30,40 +30,44 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ServerTest {
 
   @Test
-  void main() {
+  void main_execution() {
     try (MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class);
-        MockedStatic<ServerSocketChannel> serverSocketChannelMockedStatic = mockStatic(
-            ServerSocketChannel.class)) {
+        MockedStatic<ServerSocketChannel> serverSocketChannelMockedStatic =
+            mockStatic(ServerSocketChannel.class)) {
       AtomicReference<ServiceManager> serviceManagerAtomicReference = new AtomicReference<>();
       ArgumentCaptor<Listener> listenerArgumentCaptor = ArgumentCaptor.forClass(Listener.class);
-      try (MockedConstruction<ServiceManager> serviceManagerMockedConstruction = mockConstruction(
-          ServiceManager.class, (mock, context) -> {
-            when(mock.stopAsync()).thenReturn(mock);
-            serviceManagerAtomicReference.set(mock);
-          })) {
+      try (MockedConstruction<ServiceManager> serviceManagerMockedConstruction =
+          mockConstruction(
+              ServiceManager.class,
+              (mock, context) -> {
+                when(mock.stopAsync()).thenReturn(mock);
+                serviceManagerAtomicReference.set(mock);
+              })) {
         // Arrange
         Injector injector = mock(Injector.class);
-        guiceMockedStatic.when(() -> Guice.createInjector(any(ImmutableSet.class)))
+        guiceMockedStatic
+            .when(() -> Guice.createInjector(any(ImmutableSet.class)))
             .thenReturn(injector);
 
         ServerSocketChannel serverSocketChannel = mock(ServerSocketChannel.class);
-        serverSocketChannelMockedStatic.when(ServerSocketChannel::open)
+        serverSocketChannelMockedStatic
+            .when(ServerSocketChannel::open)
             .thenReturn(serverSocketChannel);
 
         StorageService storageService = mock(StorageService.class);
         NetworkService.Factory networkServiceFactory = mock(NetworkService.Factory.class);
         when(injector.getInstance(NetworkService.Factory.class)).thenReturn(networkServiceFactory);
         when(injector.getInstance(StorageService.class)).thenReturn(storageService);
-        when(injector.getInstance(ListeningExecutorService.class)).thenReturn(
-            mock(ListeningExecutorService.class));
+        when(injector.getInstance(ListeningExecutorService.class))
+            .thenReturn(mock(ListeningExecutorService.class));
 
         NetworkService networkService = mock(NetworkService.class);
         when(networkServiceFactory.create(serverSocketChannel)).thenReturn(networkService);
 
         // Act
         Server.main(new String[0]);
-        verify(serviceManagerAtomicReference.get()).addListener(listenerArgumentCaptor.capture(),
-            any());
+        verify(serviceManagerAtomicReference.get())
+            .addListener(listenerArgumentCaptor.capture(), any());
         Listener serviceManagerListener = listenerArgumentCaptor.getValue();
         serviceManagerListener.healthy();
         serviceManagerListener.stopped();
