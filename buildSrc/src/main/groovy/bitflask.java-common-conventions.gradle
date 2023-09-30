@@ -19,18 +19,21 @@ compileJava {
 }
 
 def guiceVersion = '7.0.0'
+def guavaVersion = '32.1.2'
 def mugVersion = '6.6'
 def floggerVersion = '0.7.4'
-def grpcVersion = '1.57.1'
-def protobufVersion = '3.23.4'
+def grpcVersion = '1.58.0'
+def protobufVersion = '3.24.3'
 def junitVersion = '5.10.0'
+def truthVersion = '1.1.5'
+def mockitoVersion = '5.5.0'
 
 dependencies {
     implementation "com.google.inject:guice:${guiceVersion}"
     implementation "com.google.inject.extensions:guice-assistedinject:${guiceVersion}"
     implementation "com.google.inject.extensions:guice-throwingproviders:${guiceVersion}"
 
-    implementation 'com.google.guava:guava:32.1.2-jre'
+    implementation "com.google.guava:guava:${guavaVersion}-jre"
 
     implementation "com.google.mug:mug:${mugVersion}"
     implementation "com.google.mug:mug-guava:${mugVersion}"
@@ -46,16 +49,16 @@ dependencies {
 
     // Testing
 
-    testImplementation 'com.google.guava:guava-testlib:32.1.2-jre'
+    testImplementation "com.google.guava:guava-testlib:${guavaVersion}-jre"
 
-    testImplementation "com.google.truth:truth:1.1.5"
-    testImplementation 'com.google.truth.extensions:truth-java8-extension:1.1.5'
+    testImplementation "com.google.truth:truth:${truthVersion}"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
 
     testImplementation "io.grpc:grpc-testing:${grpcVersion}"
 
     testImplementation(platform("org.junit:junit-bom:${junitVersion}"))
     testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
-    testImplementation 'org.mockito:mockito-junit-jupiter:5.4.0'
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
 }
 
 tasks.withType(JavaCompile).configureEach {
