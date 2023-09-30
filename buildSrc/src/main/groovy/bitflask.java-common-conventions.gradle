@@ -16,6 +16,9 @@ repositories {
 compileJava {
     sourceCompatibility = '21'
     targetCompatibility = '21'
+
+    // picocli
+    options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 }
 
 def guiceVersion = '7.0.0'
@@ -24,6 +27,7 @@ def mugVersion = '6.6'
 def floggerVersion = '0.7.4'
 def grpcVersion = '1.58.0'
 def protobufVersion = '3.24.3'
+def picocliVersion = '4.7.5'
 def junitVersion = '5.10.0'
 def truthVersion = '1.1.5'
 def mockitoVersion = '5.5.0'
@@ -40,6 +44,9 @@ dependencies {
 
     implementation "com.google.flogger:flogger:${floggerVersion}"
     implementation "com.google.flogger:flogger-log4j2-backend:${floggerVersion}"
+
+    implementation "info.picocli:picocli:${picocliVersion}"
+    annotationProcessor "info.picocli:picocli-codegen:${picocliVersion}"
 
     runtimeOnly "io.grpc:grpc-netty-shaded:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"

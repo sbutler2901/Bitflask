@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nonnull;
+import picocli.CommandLine;
 
 /**
  * Bootstraps the server initializing all necessary services, starting them, and handling shutdown
@@ -40,10 +41,16 @@ public final class Server {
 
   private Server() {}
 
+  private static class ServerCliOptions {
+    @CommandLine.Option(names = "-thisServerId", description = "the id of this server")
+    String thisServerId;
+  }
+
   public static void main(String[] args) {
     try {
       executionStarted = Instant.now();
-      BitflaskConfig bitflaskConfig = ConfigLoader.load();
+
+      BitflaskConfig bitflaskConfig = getBitflaskConfig(args);
       printConfigInfo(bitflaskConfig);
 
       ServerSocketChannel serverSocketChannel =
@@ -76,6 +83,13 @@ public final class Server {
     } catch (Exception e) {
       logger.atSevere().withCause(e).log("Server catastrophic failure");
     }
+  }
+
+  private static BitflaskConfig getBitflaskConfig(String[] args) throws IOException {
+    ServerCliOptions serverCliOptions = CommandLine.populateCommand(new ServerCliOptions(), args);
+    ConfigLoader.ConfigLoaderOptions loaderOptions =
+        new ConfigLoader.ConfigLoaderOptions(serverCliOptions.thisServerId);
+    return ConfigLoader.load(loaderOptions);
   }
 
   private static ServerSocketChannel createServerSocketChannel(ServerConfig serverConfig)
