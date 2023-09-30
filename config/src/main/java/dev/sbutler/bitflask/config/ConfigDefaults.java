@@ -11,32 +11,32 @@ public final class ConfigDefaults {
   static final String CONFIG_FILE_NAME = "bitflask_config.json";
   static final Path CONFIG_OUTPUT_FILE = CONFIG_OUTPUT_DIR.resolve(CONFIG_FILE_NAME);
 
+  public static ServerConfig.ServerInfo SERVER_INFO_0 =
+      ServerConfig.ServerInfo.newBuilder()
+          .setServerId("server_0")
+          .setHost("localhost")
+          .setRespPort(9090)
+          .setRaftPort(9080)
+          .build();
+  public static ServerConfig.ServerInfo SERVER_INFO_1 =
+      ServerConfig.ServerInfo.newBuilder()
+          .setServerId("server_1")
+          .setHost("localhost")
+          .setRespPort(9091)
+          .setRaftPort(9081)
+          .build();
+  public static ServerConfig.ServerInfo SERVER_INFO_2 =
+      ServerConfig.ServerInfo.newBuilder()
+          .setServerId("server_2")
+          .setHost("localhost")
+          .setRespPort(9092)
+          .setRaftPort(9082)
+          .build();
+
   public static ServerConfig SERVER_CONFIG =
       ServerConfig.newBuilder()
-          .setThisServerId("server_0")
-          .addAllBitflaskServers(
-              ImmutableList.of(
-                  // TODO: Update so that the defaults doesn't supersede loaded configs.
-                  //                  ServerConfig.ServerInfo.newBuilder()
-                  //                      .setServerId("server_0")
-                  //                      .setHost("localhost")
-                  //                      .setRespPort(9090)
-                  //                      .setRaftPort(9080)
-                  //                      .build(),
-                  //                  ServerConfig.ServerInfo.newBuilder()
-                  //                      .setServerId("server_1")
-                  //                      .setHost("localhost")
-                  //                      .setRespPort(9091)
-                  //                      .setRaftPort(9081)
-                  //                      .build(),
-                  //                  ServerConfig.ServerInfo.newBuilder()
-                  //                      .setServerId("server_2")
-                  //                      .setHost("localhost")
-                  //                      .setRespPort(9092)
-                  //                      .setRaftPort(9082)
-                  //                      .build()
-                  ))
-          .build();
+          .addAllBitflaskServers(ImmutableList.of(SERVER_INFO_0, SERVER_INFO_1, SERVER_INFO_2))
+          .buildPartial();
 
   public static StorageConfig STORAGE_CONFIG =
       StorageConfig.newBuilder()
