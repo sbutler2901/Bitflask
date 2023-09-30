@@ -152,7 +152,8 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
       if (request.getLeaderCommit() > raftVolatileState.getHighestCommittedEntryIndex()) {
         raftVolatileState.setHighestCommittedEntryIndex(
             Math.min(
-                request.getLeaderCommit(), raftPersistentState.getRaftLog().getLastEntryIndex()));
+                request.getLeaderCommit(),
+                raftPersistentState.getRaftLog().getLastLogEntryDetails().index()));
       }
     }
     response.setSuccess(appendSuccessful);

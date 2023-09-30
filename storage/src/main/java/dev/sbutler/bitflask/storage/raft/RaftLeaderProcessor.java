@@ -75,7 +75,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     this.raftEntryConverter = raftEntryConverter;
     this.storageCommandExecutor = storageCommandExecutor;
 
-    int nextIndex = raftLog.getLastEntryIndex() + 1;
+    int nextIndex = raftLog.getLastLogEntryDetails().index() + 1;
     for (var followerServerId : raftConfiguration.getOtherServersInCluster().keySet()) {
       followersNextIndex.put(followerServerId, new AtomicInteger(nextIndex));
       followersMatchIndex.put(followerServerId, new AtomicInteger(0));
@@ -144,7 +144,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
 
   /** Appends {@link Entry}s to any follower who is behind the log; otherwise, a heartbeat. */
   private void appendEntriesOrSendHeartbeat() {
-    int lastEntryIndex = raftLog.getLastEntryIndex();
+    int lastEntryIndex = raftLog.getLastLogEntryDetails().index();
     raftConfiguration
         .getOtherServersInCluster()
         .keySet()
@@ -175,7 +175,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   private void checkAndUpdateCommitIndex() {
     int currentCommitIndex = raftVolatileState.getHighestCommittedEntryIndex();
     int currentTerm = raftPersistentState.getCurrentTerm();
-    for (int possibleCommitIndex = raftLog.getLastEntryIndex();
+    for (int possibleCommitIndex = raftLog.getLastLogEntryDetails().index();
         possibleCommitIndex > currentCommitIndex
             && raftLog.getEntryAtIndex(possibleCommitIndex).getTerm() == currentTerm;
         possibleCommitIndex--) {

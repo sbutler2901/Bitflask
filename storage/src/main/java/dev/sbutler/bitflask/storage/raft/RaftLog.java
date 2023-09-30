@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -13,8 +14,16 @@ final class RaftLog {
 
   private final List<Entry> entries = new CopyOnWriteArrayList<>();
 
+  private static final Entry EMPTY_LOG_ENTRY_SENTINEL =
+      Entry.newBuilder()
+          .setTerm(0)
+          .setEmptyCommand(Entry.EmptyCommand.getDefaultInstance())
+          .build();
+
   @Inject
-  RaftLog() {}
+  RaftLog() {
+    entries.add(EMPTY_LOG_ENTRY_SENTINEL);
+  }
 
   /**
    * Inserts the provided {@link Entry}s after the entry provided by {@code prevLogEntryDetails}.
@@ -67,53 +76,58 @@ final class RaftLog {
   /** Appends the entry to the log returning its index. */
   int appendEntry(Entry newEntry) {
     entries.add(newEntry);
-    // Externally, first index is 1
-    return entries.lastIndexOf(newEntry) + 1;
+    return getLastEntryIndex();
   }
 
-  int getLastEntryIndex() {
-    // Externally, first index is 1
+  /** The index of the last added {@link Entry}. */
+  private int getLastEntryIndex() {
+    return entries.size() - 1;
+  }
+
+  /** The index to be used for the next {@link Entry} added. */
+  private int getNextEntryIndex() {
     return entries.size();
   }
 
   /** Returns {@link LogEntryDetails} about the last entry in the log. */
   LogEntryDetails getLastLogEntryDetails() {
-    if (entries.isEmpty()) {
-      return LogEntryDetails.EMPTY_LOG_SENTINEL;
-    }
-    int lastEntryIndex = getLastEntryIndex();
-    Entry lastEntry = entries.get(lastEntryIndex);
-    return new LogEntryDetails(lastEntry.getTerm(), lastEntryIndex);
+    return getLogEntryDetails(getLastEntryIndex());
   }
 
   /** Returns {@link LogEntryDetails} for the {@link Entry} at the provided index. */
   LogEntryDetails getLogEntryDetails(int entryIndex) {
-    return new LogEntryDetails(entries.get(entryIndex).getTerm(), entryIndex);
+    Preconditions.checkArgument(entryIndex >= 0, "Negative entryIndex provided.");
+    return new LogEntryDetails(getEntryAtIndex(entryIndex).getTerm(), entryIndex);
   }
 
   /** Returns the {@link Entry} at the provided index. */
-  Entry getEntryAtIndex(int index) {
-    // Externally, first index is 1
-    return entries.get(index - 1);
+  Entry getEntryAtIndex(int entryIndex) {
+    Preconditions.checkArgument(entryIndex >= 0, "Negative entryIndex provided.");
+    return entries.get(entryIndex);
   }
 
   /** Returns a list of {@link Entry}s starting from the provided index to the last one. */
   ImmutableList<Entry> getEntriesFromIndex(int fromIndex) {
-    return ImmutableList.copyOf(entries.subList(fromIndex, entries.size()));
+    Preconditions.checkArgument(fromIndex >= 0, "Negative entryIndex provided.");
+    return ImmutableList.copyOf(entries.subList(fromIndex, getNextEntryIndex()));
   }
 
   /**
    * Returns a list of {@link Entry}s from {@code fromIndex} (inclusive) to {@code toIndex}
    * (exclusive).
+   *
+   * <p>If {@code fromIndex} and greater than the length of the log, all entries up to and including
+   * the last will be provided.
    */
   ImmutableList<Entry> getEntriesFromIndex(int fromIndex, int toIndex) {
-    return ImmutableList.copyOf(entries.subList(fromIndex, toIndex));
+    Preconditions.checkArgument(fromIndex >= 0, "Negative entryIndex provided.");
+    return ImmutableList.copyOf(entries.subList(fromIndex, Math.min(toIndex, getNextEntryIndex())));
   }
 
   /** Simplified details about an {@link Entry} in the {@link RaftLog}. */
   record LogEntryDetails(int term, int index) implements Comparable<LogEntryDetails> {
 
-    static LogEntryDetails EMPTY_LOG_SENTINEL = new LogEntryDetails(-1, -1);
+    static LogEntryDetails EMPTY_LOG_SENTINEL = new LogEntryDetails(0, 0);
 
     static boolean isEmptyLogSentinel(LogEntryDetails logEntryDetails) {
       return EMPTY_LOG_SENTINEL.equals(logEntryDetails);
