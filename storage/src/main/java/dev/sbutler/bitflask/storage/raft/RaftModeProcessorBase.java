@@ -92,28 +92,34 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     checkRequestRpcTerm(request.getTerm());
     beforeProcessRequestVoteRequest(request);
 
-    RequestVoteResponse.Builder response =
-        RequestVoteResponse.newBuilder().setTerm(raftPersistentState.getCurrentTerm());
     RaftServerId candidateRaftServerId = new RaftServerId(request.getCandidateId());
-
-    if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
-      response.setVoteGranted(false);
-    } else if (raftPersistentState.getVotedForCandidateId().isPresent()
-        && !raftPersistentState.getVotedForCandidateId().get().equals(candidateRaftServerId)) {
-      response.setVoteGranted(false);
-    } else {
-      LogEntryDetails candidateLastLogEntryDetails =
-          new LogEntryDetails(request.getLastLogTerm(), request.getLastLogIndex());
-      LogEntryDetails localLastLogEntryDetails =
-          raftPersistentState.getRaftLog().getLastLogEntryDetails();
-      boolean grantVote = candidateLastLogEntryDetails.compareTo(localLastLogEntryDetails) >= 0;
-      if (grantVote) {
-        raftPersistentState.setVotedForCandidateId(candidateRaftServerId);
-      }
-      response.setVoteGranted(grantVote);
+    boolean shouldGrantVote = shouldGrantVote(request, candidateRaftServerId);
+    if (shouldGrantVote) {
+      raftPersistentState.setVotedForCandidateId(candidateRaftServerId);
     }
+    return RequestVoteResponse.newBuilder()
+        .setTerm(raftPersistentState.getCurrentTerm())
+        .setVoteGranted(shouldGrantVote)
+        .build();
+  }
 
-    return response.build();
+  private boolean shouldGrantVote(RequestVoteRequest request, RaftServerId candidateRaftServerId) {
+    if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
+      return false;
+    }
+    return raftPersistentState
+            .getVotedForCandidateId()
+            .map(vote -> vote.equals(candidateRaftServerId))
+            .orElse(true)
+        && candidateLogUpToDate(request);
+  }
+
+  private boolean candidateLogUpToDate(RequestVoteRequest request) {
+    LogEntryDetails candidateLastLogEntryDetails =
+        new LogEntryDetails(request.getLastLogTerm(), request.getLastLogIndex());
+    LogEntryDetails localLastLogEntryDetails =
+        raftPersistentState.getRaftLog().getLastLogEntryDetails();
+    return candidateLastLogEntryDetails.compareTo(localLastLogEntryDetails) >= 0;
   }
 
   /**
