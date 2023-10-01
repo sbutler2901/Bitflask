@@ -9,6 +9,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.raft.RaftGrpc.RaftFutureStub;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
@@ -122,7 +123,8 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
     @Override
     public void onFailure(Throwable t) {
       responsesReceived.getAndIncrement();
-      logger.atWarning().withCause(t).log("Error received from [%s]", calledRaftServerId);
+      logger.atWarning().withCause(t).atMostEvery(10, TimeUnit.SECONDS).log(
+          "Error received from [%s]", calledRaftServerId);
     }
   }
 }

@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 
@@ -290,11 +291,11 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
             responseFutures.remove(responseFuture);
             lastEntryIndex.ifPresentOrElse(
                 index ->
-                    logger.atSevere().withCause(t).log(
+                    logger.atSevere().withCause(t).atMostEvery(10, TimeUnit.SECONDS).log(
                         "AppendEntries request to Follower [%s] with lastEntryIndex [%d] and followerNextIndex [%d] failed",
                         raftServerId, index, followerNextIndex),
                 () ->
-                    logger.atSevere().withCause(t).log(
+                    logger.atSevere().withCause(t).atMostEvery(10, TimeUnit.SECONDS).log(
                         "Heartbeat AppendEntries request to Follower [%s] with followerNextIndex [%d] failed",
                         raftServerId, followerNextIndex));
           }
