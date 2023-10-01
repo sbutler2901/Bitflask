@@ -1,7 +1,9 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.raft.RaftLog.LogEntryDetails;
 import jakarta.inject.Provider;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Base implementation of {@link RaftModeProcessor} providing some generic implementations of
@@ -9,6 +11,8 @@ import jakarta.inject.Provider;
  */
 abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     permits RaftFollowerProcessor, RaftCandidateProcessor, RaftLeaderProcessor {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   protected final Provider<RaftModeManager> raftModeManager;
   protected final RaftPersistentState raftPersistentState;
@@ -44,7 +48,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   protected void beforeUpdateTermAndTransitionToFollower(int rpcTerm) {}
 
   /**
-   * Updates the term and, if this caller is not an instance of {@link RaftLeaderProcessor},
+   * Updates the term and, if this caller is not an instance of {@link RaftFollowerProcessor},
    * converts to a follower.
    *
    * <p>Subclasses should call this method if {@link
@@ -54,7 +58,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   protected final void updateTermAndTransitionToFollower(int rpcTerm) {
     beforeUpdateTermAndTransitionToFollower(rpcTerm);
     raftPersistentState.setCurrentTermAndResetVote(rpcTerm);
-    if (!this.getClass().isInstance(RaftFollowerProcessor.class)) {
+    if (!RaftMode.FOLLOWER.equals(this.getRaftMode())) {
       raftModeManager.get().transitionToFollowerState();
     }
   }
@@ -69,12 +73,6 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     return false;
   }
 
-  private void checkRequestRpcTerm(int rpcTerm) {
-    if (shouldUpdateTermAndTransitionToFollower(rpcTerm)) {
-      updateTermAndTransitionToFollower(rpcTerm);
-    }
-  }
-
   /**
    * A subclass can override this method to run custom logic before a {@link RequestVoteRequest} is
    * processed and {@link RequestVoteResponse} sent.
@@ -85,21 +83,47 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   protected void beforeProcessRequestVoteRequest(RequestVoteRequest request) {}
 
   /**
+   * A subclass can override this method to run custom logic before a {@link RequestVoteResponse} is
+   * sent.
+   */
+  protected void afterProcessRequestVoteRequest(RequestVoteRequest request, boolean voteGranted) {}
+
+  /**
    * Handles processing a {@link RequestVoteRequest} and responding with a {@link
    * RequestVoteResponse}.
    */
   public final RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
-    checkRequestRpcTerm(request.getTerm());
+    if (shouldUpdateTermAndTransitionToFollower(request.getTerm())) {
+      // TODO: handle response when before transitioning
+      logger.atInfo().log(
+          "Transitioning to follower from [%s] after receiving RequestVote with term [%d] and local term [%d].",
+          this.getRaftMode(), request.getTerm(), raftPersistentState.getCurrentTerm());
+      updateTermAndTransitionToFollower(request.getTerm());
+    }
     beforeProcessRequestVoteRequest(request);
 
     RaftServerId candidateRaftServerId = new RaftServerId(request.getCandidateId());
-    boolean shouldGrantVote = shouldGrantVote(request, candidateRaftServerId);
-    if (shouldGrantVote) {
+    boolean voteGranted = shouldGrantVote(request, candidateRaftServerId);
+    if (voteGranted) {
       raftPersistentState.setVotedForCandidateId(candidateRaftServerId);
+      logger.atInfo().log(
+          "Granting vote for server [%s] with term [%d] and local term [%d] in mode [%s].",
+          candidateRaftServerId.id(),
+          request.getTerm(),
+          raftPersistentState.getCurrentTerm(),
+          this.getRaftMode());
+    } else {
+      logger.atInfo().log(
+          "Deny vote for server [%s] with term [%d] and local term [%d] in mode [%s].",
+          candidateRaftServerId.id(),
+          request.getTerm(),
+          raftPersistentState.getCurrentTerm(),
+          this.getRaftMode());
     }
+    afterProcessRequestVoteRequest(request, voteGranted);
     return RequestVoteResponse.newBuilder()
         .setTerm(raftPersistentState.getCurrentTerm())
-        .setVoteGranted(shouldGrantVote)
+        .setVoteGranted(voteGranted)
         .build();
   }
 
@@ -132,11 +156,24 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {}
 
   /**
+   * A subclass can override this method to run custom logic before a {@link AppendEntriesResponse}
+   * sent.
+   */
+  protected void afterProcessAppendEntriesRequest(
+      AppendEntriesRequest request, boolean appendSuccessful) {}
+
+  /**
    * Handles processing a {@link AppendEntriesRequest} and responding with a {@link
    * AppendEntriesResponse}.
    */
   public final AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
-    checkRequestRpcTerm(request.getTerm());
+    if (shouldUpdateTermAndTransitionToFollower(request.getTerm())) {
+      // TODO: handle response when before transitioning
+      logger.atInfo().log(
+          "Transitioning to follower from [%s] after receiving AppendEntries with term [%d] and local term [%d].",
+          this.getRaftMode(), request.getTerm(), raftPersistentState.getCurrentTerm());
+      updateTermAndTransitionToFollower(request.getTerm());
+    }
     beforeProcessAppendEntriesRequest(request);
 
     AppendEntriesResponse.Builder response =
@@ -144,6 +181,9 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
 
     if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
       response.setSuccess(false);
+      logger.atInfo().atMostEvery(5, TimeUnit.SECONDS).log(
+          "Fail AppendEntries request with term [%d] and local term [%d].",
+          request.getTerm(), raftPersistentState.getCurrentTerm());
       return response.build();
     }
 
@@ -161,8 +201,12 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
                 request.getLeaderCommit(),
                 raftPersistentState.getRaftLog().getLastLogEntryDetails().index()));
       }
+      logger.atFine().log("Successfully appended entries.");
+    } else {
+      logger.atWarning().log("Failed to append entries.");
     }
     response.setSuccess(appendSuccessful);
+    afterProcessAppendEntriesRequest(request, appendSuccessful);
     return response.build();
   }
 }
