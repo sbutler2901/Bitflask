@@ -53,7 +53,7 @@ final class RaftElectionTimer {
     if (currentTimerTask != null) {
       currentTimerTask.cancel();
       currentTimerTask = null;
-      logger.atFine().log("Canceled election timer.");
+      logger.atInfo().log("Canceled election timer.");
     }
   }
 }

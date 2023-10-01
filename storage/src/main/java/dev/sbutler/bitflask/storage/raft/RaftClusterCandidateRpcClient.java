@@ -10,10 +10,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.raft.RaftGrpc.RaftFutureStub;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 
 /**
@@ -49,6 +47,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
    */
   void requestVotes(RequestVoteRequest request) {
     largestTermSeen.set(request.getTerm());
+    logger.atInfo().log("Requesting votes for term [%d].", request.getTerm());
     ImmutableList.Builder<ListenableFuture<RequestVoteResponse>> responseFuturesBuilder =
         ImmutableList.builder();
     for (var stubsEntry : otherServerStubs.entrySet()) {
@@ -76,10 +75,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
   /** Cancels all pending requests, if any. */
   @Override
   public void close() {
-    responseFutures.stream()
-        .filter(Predicate.not(Future::isDone))
-        .filter(Predicate.not(Future::isCancelled))
-        .forEach(future -> future.cancel(true));
+    responseFutures.forEach(future -> future.cancel(true));
   }
 
   /**

@@ -264,12 +264,12 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
               lastEntryIndex.ifPresentOrElse(
                   index ->
                       logger.atInfo().log(
-                          "Follower [%s] did not accept AppendEntries request with lastEntryIndex [%d] and followerNextIndex [%d].",
-                          raftServerId, index, followerNextIndex),
+                          "Follower [%s] did not accept AppendEntries request with term [%d], lastEntryIndex [%d], and followerNextIndex [%d].",
+                          raftServerId.id(), request.getTerm(), index, followerNextIndex),
                   () ->
                       logger.atInfo().log(
-                          "Follower [%s] did not accept heartbeat AppendEntries request with followerNextIndex [%d]",
-                          raftServerId, followerNextIndex));
+                          "Follower [%s] did not accept heartbeat AppendEntries request with term [%d] and followerNextIndex [%d]",
+                          raftServerId.id(), request.getTerm(), followerNextIndex));
               followersNextIndex
                   .get(raftServerId)
                   .getAndUpdate(prev -> Math.min(prev, followerNextIndex - 1));

@@ -82,7 +82,9 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
   private void startNewElection() {
     raftPersistentState.incrementTermAndVoteForSelf();
     int timerDelay = raftElectionTimer.restart();
-    logger.atInfo().log("Started new election with election timer delay of [%dms].", timerDelay);
+    logger.atInfo().log(
+        "Started new election term [%d] with election timer delay [%dms].",
+        raftPersistentState.getCurrentTerm(), timerDelay);
     hasElectionTimeoutOccurred = false;
     try (var candidateRpcClient =
         raftClusterRpcChannelManager.createRaftClusterCandidateRpcClient()) {
@@ -126,7 +128,8 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
         raftModeManager.get().transitionToLeaderState();
       } else if (requestVotesResults.allResponsesReceived()) {
         logger.atInfo().log(
-            "All responses received without verdict. Waiting to start next election.");
+            "All responses for term [%d] received without verdict. Waiting to start next election.",
+            request.getTerm());
         break;
       }
     }
