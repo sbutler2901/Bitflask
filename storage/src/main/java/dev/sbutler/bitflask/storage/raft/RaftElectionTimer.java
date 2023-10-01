@@ -45,7 +45,7 @@ final class RaftElectionTimer {
                 raftTimerInterval.minimumMilliSeconds(),
                 1 + raftTimerInterval.maximumMilliseconds());
     timer.schedule(currentTimerTask, timerDelay);
-    logger.atInfo().log("Restarted election timer with [%d] delay.", timerDelay);
+    logger.atFine().log("Restarted election timer with [%d] delay.", timerDelay);
   }
 
   /** Cancels the current timer without rescheduling. */
@@ -53,7 +53,7 @@ final class RaftElectionTimer {
     if (currentTimerTask != null) {
       currentTimerTask.cancel();
       currentTimerTask = null;
-      logger.atInfo().log("Canceled election timer.");
+      logger.atFine().log("Canceled election timer.");
     }
   }
 }

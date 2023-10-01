@@ -293,11 +293,11 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
                 index ->
                     logger.atSevere().withCause(t).atMostEvery(10, TimeUnit.SECONDS).log(
                         "AppendEntries request to Follower [%s] with lastEntryIndex [%d] and followerNextIndex [%d] failed",
-                        raftServerId, index, followerNextIndex),
+                        raftServerId.id(), index, followerNextIndex),
                 () ->
                     logger.atSevere().withCause(t).atMostEvery(10, TimeUnit.SECONDS).log(
                         "Heartbeat AppendEntries request to Follower [%s] with followerNextIndex [%d] failed",
-                        raftServerId, followerNextIndex));
+                        raftServerId.id(), followerNextIndex));
           }
         },
         executorService);

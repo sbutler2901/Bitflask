@@ -8,10 +8,13 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.raft.RaftGrpc.RaftFutureStub;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 
 /**
  * Utility class for handling rpc calls used by the {@link RaftCandidateProcessor}.
@@ -26,7 +29,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
 
   private final AtomicInteger responsesReceived = new AtomicInteger(0);
   private final AtomicInteger votesReceived = new AtomicInteger(0);
-  private final AtomicInteger largestTermSeen = new AtomicInteger(-1);
+  private final AtomicInteger largestTermSeen = new AtomicInteger(0);
 
   private ImmutableList<ListenableFuture<RequestVoteResponse>> responseFutures = ImmutableList.of();
 
@@ -63,7 +66,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
    */
   RequestVotesResults getCurrentRequestVotesResults() {
     return new RequestVotesResults(
-        responseFutures.size(),
+        otherServerStubs.size(),
         responsesReceived.get(),
         votesReceived.get(),
         largestTermSeen.get());
@@ -83,19 +86,16 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
    * clusters.
    */
   record RequestVotesResults(
-      int numberRequestsSent,
-      int numberResponsesReceived,
-      int numberVotesReceived,
-      int largestTermSeen) {
+      int numOtherServers, int numResponsesReceived, int numVotesReceived, int largestTermSeen) {
 
     boolean allResponsesReceived() {
-      return numberRequestsSent() == numberResponsesReceived();
+      return numOtherServers() == numResponsesReceived();
     }
 
     boolean receivedMajorityVotes() {
       // include vote for self
-      int votesReceived = 1 + numberVotesReceived();
-      double halfRequiredRequests = numberRequestsSent() / 2.0;
+      int votesReceived = 1 + numVotesReceived();
+      double halfRequiredRequests = numOtherServers() / 2.0;
       return votesReceived > halfRequiredRequests;
     }
   }
@@ -121,10 +121,15 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
     }
 
     @Override
-    public void onFailure(Throwable t) {
+    public void onFailure(@Nonnull Throwable t) {
       responsesReceived.getAndIncrement();
-      logger.atWarning().withCause(t).atMostEvery(10, TimeUnit.SECONDS).log(
-          "Error received from [%s]", calledRaftServerId);
+      if (t instanceof StatusRuntimeException e
+          && Status.UNAVAILABLE.getCode().equals(e.getStatus().getCode())) {
+        logger.atWarning().withCause(t).atMostEvery(10, TimeUnit.SECONDS).log(
+            "Server [%s] unavailable", calledRaftServerId.id());
+      } else {
+        logger.atWarning().withCause(t).log("Error received from [%s]", calledRaftServerId);
+      }
     }
   }
 }

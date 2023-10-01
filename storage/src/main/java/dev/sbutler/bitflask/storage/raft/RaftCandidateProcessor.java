@@ -5,6 +5,7 @@ import dev.sbutler.bitflask.storage.raft.RaftClusterCandidateRpcClient.RequestVo
 import dev.sbutler.bitflask.storage.raft.RaftLog.LogEntryDetails;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Handles the {@link RaftMode#CANDIDATE} mode of the Raft server.
@@ -59,7 +60,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
   }
 
   public void handleElectionTimeout() {
-    logger.atInfo().log("Handling election timeout.");
+    logger.atFine().log("Handling election timeout.");
     hasElectionTimeoutOccurred = true;
   }
 
@@ -80,7 +81,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   /** Starts and handles a single election cycle. */
   private void startNewElection() {
-    logger.atInfo().log("Starting new election");
+    logger.atInfo().atMostEvery(5, TimeUnit.SECONDS).log("Starting new election.");
     raftPersistentState.incrementTermAndVoteForSelf();
     raftElectionTimer.restart();
     hasElectionTimeoutOccurred = false;
@@ -116,11 +117,17 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
     while (shouldContinueElections && !hasElectionTimeoutOccurred) {
       RequestVotesResults requestVotesResults = candidateRpcClient.getCurrentRequestVotesResults();
       if (shouldUpdateTermAndTransitionToFollower(requestVotesResults.largestTermSeen())) {
+        logger.atInfo().log(
+            "Found larger term [%d]. Transitioning to Follower.",
+            requestVotesResults.largestTermSeen());
         updateTermAndTransitionToFollower(requestVotesResults.largestTermSeen());
       } else if (requestVotesResults.receivedMajorityVotes()) {
         shouldContinueElections = false;
+        logger.atInfo().log("Received majority of votes. Transitioning to Leader");
         raftModeManager.get().transitionToLeaderState();
       } else if (requestVotesResults.allResponsesReceived()) {
+        logger.atInfo().atMostEvery(5, TimeUnit.SECONDS).log(
+            "All responses received without verdict. Waiting to start next election.");
         break;
       }
     }
