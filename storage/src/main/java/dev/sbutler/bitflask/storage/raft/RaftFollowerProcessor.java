@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.storage.raft;
 import com.google.common.flogger.FluentLogger;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Handles the {@link RaftMode#FOLLOWER} mode of the Raft server.
@@ -42,8 +43,30 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
   }
 
   @Override
+  protected void afterProcessRequestVoteRequest(RequestVoteRequest request, boolean voteGranted) {
+    if (voteGranted) {
+      int timerDelay = raftElectionTimer.restart();
+      logger.atInfo().log(
+          "Restarted election timer with delay of [%dms] after granting vote to [%s] for term [%d]",
+          timerDelay, request.getCandidateId(), request.getTerm());
+    }
+  }
+
+  @Override
   protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {
-    raftElectionTimer.restart();
+    int timerDelay = raftElectionTimer.restart();
+    logger.atInfo().atMostEvery(5, TimeUnit.SECONDS).log(
+        "Restarted election timer with delay of [%dms] after receiving AppendEntries request",
+        timerDelay);
+  }
+
+  @Override
+  protected void afterProcessAppendEntriesRequest(
+      AppendEntriesRequest request, boolean appendSuccessful) {
+    int timerDelay = raftElectionTimer.restart();
+    logger.atInfo().atMostEvery(5, TimeUnit.SECONDS).log(
+        "Restarted election timer with delay of [%dms] after AppendEntries [%s].",
+        timerDelay, appendSuccessful ? "success" : "failed");
   }
 
   @Override
