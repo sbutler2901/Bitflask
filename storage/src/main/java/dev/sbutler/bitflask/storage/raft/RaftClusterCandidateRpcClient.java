@@ -48,6 +48,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
    * RaftClusterCandidateRpcClient#getCurrentRequestVotesResults()};
    */
   void requestVotes(RequestVoteRequest request) {
+    largestTermSeen.set(request.getTerm());
     ImmutableList.Builder<ListenableFuture<RequestVoteResponse>> responseFuturesBuilder =
         ImmutableList.builder();
     for (var stubsEntry : otherServerStubs.entrySet()) {
@@ -111,12 +112,17 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
     @Override
     public void onSuccess(RequestVoteResponse result) {
       responsesReceived.getAndIncrement();
-      largestTermSeen.getAndUpdate(current -> Math.max(current, result.getTerm()));
+      int prevLargestTerm =
+          largestTermSeen.getAndUpdate(current -> Math.max(current, result.getTerm()));
       if (result.getVoteGranted()) {
         votesReceived.getAndIncrement();
-        logger.atInfo().log("Vote granted by [%s]", calledRaftServerId);
+        logger.atInfo().log(
+            "Vote granted by [%s] with term [%d], prevLargestTerm [%d].",
+            calledRaftServerId.id(), result.getTerm(), prevLargestTerm);
       } else {
-        logger.atInfo().log("Voted denied by [%s]", calledRaftServerId);
+        logger.atInfo().log(
+            "Voted denied by [%s] with term [%d], prevLargestTerm [%d].",
+            calledRaftServerId.id(), result.getTerm(), prevLargestTerm);
       }
     }
 
@@ -128,7 +134,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
         logger.atWarning().withCause(t).atMostEvery(10, TimeUnit.SECONDS).log(
             "Server [%s] unavailable", calledRaftServerId.id());
       } else {
-        logger.atWarning().withCause(t).log("Error received from [%s]", calledRaftServerId);
+        logger.atWarning().withCause(t).log("Error received from [%s]", calledRaftServerId.id());
       }
     }
   }

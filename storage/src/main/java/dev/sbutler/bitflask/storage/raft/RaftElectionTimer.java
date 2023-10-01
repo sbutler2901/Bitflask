@@ -27,8 +27,8 @@ final class RaftElectionTimer {
     this.raftModeManager = raftModeManager;
   }
 
-  /** Cancels the current timer and starts a new one. */
-  void restart() {
+  /** Cancels the current timer and starts a new one returning the timer's delay. */
+  int restart() {
     cancel();
 
     currentTimerTask =
@@ -45,7 +45,7 @@ final class RaftElectionTimer {
                 raftTimerInterval.minimumMilliSeconds(),
                 1 + raftTimerInterval.maximumMilliseconds());
     timer.schedule(currentTimerTask, timerDelay);
-    logger.atFine().log("Restarted election timer with [%d] delay.", timerDelay);
+    return timerDelay;
   }
 
   /** Cancels the current timer without rescheduling. */

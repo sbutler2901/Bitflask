@@ -5,7 +5,6 @@ import dev.sbutler.bitflask.storage.raft.RaftClusterCandidateRpcClient.RequestVo
 import dev.sbutler.bitflask.storage.raft.RaftLog.LogEntryDetails;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Handles the {@link RaftMode#CANDIDATE} mode of the Raft server.
@@ -60,7 +59,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
   }
 
   public void handleElectionTimeout() {
-    logger.atFine().log("Handling election timeout.");
+    logger.atInfo().log("Handling election timeout.");
     hasElectionTimeoutOccurred = true;
   }
 
@@ -81,9 +80,9 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   /** Starts and handles a single election cycle. */
   private void startNewElection() {
-    logger.atInfo().atMostEvery(5, TimeUnit.SECONDS).log("Starting new election.");
     raftPersistentState.incrementTermAndVoteForSelf();
-    raftElectionTimer.restart();
+    int timerDelay = raftElectionTimer.restart();
+    logger.atInfo().log("Started new election with election timer delay of [%dms].", timerDelay);
     hasElectionTimeoutOccurred = false;
     try (var candidateRpcClient =
         raftClusterRpcChannelManager.createRaftClusterCandidateRpcClient()) {
@@ -126,7 +125,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
         logger.atInfo().log("Received majority of votes. Transitioning to Leader");
         raftModeManager.get().transitionToLeaderState();
       } else if (requestVotesResults.allResponsesReceived()) {
-        logger.atInfo().atMostEvery(5, TimeUnit.SECONDS).log(
+        logger.atInfo().log(
             "All responses received without verdict. Waiting to start next election.");
         break;
       }

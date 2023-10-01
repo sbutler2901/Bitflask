@@ -35,7 +35,10 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
 
   @Override
   protected void beforeProcessRequestVoteRequest(RequestVoteRequest request) {
-    raftElectionTimer.restart();
+    int timerDelay = raftElectionTimer.restart();
+    logger.atInfo().log(
+        "Restarted election timer with delay of [%dms] after receiving RequestVote RPC.",
+        timerDelay);
   }
 
   @Override
@@ -51,7 +54,8 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
 
   @Override
   public void run() {
-    raftElectionTimer.restart();
+    int timerDelay = raftElectionTimer.restart();
+    logger.atInfo().log("Restarted election timer with delay of [%dms] at start up.", timerDelay);
     // Nothing for follower to do besides process incoming RPCs
   }
 }
