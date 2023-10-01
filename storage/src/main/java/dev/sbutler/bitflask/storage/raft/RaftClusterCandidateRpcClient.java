@@ -107,7 +107,6 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
 
     @Override
     public void onSuccess(RequestVoteResponse result) {
-      responsesReceived.getAndIncrement();
       int prevLargestTerm =
           largestTermSeen.getAndUpdate(current -> Math.max(current, result.getTerm()));
       if (result.getVoteGranted()) {
@@ -120,11 +119,11 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
             "Voted denied by [%s] with term [%d], prevLargestTerm [%d].",
             calledRaftServerId.id(), result.getTerm(), prevLargestTerm);
       }
+      responsesReceived.getAndIncrement();
     }
 
     @Override
     public void onFailure(@Nonnull Throwable t) {
-      responsesReceived.getAndIncrement();
       if (t instanceof StatusRuntimeException e
           && Status.UNAVAILABLE.getCode().equals(e.getStatus().getCode())) {
         logger.atWarning().withCause(t).atMostEvery(10, TimeUnit.SECONDS).log(
@@ -132,6 +131,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
       } else {
         logger.atWarning().withCause(t).log("Error received from [%s]", calledRaftServerId.id());
       }
+      responsesReceived.getAndIncrement();
     }
   }
 }
