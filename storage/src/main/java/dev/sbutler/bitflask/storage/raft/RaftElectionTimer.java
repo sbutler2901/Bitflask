@@ -7,6 +7,7 @@ import jakarta.inject.Singleton;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 /** The Raft timer used for managing election timeouts. */
 @Singleton
@@ -53,7 +54,7 @@ final class RaftElectionTimer {
     if (currentTimerTask != null) {
       currentTimerTask.cancel();
       currentTimerTask = null;
-      logger.atInfo().log("Canceled election timer.");
+      logger.atFine().atMostEvery(1, TimeUnit.SECONDS).log("Canceled election timer.");
     }
   }
 }

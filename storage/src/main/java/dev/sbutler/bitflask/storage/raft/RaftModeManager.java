@@ -196,6 +196,7 @@ final class RaftModeManager extends AbstractService
         raftVolatileState.setLeaderId(raftConfiguration.thisRaftServerId());
       }
     } finally {
+      logger.atInfo().log("Completed transition to [%s].", getCurrentRaftMode());
       transitionLock.unlock();
     }
   }
