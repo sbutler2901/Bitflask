@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.raft;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.flogger.FluentLogger;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.List;
@@ -11,6 +12,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 // TODO: implement persisting log
 @Singleton
 final class RaftLog {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final List<Entry> entries = new CopyOnWriteArrayList<>();
 
@@ -37,6 +40,9 @@ final class RaftLog {
    */
   boolean appendEntriesAfterPrevEntry(LogEntryDetails prevLogEntryDetails, List<Entry> newEntries) {
     if (!logHasMatchingEntry(prevLogEntryDetails)) {
+      logger.atWarning().log(
+          "Log does not have matching entry with term [%d] and index [%d].",
+          prevLogEntryDetails.term(), prevLogEntryDetails.index());
       return false;
     }
 
@@ -63,9 +69,6 @@ final class RaftLog {
 
   /** Returns true if the log has an {@link Entry} matching the provided {@link LogEntryDetails}. */
   private boolean logHasMatchingEntry(LogEntryDetails logEntryDetails) {
-    if (LogEntryDetails.isEmptyLogSentinel(logEntryDetails)) {
-      return entries.isEmpty();
-    }
     if (logEntryDetails.index() >= entries.size()) {
       return false;
     }
@@ -126,12 +129,6 @@ final class RaftLog {
 
   /** Simplified details about an {@link Entry} in the {@link RaftLog}. */
   record LogEntryDetails(int term, int index) implements Comparable<LogEntryDetails> {
-
-    static LogEntryDetails EMPTY_LOG_SENTINEL = new LogEntryDetails(0, 0);
-
-    static boolean isEmptyLogSentinel(LogEntryDetails logEntryDetails) {
-      return EMPTY_LOG_SENTINEL.equals(logEntryDetails);
-    }
 
     @Override
     public int compareTo(LogEntryDetails provided) {
