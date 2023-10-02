@@ -11,7 +11,6 @@ import jakarta.inject.Singleton;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.Nonnull;
 
@@ -26,12 +25,10 @@ final class RaftModeManager extends AbstractService
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final RaftConfiguration raftConfiguration;
+  private final ListeningExecutorService executorService;
   private final RaftModeProcessor.Factory raftModeProcessorFactory;
   private final RaftElectionTimer raftElectionTimer;
   private final RaftVolatileState raftVolatileState;
-
-  private final ListeningExecutorService executorService =
-      MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
   private final ReentrantLock transitionLock = new ReentrantLock();
 
   private volatile RaftModeProcessor raftModeProcessor;
@@ -40,10 +37,12 @@ final class RaftModeManager extends AbstractService
   @Inject
   RaftModeManager(
       RaftConfiguration raftConfiguration,
+      @RaftModeManagerListeningExecutorService ListeningExecutorService executorService,
       RaftModeProcessor.Factory raftModeProcessorFactory,
       RaftElectionTimer raftElectionTimer,
       RaftVolatileState raftVolatileState) {
     this.raftConfiguration = raftConfiguration;
+    this.executorService = executorService;
     this.raftModeProcessorFactory = raftModeProcessorFactory;
     this.raftElectionTimer = raftElectionTimer;
     this.raftVolatileState = raftVolatileState;
