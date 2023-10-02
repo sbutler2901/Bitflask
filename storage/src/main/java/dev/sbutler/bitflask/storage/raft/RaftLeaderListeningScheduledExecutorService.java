@@ -9,9 +9,10 @@ import java.lang.annotation.Target;
 
 /**
  * Guice binding annotation for the {@link
- * com.google.common.util.concurrent.ListeningExecutorService} used by the {@link RaftModeManager}.
+ * com.google.common.util.concurrent.ListeningScheduledExecutorService} used by the {@link
+ * RaftLeaderProcessor}.
  */
 @Qualifier
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-@interface RaftModeManagerListeningExecutorService {}
+@interface RaftLeaderListeningScheduledExecutorService {}

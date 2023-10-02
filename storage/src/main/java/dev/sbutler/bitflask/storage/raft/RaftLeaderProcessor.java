@@ -57,7 +57,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
-      ScheduledExecutorService executorService,
+      @RaftLeaderListeningScheduledExecutorService ScheduledExecutorService executorService,
       RaftConfiguration raftConfiguration,
       RaftLog raftLog,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager,

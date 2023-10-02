@@ -11,6 +11,7 @@ import dev.sbutler.bitflask.common.concurrency.VirtualThreadFactory;
 import dev.sbutler.bitflask.common.guice.RootModule;
 import jakarta.inject.Singleton;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 /** Module for using the Raft Consensus protocol. */
@@ -37,5 +38,14 @@ public class RaftModule extends RootModule {
   public ListeningExecutorService provideModeManagerExecutorService() {
     ThreadFactory threadFactory = new VirtualThreadFactory("raft-mode-manager-vir-");
     return MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor(threadFactory));
+  }
+
+  @Provides
+  @Singleton
+  @RaftLeaderListeningScheduledExecutorService
+  ScheduledExecutorService providedScheduledExecutorService() {
+    ThreadFactory threadFactory = new VirtualThreadFactory("raft-leader-vir-");
+    return MoreExecutors.listeningDecorator(
+        Executors.newSingleThreadScheduledExecutor(threadFactory));
   }
 }
