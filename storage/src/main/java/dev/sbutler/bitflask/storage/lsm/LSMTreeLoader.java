@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.lsm;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import dev.sbutler.bitflask.common.concurrency.VirtualThreadFactory;
 import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.exceptions.StorageLoadException;
 import dev.sbutler.bitflask.storage.lsm.memtable.Memtable;
@@ -32,14 +33,13 @@ public final class LSMTreeLoader {
       StorageConfig storageConfig,
       @LSMTreeListeningScheduledExecutorService
           ListeningScheduledExecutorService scheduledExecutorService,
-      ThreadFactory threadFactory,
       LSMTreeStateManager stateManager,
       LSMTreeCompactor compactor,
       MemtableLoader memtableLoader,
       SegmentLevelMultiMapLoader segmentLevelMultiMapLoader) {
     this.storageConfig = storageConfig;
     this.scheduledExecutorService = scheduledExecutorService;
-    this.threadFactory = threadFactory;
+    this.threadFactory = new VirtualThreadFactory("lsm-tree-loader-");
     this.stateManager = stateManager;
     this.compactor = compactor;
     this.memtableLoader = memtableLoader;

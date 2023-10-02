@@ -13,7 +13,7 @@ public final class VirtualThreadConcurrencyModule extends AbstractModule {
   @Provides
   @Singleton
   ListeningExecutorService provideExecutorService() {
-    ThreadFactory threadFactory = new VirtualThreadFactory("default-vir-");
+    ThreadFactory threadFactory = new VirtualThreadFactory("default-executor-vir-");
     return MoreExecutors.listeningDecorator(Executors.newThreadPerTaskExecutor(threadFactory));
   }
 
