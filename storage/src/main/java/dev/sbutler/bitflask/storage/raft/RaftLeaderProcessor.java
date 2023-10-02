@@ -14,6 +14,7 @@ import dev.sbutler.bitflask.storage.commands.StorageCommandExecutor;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftLeaderException;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftUnknownLeaderException;
+import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
@@ -256,10 +257,22 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     AppendEntriesResponse response;
     try {
       response = submission.responseFuture().get();
-    } catch (Exception e) {
+    } catch (InterruptedException e) {
       logger.atSevere().withCause(e).atMostEvery(10, TimeUnit.SECONDS).log(
-          "AppendEntries request to Follower [%s] with lastEntryIndex [%d] and followerNextIndex [%d] failed.",
-          submission.serverId().id(), submission.lastEntryIndex(), submission.followerNextIndex());
+          "Interrupted while sending request to follower [%s].", submission.serverId().id());
+      return raftPersistentState.getCurrentTerm();
+    } catch (ExecutionException e) {
+      if (e.getCause() instanceof StatusRuntimeException statusException
+          && io.grpc.Status.UNAVAILABLE.getCode().equals(statusException.getStatus().getCode())) {
+        logger.atWarning().atMostEvery(5, TimeUnit.SECONDS).log(
+            "Server [%s] unavailable for AppendEntries RPC.", submission.serverId().id());
+      } else {
+        logger.atSevere().withCause(e).atMostEvery(10, TimeUnit.SECONDS).log(
+            "AppendEntries request to Follower [%s] with lastEntryIndex [%d] and followerNextIndex [%d] failed.",
+            submission.serverId().id(),
+            submission.lastEntryIndex(),
+            submission.followerNextIndex());
+      }
       return raftPersistentState.getCurrentTerm();
     }
 
