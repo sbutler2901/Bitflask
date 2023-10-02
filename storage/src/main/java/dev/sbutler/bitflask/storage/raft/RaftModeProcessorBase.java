@@ -159,8 +159,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
    * A subclass can override this method to run custom logic before a {@link AppendEntriesResponse}
    * sent.
    */
-  protected void afterProcessAppendEntriesRequest(
-      AppendEntriesRequest request, boolean appendSuccessful) {}
+  protected void afterProcessAppendEntriesRequest(AppendEntriesRequest request) {}
 
   /**
    * Handles processing a {@link AppendEntriesRequest} and responding with a {@link
@@ -180,11 +179,18 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
         AppendEntriesResponse.newBuilder().setTerm(raftPersistentState.getCurrentTerm());
 
     if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
-      response.setSuccess(false);
       logger.atInfo().atMostEvery(5, TimeUnit.SECONDS).log(
           "Fail AppendEntries request with term [%d] and local term [%d].",
           request.getTerm(), raftPersistentState.getCurrentTerm());
-      return response.build();
+      afterProcessAppendEntriesRequest(request);
+      return response.setSuccess(false).build();
+    }
+
+    if (request.getEntriesList().isEmpty()) {
+      logger.atInfo().atMostEvery(10, TimeUnit.SECONDS).log(
+          "Successfully processed heartbeat from server [%s].", request.getLeaderId());
+      afterProcessAppendEntriesRequest(request);
+      return response.setSuccess(true).build();
     }
 
     boolean appendSuccessful =
@@ -201,12 +207,11 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
                 request.getLeaderCommit(),
                 raftPersistentState.getRaftLog().getLastLogEntryDetails().index()));
       }
-      logger.atFine().log("Successfully appended entries.");
+      logger.atInfo().log("Successfully appended [%d] entries.", request.getEntriesCount());
     } else {
-      logger.atWarning().log("Failed to append entries.");
+      logger.atWarning().log("Failed to append [%d] entries.", request.getEntriesCount());
     }
-    response.setSuccess(appendSuccessful);
-    afterProcessAppendEntriesRequest(request, appendSuccessful);
-    return response.build();
+    afterProcessAppendEntriesRequest(request);
+    return response.setSuccess(appendSuccessful).build();
   }
 }

@@ -34,6 +34,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private static final RaftMode RAFT_MODE = RaftMode.LEADER;
+  private static final double APPEND_DELAY_RATIO = 0.5;
   private static final double REQUEST_TIMEOUT_RATIO = 0.75;
 
   private final ScheduledExecutorService executorService;
@@ -49,6 +50,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   private final ConcurrentMap<RaftServerId, AtomicInteger> followersMatchIndex =
       new ConcurrentHashMap<>();
 
+  private final Duration appendDelayDuration;
   private final Duration requestTimeoutDuration;
 
   private volatile boolean shouldContinueExecuting = true;
@@ -74,11 +76,11 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     this.raftEntryConverter = raftEntryConverter;
     this.storageCommandExecutor = storageCommandExecutor;
 
+    int electionTimerMinimumMillis = raftConfiguration.raftTimerInterval().minimumMilliSeconds();
+    appendDelayDuration =
+        Duration.ofMillis(Math.round(electionTimerMinimumMillis * APPEND_DELAY_RATIO));
     requestTimeoutDuration =
-        Duration.ofMillis(
-            Math.round(
-                raftConfiguration.raftTimerInterval().minimumMilliSeconds()
-                    * REQUEST_TIMEOUT_RATIO));
+        Duration.ofMillis(Math.round(electionTimerMinimumMillis * REQUEST_TIMEOUT_RATIO));
 
     int nextIndex = raftLog.getLastLogEntryDetails().index() + 1;
     for (var followerServerId : raftConfiguration.getOtherServersInCluster().keySet()) {
@@ -153,9 +155,19 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       if (shouldContinueExecuting) {
         checkAndUpdateCommitIndex();
       }
-      // TODO: prevent flooding network
+      // Prevent flooding network;
+      sleepBeforeNextAppend();
     }
     cleanupBeforeTerminating();
+  }
+
+  private void sleepBeforeNextAppend() {
+    try {
+      Thread.sleep(appendDelayDuration);
+    } catch (InterruptedException e) {
+      logger.atWarning().log("Interrupted while sleeping before next appending. Stopping leader.");
+      shouldContinueExecuting = false;
+    }
   }
 
   /** Sends an {@link AppendEntriesRequest} with no {@link Entry}s to all followers. */
@@ -282,7 +294,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       followersNextIndex
           .get(submission.serverId())
           .getAndUpdate(prev -> Math.min(prev, submission.followerNextIndex() - 1));
-      logger.atInfo().atMostEvery(1, TimeUnit.SECONDS).log(
+      logger.atFine().log(
           "Follower [%s] did not accept AppendEntries request with term [%d], lastEntryIndex [%d], and followerNextIndex [%d].",
           submission.serverId().id(),
           submission.request().getTerm(),
@@ -295,7 +307,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       followersMatchIndex
           .get(submission.serverId())
           .getAndUpdate(prev -> Math.max(prev, submission.lastEntryIndex()));
-      logger.atInfo().atMostEvery(5, TimeUnit.SECONDS).log(
+      logger.atFine().log(
           "Follower [%s] accepted lastEntryIndex [%d] with prevLogIndex [%d].",
           submission.serverId().id(), submission.lastEntryIndex(), submission.followerNextIndex());
     }

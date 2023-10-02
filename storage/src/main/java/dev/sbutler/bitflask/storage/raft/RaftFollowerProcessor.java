@@ -61,12 +61,11 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
   }
 
   @Override
-  protected void afterProcessAppendEntriesRequest(
-      AppendEntriesRequest request, boolean appendSuccessful) {
+  protected void afterProcessAppendEntriesRequest(AppendEntriesRequest request) {
     int timerDelay = raftElectionTimer.restart();
     logger.atInfo().atMostEvery(10, TimeUnit.SECONDS).log(
-        "Restarted election timer with delay of [%dms] after AppendEntries [%s].",
-        timerDelay, appendSuccessful ? "success" : "failed");
+        "Restarted election timer with delay of [%dms] after processing AppendEntries request.",
+        timerDelay);
   }
 
   @Override
