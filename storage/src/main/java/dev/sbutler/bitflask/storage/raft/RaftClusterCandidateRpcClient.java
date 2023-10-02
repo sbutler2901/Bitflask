@@ -126,7 +126,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
     public void onFailure(@Nonnull Throwable t) {
       if (t instanceof StatusRuntimeException e
           && Status.UNAVAILABLE.getCode().equals(e.getStatus().getCode())) {
-        logger.atWarning().withCause(t).atMostEvery(10, TimeUnit.SECONDS).log(
+        logger.atWarning().atMostEvery(5, TimeUnit.SECONDS).log(
             "Server [%s] unavailable", calledRaftServerId.id());
       } else {
         logger.atWarning().withCause(t).log("Error received from [%s]", calledRaftServerId.id());
