@@ -134,4 +134,9 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
       }
     }
   }
+
+  @Override
+  protected FluentLogger getLogger() {
+    return logger;
+  }
 }

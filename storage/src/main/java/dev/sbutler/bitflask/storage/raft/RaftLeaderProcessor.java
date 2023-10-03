@@ -352,4 +352,9 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     raftSubmissionManager.completeAllSubmissionsWithFailure(
         new RaftLeaderException("Another leader was discovered"));
   }
+
+  @Override
+  protected FluentLogger getLogger() {
+    return logger;
+  }
 }

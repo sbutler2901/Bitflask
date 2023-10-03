@@ -80,4 +80,9 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
     logger.atInfo().log("Restarted election timer with delay of [%dms] at start up.", timerDelay);
     // Nothing for follower to do besides process incoming RPCs
   }
+
+  @Override
+  protected FluentLogger getLogger() {
+    return logger;
+  }
 }
