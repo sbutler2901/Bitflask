@@ -30,7 +30,7 @@ public class RaftModule extends RootModule {
     return ImmutableSet.of(
         injector.getInstance(RaftService.class),
         injector.getInstance(RaftModeManager.class),
-        injector.getInstance(RaftClusterRpcChannelManager.class),
+        injector.getInstance(RaftRpcChannelManager.class),
         injector.getInstance(RaftEntryApplier.class));
   }
 

@@ -20,7 +20,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   private final RaftConfiguration raftConfiguration;
   private final RaftElectionTimer raftElectionTimer;
-  private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
+  private final RaftRpcChannelManager raftRpcChannelManager;
 
   private volatile boolean shouldContinueElections = true;
   private volatile boolean hasElectionTimeoutOccurred = false;
@@ -32,11 +32,11 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
       RaftElectionTimer raftElectionTimer,
-      RaftClusterRpcChannelManager raftClusterRpcChannelManager) {
+      RaftRpcChannelManager raftRpcChannelManager) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
     this.raftConfiguration = raftConfiguration;
     this.raftElectionTimer = raftElectionTimer;
-    this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
+    this.raftRpcChannelManager = raftRpcChannelManager;
   }
 
   @Override
@@ -86,7 +86,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
         "Started new election term [%d] with election timer delay [%dms].",
         raftPersistentState.getCurrentTerm(), timerDelay);
     hasElectionTimeoutOccurred = false;
-    try (var rpcClient = raftClusterRpcChannelManager.createRaftCandidateRpcClient()) {
+    try (var rpcClient = raftRpcChannelManager.createRaftCandidateRpcClient()) {
       sendRequestVotesAndWait(rpcClient);
     }
   }

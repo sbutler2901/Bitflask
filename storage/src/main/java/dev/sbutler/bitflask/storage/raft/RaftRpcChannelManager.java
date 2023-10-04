@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
  * raft cluster.
  */
 @Singleton
-final class RaftClusterRpcChannelManager extends AbstractIdleService {
+final class RaftRpcChannelManager extends AbstractIdleService {
 
   private final RaftConfiguration raftConfiguration;
   private final RaftLeaderRpcClient.Factory leaderRpcClientFactory;
@@ -25,7 +25,7 @@ final class RaftClusterRpcChannelManager extends AbstractIdleService {
   private ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs;
 
   @Inject
-  RaftClusterRpcChannelManager(
+  RaftRpcChannelManager(
       RaftConfiguration raftConfiguration,
       RaftLeaderRpcClient.Factory leaderRpcClientFactory,
       RaftCandidateRpcClient.Factory candidateRpcClientFactory) {
