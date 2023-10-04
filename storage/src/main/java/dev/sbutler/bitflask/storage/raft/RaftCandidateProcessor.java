@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.raft.RaftClusterCandidateRpcClient.RequestVotesResults;
+import dev.sbutler.bitflask.storage.raft.RaftCandidateRpcClient.RequestVotesResults;
 import dev.sbutler.bitflask.storage.raft.RaftLog.LogEntryDetails;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
@@ -104,7 +104,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
    *   <li>An election timeout has occurred.
    *   <li>The candidate is halted.
    */
-  private void sendRequestVotesAndWait(RaftClusterCandidateRpcClient candidateRpcClient) {
+  private void sendRequestVotesAndWait(RaftCandidateRpcClient candidateRpcClient) {
     LogEntryDetails lastLogEntryDetails = raftPersistentState.getRaftLog().getLastLogEntryDetails();
     RequestVoteRequest request =
         RequestVoteRequest.newBuilder()

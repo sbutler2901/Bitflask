@@ -210,7 +210,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     ImmutableList<Entry> entries = raftLog.getEntriesFromIndex(followerNextIndex, lastEntryIndex);
     AppendEntriesRequest request =
         createBaseAppendEntriesRequest(followerNextIndex - 1).addAllEntries(entries).build();
-    RaftClusterLeaderRpcClient leaderRpcClient =
+    RaftLeaderRpcClient leaderRpcClient =
         raftClusterRpcChannelManager.createRaftClusterLeaderRpcClient();
     ListenableFuture<AppendEntriesResponse> responseFuture =
         Futures.withTimeout(

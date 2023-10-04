@@ -6,13 +6,13 @@ import com.google.common.util.concurrent.ListenableFuture;
 import dev.sbutler.bitflask.storage.raft.RaftGrpc.RaftFutureStub;
 
 /** Utility class for handling rpc calls used by the {@link RaftLeaderProcessor}. */
-final class RaftClusterLeaderRpcClient {
+final class RaftLeaderRpcClient {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs;
 
-  RaftClusterLeaderRpcClient(ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs) {
+  RaftLeaderRpcClient(ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs) {
     this.otherServerStubs = otherServerStubs;
   }
 

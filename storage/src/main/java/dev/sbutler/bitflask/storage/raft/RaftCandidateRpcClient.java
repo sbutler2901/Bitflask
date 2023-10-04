@@ -19,7 +19,8 @@ import javax.annotation.Nonnull;
  *
  * <p>Note: this class should only be used for a single election cycle and used in a try/with.
  */
-final class RaftClusterCandidateRpcClient implements AutoCloseable {
+final class RaftCandidateRpcClient implements AutoCloseable {
+
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
@@ -31,7 +32,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
 
   private ImmutableList<ListenableFuture<RequestVoteResponse>> responseFutures = ImmutableList.of();
 
-  RaftClusterCandidateRpcClient(
+  RaftCandidateRpcClient(
       ListeningExecutorService executorService,
       ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs) {
     this.executorService = executorService;
@@ -43,7 +44,7 @@ final class RaftClusterCandidateRpcClient implements AutoCloseable {
    * Raft cluster.
    *
    * <p>The results of these calls can be polled by calling {@link
-   * RaftClusterCandidateRpcClient#getCurrentRequestVotesResults()};
+   * RaftCandidateRpcClient#getCurrentRequestVotesResults()};
    */
   void requestVotes(RequestVoteRequest request) {
     largestTermSeen.set(request.getTerm());
