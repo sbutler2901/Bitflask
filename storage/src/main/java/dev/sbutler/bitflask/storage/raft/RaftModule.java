@@ -21,6 +21,7 @@ public class RaftModule extends RootModule {
   protected void configure() {
     bind(RaftConfiguration.class).toProvider(RaftConfigurationProvider.class);
     install(new FactoryModuleBuilder().build(RaftModeProcessor.Factory.class));
+    install(new FactoryModuleBuilder().build(RaftLeaderRpcClient.Factory.class));
     install(new FactoryModuleBuilder().build(RaftCandidateRpcClient.Factory.class));
   }
 
