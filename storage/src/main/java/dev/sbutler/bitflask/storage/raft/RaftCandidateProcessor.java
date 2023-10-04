@@ -86,9 +86,8 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
         "Started new election term [%d] with election timer delay [%dms].",
         raftPersistentState.getCurrentTerm(), timerDelay);
     hasElectionTimeoutOccurred = false;
-    try (var candidateRpcClient =
-        raftClusterRpcChannelManager.createRaftClusterCandidateRpcClient()) {
-      sendRequestVotesAndWait(candidateRpcClient);
+    try (var rpcClient = raftClusterRpcChannelManager.createRaftCandidateRpcClient()) {
+      sendRequestVotesAndWait(rpcClient);
     }
   }
 
@@ -104,7 +103,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
    *   <li>An election timeout has occurred.
    *   <li>The candidate is halted.
    */
-  private void sendRequestVotesAndWait(RaftCandidateRpcClient candidateRpcClient) {
+  private void sendRequestVotesAndWait(RaftCandidateRpcClient rpcClient) {
     LogEntryDetails lastLogEntryDetails = raftPersistentState.getRaftLog().getLastLogEntryDetails();
     RequestVoteRequest request =
         RequestVoteRequest.newBuilder()
@@ -113,10 +112,10 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
             .setLastLogIndex(lastLogEntryDetails.index())
             .setLastLogTerm(lastLogEntryDetails.term())
             .build();
-    candidateRpcClient.requestVotes(request);
+    rpcClient.requestVotes(request);
 
     while (shouldContinueElections && !hasElectionTimeoutOccurred) {
-      RequestVotesResults requestVotesResults = candidateRpcClient.getCurrentRequestVotesResults();
+      RequestVotesResults requestVotesResults = rpcClient.getCurrentRequestVotesResults();
       if (shouldUpdateTermAndTransitionToFollower(requestVotesResults.largestTermSeen())) {
         logger.atInfo().log(
             "Found larger term [%d]. Transitioning to Follower.",

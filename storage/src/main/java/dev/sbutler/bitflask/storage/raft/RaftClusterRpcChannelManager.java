@@ -2,7 +2,6 @@ package dev.sbutler.bitflask.storage.raft;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AbstractIdleService;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.storage.raft.RaftGrpc.RaftFutureStub;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
@@ -19,16 +18,17 @@ import java.util.concurrent.TimeUnit;
 final class RaftClusterRpcChannelManager extends AbstractIdleService {
 
   private final RaftConfiguration raftConfiguration;
-  private final ListeningExecutorService executorService;
+  private final RaftCandidateRpcClient.Factory candidateRpcClientFactory;
 
   private ImmutableMap<RaftServerId, ManagedChannel> otherServerChannels;
   private ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs;
 
   @Inject
   RaftClusterRpcChannelManager(
-      RaftConfiguration raftConfiguration, ListeningExecutorService executorService) {
+      RaftConfiguration raftConfiguration,
+      RaftCandidateRpcClient.Factory candidateRpcClientFactory) {
     this.raftConfiguration = raftConfiguration;
-    this.executorService = executorService;
+    this.candidateRpcClientFactory = candidateRpcClientFactory;
   }
 
   @Override
@@ -63,8 +63,8 @@ final class RaftClusterRpcChannelManager extends AbstractIdleService {
     }
   }
 
-  RaftCandidateRpcClient createRaftClusterCandidateRpcClient() {
-    return new RaftCandidateRpcClient(executorService, otherServerStubs);
+  RaftCandidateRpcClient createRaftCandidateRpcClient() {
+    return candidateRpcClientFactory.create(otherServerStubs);
   }
 
   RaftLeaderRpcClient createRaftClusterLeaderRpcClient() {

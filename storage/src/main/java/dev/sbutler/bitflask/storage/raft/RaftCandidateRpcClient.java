@@ -7,9 +7,11 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.raft.RaftGrpc.RaftFutureStub;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import jakarta.inject.Inject;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
@@ -32,11 +34,16 @@ final class RaftCandidateRpcClient implements AutoCloseable {
 
   private ImmutableList<ListenableFuture<RequestVoteResponse>> responseFutures = ImmutableList.of();
 
+  @Inject
   RaftCandidateRpcClient(
       ListeningExecutorService executorService,
-      ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs) {
+      @Assisted ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs) {
     this.executorService = executorService;
     this.otherServerStubs = otherServerStubs;
+  }
+
+  interface Factory {
+    RaftCandidateRpcClient create(ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs);
   }
 
   /**
