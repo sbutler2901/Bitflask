@@ -39,8 +39,8 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   private final ScheduledExecutorService executorService;
   private final RaftConfiguration raftConfiguration;
   private final RaftLeaderState raftLeaderState;
+  private final RaftLeaderRpcClient rpcClient;
   private final RaftLog raftLog;
-  private final RaftRpcChannelManager raftRpcChannelManager;
   private final RaftSubmissionManager raftSubmissionManager;
   private final RaftEntryConverter raftEntryConverter;
   private final StorageCommandExecutor storageCommandExecutor;
@@ -56,10 +56,10 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
       @RaftLeaderListeningScheduledExecutorService ScheduledExecutorService executorService,
+      RaftLeaderRpcClient.Factory rpcClientFactory,
       RaftConfiguration raftConfiguration,
       RaftLeaderState raftLeaderState,
       RaftLog raftLog,
-      RaftRpcChannelManager raftRpcChannelManager,
       RaftSubmissionManager raftSubmissionManager,
       RaftEntryConverter raftEntryConverter,
       StorageCommandExecutor storageCommandExecutor) {
@@ -67,8 +67,8 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     this.executorService = executorService;
     this.raftConfiguration = raftConfiguration;
     this.raftLeaderState = raftLeaderState;
+    this.rpcClient = rpcClientFactory.create(raftLeaderState);
     this.raftLog = raftLog;
-    this.raftRpcChannelManager = raftRpcChannelManager;
     this.raftSubmissionManager = raftSubmissionManager;
     this.raftEntryConverter = raftEntryConverter;
     this.storageCommandExecutor = storageCommandExecutor;
@@ -201,12 +201,9 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     ImmutableList<Entry> entries = raftLog.getEntriesFromIndex(followerNextIndex, lastEntryIndex);
     AppendEntriesRequest request =
         createBaseAppendEntriesRequest(followerNextIndex - 1).addAllEntries(entries).build();
-    RaftLeaderRpcClient leaderRpcClient = raftRpcChannelManager.createRaftClusterLeaderRpcClient();
     ListenableFuture<AppendEntriesResponse> responseFuture =
         Futures.withTimeout(
-            leaderRpcClient.appendEntries(serverId, request),
-            requestTimeoutDuration,
-            executorService);
+            rpcClient.appendEntries(serverId, request), requestTimeoutDuration, executorService);
     return new AppendEntriesSubmission(
         serverId, followerNextIndex, lastEntryIndex, request, responseFuture);
   }

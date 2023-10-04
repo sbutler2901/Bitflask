@@ -7,31 +7,27 @@ import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.raft.RaftGrpc.RaftFutureStub;
 import jakarta.inject.Inject;
 
-/** Utility class for handling rpc calls used by the {@link RaftLeaderProcessor}. */
+/**
+ * Utility class for handling rpc calls for the {@link RaftLeaderProcessor}.
+ *
+ * <p>An instances should be created with each new RaftLeaderProcessor.
+ */
 final class RaftLeaderRpcClient {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private final RaftLeaderState raftLeaderState;
   private final ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs;
 
   @Inject
-  RaftLeaderRpcClient(@Assisted ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs) {
-    this.otherServerStubs = otherServerStubs;
+  RaftLeaderRpcClient(
+      RaftRpcChannelManager rpcChannelManager, @Assisted RaftLeaderState raftLeaderState) {
+    this.otherServerStubs = rpcChannelManager.getOtherServerStubs();
+    this.raftLeaderState = raftLeaderState;
   }
 
   interface Factory {
-    RaftLeaderRpcClient create(ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs);
-  }
-
-  ImmutableMap<RaftServerId, ListenableFuture<AppendEntriesResponse>> appendEntries(
-      AppendEntriesRequest request) {
-    ImmutableMap.Builder<RaftServerId, ListenableFuture<AppendEntriesResponse>> futuresMap =
-        ImmutableMap.builder();
-    for (var raftServerId : otherServerStubs.keySet()) {
-      ListenableFuture<AppendEntriesResponse> responseFuture = appendEntries(raftServerId, request);
-      futuresMap.put(raftServerId, responseFuture);
-    }
-    return futuresMap.build();
+    RaftLeaderRpcClient create(RaftLeaderState raftLeaderState);
   }
 
   ListenableFuture<AppendEntriesResponse> appendEntries(

@@ -66,8 +66,8 @@ final class RaftRpcChannelManager extends AbstractIdleService {
     }
   }
 
-  RaftLeaderRpcClient createRaftClusterLeaderRpcClient() {
-    return leaderRpcClientFactory.create(otherServerStubs);
+  ImmutableMap<RaftServerId, RaftFutureStub> getOtherServerStubs() {
+    return otherServerStubs;
   }
 
   RaftCandidateRpcClient createRaftCandidateRpcClient() {
