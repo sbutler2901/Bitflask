@@ -20,7 +20,6 @@ import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 import java.time.Duration;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Handles the {@link RaftMode#LEADER} mode of the Raft server.
@@ -39,16 +38,12 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
 
   private final ScheduledExecutorService executorService;
   private final RaftConfiguration raftConfiguration;
+  private final RaftLeaderState raftLeaderState;
   private final RaftLog raftLog;
   private final RaftClusterRpcChannelManager raftClusterRpcChannelManager;
   private final RaftSubmissionManager raftSubmissionManager;
   private final RaftEntryConverter raftEntryConverter;
   private final StorageCommandExecutor storageCommandExecutor;
-
-  private final ConcurrentMap<RaftServerId, AtomicInteger> followersNextIndex =
-      new ConcurrentHashMap<>();
-  private final ConcurrentMap<RaftServerId, AtomicInteger> followersMatchIndex =
-      new ConcurrentHashMap<>();
 
   private final Duration appendDelayDuration;
   private final Duration requestTimeoutDuration;
@@ -62,6 +57,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       RaftVolatileState raftVolatileState,
       @RaftLeaderListeningScheduledExecutorService ScheduledExecutorService executorService,
       RaftConfiguration raftConfiguration,
+      RaftLeaderState raftLeaderState,
       RaftLog raftLog,
       RaftClusterRpcChannelManager raftClusterRpcChannelManager,
       RaftSubmissionManager raftSubmissionManager,
@@ -70,6 +66,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     super(raftModeManager, raftPersistentState, raftVolatileState);
     this.executorService = executorService;
     this.raftConfiguration = raftConfiguration;
+    this.raftLeaderState = raftLeaderState;
     this.raftLog = raftLog;
     this.raftClusterRpcChannelManager = raftClusterRpcChannelManager;
     this.raftSubmissionManager = raftSubmissionManager;
@@ -81,12 +78,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
         Duration.ofMillis(Math.round(electionTimerMinimumMillis * APPEND_DELAY_RATIO));
     requestTimeoutDuration =
         Duration.ofMillis(Math.round(electionTimerMinimumMillis * REQUEST_TIMEOUT_RATIO));
-
-    int nextIndex = raftLog.getLastLogEntryDetails().index() + 1;
-    for (var followerServerId : raftConfiguration.getOtherServersInCluster().keySet()) {
-      followersNextIndex.put(followerServerId, new AtomicInteger(nextIndex));
-      followersMatchIndex.put(followerServerId, new AtomicInteger(0));
-    }
   }
 
   @Override
@@ -176,7 +167,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
         raftConfiguration.getOtherServersInCluster().keySet().stream()
             .map(
                 raftServerId -> {
-                  int nextIndex = followersNextIndex.get(raftServerId).get();
+                  int nextIndex = raftLeaderState.getFollowerNextIndex(raftServerId);
                   return submitAppendEntriesToServer(raftServerId, nextIndex, nextIndex);
                 })
             .collect(toImmutableList());
@@ -192,13 +183,13 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
                 raftServerId ->
                     submitAppendEntriesToServer(
                         raftServerId,
-                        followersNextIndex.get(raftServerId).get(),
+                        raftLeaderState.getFollowerNextIndex(raftServerId),
                         1 + lastEntryIndex))
             .collect(toImmutableList());
     waitForAllSubmissionsAndHandle(submissions);
   }
 
-  private record AppendEntriesSubmission(
+  record AppendEntriesSubmission(
       RaftServerId serverId,
       int followerNextIndex,
       int lastEntryIndex,
@@ -291,9 +282,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     if (!response.getSuccess() && response.getTerm() > raftPersistentState.getCurrentTerm()) {
       return response.getTerm();
     } else if (!response.getSuccess()) {
-      followersNextIndex
-          .get(submission.serverId())
-          .getAndUpdate(prev -> Math.min(prev, submission.followerNextIndex() - 1));
+      raftLeaderState.decreaseFollowerNextIndex(submission);
       logger.atFine().log(
           "Follower [%s] did not accept AppendEntries request with term [%d], lastEntryIndex [%d], and followerNextIndex [%d].",
           submission.serverId().id(),
@@ -301,12 +290,8 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
           submission.lastEntryIndex(),
           submission.followerNextIndex());
     } else {
-      followersNextIndex
-          .get(submission.serverId())
-          .getAndUpdate(prev -> Math.max(prev, submission.lastEntryIndex()));
-      followersMatchIndex
-          .get(submission.serverId())
-          .getAndUpdate(prev -> Math.max(prev, submission.lastEntryIndex()));
+      raftLeaderState.increaseFollowerNextIndex(submission);
+      raftLeaderState.increaseFollowerMatchIndex(submission);
       logger.atFine().log(
           "Follower [%s] accepted lastEntryIndex [%d] with prevLogIndex [%d].",
           submission.serverId().id(), submission.lastEntryIndex(), submission.followerNextIndex());
@@ -338,8 +323,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     long numServersWithEntryWithinMatch =
         1 // include this server
             + raftConfiguration.getOtherServersInCluster().keySet().stream()
-                .map(followersMatchIndex::get)
-                .map(AtomicInteger::get)
+                .map(raftLeaderState::getFollowerMatchIndex)
                 .filter(matchIndex -> matchIndex >= entryIndex)
                 .count();
     return numServersWithEntryWithinMatch > halfOfServers;

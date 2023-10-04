@@ -1,7 +1,9 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import jakarta.inject.Inject;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Volatile state of a server that is the Raft leader.
@@ -14,31 +16,52 @@ final class RaftLeaderState {
    * For each server, index of the next log entry to send to that server (initialized to leader last
    * log index + 1)
    */
-  private final ConcurrentMap<RaftServerId, Long> nextIndex = new ConcurrentHashMap<>();
+  private final ConcurrentMap<RaftServerId, AtomicInteger> followersNextIndex =
+      new ConcurrentHashMap<>();
 
   /**
    * For each server, index of highest log entry known to be replicated on server (initialized to 0,
    * increases monotonically)
    */
-  private final ConcurrentMap<RaftServerId, Long> matchIndex = new ConcurrentHashMap<>();
+  private final ConcurrentMap<RaftServerId, AtomicInteger> followersMatchIndex =
+      new ConcurrentHashMap<>();
 
-  RaftLeaderState(RaftConfiguration raftConfiguration) {
-    initialize(raftConfiguration.clusterServers().keySet());
+  @Inject
+  RaftLeaderState(RaftConfiguration raftConfiguration, RaftLog raftLog) {
+    int nextIndex = raftLog.getLastLogEntryDetails().index() + 1;
+    for (var followerServerId : raftConfiguration.getOtherServersInCluster().keySet()) {
+      followersNextIndex.put(followerServerId, new AtomicInteger(nextIndex));
+      followersMatchIndex.put(followerServerId, new AtomicInteger(0));
+    }
+  }
+
+  int getFollowerNextIndex(RaftServerId serverId) {
+    return followersNextIndex.get(serverId).get();
+  }
+
+  int getFollowerMatchIndex(RaftServerId serverId) {
+    return followersMatchIndex.get(serverId).get();
   }
 
   /**
-   * Initialized the state.
-   *
-   * <p>Must be used after an election.
+   * Reduces the provided server's next index based on the provided {@link
+   * RaftLeaderProcessor.AppendEntriesSubmission}.
    */
-  void reinitialized() {
-    initialize(nextIndex.keySet());
+  void decreaseFollowerNextIndex(RaftLeaderProcessor.AppendEntriesSubmission submission) {
+    followersNextIndex
+        .get(submission.serverId())
+        .getAndUpdate(prev -> Math.min(prev, submission.followerNextIndex() - 1));
   }
 
-  private void initialize(Iterable<RaftServerId> serverIds) {
-    for (RaftServerId serverId : serverIds) {
-      nextIndex.put(serverId, 0L);
-      matchIndex.put(serverId, 0L);
-    }
+  void increaseFollowerNextIndex(RaftLeaderProcessor.AppendEntriesSubmission submission) {
+    followersNextIndex
+        .get(submission.serverId())
+        .getAndUpdate(prev -> Math.max(prev, submission.lastEntryIndex()));
+  }
+
+  void increaseFollowerMatchIndex(RaftLeaderProcessor.AppendEntriesSubmission submission) {
+    followersMatchIndex
+        .get(submission.serverId())
+        .getAndUpdate(prev -> Math.max(prev, submission.lastEntryIndex()));
   }
 }
