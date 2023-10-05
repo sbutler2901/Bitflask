@@ -66,8 +66,4 @@ final class RaftRpcChannelManager extends AbstractIdleService {
         String.format("Server [%s] not found in server stubs.", raftServerId.id()));
     return otherServerStubs.get(raftServerId);
   }
-
-  ImmutableMap<RaftServerId, RaftFutureStub> getOtherServerStubs() {
-    return otherServerStubs;
-  }
 }

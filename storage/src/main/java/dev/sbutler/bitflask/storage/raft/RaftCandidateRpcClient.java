@@ -1,13 +1,13 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import dev.sbutler.bitflask.storage.raft.RaftGrpc.RaftFutureStub;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import jakarta.inject.Inject;
@@ -25,7 +25,8 @@ final class RaftCandidateRpcClient implements AutoCloseable {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService executorService;
-  private final ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs;
+  private final RaftConfiguration raftConfiguration;
+  private final RaftRpcChannelManager rpcChannelManager;
 
   private final AtomicInteger responsesReceived = new AtomicInteger(0);
   private final AtomicInteger votesReceived = new AtomicInteger(0);
@@ -35,9 +36,12 @@ final class RaftCandidateRpcClient implements AutoCloseable {
 
   @Inject
   RaftCandidateRpcClient(
-      ListeningExecutorService executorService, RaftRpcChannelManager rpcChannelManager) {
+      ListeningExecutorService executorService,
+      RaftConfiguration raftConfiguration,
+      RaftRpcChannelManager rpcChannelManager) {
     this.executorService = executorService;
-    this.otherServerStubs = rpcChannelManager.getOtherServerStubs();
+    this.raftConfiguration = raftConfiguration;
+    this.rpcChannelManager = rpcChannelManager;
   }
 
   interface Factory {
@@ -54,15 +58,18 @@ final class RaftCandidateRpcClient implements AutoCloseable {
   void requestVotes(RequestVoteRequest request) {
     largestTermSeen.set(request.getTerm());
     logger.atInfo().log("Requesting votes for term [%d].", request.getTerm());
-    ImmutableList.Builder<ListenableFuture<RequestVoteResponse>> responseFuturesBuilder =
-        ImmutableList.builder();
-    for (var stubsEntry : otherServerStubs.entrySet()) {
-      ListenableFuture<RequestVoteResponse> responseFuture =
-          stubsEntry.getValue().requestVote(request);
-      Futures.addCallback(
-          responseFuture, new RequestVoteFutureCallback(stubsEntry.getKey()), executorService);
-    }
-    responseFutures = responseFuturesBuilder.build();
+
+    responseFutures =
+        raftConfiguration.getOtherServersInCluster().keySet().stream()
+            .map(
+                serverId -> {
+                  ListenableFuture<RequestVoteResponse> responseFuture =
+                      rpcChannelManager.getStubForServer(serverId).requestVote(request);
+                  Futures.addCallback(
+                      responseFuture, new RequestVoteFutureCallback(serverId), executorService);
+                  return responseFuture;
+                })
+            .collect(toImmutableList());
   }
 
   /**
@@ -72,7 +79,7 @@ final class RaftCandidateRpcClient implements AutoCloseable {
    */
   RequestVotesResults getCurrentRequestVotesResults() {
     return new RequestVotesResults(
-        otherServerStubs.size(),
+        raftConfiguration.getOtherServersInCluster().keySet().size(),
         responsesReceived.get(),
         votesReceived.get(),
         largestTermSeen.get());
