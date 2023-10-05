@@ -204,14 +204,14 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
 
   /** Sends an {@link AppendEntriesRequest} with no {@link Entry}s to all followers. */
   private void broadcastHeartbeat() {
-    ImmutableList<AppendEntriesSubmission> submissions = rpcClient.sendHeartbeatToAll();
+    ImmutableList<AppendEntriesSubmission> submissions = rpcClient.broadcastHeartbeat();
     waitForAllSubmissionsToCompleteAndHandle(submissions);
   }
 
   /** Appends {@link Entry}s to any follower who is behind the log; otherwise, a heartbeat. */
   private void broadcastAppendEntriesOrHeartbeat() {
     ImmutableList<AppendEntriesSubmission> submissions =
-        rpcClient.appendEntriesOrSendHeartbeatToEach();
+        rpcClient.broadcastAppendEntriesOrHeartbeat();
     waitForAllSubmissionsToCompleteAndHandle(submissions);
   }
 

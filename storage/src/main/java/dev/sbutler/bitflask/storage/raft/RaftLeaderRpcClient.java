@@ -62,7 +62,7 @@ final class RaftLeaderRpcClient {
   }
 
   /** Sends an {@link AppendEntriesRequest} with no {@link Entry}s to all followers. */
-  ImmutableList<AppendEntriesSubmission> sendHeartbeatToAll() {
+  ImmutableList<AppendEntriesSubmission> broadcastHeartbeat() {
     return raftConfiguration.getOtherServersInCluster().keySet().stream()
         .map(
             raftServerId -> {
@@ -73,7 +73,7 @@ final class RaftLeaderRpcClient {
   }
 
   /** Appends {@link Entry}s to any follower who is behind the log; otherwise, a heartbeat. */
-  ImmutableList<AppendEntriesSubmission> appendEntriesOrSendHeartbeatToEach() {
+  ImmutableList<AppendEntriesSubmission> broadcastAppendEntriesOrHeartbeat() {
     int lastEntryIndex = raftLog.getLastLogEntryDetails().index();
     return raftConfiguration.getOtherServersInCluster().keySet().stream()
         .map(
