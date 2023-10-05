@@ -1,10 +1,20 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
-import dev.sbutler.bitflask.storage.raft.RaftCandidateRpcClient.RequestVotesResults;
-import dev.sbutler.bitflask.storage.raft.RaftLog.LogEntryDetails;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import io.grpc.StatusRuntimeException;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Handles the {@link RaftMode#CANDIDATE} mode of the Raft server.
@@ -18,25 +28,24 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   private static final RaftMode RAFT_MODE = RaftMode.CANDIDATE;
 
+  private final ListeningExecutorService executorService;
   private final RaftConfiguration raftConfiguration;
-  private final RaftElectionTimer raftElectionTimer;
-  private final RaftCandidateRpcClient.Factory rpcClientFactory;
+  private final RaftCandidateRpcClient rpcClient;
 
   private volatile boolean shouldContinueElections = true;
-  private volatile boolean hasElectionTimeoutOccurred = false;
 
   @Inject
   RaftCandidateProcessor(
       Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
+      ListeningExecutorService executorService,
       RaftConfiguration raftConfiguration,
-      RaftElectionTimer raftElectionTimer,
       RaftCandidateRpcClient.Factory rpcClientFactory) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
+    this.executorService = executorService;
     this.raftConfiguration = raftConfiguration;
-    this.raftElectionTimer = raftElectionTimer;
-    this.rpcClientFactory = rpcClientFactory;
+    this.rpcClient = rpcClientFactory.create();
   }
 
   @Override
@@ -60,7 +69,6 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   public void handleElectionTimeout() {
     logger.atInfo().log("Handling election timeout.");
-    hasElectionTimeoutOccurred = true;
   }
 
   /**
@@ -70,68 +78,116 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
   @Override
   public void run() {
     while (shouldContinueElections) {
-      startNewElection();
-      // Do not start another election until election timer timeout
-      while (shouldContinueElections && !hasElectionTimeoutOccurred) {
-        Thread.onSpinWait();
-      }
-    }
-  }
+      int electionTimeout = getElectionTimeout();
+      Instant electionExpiration = Instant.now().plusMillis(electionTimeout);
 
-  /** Starts and handles a single election cycle. */
-  private void startNewElection() {
-    raftPersistentState.incrementTermAndVoteForSelf();
-    int timerDelay = raftElectionTimer.restart();
-    logger.atInfo().log(
-        "Started new election term [%d] with election timer delay [%dms].",
-        raftPersistentState.getCurrentTerm(), timerDelay);
-    hasElectionTimeoutOccurred = false;
-    try (var rpcClient = rpcClientFactory.create()) {
-      sendRequestVotesAndWait(rpcClient);
-    }
-  }
-
-  /**
-   * Requests a vote from all other Raft servers in the cluster and waits.
-   *
-   * <p>This method waits until
-   *
-   * <ul>
-   *   <li>The election has been won.
-   *   <li>All responses have been received.
-   *   <li>A greater term is encountered in a {@link RequestVoteResponse}.
-   *   <li>An election timeout has occurred.
-   *   <li>The candidate is halted.
-   */
-  private void sendRequestVotesAndWait(RaftCandidateRpcClient rpcClient) {
-    LogEntryDetails lastLogEntryDetails = raftPersistentState.getRaftLog().getLastLogEntryDetails();
-    RequestVoteRequest request =
-        RequestVoteRequest.newBuilder()
-            .setCandidateId(raftConfiguration.thisRaftServerId().id())
-            .setTerm(raftPersistentState.getCurrentTerm())
-            .setLastLogIndex(lastLogEntryDetails.index())
-            .setLastLogTerm(lastLogEntryDetails.term())
-            .build();
-    rpcClient.requestVotes(request);
-
-    while (shouldContinueElections && !hasElectionTimeoutOccurred) {
-      RequestVotesResults requestVotesResults = rpcClient.getCurrentRequestVotesResults();
-      if (shouldUpdateTermAndTransitionToFollower(requestVotesResults.largestTermSeen())) {
-        logger.atInfo().log(
-            "Found larger term [%d]. Transitioning to Follower.",
-            requestVotesResults.largestTermSeen());
-        updateTermAndTransitionToFollower(requestVotesResults.largestTermSeen());
-      } else if (requestVotesResults.receivedMajorityVotes()) {
+      boolean receivedMajorityVotes = startNewElection(electionTimeout);
+      if (receivedMajorityVotes) {
         shouldContinueElections = false;
         logger.atInfo().log("Received majority of votes. Transitioning to Leader");
         raftModeManager.get().transitionToLeaderState();
-      } else if (requestVotesResults.allResponsesReceived()) {
-        logger.atInfo().log(
-            "All responses for term [%d] received without verdict. Waiting to start next election.",
-            request.getTerm());
-        break;
+      } else {
+        while (shouldContinueElections && !Instant.now().isAfter(electionExpiration)) {
+          Thread.onSpinWait();
+        }
       }
     }
+  }
+
+  private int getElectionTimeout() {
+    RaftTimerInterval raftTimerInterval = raftConfiguration.raftTimerInterval();
+    return ThreadLocalRandom.current()
+        .nextInt(
+            raftTimerInterval.minimumMilliSeconds(), 1 + raftTimerInterval.maximumMilliseconds());
+  }
+
+  record RequestVotesSubmission(
+      RaftServerId serverId,
+      RequestVoteRequest request,
+      ListenableFuture<RequestVoteResponse> responseFuture) {}
+
+  /** Starts and handles a single election cycle. */
+  private boolean startNewElection(int electionTimeout) {
+    raftPersistentState.incrementTermAndVoteForSelf();
+    logger.atInfo().log(
+        "Started new election term [%d] with election timer delay [%dms].",
+        raftPersistentState.getCurrentTerm(), electionTimeout);
+    ImmutableList<RequestVotesSubmission> submissions =
+        rpcClient.broadcastRequestVotes(electionTimeout);
+    waitForAllResponsesToComplete(submissions);
+    return handleCompletedResponses(submissions).map(this::receivedMajorityVotes).orElse(false);
+  }
+
+  private void waitForAllResponsesToComplete(ImmutableList<RequestVotesSubmission> submissions) {
+    try {
+      // Block until all requests have completed or timed out
+      Futures.whenAllComplete(
+              submissions.stream()
+                  .map(RequestVotesSubmission::responseFuture)
+                  .collect(toImmutableList()))
+          .call(() -> null, executorService)
+          .get();
+    } catch (Exception e) {
+      logger.atSevere().withCause(e).log(
+          "Unexpected failure while waiting for response futures to complete. Exiting");
+    }
+  }
+
+  private Optional<Integer> handleCompletedResponses(
+      ImmutableList<RequestVotesSubmission> submissions) {
+    int largestTermSeen = raftPersistentState.getCurrentTerm();
+    int votesReceived = 0;
+    for (var submission : submissions) {
+      Optional<RequestVoteResponse> response = getRequestVotesResponse(submission);
+      if (response.isEmpty()) {
+        continue;
+      }
+      largestTermSeen = Math.max(largestTermSeen, response.get().getTerm());
+      if (response.get().getVoteGranted()) {
+        votesReceived += 1;
+        logger.atInfo().log(
+            "Vote granted by [%s] for term [%d].",
+            submission.serverId().id(), submission.request().getTerm());
+      } else {
+        logger.atInfo().log(
+            "Voted denied by [%s] for term [%d].",
+            submission.serverId().id(), submission.request().getTerm());
+      }
+    }
+
+    if (largestTermSeen > raftPersistentState.getCurrentTerm()) {
+      updateTermAndTransitionToFollower(largestTermSeen);
+      return Optional.empty();
+    }
+    return Optional.of(votesReceived);
+  }
+
+  private Optional<RequestVoteResponse> getRequestVotesResponse(RequestVotesSubmission submission) {
+    try {
+      return Optional.of(submission.responseFuture().get());
+    } catch (InterruptedException e) {
+      logger.atSevere().withCause(e).atMostEvery(10, TimeUnit.SECONDS).log(
+          "Interrupted while sending request to server [%s].", submission.serverId().id());
+    } catch (ExecutionException e) {
+      if (e.getCause() instanceof StatusRuntimeException statusException
+          && io.grpc.Status.UNAVAILABLE.getCode().equals(statusException.getStatus().getCode())) {
+        logger.atWarning().atMostEvery(5, TimeUnit.SECONDS).log(
+            "Server [%s] unavailable for RequestVotes RPC.", submission.serverId().id());
+      } else {
+        logger.atSevere().withCause(e).atMostEvery(10, TimeUnit.SECONDS).log(
+            "RequestVotes request to server [%s] with term [%d], lastLogIndex [%d], and lastLogTerm [%d] failed.",
+            submission.serverId(),
+            submission.request().getTerm(),
+            submission.request().getLastLogIndex(),
+            submission.request().getLastLogTerm());
+      }
+    }
+    return Optional.empty();
+  }
+
+  private boolean receivedMajorityVotes(int votesReceived) {
+    double halfRequiredVotes = raftConfiguration.getOtherServersInCluster().keySet().size() / 2.0;
+    return (1 + votesReceived) > halfRequiredVotes;
   }
 
   @Override

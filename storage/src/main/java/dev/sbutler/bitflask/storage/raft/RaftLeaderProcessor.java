@@ -253,7 +253,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     } catch (InterruptedException e) {
       logger.atSevere().withCause(e).atMostEvery(10, TimeUnit.SECONDS).log(
           "Interrupted while sending request to follower [%s].", submission.serverId().id());
-      return Optional.empty();
     } catch (ExecutionException e) {
       if (e.getCause() instanceof StatusRuntimeException statusException
           && io.grpc.Status.UNAVAILABLE.getCode().equals(statusException.getStatus().getCode())) {
