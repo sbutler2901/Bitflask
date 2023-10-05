@@ -18,6 +18,7 @@ import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.*;
 
 /**
@@ -32,7 +33,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private static final RaftMode RAFT_MODE = RaftMode.LEADER;
-  private static final double APPEND_DELAY_RATIO = 0.5;
+  private static final double REQUEST_BROADCAST_DELAY_RATIO = 0.5;
 
   private final ScheduledExecutorService executorService;
   private final RaftConfiguration raftConfiguration;
@@ -43,7 +44,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   private final RaftEntryConverter raftEntryConverter;
   private final StorageCommandExecutor storageCommandExecutor;
 
-  private final Duration appendDelayDuration;
+  private final Duration requestBroadcastDelayDuration;
 
   private volatile boolean shouldContinueExecuting = true;
 
@@ -70,15 +71,21 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     this.raftEntryConverter = raftEntryConverter;
     this.storageCommandExecutor = storageCommandExecutor;
 
-    appendDelayDuration =
+    requestBroadcastDelayDuration =
         Duration.ofMillis(
             Math.round(
-                raftConfiguration.raftTimerInterval().minimumMilliSeconds() * APPEND_DELAY_RATIO));
+                raftConfiguration.raftTimerInterval().minimumMilliSeconds()
+                    * REQUEST_BROADCAST_DELAY_RATIO));
   }
 
   @Override
   public RaftMode getRaftMode() {
     return RAFT_MODE;
+  }
+
+  @Override
+  protected FluentLogger getLogger() {
+    return logger;
   }
 
   private void handleUnexpectedRequest(String additionalMessage) {
@@ -136,115 +143,16 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
 
   @Override
   public void run() {
-    sendHeartbeatToAll();
+    broadcastHeartbeat();
     while (shouldContinueExecuting) {
-      appendEntriesOrSendHeartbeatToEach();
+      broadcastAppendEntriesOrHeartbeat();
       if (shouldContinueExecuting) {
         checkAndUpdateCommitIndex();
       }
       // Prevent flooding network;
-      sleepBeforeNextAppend();
+      sleepBeforeNextBroadcast();
     }
     cleanupBeforeTerminating();
-  }
-
-  private void sleepBeforeNextAppend() {
-    try {
-      Thread.sleep(appendDelayDuration);
-    } catch (InterruptedException e) {
-      logger.atWarning().log("Interrupted while sleeping before next appending. Stopping leader.");
-      shouldContinueExecuting = false;
-    }
-  }
-
-  /** Holds the state of a single {@link AppendEntriesRequest} to a Raft server. */
-  record AppendEntriesSubmission(
-      RaftServerId serverId,
-      int followerNextIndex,
-      int lastEntryIndex,
-      AppendEntriesRequest request,
-      ListenableFuture<AppendEntriesResponse> responseFuture) {}
-
-  /** Sends an {@link AppendEntriesRequest} with no {@link Entry}s to all followers. */
-  private void sendHeartbeatToAll() {
-    ImmutableList<AppendEntriesSubmission> submissions = rpcClient.sendHeartbeatToAll();
-    waitForAllSubmissionsAndHandle(submissions);
-  }
-
-  /** Appends {@link Entry}s to any follower who is behind the log; otherwise, a heartbeat. */
-  private void appendEntriesOrSendHeartbeatToEach() {
-    ImmutableList<AppendEntriesSubmission> submissions =
-        rpcClient.appendEntriesOrSendHeartbeatToEach();
-    waitForAllSubmissionsAndHandle(submissions);
-  }
-
-  private void waitForAllSubmissionsAndHandle(ImmutableList<AppendEntriesSubmission> submissions) {
-    try {
-      // Block until all requests have completed or timed out
-      Futures.whenAllComplete(
-              submissions.stream()
-                  .map(AppendEntriesSubmission::responseFuture)
-                  .collect(toImmutableList()))
-          .call(() -> null, executorService)
-          .get();
-    } catch (Exception e) {
-      logger.atSevere().withCause(e).log(
-          "Unexpected failure while waiting for response futures to complete. Exiting");
-      shouldContinueExecuting = false;
-      return;
-    }
-
-    int largestTermSeen = raftPersistentState.getCurrentTerm();
-    for (var submission : submissions) {
-      int term = handleAppendEntriesSubmission(submission);
-      largestTermSeen = Math.max(largestTermSeen, term);
-    }
-    if (largestTermSeen > raftPersistentState.getCurrentTerm()) {
-      updateTermAndTransitionToFollower(largestTermSeen);
-    }
-  }
-
-  private int handleAppendEntriesSubmission(AppendEntriesSubmission submission) {
-    AppendEntriesResponse response;
-    try {
-      response = submission.responseFuture().get();
-    } catch (InterruptedException e) {
-      logger.atSevere().withCause(e).atMostEvery(10, TimeUnit.SECONDS).log(
-          "Interrupted while sending request to follower [%s].", submission.serverId().id());
-      return raftPersistentState.getCurrentTerm();
-    } catch (ExecutionException e) {
-      if (e.getCause() instanceof StatusRuntimeException statusException
-          && io.grpc.Status.UNAVAILABLE.getCode().equals(statusException.getStatus().getCode())) {
-        logger.atWarning().atMostEvery(5, TimeUnit.SECONDS).log(
-            "Server [%s] unavailable for AppendEntries RPC.", submission.serverId().id());
-      } else {
-        logger.atSevere().withCause(e).atMostEvery(10, TimeUnit.SECONDS).log(
-            "AppendEntries request to Follower [%s] with lastEntryIndex [%d] and followerNextIndex [%d] failed.",
-            submission.serverId().id(),
-            submission.lastEntryIndex(),
-            submission.followerNextIndex());
-      }
-      return raftPersistentState.getCurrentTerm();
-    }
-
-    if (!response.getSuccess() && response.getTerm() > raftPersistentState.getCurrentTerm()) {
-      return response.getTerm();
-    } else if (!response.getSuccess()) {
-      raftLeaderState.decreaseFollowerNextIndex(submission);
-      logger.atFine().log(
-          "Follower [%s] did not accept AppendEntries request with term [%d], lastEntryIndex [%d], and followerNextIndex [%d].",
-          submission.serverId().id(),
-          submission.request().getTerm(),
-          submission.lastEntryIndex(),
-          submission.followerNextIndex());
-    } else {
-      raftLeaderState.increaseFollowerNextIndex(submission);
-      raftLeaderState.increaseFollowerMatchIndex(submission);
-      logger.atFine().log(
-          "Follower [%s] accepted lastEntryIndex [%d] with prevLogIndex [%d].",
-          submission.serverId().id(), submission.lastEntryIndex(), submission.followerNextIndex());
-    }
-    return raftPersistentState.getCurrentTerm();
   }
 
   /**
@@ -277,16 +185,117 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     return numServersWithEntryWithinMatch > halfOfServers;
   }
 
+  private void sleepBeforeNextBroadcast() {
+    try {
+      Thread.sleep(requestBroadcastDelayDuration);
+    } catch (InterruptedException e) {
+      logger.atWarning().log("Interrupted while sleeping before next appending. Stopping leader.");
+      shouldContinueExecuting = false;
+    }
+  }
+
+  /** Holds the state of a single {@link AppendEntriesRequest} to a Raft server. */
+  record AppendEntriesSubmission(
+      RaftServerId serverId,
+      int followerNextIndex,
+      int lastEntryIndex,
+      AppendEntriesRequest request,
+      ListenableFuture<AppendEntriesResponse> responseFuture) {}
+
+  /** Sends an {@link AppendEntriesRequest} with no {@link Entry}s to all followers. */
+  private void broadcastHeartbeat() {
+    ImmutableList<AppendEntriesSubmission> submissions = rpcClient.sendHeartbeatToAll();
+    waitForAllSubmissionsToCompleteAndHandle(submissions);
+  }
+
+  /** Appends {@link Entry}s to any follower who is behind the log; otherwise, a heartbeat. */
+  private void broadcastAppendEntriesOrHeartbeat() {
+    ImmutableList<AppendEntriesSubmission> submissions =
+        rpcClient.appendEntriesOrSendHeartbeatToEach();
+    waitForAllSubmissionsToCompleteAndHandle(submissions);
+  }
+
+  private void waitForAllSubmissionsToCompleteAndHandle(
+      ImmutableList<AppendEntriesSubmission> submissions) {
+    try {
+      // Block until all requests have completed or timed out
+      Futures.whenAllComplete(
+              submissions.stream()
+                  .map(AppendEntriesSubmission::responseFuture)
+                  .collect(toImmutableList()))
+          .call(() -> null, executorService)
+          .get();
+    } catch (Exception e) {
+      logger.atSevere().withCause(e).log(
+          "Unexpected failure while waiting for response futures to complete. Exiting");
+      shouldContinueExecuting = false;
+      return;
+    }
+
+    int largestTermSeen = raftPersistentState.getCurrentTerm();
+    for (var submission : submissions) {
+      int termSeen =
+          getAppendEntriesResponse(submission)
+              .flatMap(response -> handleAppendEntriesResponse(response, submission))
+              .orElseGet(raftPersistentState::getCurrentTerm);
+      largestTermSeen = Math.max(largestTermSeen, termSeen);
+    }
+    if (largestTermSeen > raftPersistentState.getCurrentTerm()) {
+      updateTermAndTransitionToFollower(largestTermSeen);
+    }
+  }
+
+  private Optional<AppendEntriesResponse> getAppendEntriesResponse(
+      AppendEntriesSubmission submission) {
+    try {
+      return Optional.of(submission.responseFuture().get());
+    } catch (InterruptedException e) {
+      logger.atSevere().withCause(e).atMostEvery(10, TimeUnit.SECONDS).log(
+          "Interrupted while sending request to follower [%s].", submission.serverId().id());
+      return Optional.empty();
+    } catch (ExecutionException e) {
+      if (e.getCause() instanceof StatusRuntimeException statusException
+          && io.grpc.Status.UNAVAILABLE.getCode().equals(statusException.getStatus().getCode())) {
+        logger.atWarning().atMostEvery(5, TimeUnit.SECONDS).log(
+            "Server [%s] unavailable for AppendEntries RPC.", submission.serverId().id());
+      } else {
+        logger.atSevere().withCause(e).atMostEvery(10, TimeUnit.SECONDS).log(
+            "AppendEntries request to Follower [%s] with lastEntryIndex [%d] and followerNextIndex [%d] failed.",
+            submission.serverId().id(),
+            submission.lastEntryIndex(),
+            submission.followerNextIndex());
+      }
+    }
+    return Optional.empty();
+  }
+
+  private Optional<Integer> handleAppendEntriesResponse(
+      AppendEntriesResponse response, AppendEntriesSubmission submission) {
+    if (response.getTerm() > raftPersistentState.getCurrentTerm()) {
+      return Optional.of(response.getTerm());
+    } else if (!response.getSuccess()) {
+      raftLeaderState.decreaseFollowerNextIndex(submission);
+      logger.atFine().log(
+          "Follower [%s] did not accept AppendEntries request with term [%d], lastEntryIndex [%d], and followerNextIndex [%d].",
+          submission.serverId().id(),
+          submission.request().getTerm(),
+          submission.lastEntryIndex(),
+          submission.followerNextIndex());
+    } else {
+      raftLeaderState.increaseFollowerNextIndex(submission);
+      raftLeaderState.increaseFollowerMatchIndex(submission);
+      logger.atFine().log(
+          "Follower [%s] accepted lastEntryIndex [%d] with prevLogIndex [%d].",
+          submission.serverId().id(), submission.lastEntryIndex(), submission.followerNextIndex());
+    }
+    return Optional.empty();
+  }
+
   /**
    * Cleans up any unresolved client or {@link AppendEntriesResponse} futures before terminating.
    */
   private void cleanupBeforeTerminating() {
     raftSubmissionManager.completeAllSubmissionsWithFailure(
         new RaftLeaderException("Another leader was discovered"));
-  }
-
-  @Override
-  protected FluentLogger getLogger() {
-    return logger;
   }
 }
