@@ -18,20 +18,13 @@ import java.util.concurrent.TimeUnit;
 final class RaftRpcChannelManager extends AbstractIdleService {
 
   private final RaftConfiguration raftConfiguration;
-  private final RaftLeaderRpcClient.Factory leaderRpcClientFactory;
-  private final RaftCandidateRpcClient.Factory candidateRpcClientFactory;
 
   private ImmutableMap<RaftServerId, ManagedChannel> otherServerChannels;
   private ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs;
 
   @Inject
-  RaftRpcChannelManager(
-      RaftConfiguration raftConfiguration,
-      RaftLeaderRpcClient.Factory leaderRpcClientFactory,
-      RaftCandidateRpcClient.Factory candidateRpcClientFactory) {
+  RaftRpcChannelManager(RaftConfiguration raftConfiguration) {
     this.raftConfiguration = raftConfiguration;
-    this.leaderRpcClientFactory = leaderRpcClientFactory;
-    this.candidateRpcClientFactory = candidateRpcClientFactory;
   }
 
   @Override
@@ -68,9 +61,5 @@ final class RaftRpcChannelManager extends AbstractIdleService {
 
   ImmutableMap<RaftServerId, RaftFutureStub> getOtherServerStubs() {
     return otherServerStubs;
-  }
-
-  RaftCandidateRpcClient createRaftCandidateRpcClient() {
-    return candidateRpcClientFactory.create(otherServerStubs);
   }
 }

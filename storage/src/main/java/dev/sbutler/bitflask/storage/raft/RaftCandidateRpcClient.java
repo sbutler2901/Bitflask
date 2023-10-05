@@ -7,7 +7,6 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.storage.raft.RaftGrpc.RaftFutureStub;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -36,14 +35,13 @@ final class RaftCandidateRpcClient implements AutoCloseable {
 
   @Inject
   RaftCandidateRpcClient(
-      ListeningExecutorService executorService,
-      @Assisted ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs) {
+      ListeningExecutorService executorService, RaftRpcChannelManager rpcChannelManager) {
     this.executorService = executorService;
-    this.otherServerStubs = otherServerStubs;
+    this.otherServerStubs = rpcChannelManager.getOtherServerStubs();
   }
 
   interface Factory {
-    RaftCandidateRpcClient create(ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs);
+    RaftCandidateRpcClient create();
   }
 
   /**
