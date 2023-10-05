@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AbstractIdleService;
 import dev.sbutler.bitflask.storage.raft.RaftGrpc.RaftFutureStub;
@@ -57,6 +58,13 @@ final class RaftRpcChannelManager extends AbstractIdleService {
     for (var managedChannel : otherServerChannels.values()) {
       managedChannel.awaitTermination(5, TimeUnit.SECONDS);
     }
+  }
+
+  RaftFutureStub getStubForServer(RaftServerId raftServerId) {
+    Preconditions.checkArgument(
+        otherServerStubs.containsKey(raftServerId),
+        String.format("Server [%s] not found in server stubs.", raftServerId.id()));
+    return otherServerStubs.get(raftServerId);
   }
 
   ImmutableMap<RaftServerId, RaftFutureStub> getOtherServerStubs() {

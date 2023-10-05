@@ -2,17 +2,13 @@ package dev.sbutler.bitflask.storage.raft;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static dev.sbutler.bitflask.storage.raft.RaftLeaderProcessor.AppendEntriesSubmission;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
-import dev.sbutler.bitflask.storage.raft.RaftGrpc.RaftFutureStub;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftUnknownLeaderException;
-import jakarta.inject.Inject;
-import java.time.Duration;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Utility class for handling rpc calls for the {@link RaftLeaderProcessor}.
@@ -23,38 +19,33 @@ final class RaftLeaderRpcClient {
 
   private static final double REQUEST_TIMEOUT_RATIO = 0.75;
 
-  private final ScheduledExecutorService executorService;
   private final RaftConfiguration raftConfiguration;
+  private final RaftRpcChannelManager rpcChannelManager;
   private final RaftPersistentState raftPersistentState;
   private final RaftVolatileState raftVolatileState;
   private final RaftLeaderState raftLeaderState;
   private final RaftLog raftLog;
-  private final ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs;
 
-  private final Duration requestTimeoutDuration;
+  private final long requestTimeoutMillis;
 
   @Inject
   RaftLeaderRpcClient(
-      RaftRpcChannelManager rpcChannelManager,
-      @RaftLeaderListeningScheduledExecutorService ScheduledExecutorService executorService,
       RaftConfiguration raftConfiguration,
+      RaftRpcChannelManager rpcChannelManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
       RaftLog raftLog,
       @Assisted RaftLeaderState raftLeaderState) {
-    this.executorService = executorService;
     this.raftConfiguration = raftConfiguration;
+    this.rpcChannelManager = rpcChannelManager;
     this.raftPersistentState = raftPersistentState;
     this.raftVolatileState = raftVolatileState;
     this.raftLog = raftLog;
     this.raftLeaderState = raftLeaderState;
-    this.otherServerStubs = rpcChannelManager.getOtherServerStubs();
 
-    requestTimeoutDuration =
-        Duration.ofMillis(
-            Math.round(
-                raftConfiguration.raftTimerInterval().minimumMilliSeconds()
-                    * REQUEST_TIMEOUT_RATIO));
+    this.requestTimeoutMillis =
+        Math.round(
+            raftConfiguration.raftTimerInterval().minimumMilliSeconds() * REQUEST_TIMEOUT_RATIO);
   }
 
   interface Factory {
@@ -95,10 +86,10 @@ final class RaftLeaderRpcClient {
     AppendEntriesRequest request =
         createBaseAppendEntriesRequest(followerNextIndex - 1).addAllEntries(entries).build();
     ListenableFuture<AppendEntriesResponse> responseFuture =
-        Futures.withTimeout(
-            otherServerStubs.get(serverId).appendEntries(request),
-            requestTimeoutDuration,
-            executorService);
+        rpcChannelManager
+            .getStubForServer(serverId)
+            .withDeadlineAfter(requestTimeoutMillis, MILLISECONDS)
+            .appendEntries(request);
     return new AppendEntriesSubmission(
         serverId, followerNextIndex, lastEntryIndex, request, responseFuture);
   }

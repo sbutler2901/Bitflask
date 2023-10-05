@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import dev.sbutler.bitflask.storage.StorageSubmitResults;
@@ -35,7 +36,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   private static final RaftMode RAFT_MODE = RaftMode.LEADER;
   private static final double REQUEST_BROADCAST_DELAY_RATIO = 0.5;
 
-  private final ScheduledExecutorService executorService;
+  private final ListeningExecutorService executorService;
   private final RaftConfiguration raftConfiguration;
   private final RaftLeaderState raftLeaderState;
   private final RaftLeaderRpcClient rpcClient;
@@ -53,7 +54,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
-      @RaftLeaderListeningScheduledExecutorService ScheduledExecutorService executorService,
+      ListeningExecutorService executorService,
       RaftLeaderRpcClient.Factory rpcClientFactory,
       RaftConfiguration raftConfiguration,
       RaftLeaderState raftLeaderState,
