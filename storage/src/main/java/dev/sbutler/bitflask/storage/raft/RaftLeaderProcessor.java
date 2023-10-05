@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static dev.sbutler.bitflask.storage.raft.RaftLeaderRpcClient.AppendEntriesSubmission;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
@@ -13,7 +14,6 @@ import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import dev.sbutler.bitflask.storage.commands.StorageCommandExecutor;
 import dev.sbutler.bitflask.storage.commands.StorageCommandResults;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftLeaderException;
-import dev.sbutler.bitflask.storage.raft.exceptions.RaftUnknownLeaderException;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import jakarta.inject.Inject;
@@ -34,7 +34,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
 
   private static final RaftMode RAFT_MODE = RaftMode.LEADER;
   private static final double APPEND_DELAY_RATIO = 0.5;
-  private static final double REQUEST_TIMEOUT_RATIO = 0.75;
 
   private final ScheduledExecutorService executorService;
   private final RaftConfiguration raftConfiguration;
@@ -46,7 +45,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   private final StorageCommandExecutor storageCommandExecutor;
 
   private final Duration appendDelayDuration;
-  private final Duration requestTimeoutDuration;
 
   private volatile boolean shouldContinueExecuting = true;
 
@@ -73,11 +71,10 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     this.raftEntryConverter = raftEntryConverter;
     this.storageCommandExecutor = storageCommandExecutor;
 
-    int electionTimerMinimumMillis = raftConfiguration.raftTimerInterval().minimumMilliSeconds();
     appendDelayDuration =
-        Duration.ofMillis(Math.round(electionTimerMinimumMillis * APPEND_DELAY_RATIO));
-    requestTimeoutDuration =
-        Duration.ofMillis(Math.round(electionTimerMinimumMillis * REQUEST_TIMEOUT_RATIO));
+        Duration.ofMillis(
+            Math.round(
+                raftConfiguration.raftTimerInterval().minimumMilliSeconds() * APPEND_DELAY_RATIO));
   }
 
   @Override
@@ -163,70 +160,15 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
 
   /** Sends an {@link AppendEntriesRequest} with no {@link Entry}s to all followers. */
   private void sendHeartbeatToAll() {
-    ImmutableList<AppendEntriesSubmission> submissions =
-        raftConfiguration.getOtherServersInCluster().keySet().stream()
-            .map(
-                raftServerId -> {
-                  int nextIndex = raftLeaderState.getFollowerNextIndex(raftServerId);
-                  return submitAppendEntriesToServer(raftServerId, nextIndex, nextIndex);
-                })
-            .collect(toImmutableList());
+    ImmutableList<AppendEntriesSubmission> submissions = rpcClient.sendHeartbeatToAll();
     waitForAllSubmissionsAndHandle(submissions);
   }
 
   /** Appends {@link Entry}s to any follower who is behind the log; otherwise, a heartbeat. */
   private void appendEntriesOrSendHeartbeatToEach() {
-    int lastEntryIndex = raftLog.getLastLogEntryDetails().index();
     ImmutableList<AppendEntriesSubmission> submissions =
-        raftConfiguration.getOtherServersInCluster().keySet().stream()
-            .map(
-                raftServerId ->
-                    submitAppendEntriesToServer(
-                        raftServerId,
-                        raftLeaderState.getFollowerNextIndex(raftServerId),
-                        1 + lastEntryIndex))
-            .collect(toImmutableList());
+        rpcClient.appendEntriesOrSendHeartbeatToEach();
     waitForAllSubmissionsAndHandle(submissions);
-  }
-
-  record AppendEntriesSubmission(
-      RaftServerId serverId,
-      int followerNextIndex,
-      int lastEntryIndex,
-      AppendEntriesRequest request,
-      ListenableFuture<AppendEntriesResponse> responseFuture) {}
-
-  private AppendEntriesSubmission submitAppendEntriesToServer(
-      RaftServerId serverId, int followerNextIndex, int lastEntryIndex) {
-    ImmutableList<Entry> entries = raftLog.getEntriesFromIndex(followerNextIndex, lastEntryIndex);
-    AppendEntriesRequest request =
-        createBaseAppendEntriesRequest(followerNextIndex - 1).addAllEntries(entries).build();
-    ListenableFuture<AppendEntriesResponse> responseFuture =
-        Futures.withTimeout(
-            rpcClient.appendEntries(serverId, request), requestTimeoutDuration, executorService);
-    return new AppendEntriesSubmission(
-        serverId, followerNextIndex, lastEntryIndex, request, responseFuture);
-  }
-
-  /**
-   * Creates an {@link dev.sbutler.bitflask.storage.raft.AppendEntriesRequest.Builder} without the
-   * {@link dev.sbutler.bitflask.storage.raft.Entry} list populated.
-   */
-  private AppendEntriesRequest.Builder createBaseAppendEntriesRequest(int prevLogIndex) {
-    String leaderId =
-        raftVolatileState
-            .getLeaderServerId()
-            .map(RaftServerId::id)
-            .orElseThrow(
-                () ->
-                    new RaftUnknownLeaderException(
-                        "LeaderServerId was not set for use by the RaftLeaderProcessor"));
-
-    return AppendEntriesRequest.newBuilder()
-        .setTerm(raftPersistentState.getCurrentTerm())
-        .setLeaderId(leaderId)
-        .setPrevLogTerm(raftLog.getEntryAtIndex(prevLogIndex).getTerm())
-        .setPrevLogIndex(prevLogIndex);
   }
 
   private void waitForAllSubmissionsAndHandle(ImmutableList<AppendEntriesSubmission> submissions) {
@@ -240,8 +182,11 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
           .get();
     } catch (Exception e) {
       logger.atSevere().withCause(e).log(
-          "Unexpected failure while waiting for response futures to complete");
+          "Unexpected failure while waiting for response futures to complete. Exiting");
+      shouldContinueExecuting = false;
+      return;
     }
+
     int largestTermSeen = raftPersistentState.getCurrentTerm();
     for (var submission : submissions) {
       int term = handleAppendEntriesSubmission(submission);

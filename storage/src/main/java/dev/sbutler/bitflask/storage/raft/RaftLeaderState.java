@@ -1,5 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import static dev.sbutler.bitflask.storage.raft.RaftLeaderRpcClient.AppendEntriesSubmission;
+
 import jakarta.inject.Inject;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -44,22 +46,21 @@ final class RaftLeaderState {
   }
 
   /**
-   * Reduces the provided server's next index based on the provided {@link
-   * RaftLeaderProcessor.AppendEntriesSubmission}.
+   * Reduces the provided server's next index based on the provided {@link AppendEntriesSubmission}.
    */
-  void decreaseFollowerNextIndex(RaftLeaderProcessor.AppendEntriesSubmission submission) {
+  void decreaseFollowerNextIndex(AppendEntriesSubmission submission) {
     followersNextIndex
         .get(submission.serverId())
         .getAndUpdate(prev -> Math.min(prev, submission.followerNextIndex() - 1));
   }
 
-  void increaseFollowerNextIndex(RaftLeaderProcessor.AppendEntriesSubmission submission) {
+  void increaseFollowerNextIndex(AppendEntriesSubmission submission) {
     followersNextIndex
         .get(submission.serverId())
         .getAndUpdate(prev -> Math.max(prev, submission.lastEntryIndex()));
   }
 
-  void increaseFollowerMatchIndex(RaftLeaderProcessor.AppendEntriesSubmission submission) {
+  void increaseFollowerMatchIndex(AppendEntriesSubmission submission) {
     followersMatchIndex
         .get(submission.serverId())
         .getAndUpdate(prev -> Math.max(prev, submission.lastEntryIndex()));
