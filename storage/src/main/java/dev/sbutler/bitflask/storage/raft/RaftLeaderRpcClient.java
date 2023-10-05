@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static dev.sbutler.bitflask.storage.raft.RaftLeaderProcessor.AppendEntriesSubmission;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -60,13 +61,6 @@ final class RaftLeaderRpcClient {
     RaftLeaderRpcClient create(RaftLeaderState raftLeaderState);
   }
 
-  record AppendEntriesSubmission(
-      RaftServerId serverId,
-      int followerNextIndex,
-      int lastEntryIndex,
-      AppendEntriesRequest request,
-      ListenableFuture<AppendEntriesResponse> responseFuture) {}
-
   /** Sends an {@link AppendEntriesRequest} with no {@link Entry}s to all followers. */
   ImmutableList<AppendEntriesSubmission> sendHeartbeatToAll() {
     return raftConfiguration.getOtherServersInCluster().keySet().stream()
@@ -91,6 +85,10 @@ final class RaftLeaderRpcClient {
         .collect(toImmutableList());
   }
 
+  /**
+   * Submits an {@link AppendEntriesRequest} and requires that a response is received within a
+   * deadline, or cancels it.
+   */
   private AppendEntriesSubmission submitAppendEntriesToServer(
       RaftServerId serverId, int followerNextIndex, int lastEntryIndex) {
     ImmutableList<Entry> entries = raftLog.getEntriesFromIndex(followerNextIndex, lastEntryIndex);

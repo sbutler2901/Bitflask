@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static dev.sbutler.bitflask.storage.raft.RaftLeaderRpcClient.AppendEntriesSubmission;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
@@ -157,6 +156,14 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       shouldContinueExecuting = false;
     }
   }
+
+  /** Holds the state of a single {@link AppendEntriesRequest} to a Raft server. */
+  record AppendEntriesSubmission(
+      RaftServerId serverId,
+      int followerNextIndex,
+      int lastEntryIndex,
+      AppendEntriesRequest request,
+      ListenableFuture<AppendEntriesResponse> responseFuture) {}
 
   /** Sends an {@link AppendEntriesRequest} with no {@link Entry}s to all followers. */
   private void sendHeartbeatToAll() {

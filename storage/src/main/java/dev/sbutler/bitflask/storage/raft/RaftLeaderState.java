@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.storage.raft;
 
-import static dev.sbutler.bitflask.storage.raft.RaftLeaderRpcClient.AppendEntriesSubmission;
+import static dev.sbutler.bitflask.storage.raft.RaftLeaderProcessor.AppendEntriesSubmission;
 
 import jakarta.inject.Inject;
 import java.util.concurrent.ConcurrentHashMap;
