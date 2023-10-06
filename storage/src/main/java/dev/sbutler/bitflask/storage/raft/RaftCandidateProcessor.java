@@ -87,9 +87,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
         logger.atInfo().log("Received majority of votes. Transitioning to Leader");
         raftModeManager.get().transitionToLeaderState();
       } else {
-        while (shouldContinueElections && !Instant.now().isAfter(electionExpiration)) {
-          Thread.onSpinWait();
-        }
+        waitBeforeNextBroadcast(electionExpiration);
       }
     }
   }
@@ -101,24 +99,32 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
             raftTimerInterval.minimumMilliSeconds(), 1 + raftTimerInterval.maximumMilliseconds());
   }
 
+  private void waitBeforeNextBroadcast(Instant waitExpiration) {
+    while (shouldContinueElections && !Instant.now().isAfter(waitExpiration)) {
+      Thread.onSpinWait();
+    }
+  }
+
   record RequestVotesSubmission(
       RaftServerId serverId,
       RequestVoteRequest request,
       ListenableFuture<RequestVoteResponse> responseFuture) {}
 
-  /** Starts and handles a single election cycle. */
+  /** Starts and handles a single election cycle returning true if the election was won. */
   private boolean startNewElection(int electionTimeout) {
     raftPersistentState.incrementTermAndVoteForSelf();
     logger.atInfo().log(
         "Started new election term [%d] with election timer delay [%dms].",
         raftPersistentState.getCurrentTerm(), electionTimeout);
-    ImmutableList<RequestVotesSubmission> submissions =
-        rpcClient.broadcastRequestVotes(electionTimeout);
-    waitForAllResponsesToComplete(submissions);
-    return handleCompletedResponses(submissions).map(this::receivedMajorityVotes).orElse(false);
+    return Optional.of(rpcClient.broadcastRequestVotes(electionTimeout))
+        .flatMap(this::waitForAllResponsesToComplete)
+        .flatMap(this::handleCompletedResponses)
+        .map(this::didReceivedMajorityVotes)
+        .orElse(false);
   }
 
-  private void waitForAllResponsesToComplete(ImmutableList<RequestVotesSubmission> submissions) {
+  private Optional<ImmutableList<RequestVotesSubmission>> waitForAllResponsesToComplete(
+      ImmutableList<RequestVotesSubmission> submissions) {
     try {
       // Block until all requests have completed or timed out
       Futures.whenAllComplete(
@@ -127,10 +133,13 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
                   .collect(toImmutableList()))
           .call(() -> null, executorService)
           .get();
+      return Optional.of(submissions);
     } catch (Exception e) {
       logger.atSevere().withCause(e).log(
           "Unexpected failure while waiting for response futures to complete. Exiting");
+      shouldContinueElections = false;
     }
+    return Optional.empty();
   }
 
   private Optional<Integer> handleCompletedResponses(
@@ -154,7 +163,6 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
             submission.serverId().id(), submission.request().getTerm());
       }
     }
-
     if (largestTermSeen > raftPersistentState.getCurrentTerm()) {
       updateTermAndTransitionToFollower(largestTermSeen);
       return Optional.empty();
@@ -185,7 +193,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
     return Optional.empty();
   }
 
-  private boolean receivedMajorityVotes(int votesReceived) {
+  private boolean didReceivedMajorityVotes(int votesReceived) {
     double halfRequiredVotes = raftConfiguration.getOtherServersInCluster().keySet().size() / 2.0;
     return (1 + votesReceived) > halfRequiredVotes;
   }
