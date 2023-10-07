@@ -1,6 +1,8 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static dev.sbutler.bitflask.storage.raft.RaftTimerUtils.getExpirationFromNow;
+import static dev.sbutler.bitflask.storage.raft.RaftTimerUtils.waitUntilExpiration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
@@ -145,13 +147,13 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   public void run() {
     broadcastHeartbeat();
     while (shouldContinueExecuting) {
-      Instant waitExpiration = Instant.now().plusMillis(requestBroadcastDelayMillis);
+      Instant waitExpiration = getExpirationFromNow(requestBroadcastDelayMillis);
       broadcastAppendEntriesOrHeartbeat();
       if (shouldContinueExecuting) {
         checkAndUpdateCommitIndex();
       }
       // Prevent flooding network
-      waitBeforeNextBroadcast(waitExpiration);
+      waitUntilExpiration(waitExpiration, () -> !shouldContinueExecuting);
     }
     cleanupBeforeTerminating();
   }
@@ -184,12 +186,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
                 .filter(matchIndex -> matchIndex >= entryIndex)
                 .count();
     return numServersWithEntryWithinMatch > halfOfServers;
-  }
-
-  private void waitBeforeNextBroadcast(Instant waitExpiration) {
-    while (shouldContinueExecuting && !Instant.now().isAfter(waitExpiration)) {
-      Thread.onSpinWait();
-    }
   }
 
   /** Holds the state of a single {@link AppendEntriesRequest} to a Raft server. */

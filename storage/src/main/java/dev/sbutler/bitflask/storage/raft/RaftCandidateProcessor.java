@@ -1,6 +1,7 @@
 package dev.sbutler.bitflask.storage.raft;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static dev.sbutler.bitflask.storage.raft.RaftTimerUtils.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
@@ -10,10 +11,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import io.grpc.StatusRuntimeException;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -78,8 +77,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
   @Override
   public void run() {
     while (shouldContinueElections) {
-      int electionTimeout = getElectionTimeout();
-      Instant electionExpiration = Instant.now().plusMillis(electionTimeout);
+      int electionTimeout = getRandomDelayMillis(raftConfiguration.raftTimerInterval());
 
       boolean receivedMajorityVotes = startNewElection(electionTimeout);
       if (receivedMajorityVotes) {
@@ -87,21 +85,8 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
         logger.atInfo().log("Received majority of votes. Transitioning to Leader");
         raftModeManager.get().transitionToLeaderState();
       } else {
-        waitBeforeNextBroadcast(electionExpiration);
+        waitUntilExpiration(getExpirationFromNow(electionTimeout), () -> !shouldContinueElections);
       }
-    }
-  }
-
-  private int getElectionTimeout() {
-    RaftTimerInterval raftTimerInterval = raftConfiguration.raftTimerInterval();
-    return ThreadLocalRandom.current()
-        .nextInt(
-            raftTimerInterval.minimumMilliSeconds(), 1 + raftTimerInterval.maximumMilliseconds());
-  }
-
-  private void waitBeforeNextBroadcast(Instant waitExpiration) {
-    while (shouldContinueElections && !Instant.now().isAfter(waitExpiration)) {
-      Thread.onSpinWait();
     }
   }
 
