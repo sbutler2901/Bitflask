@@ -11,7 +11,6 @@ import dev.sbutler.bitflask.config.StorageConfig;
 import dev.sbutler.bitflask.storage.lsm.memtable.MemtableLoader;
 import dev.sbutler.bitflask.storage.lsm.segment.SegmentLevelMultiMapLoader;
 import java.time.Duration;
-import java.util.concurrent.ThreadFactory;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link LSMTreeLoader}. */
@@ -22,7 +21,6 @@ public class LSMTreeLoaderTest {
 
   private final ListeningScheduledExecutorService scheduledExecutorService =
       mock(ListeningScheduledExecutorService.class);
-  private final ThreadFactory threadFactory = Thread.ofVirtual().factory();
   private final LSMTreeStateManager stateManager = mock(LSMTreeStateManager.class);
   private final LSMTreeCompactor compactor = mock(LSMTreeCompactor.class);
   private final MemtableLoader memtableLoader = mock(MemtableLoader.class);
@@ -33,7 +31,6 @@ public class LSMTreeLoaderTest {
       new LSMTreeLoader(
           STORAGE_CONFIG,
           scheduledExecutorService,
-          threadFactory,
           stateManager,
           compactor,
           memtableLoader,
