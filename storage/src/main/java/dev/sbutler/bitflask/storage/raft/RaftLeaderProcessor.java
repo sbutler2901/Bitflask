@@ -140,7 +140,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   @Override
   public void run() {
     broadcastHeartbeat();
-    while (shouldContinueExecuting) {
+    while (shouldContinueExecuting && !Thread.currentThread().isInterrupted()) {
       Instant waitExpiration = getExpirationFromNow(requestBroadcastDelayMillis);
       broadcastAppendEntriesOrHeartbeat();
       if (shouldContinueExecuting) {

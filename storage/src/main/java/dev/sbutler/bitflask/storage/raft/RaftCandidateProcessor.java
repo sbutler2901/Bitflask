@@ -72,7 +72,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
    */
   @Override
   public void run() {
-    while (shouldContinueElections) {
+    while (shouldContinueElections && !Thread.currentThread().isInterrupted()) {
       raftPersistentState.incrementTermAndVoteForSelf();
       int electionTimeout = getRandomDelayMillis(raftConfiguration.raftTimerInterval());
       logger.atInfo().log(

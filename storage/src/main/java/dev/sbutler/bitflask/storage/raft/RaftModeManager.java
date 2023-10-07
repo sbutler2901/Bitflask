@@ -167,7 +167,7 @@ final class RaftModeManager extends AbstractService
   private void transitionToNewRaftModeProcessor(RaftModeProcessor newRaftModeProcessor) {
     transitionLock.lock();
     try {
-      runningProcessorFuture.cancel(false);
+      runningProcessorFuture.cancel(true);
       raftModeProcessor = newRaftModeProcessor;
       runningProcessorFuture = Futures.submit(raftModeProcessor, executorService);
       Futures.addCallback(
