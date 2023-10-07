@@ -73,15 +73,21 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
   @Override
   public void run() {
     while (shouldContinueElections) {
+      raftPersistentState.incrementTermAndVoteForSelf();
       int electionTimeout = getRandomDelayMillis(raftConfiguration.raftTimerInterval());
+      logger.atInfo().log(
+          "Starting new election term [%d] with election timer delay [%dms].",
+          raftPersistentState.getCurrentTerm(), electionTimeout);
 
-      boolean receivedMajorityVotes = startNewElection(electionTimeout);
+      boolean receivedMajorityVotes = requestVotes(electionTimeout);
       if (receivedMajorityVotes) {
         shouldContinueElections = false;
         logger.atInfo().log("Received majority of votes. Transitioning to Leader");
         raftModeManager.get().transitionToLeaderState();
       } else {
+        logger.atInfo().log("Waiting until expiration");
         waitUntilExpiration(getExpirationFromNow(electionTimeout), () -> !shouldContinueElections);
+        logger.atInfo().log("Expiration occurred");
       }
     }
   }
@@ -92,11 +98,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
       ListenableFuture<RequestVoteResponse> responseFuture) {}
 
   /** Starts and handles a single election cycle returning true if the election was won. */
-  private boolean startNewElection(int electionTimeout) {
-    raftPersistentState.incrementTermAndVoteForSelf();
-    logger.atInfo().log(
-        "Started new election term [%d] with election timer delay [%dms].",
-        raftPersistentState.getCurrentTerm(), electionTimeout);
+  private boolean requestVotes(int electionTimeout) {
     return Optional.of(rpcClient.broadcastRequestVotes(electionTimeout))
         .flatMap(this::waitForAllResponsesToComplete)
         .flatMap(this::handleCompletedResponses)
