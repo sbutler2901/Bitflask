@@ -49,8 +49,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
 
   private final long requestBroadcastDelayMillis;
 
-  private volatile boolean shouldContinueExecuting = true;
-
   @Inject
   RaftLeaderProcessor(
       Provider<RaftModeManager> raftModeManager,
@@ -119,7 +117,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   @Override
   protected void beforeUpdateTermAndTransitionToFollower(int rpcTerm) {
     logger.atWarning().log("Larger term [%d] found transitioning to follower.", rpcTerm);
-    shouldContinueExecuting = false;
+    terminateExecution();
   }
 
   @Override
@@ -140,14 +138,14 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   @Override
   public void run() {
     broadcastHeartbeat();
-    while (shouldContinueExecuting && !Thread.currentThread().isInterrupted()) {
+    while (shouldContinueExecuting() && !Thread.currentThread().isInterrupted()) {
       Instant waitExpiration = getExpirationFromNow(requestBroadcastDelayMillis);
       broadcastAppendEntriesOrHeartbeat();
-      if (shouldContinueExecuting) {
+      if (shouldContinueExecuting()) {
         checkAndUpdateCommitIndex();
       }
       // Prevent flooding network
-      waitUntilExpiration(waitExpiration, () -> !shouldContinueExecuting);
+      waitUntilExpiration(waitExpiration, () -> !shouldContinueExecuting());
     }
     cleanupBeforeTerminating();
   }
@@ -218,7 +216,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     } catch (Exception e) {
       logger.atSevere().withCause(e).log(
           "Unexpected failure while waiting for response futures to complete. Exiting.");
-      shouldContinueExecuting = false;
+      terminateExecution();
     }
     return Optional.empty();
   }

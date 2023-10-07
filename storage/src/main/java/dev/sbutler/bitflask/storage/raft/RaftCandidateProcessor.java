@@ -31,8 +31,6 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
   private final RaftConfiguration raftConfiguration;
   private final RaftCandidateRpcClient rpcClient;
 
-  private volatile boolean shouldContinueElections = true;
-
   @Inject
   RaftCandidateProcessor(
       Provider<RaftModeManager> raftModeManager,
@@ -54,14 +52,14 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   @Override
   protected void beforeUpdateTermAndTransitionToFollower(int rpcTerm) {
-    shouldContinueElections = false;
+    terminateExecution();
   }
 
   @Override
   protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {
     // Concede to new leader
     if (request.getTerm() >= raftPersistentState.getCurrentTerm()) {
-      shouldContinueElections = false;
+      terminateExecution();
       updateTermAndTransitionToFollower(request.getTerm());
     }
   }
@@ -72,7 +70,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
    */
   @Override
   public void run() {
-    while (shouldContinueElections && !Thread.currentThread().isInterrupted()) {
+    while (shouldContinueExecuting() && !Thread.currentThread().isInterrupted()) {
       raftPersistentState.incrementTermAndVoteForSelf();
       int electionTimeout = getRandomDelayMillis(raftConfiguration.raftTimerInterval());
       logger.atInfo().log(
@@ -81,11 +79,12 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
       boolean receivedMajorityVotes = requestVotes(electionTimeout);
       if (receivedMajorityVotes) {
-        shouldContinueElections = false;
+        terminateExecution();
         logger.atInfo().log("Received majority of votes. Transitioning to Leader");
         raftModeManager.get().transitionToLeaderState();
       } else {
-        waitUntilExpiration(getExpirationFromNow(electionTimeout), () -> !shouldContinueElections);
+        waitUntilExpiration(
+            getExpirationFromNow(electionTimeout), () -> !shouldContinueExecuting());
       }
     }
   }
@@ -118,7 +117,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
     } catch (Exception e) {
       logger.atSevere().withCause(e).log(
           "Unexpected failure while waiting for response futures to complete. Exiting");
-      shouldContinueElections = false;
+      terminateExecution();
     }
     return Optional.empty();
   }

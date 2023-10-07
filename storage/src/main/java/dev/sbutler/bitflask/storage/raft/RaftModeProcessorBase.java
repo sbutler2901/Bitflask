@@ -16,6 +16,8 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   protected final RaftPersistentState raftPersistentState;
   protected final RaftVolatileState raftVolatileState;
 
+  private volatile boolean shouldContinueExecuting = true;
+
   RaftModeProcessorBase(
       Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
@@ -23,6 +25,14 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     this.raftModeManager = raftModeManager;
     this.raftPersistentState = raftPersistentState;
     this.raftVolatileState = raftVolatileState;
+  }
+
+  final void terminateExecution() {
+    shouldContinueExecuting = false;
+  }
+
+  final boolean shouldContinueExecuting() {
+    return shouldContinueExecuting;
   }
 
   /**

@@ -26,16 +26,15 @@ final class RaftTimerUtils {
    * true, or the thread is interrupted.
    */
   static void waitUntilExpiration(Instant waitExpiration, Supplier<Boolean> exitEarly) {
-    while (!exitEarly.get()
-        && Instant.now().isBefore(waitExpiration)
-        && !Thread.currentThread().isInterrupted()) {
-      Thread.onSpinWait();
-    }
+    waitWithDynamicExpiration(() -> waitExpiration, exitEarly);
   }
 
   /** Waits until the system clock reaches {@code expiration} or the thread is interrupted. */
-  static void waitWithDynamicExpiration(Supplier<Instant> expiration) {
-    while (Instant.now().isBefore(expiration.get()) && !Thread.currentThread().isInterrupted()) {
+  static void waitWithDynamicExpiration(
+      Supplier<Instant> waitExpiration, Supplier<Boolean> exitEarly) {
+    while (!exitEarly.get()
+        && Instant.now().isBefore(waitExpiration.get())
+        && !Thread.currentThread().isInterrupted()) {
       Thread.onSpinWait();
     }
   }
