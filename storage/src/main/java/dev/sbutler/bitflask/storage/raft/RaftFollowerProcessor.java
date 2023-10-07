@@ -1,8 +1,11 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import static dev.sbutler.bitflask.storage.raft.RaftTimerUtils.*;
+
 import com.google.common.flogger.FluentLogger;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -17,16 +20,18 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
 
   private static final RaftMode RAFT_MODE = RaftMode.FOLLOWER;
 
-  private final RaftElectionTimer raftElectionTimer;
+  private final RaftConfiguration raftConfiguration;
+
+  private volatile Instant electionTimeout = Instant.MAX;
 
   @Inject
   RaftFollowerProcessor(
       Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
-      RaftElectionTimer raftElectionTimer) {
+      RaftConfiguration raftConfiguration) {
     super(raftModeManager, raftPersistentState, raftVolatileState);
-    this.raftElectionTimer = raftElectionTimer;
+    this.raftConfiguration = raftConfiguration;
   }
 
   @Override
@@ -36,49 +41,57 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
 
   @Override
   protected void beforeProcessRequestVoteRequest(RequestVoteRequest request) {
-    int timerDelay = raftElectionTimer.restart();
+    int timeoutDelay = updateElectionTimeout();
     logger.atInfo().log(
         "Restarted election timer with delay of [%dms] after receiving RequestVote RPC.",
-        timerDelay);
+        timeoutDelay);
   }
 
   @Override
   protected void afterProcessRequestVoteRequest(RequestVoteRequest request, boolean voteGranted) {
     if (voteGranted) {
-      int timerDelay = raftElectionTimer.restart();
+      int timeoutDelay = updateElectionTimeout();
       logger.atInfo().log(
           "Restarted election timer with delay of [%dms] after granting vote to [%s] for term [%d]",
-          timerDelay, request.getCandidateId(), request.getTerm());
+          timeoutDelay, request.getCandidateId(), request.getTerm());
     }
   }
 
   @Override
   protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {
-    int timerDelay = raftElectionTimer.restart();
+    int timeoutDelay = updateElectionTimeout();
     logger.atFine().atMostEvery(10, TimeUnit.SECONDS).log(
         "Restarted election timer with delay of [%dms] after receiving AppendEntries request",
-        timerDelay);
+        timeoutDelay);
   }
 
   @Override
   protected void afterProcessAppendEntriesRequest(AppendEntriesRequest request) {
-    int timerDelay = raftElectionTimer.restart();
+    int timeoutDelay = updateElectionTimeout();
     logger.atInfo().atMostEvery(10, TimeUnit.SECONDS).log(
         "Restarted election timer with delay of [%dms] after processing AppendEntries request.",
-        timerDelay);
+        timeoutDelay);
   }
 
   @Override
   public void handleElectionTimeout() {
     logger.atInfo().log("Handling election timeout.");
-    raftModeManager.get().transitionToCandidateState();
   }
 
   @Override
   public void run() {
-    int timerDelay = raftElectionTimer.restart();
-    logger.atInfo().log("Restarted election timer with delay of [%dms] at start up.", timerDelay);
-    // Nothing for follower to do besides process incoming RPCs
+    int initialTimeoutDelay = updateElectionTimeout();
+    logger.atInfo().log(
+        "Started election timer with delay of [%dms] at start up.", initialTimeoutDelay);
+    waitWithDynamicExpiration(() -> electionTimeout);
+    logger.atInfo().log("Election timer expired. Transition to Candidate.");
+    raftModeManager.get().transitionToCandidateState();
+  }
+
+  private int updateElectionTimeout() {
+    int delayMillis = getRandomDelayMillis(raftConfiguration.raftTimerInterval());
+    electionTimeout = getExpirationFromNow(delayMillis);
+    return delayMillis;
   }
 
   @Override

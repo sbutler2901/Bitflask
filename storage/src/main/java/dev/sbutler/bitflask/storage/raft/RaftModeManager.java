@@ -27,7 +27,6 @@ final class RaftModeManager extends AbstractService
   private final RaftConfiguration raftConfiguration;
   private final ListeningExecutorService executorService;
   private final RaftModeProcessor.Factory raftModeProcessorFactory;
-  private final RaftElectionTimer raftElectionTimer;
   private final RaftVolatileState raftVolatileState;
   private final ReentrantLock transitionLock = new ReentrantLock();
 
@@ -39,12 +38,10 @@ final class RaftModeManager extends AbstractService
       RaftConfiguration raftConfiguration,
       @RaftModeManagerListeningExecutorService ListeningExecutorService executorService,
       RaftModeProcessor.Factory raftModeProcessorFactory,
-      RaftElectionTimer raftElectionTimer,
       RaftVolatileState raftVolatileState) {
     this.raftConfiguration = raftConfiguration;
     this.executorService = executorService;
     this.raftModeProcessorFactory = raftModeProcessorFactory;
-    this.raftElectionTimer = raftElectionTimer;
     this.raftVolatileState = raftVolatileState;
   }
 
@@ -67,7 +64,6 @@ final class RaftModeManager extends AbstractService
   }
 
   private void shutdown() {
-    raftElectionTimer.cancel();
     MoreExecutors.shutdownAndAwaitTermination(executorService, Duration.ofSeconds(5));
   }
 
@@ -153,8 +149,7 @@ final class RaftModeManager extends AbstractService
   /**
    * Transitions the server to use the {@link RaftCandidateProcessor}.
    *
-   * <p>This will cancel the currently running {@link RaftModeProcessor} and {@link
-   * RaftElectionTimer}.
+   * <p>This will cancel the currently running {@link RaftModeProcessor}.
    */
   void transitionToCandidateState() {
     Preconditions.checkState(
@@ -168,8 +163,7 @@ final class RaftModeManager extends AbstractService
   /**
    * Transitions the server to use the {@link RaftLeaderProcessor}.
    *
-   * <p>This will cancel the currently running {@link RaftModeProcessor} and {@link
-   * RaftElectionTimer}.
+   * <p>This will cancel the currently running {@link RaftModeProcessor}.
    */
   void transitionToLeaderState() {
     Preconditions.checkState(
@@ -183,7 +177,6 @@ final class RaftModeManager extends AbstractService
   private void transitionToNewRaftModeProcessor(RaftModeProcessor newRaftModeProcessor) {
     transitionLock.lock();
     try {
-      raftElectionTimer.cancel();
       runningProcessorFuture.cancel(false);
       raftModeProcessor = newRaftModeProcessor;
       runningProcessorFuture = Futures.submit(raftModeProcessor, executorService);
