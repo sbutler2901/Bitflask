@@ -123,12 +123,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   }
 
   @Override
-  public void handleElectionTimeout() {
-    throw new IllegalStateException(
-        "Raft in LEADER mode should not have an election timer running");
-  }
-
-  @Override
   public StorageSubmitResults submitCommand(StorageCommandDto storageCommandDto) {
     if (!storageCommandDto.isPersistable()) {
       ListenableFuture<StorageCommandResults> results =

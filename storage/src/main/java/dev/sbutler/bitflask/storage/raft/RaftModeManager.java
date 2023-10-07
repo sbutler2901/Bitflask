@@ -20,7 +20,7 @@ import javax.annotation.Nonnull;
  */
 @Singleton
 final class RaftModeManager extends AbstractService
-    implements RaftRpcHandler, RaftElectionTimeoutHandler, RaftCommandSubmitter {
+    implements RaftRpcHandler, RaftCommandSubmitter {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -82,16 +82,6 @@ final class RaftModeManager extends AbstractService
     transitionLock.lock();
     try {
       return raftModeProcessor.processAppendEntriesRequest(request);
-    } finally {
-      transitionLock.unlock();
-    }
-  }
-
-  /** Updates the Raft's server state as a result of an election timer timeout. */
-  public void handleElectionTimeout() {
-    transitionLock.lock();
-    try {
-      raftModeProcessor.handleElectionTimeout();
     } finally {
       transitionLock.unlock();
     }

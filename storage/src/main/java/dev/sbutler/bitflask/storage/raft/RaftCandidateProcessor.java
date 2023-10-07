@@ -66,10 +66,6 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
     }
   }
 
-  public void handleElectionTimeout() {
-    logger.atInfo().log("Handling election timeout.");
-  }
-
   /**
    * The main loop of this class that executes until the RequestVotes RPCs sent cause termination,
    * or an RPC is received from another server that causes termination.

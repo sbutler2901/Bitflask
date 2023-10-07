@@ -74,11 +74,6 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
   }
 
   @Override
-  public void handleElectionTimeout() {
-    logger.atInfo().log("Handling election timeout.");
-  }
-
-  @Override
   public void run() {
     int initialTimeoutDelay = updateElectionTimeout();
     logger.atInfo().log(
