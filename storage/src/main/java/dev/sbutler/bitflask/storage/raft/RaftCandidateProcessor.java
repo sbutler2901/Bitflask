@@ -85,9 +85,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
         logger.atInfo().log("Received majority of votes. Transitioning to Leader");
         raftModeManager.get().transitionToLeaderState();
       } else {
-        logger.atInfo().log("Waiting until expiration");
         waitUntilExpiration(getExpirationFromNow(electionTimeout), () -> !shouldContinueElections);
-        logger.atInfo().log("Expiration occurred");
       }
     }
   }
