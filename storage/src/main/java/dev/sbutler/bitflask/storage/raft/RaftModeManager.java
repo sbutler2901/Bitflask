@@ -204,7 +204,7 @@ final class RaftModeManager extends AbstractService
         // Tasks are manually cancelled
         return;
       }
-      logger.atSevere().log("[%s] processor failed.", processorType);
+      logger.atSevere().withCause(t).log("[%s] processor failed.", processorType);
       doStopWithFailure(t);
     }
   }
