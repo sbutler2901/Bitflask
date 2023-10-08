@@ -21,7 +21,7 @@ public final class CommandProcessingService {
    * Initiates processing of the provided message providing a ListenableFuture for retrieving the
    * results.
    */
-  public String processCommandMessage(ImmutableList<String> commandMessage) {
+  public ClientCommandResults processCommandMessage(ImmutableList<String> commandMessage) {
     if (commandMessage.isEmpty()) {
       throw new InvalidCommandException("Message must contain at least one argument");
     }
@@ -30,20 +30,7 @@ public final class CommandProcessingService {
     ImmutableList<String> args = commandMessage.subList(1, commandMessage.size());
 
     ServerCommand command = serverCommandFactory.createCommand(serverCommandType, args);
-    ClientCommandResults commandResults = command.execute();
-    return handleCommandResults(commandResults);
-  }
-
-  private String handleCommandResults(ClientCommandResults commandResults) {
-    return switch (commandResults) {
-      case ClientCommandResults.Success success -> success.message();
-      case ClientCommandResults.Failure failure -> failure.message();
-        // TODO: improve handling of these cases
-      case ClientCommandResults.NotCurrentLeader notCurrentLeader -> notCurrentLeader
-          .currentLeaderInfo()
-          .toString();
-      case ClientCommandResults.NoKnownLeader noKnownLeader -> "Unknown leader!";
-    };
+    return command.execute();
   }
 
   private ServerCommandType getCommandType(String messageCommand) {
