@@ -71,16 +71,6 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     }
   }
 
-  @Override
-  public boolean commitCommand(SetCommand setCommand) {
-    return false;
-  }
-
-  @Override
-  public boolean commitCommand(DeleteCommand deleteCommand) {
-    return false;
-  }
-
   /**
    * A subclass can override this method to run custom logic before a {@link RequestVoteRequest} is
    * processed and {@link RequestVoteResponse} sent.
