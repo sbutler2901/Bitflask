@@ -10,15 +10,15 @@ import java.util.List;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
- * Handles converting between {@link RespResponse} and a {@link RespElement} representing a
+ * Handles converting between {@link RespResponse} and a {@link RespArray} representing a
  * RespResponse.
  */
-public class RespResponseConverter extends Converter<RespResponse, RespElement> {
+public class RespResponseConverter extends Converter<RespResponse, RespArray> {
 
   public static final RespResponseConverter INSTANCE = new RespResponseConverter();
 
   @Override
-  protected RespElement doForward(@NonNull RespResponse respResponse) {
+  protected RespArray doForward(@NonNull RespResponse respResponse) {
     ImmutableList<RespElement> responseList =
         ImmutableList.of(
             new RespInteger(respResponse.statusCode().getValue()),
@@ -28,9 +28,9 @@ public class RespResponseConverter extends Converter<RespResponse, RespElement> 
   }
 
   @Override
-  protected RespResponse doBackward(@NonNull RespElement respElement) {
+  protected RespResponse doBackward(@NonNull RespArray respElement) {
     try {
-      List<RespElement> responseArray = respElement.getAsRespArray().getValue();
+      List<RespElement> responseArray = respElement.getValue();
       RespStatusCode statusCode =
           RespStatusCode.fromValue((int) responseArray.get(0).getAsRespInteger().getValue());
       String message = responseArray.get(1).getAsRespBulkString().getValue();
