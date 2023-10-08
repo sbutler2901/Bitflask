@@ -12,6 +12,7 @@ import dev.sbutler.bitflask.client.command_processing.LocalCommand.Help;
 import dev.sbutler.bitflask.client.command_processing.ProcessingException;
 import dev.sbutler.bitflask.client.command_processing.RemoteCommand;
 import dev.sbutler.bitflask.client.command_processing.RespCommandProcessor;
+import dev.sbutler.bitflask.resp.messages.RespResponse;
 import jakarta.inject.Inject;
 
 /**
@@ -53,14 +54,27 @@ public class ClientProcessor {
 
   private boolean processRemoteCommand(RemoteCommand remoteCommand) {
     try {
-      String result = respCommandProcessor.runCommand(remoteCommand);
-      outputWriter.writeWithNewLine(result);
+      RespResponse response = respCommandProcessor.runCommand(remoteCommand);
+      return handleRespResponse(response);
     } catch (ProcessingException e) {
       outputWriter.writeWithNewLine(
           "Failure to process command [" + remoteCommand.command() + "]: " + e.getMessage());
       return false;
     }
-    return true;
+  }
+
+  private boolean handleRespResponse(RespResponse response) {
+    return switch (response.statusCode()) {
+      case SUCCESS, FAILURE -> {
+        outputWriter.writeWithNewLine(response.message());
+        yield true;
+      }
+        // TODO: handle auto connect to appropriate leader
+      case NOT_CURRENT_LEADER, NO_KNOWN_LEADER -> {
+        outputWriter.writeWithNewLine("test: " + response.message());
+        yield false;
+      }
+    };
   }
 
   private ClientCommand mapClientInputToCommand(ImmutableList<ReplElement> clientInput) {

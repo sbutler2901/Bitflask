@@ -1,12 +1,13 @@
 package dev.sbutler.bitflask.client.command_processing;
 
+import dev.sbutler.bitflask.resp.messages.RespResponse;
+import dev.sbutler.bitflask.resp.messages.RespResponseConverter;
 import dev.sbutler.bitflask.resp.network.RespService;
+import dev.sbutler.bitflask.resp.types.RespElement;
 import jakarta.inject.Inject;
 import java.io.IOException;
 
-/**
- * Handles processing commands via communication with a remote server using the RESP protocol.
- */
+/** Handles processing commands via communication with a remote server using the RESP protocol. */
 public class RespCommandProcessor {
 
   private final RespService respService;
@@ -16,7 +17,7 @@ public class RespCommandProcessor {
     this.respService = respService;
   }
 
-  public String runCommand(RemoteCommand command) throws ProcessingException {
+  public RespResponse runCommand(RemoteCommand command) throws ProcessingException {
     writeCommand(command);
     return readResponse();
   }
@@ -29,9 +30,18 @@ public class RespCommandProcessor {
     }
   }
 
-  private String readResponse() throws ProcessingException {
+  private RespResponse readResponse() throws ProcessingException {
     try {
-      return respService.read().toString();
+      RespElement respElement = respService.read();
+      if (respElement.isRespError()) {
+        throw new ProcessingException(
+            String.format(
+                "Server responded with unrecoverable error. %s", respElement.getAsRespError()));
+      } else if (!respElement.isRespArray()) {
+        throw new ProcessingException(
+            String.format("The server did not return an expected RespElement. [%s]", respElement));
+      }
+      return RespResponseConverter.INSTANCE.reverse().convert(respElement.getAsRespArray());
     } catch (IOException e) {
       throw new ProcessingException("Failed to read response", e);
     }
