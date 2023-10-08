@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import com.google.common.base.Preconditions;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.Optional;
@@ -59,7 +60,14 @@ final class RaftVolatileState {
     return Optional.ofNullable(leaderServerId);
   }
 
-  void setLeaderId(RaftServerId leaderServerId) {
+  void setLeaderServerId(RaftServerId leaderServerId) {
+    Preconditions.checkArgument(
+        leaderServerId != null,
+        "Leader's server id cannot be set to null. Use clearLeaderServerId().");
     this.leaderServerId = leaderServerId;
+  }
+
+  void clearLeaderServerId() {
+    this.leaderServerId = null;
   }
 }

@@ -52,6 +52,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   @Override
   protected void beforeUpdateTermAndTransitionToFollower(int rpcTerm) {
+    logger.atWarning().log("Larger term [%d] found transitioning to follower.", rpcTerm);
     terminateExecution();
   }
 
@@ -60,7 +61,8 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
     // Concede to new leader
     if (request.getTerm() >= raftPersistentState.getCurrentTerm()) {
       terminateExecution();
-      updateTermAndTransitionToFollower(request.getTerm());
+      updateTermAndTransitionToFollower(
+          request.getTerm(), Optional.of(new RaftServerId(request.getLeaderId())));
     }
   }
 
@@ -144,7 +146,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
       }
     }
     if (largestTermSeen > raftPersistentState.getCurrentTerm()) {
-      updateTermAndTransitionToFollower(largestTermSeen);
+      updateTermAndTransitionToFollowerWithUnknownLeader(largestTermSeen);
       return Optional.empty();
     }
     return Optional.of(votesReceived);

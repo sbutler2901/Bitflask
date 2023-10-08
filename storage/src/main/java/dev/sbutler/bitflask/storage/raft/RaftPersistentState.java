@@ -57,17 +57,6 @@ final class RaftPersistentState {
     return currentTerm.get();
   }
 
-  /** Increments the current term returning the previous value. */
-  void incrementCurrentTermAndResetVote() {
-    voteLock.lock();
-    try {
-      currentTerm.getAndIncrement();
-      votedForCandidateId = null;
-    } finally {
-      voteLock.unlock();
-    }
-  }
-
   /** Sets the current term and resets this server's vote. */
   void setCurrentTermAndResetVote(int newCurrentTerm) {
     voteLock.lock();

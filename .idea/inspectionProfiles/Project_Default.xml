@@ -14,6 +14,6 @@
       </option>
       <option name="IGNORE_FIELDS_USED_IN_MULTIPLE_METHODS" value="true" />
     </inspection_tool>
-    <inspection_tool class="OptionalUsedAsFieldOrParameterType" enabled="true" level="WEAK WARNING" enabled_by_default="true" editorAttributes="INFO_ATTRIBUTES" />
+    <inspection_tool class="OptionalUsedAsFieldOrParameterType" enabled="false" level="WEAK WARNING" enabled_by_default="false" editorAttributes="INFO_ATTRIBUTES" />
   </profile>
 </component>

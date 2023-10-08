@@ -99,14 +99,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   }
 
   @Override
-  protected void beforeProcessRequestVoteRequest(RequestVoteRequest request) {
-    handleUnexpectedRequest(
-        String.format(
-            "Request term [%d], local term [%d].",
-            request.getTerm(), raftPersistentState.getCurrentTerm()));
-  }
-
-  @Override
   protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {
     handleUnexpectedRequest(
         String.format(
@@ -248,7 +240,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       }
     }
     if (largestTermSeen > raftPersistentState.getCurrentTerm()) {
-      updateTermAndTransitionToFollower(largestTermSeen);
+      updateTermAndTransitionToFollowerWithUnknownLeader(largestTermSeen);
     }
   }
 

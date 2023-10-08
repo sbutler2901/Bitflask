@@ -3,6 +3,7 @@ package dev.sbutler.bitflask.storage.raft;
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.storage.raft.RaftLog.LogEntryDetails;
 import jakarta.inject.Provider;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -50,10 +51,16 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
    * A subclass can override this method to run custom logic before the current term is updated and
    * the server transitions to the Follower mode.
    *
-   * <p>This method is executed anytime {@link #updateTermAndTransitionToFollower(int)} is called,
-   * before the term update and transition has occurred.
+   * <p>This method is executed anytime {@link #updateTermAndTransitionToFollower} or {@link
+   * #updateTermAndTransitionToFollowerWithUnknownLeader} is called, before the term update and
+   * transition has occurred.
    */
   protected void beforeUpdateTermAndTransitionToFollower(int rpcTerm) {}
+
+  /** See {@link RaftModeProcessorBase#updateTermAndTransitionToFollower} */
+  protected final void updateTermAndTransitionToFollowerWithUnknownLeader(int rpcTerm) {
+    updateTermAndTransitionToFollower(rpcTerm, Optional.empty());
+  }
 
   /**
    * Updates the term and, if this caller is not an instance of {@link RaftFollowerProcessor},
@@ -63,22 +70,12 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
    * RaftModeProcessorBase#shouldUpdateTermAndTransitionToFollower(long)} is true for the term in
    * any {@link RequestVoteResponse} or {@link AppendEntriesResponse} received.
    */
-  protected final void updateTermAndTransitionToFollower(int rpcTerm) {
+  protected final void updateTermAndTransitionToFollower(
+      int rpcTerm, Optional<RaftServerId> knownLeaderServerId) {
     beforeUpdateTermAndTransitionToFollower(rpcTerm);
     raftPersistentState.setCurrentTermAndResetVote(rpcTerm);
-    if (!RaftMode.FOLLOWER.equals(this.getRaftMode())) {
-      raftModeManager.get().transitionToFollowerState();
-    }
+    raftModeManager.get().transitionToFollowerState(knownLeaderServerId);
   }
-
-  /**
-   * A subclass can override this method to run custom logic before a {@link RequestVoteRequest} is
-   * processed and {@link RequestVoteResponse} sent.
-   *
-   * <p>This method will be executed after {@link #updateTermAndTransitionToFollower(int)}, if a
-   * term update and transition is necessary.
-   */
-  protected void beforeProcessRequestVoteRequest(RequestVoteRequest request) {}
 
   /**
    * A subclass can override this method to run custom logic before a {@link RequestVoteResponse} is
@@ -98,9 +95,8 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
           .log(
               "Transitioning to follower after receiving RequestVote with term [%d] and local term [%d].",
               request.getTerm(), raftPersistentState.getCurrentTerm());
-      updateTermAndTransitionToFollower(request.getTerm());
+      updateTermAndTransitionToFollowerWithUnknownLeader(request.getTerm());
     }
-    beforeProcessRequestVoteRequest(request);
 
     RaftServerId candidateRaftServerId = new RaftServerId(request.getCandidateId());
     boolean voteGranted = shouldGrantVote(request, candidateRaftServerId);
@@ -148,8 +144,9 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
    * A subclass can override this method to run custom logic before a {@link AppendEntriesRequest}
    * is processed and {@link AppendEntriesResponse} sent.
    *
-   * <p>This method will be executed after {@link #updateTermAndTransitionToFollower(int)}, if a
-   * term update and transition is necessary.
+   * <p>This method will be executed after {@link #updateTermAndTransitionToFollower} or {@link
+   * #updateTermAndTransitionToFollowerWithUnknownLeader}, if a term update and transition is
+   * necessary.
    */
   protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {}
 
@@ -171,7 +168,8 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
           .log(
               "Transitioning to follower after receiving AppendEntries with term [%d] and local term [%d].",
               request.getTerm(), raftPersistentState.getCurrentTerm());
-      updateTermAndTransitionToFollower(request.getTerm());
+      updateTermAndTransitionToFollower(
+          request.getTerm(), Optional.of(new RaftServerId(request.getLeaderId())));
     }
     beforeProcessAppendEntriesRequest(request);
 
@@ -205,7 +203,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
                 new LogEntryDetails(request.getPrevLogTerm(), request.getPrevLogIndex()),
                 request.getEntriesList());
     if (appendSuccessful) {
-      raftVolatileState.setLeaderId(new RaftServerId(request.getLeaderId()));
+      raftVolatileState.setLeaderServerId(new RaftServerId(request.getLeaderId()));
       if (request.getLeaderCommit() > raftVolatileState.getHighestCommittedEntryIndex()) {
         raftVolatileState.setHighestCommittedEntryIndex(
             Math.min(

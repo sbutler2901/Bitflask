@@ -48,7 +48,7 @@ final class RaftModeManager extends AbstractService
   @Override
   protected void doStart() {
     // TODO: handle starting from persisted state
-    transitionToFollowerState();
+    transitionToFollowerState(Optional.empty());
     notifyStarted();
   }
 
@@ -122,18 +122,25 @@ final class RaftModeManager extends AbstractService
   }
 
   /**
-   * Transitions the server to use the {@link RaftFollowerProcessor}.
+   * Transitions the server to use the {@link RaftFollowerProcessor}, if not already, and updates
+   * the leader service id, or clears it.
    *
-   * <p>This will cancel the currently running {@link RaftModeProcessor} and updates the election
-   * timer to call the new RaftFollowerProcessor when a timeout occurs.
+   * <p>If the processor is not already a RaftFollowerProcessor, this will cancel the currently
+   * running {@link RaftModeProcessor} and updates the election timer to call the new
+   * RaftFollowerProcessor when a timeout occurs.
    */
-  void transitionToFollowerState() {
-    Preconditions.checkState(
-        raftModeProcessor == null || !RaftMode.FOLLOWER.equals(getCurrentRaftMode()),
-        "The Raft server must be in the CANDIDATE or LEADER state to transition to the FOLLOWER state.");
-
-    logger.atInfo().log("Transitioning to Follower state.");
-    transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
+  void transitionToFollowerState(Optional<RaftServerId> knownLeaderServerId) {
+    transitionLock.lock();
+    try {
+      if (!RaftMode.FOLLOWER.equals(getCurrentRaftMode())) {
+        logger.atInfo().log("Transitioning to Follower state.");
+        transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
+      }
+      knownLeaderServerId.ifPresentOrElse(
+          raftVolatileState::setLeaderServerId, raftVolatileState::clearLeaderServerId);
+    } finally {
+      transitionLock.unlock();
+    }
   }
 
   /**
@@ -147,7 +154,13 @@ final class RaftModeManager extends AbstractService
         "The Raft server must be in the FOLLOWER state to transition to the CANDIDATE state.");
 
     logger.atInfo().log("Transitioning to Candidate state.");
-    transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftCandidateProcessor());
+    transitionLock.lock();
+    try {
+      transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftCandidateProcessor());
+      raftVolatileState.clearLeaderServerId();
+    } finally {
+      transitionLock.unlock();
+    }
   }
 
   /**
@@ -161,7 +174,13 @@ final class RaftModeManager extends AbstractService
         "The Raft server must be in the CANDIDATE state to transition to the LEADER state.");
 
     logger.atInfo().log("Transitioning to Leader state.");
-    transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftLeaderProcessor());
+    transitionLock.lock();
+    try {
+      transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftLeaderProcessor());
+      raftVolatileState.setLeaderServerId(raftConfiguration.thisRaftServerId());
+    } finally {
+      transitionLock.unlock();
+    }
   }
 
   private void transitionToNewRaftModeProcessor(RaftModeProcessor newRaftModeProcessor) {
@@ -174,9 +193,6 @@ final class RaftModeManager extends AbstractService
           runningProcessorFuture,
           new ProcessorFutureCallback(getCurrentRaftMode()),
           executorService);
-      if (isCurrentLeader()) {
-        raftVolatileState.setLeaderId(raftConfiguration.thisRaftServerId());
-      }
     } finally {
       logger.atInfo().log("Completed transition to [%s].", getCurrentRaftMode());
       transitionLock.unlock();
