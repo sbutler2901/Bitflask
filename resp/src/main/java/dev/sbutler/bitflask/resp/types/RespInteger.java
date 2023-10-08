@@ -12,7 +12,7 @@ public final class RespInteger extends RespElement {
     this.value = value;
   }
 
-  public Long getValue() {
+  public long getValue() {
     return value;
   }
 
@@ -36,11 +36,11 @@ public final class RespInteger extends RespElement {
       return false;
     }
     RespInteger that = (RespInteger) o;
-    return getValue().equals(that.getValue());
+    return value == that.getValue();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(getValue());
+    return Objects.hash(value);
   }
 }
