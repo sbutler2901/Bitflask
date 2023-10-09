@@ -48,8 +48,13 @@ final class RaftModeManager extends AbstractService
   @Override
   protected void doStart() {
     // TODO: handle starting from persisted state
-    transitionToFollowerState(Optional.empty());
-    notifyStarted();
+    try {
+      transitionToFollowerState(Optional.empty());
+      notifyStarted();
+    } catch (Exception e) {
+      logger.atSevere().withCause(e).log("Failed to start RaftModeManager.");
+      notifyFailed(e);
+    }
   }
 
   @Override
@@ -134,7 +139,7 @@ final class RaftModeManager extends AbstractService
     try {
       knownLeaderServerId.ifPresentOrElse(
           raftVolatileState::setLeaderServerId, raftVolatileState::clearLeaderServerId);
-      if (!RaftMode.FOLLOWER.equals(getCurrentRaftMode())) {
+      if (raftModeProcessor == null || !RaftMode.FOLLOWER.equals(getCurrentRaftMode())) {
         logger.atInfo().log("Transitioning to Follower state.");
         transitionToNewRaftModeProcessor(raftModeProcessorFactory.createRaftFollowerProcessor());
       }
