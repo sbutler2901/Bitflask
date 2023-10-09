@@ -6,6 +6,7 @@ import com.google.inject.Injector;
 import com.google.inject.ProvisionException;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.resp.network.RespService;
+import dev.sbutler.bitflask.resp.network.RespServiceProvider;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
@@ -41,11 +42,13 @@ public final class Client implements Runnable {
     try {
       printConfigInfo();
 
+      Injector injector =
+          Guice.createInjector(new ClientModule(new InlineCommand(inlineCommandArgs)));
+
       RespService respService =
           RespService.create(SocketChannel.open(new InetSocketAddress(host, port)));
-
-      Injector injector =
-          Guice.createInjector(new ClientModule(respService, new InlineCommand(inlineCommandArgs)));
+      RespServiceProvider respServiceProvider = injector.getInstance(RespServiceProvider.class);
+      respServiceProvider.updateRespService(respService);
 
       ReplClientProcessorService replClientProcessorService =
           injector.getInstance(ReplClientProcessorService.class);

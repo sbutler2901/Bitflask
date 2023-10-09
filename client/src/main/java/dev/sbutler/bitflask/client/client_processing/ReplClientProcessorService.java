@@ -41,7 +41,7 @@ public class ReplClientProcessorService implements Runnable {
   public void run() {
     // Doesn't work when running from IDE (https://youtrack.jetbrains.com/issue/IDEA-18814)
     // boolean hasConsole = System.console() != null;
-    while (continueProcessingClientInput) {
+    while (continueProcessingClientInput && !Thread.currentThread().isInterrupted()) {
       if (shouldCleanup) {
         try {
           ReplParser.cleanupForNextLine(replReader);

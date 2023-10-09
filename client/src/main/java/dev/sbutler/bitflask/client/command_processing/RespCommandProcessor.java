@@ -5,16 +5,17 @@ import dev.sbutler.bitflask.resp.messages.RespResponseConverter;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespElement;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import java.io.IOException;
 
 /** Handles processing commands via communication with a remote server using the RESP protocol. */
 public class RespCommandProcessor {
 
-  private final RespService respService;
+  private final Provider<RespService> respServiceProvider;
 
   @Inject
-  public RespCommandProcessor(RespService respService) {
-    this.respService = respService;
+  public RespCommandProcessor(Provider<RespService> respServiceProvider) {
+    this.respServiceProvider = respServiceProvider;
   }
 
   public RespResponse runCommand(RemoteCommand command) throws ProcessingException {
@@ -24,7 +25,7 @@ public class RespCommandProcessor {
 
   private void writeCommand(RemoteCommand command) throws ProcessingException {
     try {
-      respService.write(command.getAsRespArray());
+      respServiceProvider.get().write(command.getAsRespArray());
     } catch (IOException e) {
       throw new ProcessingException("Failed to write command", e);
     }
@@ -32,7 +33,7 @@ public class RespCommandProcessor {
 
   private RespResponse readResponse() throws ProcessingException {
     try {
-      RespElement respElement = respService.read();
+      RespElement respElement = respServiceProvider.get().read();
       if (respElement.isRespError()) {
         throw new ProcessingException(
             String.format(

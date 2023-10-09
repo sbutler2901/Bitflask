@@ -7,28 +7,23 @@ import com.google.inject.Singleton;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import dev.sbutler.bitflask.client.client_processing.output.StdoutOutputWriter;
 import dev.sbutler.bitflask.resp.network.RespService;
+import dev.sbutler.bitflask.resp.network.RespServiceProvider;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 
 public class ClientModule extends AbstractModule {
 
-  private final RespService respService;
   private final InlineCommand inlineCommand;
 
-  public ClientModule(RespService respService, InlineCommand inlineCommand) {
-    this.respService = respService;
+  public ClientModule(InlineCommand inlineCommand) {
     this.inlineCommand = inlineCommand;
   }
 
   @Override
   protected void configure() {
     bind(OutputWriter.class).to(StdoutOutputWriter.class);
-  }
-
-  @Provides
-  RespService provideRespService() {
-    return respService;
+    bind(RespService.class).toProvider(RespServiceProvider.class);
   }
 
   @Provides
