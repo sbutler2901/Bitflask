@@ -1,7 +1,6 @@
 package dev.sbutler.bitflask.client.command_processing;
 
 import dev.sbutler.bitflask.resp.messages.RespResponse;
-import dev.sbutler.bitflask.resp.messages.RespResponseConverter;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespElement;
 import jakarta.inject.Inject;
@@ -42,7 +41,7 @@ public class RespCommandProcessor {
         throw new ProcessingException(
             String.format("The server did not return an expected RespElement. [%s]", respElement));
       }
-      return RespResponseConverter.INSTANCE.reverse().convert(respElement.getAsRespArray());
+      return RespResponse.createFromRespArray(respElement.getAsRespArray());
     } catch (IOException e) {
       throw new ProcessingException("Failed to read response", e);
     }

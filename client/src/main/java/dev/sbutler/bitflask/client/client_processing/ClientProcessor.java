@@ -16,6 +16,8 @@ import dev.sbutler.bitflask.resp.messages.RespResponse;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.network.RespServiceProvider;
 import jakarta.inject.Inject;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 
 /**
  * Handles accepting client input, submitting it for processing, and writing a response to the
@@ -71,14 +73,19 @@ public class ClientProcessor {
   }
 
   private boolean handleRespResponse(RespResponse response) {
-    return switch (response.statusCode()) {
-      case SUCCESS, FAILURE -> {
-        outputWriter.writeWithNewLine(response.message());
+    return switch (response) {
+      case RespResponse.Success ignored -> {
+        outputWriter.writeWithNewLine(response.getMessage());
         yield true;
       }
-      case NOT_CURRENT_LEADER -> updateRespServiceForNewLeader("localhost", 9091);
-      case NO_KNOWN_LEADER -> {
-        outputWriter.writeWithNewLine(response.message());
+      case RespResponse.Failure ignored -> {
+        outputWriter.writeWithNewLine(response.getMessage());
+        yield true;
+      }
+      case RespResponse.NotCurrentLeader notCurrentLeader -> updateRespServiceForNewLeader(
+          notCurrentLeader.getHost(), notCurrentLeader.getPort());
+      case RespResponse.NoKnownLeader ignored -> {
+        outputWriter.writeWithNewLine(response.getMessage());
         yield false;
       }
     };
@@ -88,7 +95,8 @@ public class ClientProcessor {
     RespService respService;
     try {
       respServiceProvider.get().close();
-      respService = RespService.create(host, port);
+      SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
+      respService = RespService.create(socketChannel);
     } catch (Exception e) {
       outputWriter.writeWithNewLine(
           String.format("Failed to reconnect to new leader. %s", e.getMessage()));
@@ -96,7 +104,9 @@ public class ClientProcessor {
     }
     respServiceProvider.updateRespService(respService);
     outputWriter.writeWithNewLine(
-        "Reconnected to the current Bitflask server leader. Retry your comment.");
+        String.format(
+            "Reconnected to the current Bitflask server leader host [%s] port [%d]. Retry your command.",
+            host, port));
     return true;
   }
 

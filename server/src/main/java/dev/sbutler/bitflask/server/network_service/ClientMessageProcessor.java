@@ -3,8 +3,6 @@ package dev.sbutler.bitflask.server.network_service;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import dev.sbutler.bitflask.resp.messages.RespResponse;
-import dev.sbutler.bitflask.resp.messages.RespResponseConverter;
-import dev.sbutler.bitflask.resp.messages.RespStatusCode;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
@@ -84,10 +82,10 @@ final class ClientMessageProcessor implements AutoCloseable {
       ClientCommandResults commandResults =
           commandProcessingService.processCommandMessage(parsedClientMessage);
       RespResponse respResponse = handleCommandResults(commandResults);
-      return sendRespResponse(respResponse);
+      return sendResponse(respResponse.getAsRespArray());
     } catch (InvalidCommandException e) {
-      RespResponse respResponse = new RespResponse(RespStatusCode.FAILURE, e.getMessage());
-      return sendRespResponse(respResponse);
+      RespResponse respResponse = new RespResponse.Failure(e.getMessage());
+      return sendResponse(respResponse.getAsRespArray());
     } catch (Exception e) {
       return sendUnrecoverableErrorToClient(e);
     }
@@ -109,20 +107,15 @@ final class ClientMessageProcessor implements AutoCloseable {
 
   private RespResponse handleCommandResults(ClientCommandResults commandResults) {
     return switch (commandResults) {
-      case ClientCommandResults.Success success -> new RespResponse(
-          RespStatusCode.SUCCESS, success.message());
-      case ClientCommandResults.Failure failure -> new RespResponse(
-          RespStatusCode.FAILURE, failure.message());
-      case ClientCommandResults.NotCurrentLeader notCurrentLeader -> new RespResponse(
-          RespStatusCode.NOT_CURRENT_LEADER, notCurrentLeader.currentLeaderInfo().toString());
-      case ClientCommandResults.NoKnownLeader noKnownLeader -> new RespResponse(
-          RespStatusCode.NO_KNOWN_LEADER, "Unknown leader!");
+      case ClientCommandResults.Success success -> new RespResponse.Success(success.message());
+      case ClientCommandResults.Failure failure -> new RespResponse.Failure(failure.message());
+      case ClientCommandResults.NotCurrentLeader notCurrentLeader -> new RespResponse
+          .NotCurrentLeader(
+          notCurrentLeader.currentLeaderInfo().getHost(),
+          notCurrentLeader.currentLeaderInfo().getRespPort());
+      case ClientCommandResults.NoKnownLeader ignored -> new RespResponse.NoKnownLeader(
+          "No leader is currently known.");
     };
-  }
-
-  private boolean sendRespResponse(RespResponse respResponse) {
-    RespArray response = RespResponseConverter.INSTANCE.convert(respResponse);
-    return sendResponse(response);
   }
 
   private boolean sendUnrecoverableErrorToClient(Exception e) {
