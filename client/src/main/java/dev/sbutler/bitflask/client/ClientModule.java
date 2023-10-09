@@ -8,6 +8,7 @@ import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
 import dev.sbutler.bitflask.client.client_processing.output.StdoutOutputWriter;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.network.RespServiceProvider;
+import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
@@ -35,10 +36,10 @@ public class ClientModule extends AbstractModule {
   @Provides
   Reader provideReader(ExecutionMode executionMode) {
     if (executionMode.isReplMode()) {
-      return new InputStreamReader(System.in);
+      return new BufferedReader(new InputStreamReader(System.in));
     }
 
     String inlineCmd = Joiner.on(' ').join(inlineCommand.getArgs());
-    return new StringReader(inlineCmd);
+    return new BufferedReader(new StringReader(inlineCmd));
   }
 }

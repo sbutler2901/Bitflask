@@ -42,6 +42,8 @@ public final class ReplReader implements AutoCloseable {
   @Override
   public void close() throws ReplIOException {
     try {
+      // Will block shutdown waiting on input without direct closing
+      System.in.close();
       reader.close();
     } catch (IOException e) {
       throw new ReplIOException("Failed closing the reader", e);
