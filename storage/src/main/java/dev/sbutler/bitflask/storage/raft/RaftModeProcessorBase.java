@@ -37,17 +37,6 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   }
 
   /**
-   * Used to determine if a processor should update the server's current term and convert to a
-   * follower, if not already one.
-   *
-   * <p>Subclasses should call this method with the term in any {@link RequestVoteResponse} or
-   * {@link AppendEntriesResponse} received.
-   */
-  protected final boolean shouldUpdateTermAndTransitionToFollower(long rpcTerm) {
-    return rpcTerm > raftPersistentState.getCurrentTerm();
-  }
-
-  /**
    * A subclass can override this method to run custom logic before the current term is updated and
    * the server transitions to the Follower mode.
    *
@@ -65,10 +54,6 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   /**
    * Updates the term and, if this caller is not an instance of {@link RaftFollowerProcessor},
    * converts to a follower.
-   *
-   * <p>Subclasses should call this method if {@link
-   * RaftModeProcessorBase#shouldUpdateTermAndTransitionToFollower(long)} is true for the term in
-   * any {@link RequestVoteResponse} or {@link AppendEntriesResponse} received.
    */
   protected final void updateTermAndTransitionToFollower(
       int rpcTerm, Optional<RaftServerId> knownLeaderServerId) {
@@ -78,18 +63,16 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   }
 
   /**
-   * A subclass can override this method to run custom logic before a {@link RequestVoteResponse} is
-   * sent.
-   */
-  protected void afterProcessRequestVoteRequest(RequestVoteRequest request, boolean voteGranted) {}
-
-  /**
    * Handles processing a {@link RequestVoteRequest} and responding with a {@link
    * RequestVoteResponse}.
    */
-  public final RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
-    if (shouldUpdateTermAndTransitionToFollower(request.getTerm())) {
-      // TODO: handle response when before transitioning
+  public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
+    if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
+      return RequestVoteResponse.newBuilder()
+          .setTerm(raftPersistentState.getCurrentTerm())
+          .setVoteGranted(false)
+          .build();
+    } else if (request.getTerm() > raftPersistentState.getCurrentTerm()) {
       getLogger()
           .atInfo()
           .log(
@@ -114,7 +97,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
               "Deny vote for server [%s] with term [%d] and local term [%d]",
               candidateRaftServerId.id(), request.getTerm(), raftPersistentState.getCurrentTerm());
     }
-    afterProcessRequestVoteRequest(request, voteGranted);
+
     return RequestVoteResponse.newBuilder()
         .setTerm(raftPersistentState.getCurrentTerm())
         .setVoteGranted(voteGranted)
@@ -125,6 +108,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
       return false;
     }
+    // TODO: ensure this is populated correctly for leaders when the request has the same term.
     return raftPersistentState
             .getVotedForCandidateId()
             .map(vote -> vote.equals(candidateRaftServerId))
@@ -151,18 +135,16 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {}
 
   /**
-   * A subclass can override this method to run custom logic before a {@link AppendEntriesResponse}
-   * sent.
-   */
-  protected void afterProcessAppendEntriesRequest(AppendEntriesRequest request) {}
-
-  /**
    * Handles processing a {@link AppendEntriesRequest} and responding with a {@link
    * AppendEntriesResponse}.
    */
-  public final AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
-    if (shouldUpdateTermAndTransitionToFollower(request.getTerm())) {
-      // TODO: handle response when before transitioning
+  public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
+    if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
+      return AppendEntriesResponse.newBuilder()
+          .setTerm(raftPersistentState.getCurrentTerm())
+          .setSuccess(false)
+          .build();
+    } else if (request.getTerm() > raftPersistentState.getCurrentTerm()) {
       getLogger()
           .atInfo()
           .log(
@@ -173,26 +155,16 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     }
     beforeProcessAppendEntriesRequest(request);
 
+    raftVolatileState.setLeaderServerId(new RaftServerId(request.getLeaderId()));
+
     AppendEntriesResponse.Builder response =
         AppendEntriesResponse.newBuilder().setTerm(raftPersistentState.getCurrentTerm());
-
-    if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
-      getLogger()
-          .atInfo()
-          .atMostEvery(5, TimeUnit.SECONDS)
-          .log(
-              "Fail AppendEntries request with term [%d] and local term [%d].",
-              request.getTerm(), raftPersistentState.getCurrentTerm());
-      afterProcessAppendEntriesRequest(request);
-      return response.setSuccess(false).build();
-    }
 
     if (request.getEntriesList().isEmpty()) {
       getLogger()
           .atInfo()
           .atMostEvery(10, TimeUnit.SECONDS)
           .log("Successfully processed heartbeat from server [%s].", request.getLeaderId());
-      afterProcessAppendEntriesRequest(request);
       return response.setSuccess(true).build();
     }
 
@@ -202,19 +174,16 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
             .appendEntriesAfterPrevEntry(
                 new LogEntryDetails(request.getPrevLogTerm(), request.getPrevLogIndex()),
                 request.getEntriesList());
-    if (appendSuccessful) {
-      raftVolatileState.setLeaderServerId(new RaftServerId(request.getLeaderId()));
-      if (request.getLeaderCommit() > raftVolatileState.getHighestCommittedEntryIndex()) {
-        raftVolatileState.setHighestCommittedEntryIndex(
-            Math.min(
-                request.getLeaderCommit(),
-                raftPersistentState.getRaftLog().getLastLogEntryDetails().index()));
-      }
+    if (appendSuccessful
+        && request.getLeaderCommit() > raftVolatileState.getHighestCommittedEntryIndex()) {
+      raftVolatileState.setHighestCommittedEntryIndex(
+          Math.min(
+              request.getLeaderCommit(),
+              raftPersistentState.getRaftLog().getLastLogEntryDetails().index()));
       getLogger().atInfo().log("Successfully appended [%d] entries.", request.getEntriesCount());
     } else {
       getLogger().atWarning().log("Failed to append [%d] entries.", request.getEntriesCount());
     }
-    afterProcessAppendEntriesRequest(request);
     return response.setSuccess(appendSuccessful).build();
   }
 

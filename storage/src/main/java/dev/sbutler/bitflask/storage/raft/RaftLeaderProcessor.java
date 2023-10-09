@@ -88,28 +88,26 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
     return logger;
   }
 
-  private void handleUnexpectedRequest(String additionalMessage) {
-    throw StatusProto.toStatusRuntimeException(
-        Status.newBuilder()
-            .setCode(Code.FAILED_PRECONDITION_VALUE)
-            .setMessage(
-                "This server is currently the leader and requests should not be sent to it. "
-                    + additionalMessage)
-            .build());
-  }
-
-  @Override
-  protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {
-    handleUnexpectedRequest(
-        String.format(
-            "Request term [%d], local term [%d].",
-            request.getTerm(), raftPersistentState.getCurrentTerm()));
-  }
-
   @Override
   protected void beforeUpdateTermAndTransitionToFollower(int rpcTerm) {
     logger.atWarning().log("Larger term [%d] found transitioning to follower.", rpcTerm);
     terminateExecution();
+  }
+
+  @Override
+  protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {
+    // A larger term was not found
+    if (shouldContinueExecuting()) {
+      // TODO: improve status code
+      throw StatusProto.toStatusRuntimeException(
+          Status.newBuilder()
+              .setCode(Code.FAILED_PRECONDITION_VALUE)
+              .setMessage(
+                  String.format(
+                      "This server is currently the leader. Request term [%d], local term [%d].",
+                      request.getTerm(), raftPersistentState.getCurrentTerm()))
+              .build());
+    }
   }
 
   @Override

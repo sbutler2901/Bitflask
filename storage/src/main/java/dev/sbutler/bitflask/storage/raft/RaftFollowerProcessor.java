@@ -40,29 +40,24 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
   }
 
   @Override
-  protected void afterProcessRequestVoteRequest(RequestVoteRequest request, boolean voteGranted) {
-    if (voteGranted) {
+  public RequestVoteResponse processRequestVoteRequest(RequestVoteRequest request) {
+    RequestVoteResponse response = super.processRequestVoteRequest(request);
+    if (response.getVoteGranted()) {
       int timeoutDelay = updateElectionTimeout();
       logger.atInfo().log(
           "Restarted election timer with delay of [%dms] after granting vote to [%s] for term [%d]",
           timeoutDelay, request.getCandidateId(), request.getTerm());
     }
+    return response;
   }
 
   @Override
-  protected void beforeProcessAppendEntriesRequest(AppendEntriesRequest request) {
+  public AppendEntriesResponse processAppendEntriesRequest(AppendEntriesRequest request) {
     int timeoutDelay = updateElectionTimeout();
     logger.atFine().atMostEvery(10, TimeUnit.SECONDS).log(
         "Restarted election timer with delay of [%dms] after receiving AppendEntries request",
         timeoutDelay);
-  }
-
-  @Override
-  protected void afterProcessAppendEntriesRequest(AppendEntriesRequest request) {
-    int timeoutDelay = updateElectionTimeout();
-    logger.atInfo().atMostEvery(10, TimeUnit.SECONDS).log(
-        "Restarted election timer with delay of [%dms] after processing AppendEntries request.",
-        timeoutDelay);
+    return super.processAppendEntriesRequest(request);
   }
 
   @Override
