@@ -13,6 +13,8 @@ import dev.sbutler.bitflask.client.command_processing.ProcessingException;
 import dev.sbutler.bitflask.client.command_processing.RemoteCommand;
 import dev.sbutler.bitflask.client.command_processing.RespCommandProcessor;
 import dev.sbutler.bitflask.resp.messages.RespResponse;
+import dev.sbutler.bitflask.resp.network.RespService;
+import dev.sbutler.bitflask.resp.network.RespServiceProvider;
 import jakarta.inject.Inject;
 
 /**
@@ -26,11 +28,16 @@ public class ClientProcessor {
 
   private final RespCommandProcessor respCommandProcessor;
   private final OutputWriter outputWriter;
+  private final RespServiceProvider respServiceProvider;
 
   @Inject
-  ClientProcessor(RespCommandProcessor respCommandProcessor, OutputWriter outputWriter) {
+  ClientProcessor(
+      RespCommandProcessor respCommandProcessor,
+      OutputWriter outputWriter,
+      RespServiceProvider respServiceProvider) {
     this.respCommandProcessor = respCommandProcessor;
     this.outputWriter = outputWriter;
+    this.respServiceProvider = respServiceProvider;
   }
 
   /** Processing the provided client input returning whether processing should continue. */
@@ -69,12 +76,28 @@ public class ClientProcessor {
         outputWriter.writeWithNewLine(response.message());
         yield true;
       }
-        // TODO: handle auto connect to appropriate leader
-      case NOT_CURRENT_LEADER, NO_KNOWN_LEADER -> {
-        outputWriter.writeWithNewLine("test: " + response.message());
+      case NOT_CURRENT_LEADER -> updateRespServiceForNewLeader("localhost", 9091);
+      case NO_KNOWN_LEADER -> {
+        outputWriter.writeWithNewLine(response.message());
         yield false;
       }
     };
+  }
+
+  private boolean updateRespServiceForNewLeader(String host, int port) {
+    RespService respService;
+    try {
+      respServiceProvider.get().close();
+      respService = RespService.create(host, port);
+    } catch (Exception e) {
+      outputWriter.writeWithNewLine(
+          String.format("Failed to reconnect to new leader. %s", e.getMessage()));
+      return false;
+    }
+    respServiceProvider.updateRespService(respService);
+    outputWriter.writeWithNewLine(
+        "Reconnected to the current Bitflask server leader. Retry your comment.");
+    return true;
   }
 
   private ClientCommand mapClientInputToCommand(ImmutableList<ReplElement> clientInput) {

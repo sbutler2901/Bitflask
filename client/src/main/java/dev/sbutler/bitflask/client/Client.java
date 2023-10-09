@@ -8,8 +8,6 @@ import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.network.RespServiceProvider;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.channels.SocketChannel;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -45,8 +43,7 @@ public final class Client implements Runnable {
       Injector injector =
           Guice.createInjector(new ClientModule(new InlineCommand(inlineCommandArgs)));
 
-      RespService respService =
-          RespService.create(SocketChannel.open(new InetSocketAddress(host, port)));
+      RespService respService = RespService.create(host, port);
       RespServiceProvider respServiceProvider = injector.getInstance(RespServiceProvider.class);
       respServiceProvider.updateRespService(respService);
 

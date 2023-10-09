@@ -4,6 +4,7 @@ import dev.sbutler.bitflask.resp.types.RespElement;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -24,7 +25,8 @@ public final class RespService implements AutoCloseable {
     this.respWriter = respWriter;
   }
 
-  public static RespService create(SocketChannel socketChannel) throws IOException {
+  public static RespService create(String host, int port) throws IOException {
+    SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
     Reader socketReader = new InputStreamReader(socketChannel.socket().getInputStream());
     RespReader respReader = new RespReader(socketReader);
     RespWriter respWriter = new RespWriter(socketChannel.socket().getOutputStream());
