@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.raft;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractIdleService;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import dev.sbutler.bitflask.config.ServerConfig;
 import io.grpc.Grpc;
 import io.grpc.InsecureServerCredentials;
@@ -17,6 +18,7 @@ public final class RaftService extends AbstractIdleService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private final ListeningExecutorService executorService;
   private final RaftConfiguration raftConfiguration;
   private final RaftRpcService raftRpcService;
   private final RaftLoader raftLoader;
@@ -25,7 +27,11 @@ public final class RaftService extends AbstractIdleService {
 
   @Inject
   RaftService(
-      RaftConfiguration raftConfiguration, RaftRpcService raftRpcService, RaftLoader raftLoader) {
+      ListeningExecutorService executorService,
+      RaftConfiguration raftConfiguration,
+      RaftRpcService raftRpcService,
+      RaftLoader raftLoader) {
+    this.executorService = executorService;
     this.raftConfiguration = raftConfiguration;
     this.raftRpcService = raftRpcService;
     this.raftLoader = raftLoader;
@@ -42,6 +48,7 @@ public final class RaftService extends AbstractIdleService {
     rpcServer =
         Grpc.newServerBuilderForPort(
                 thisRaftServerInfo.getRaftPort(), InsecureServerCredentials.create())
+            .executor(executorService)
             .addService(raftRpcService)
             .build();
     rpcServer.start();
