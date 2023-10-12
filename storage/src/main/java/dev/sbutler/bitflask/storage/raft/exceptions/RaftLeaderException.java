@@ -3,7 +3,7 @@ package dev.sbutler.bitflask.storage.raft.exceptions;
 /**
  * Exception thrown for errors that occur while the Raft server is handling Leader responsibilities.
  */
-public class RaftLeaderException extends RaftException {
+public class RaftLeaderException extends RaftModeException {
 
   public RaftLeaderException() {
     super();
