@@ -67,7 +67,7 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
         "Started election timer with delay of [%dms] at start up.", initialTimeoutDelay);
     waitWithDynamicExpiration(() -> electionTimeout, () -> !shouldContinueExecuting());
     logger.atInfo().log("Election timer expired. Transition to Candidate.");
-    raftModeManager.get().transitionToCandidateState();
+    raftModeManager.get().transitionToCandidateState(raftPersistentState.getCurrentTerm());
   }
 
   private int updateElectionTimeout() {

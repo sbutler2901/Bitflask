@@ -59,7 +59,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
       int rpcTerm, Optional<RaftServerId> knownLeaderServerId) {
     beforeUpdateTermAndTransitionToFollower(rpcTerm);
     raftPersistentState.setCurrentTermAndResetVote(rpcTerm);
-    raftModeManager.get().transitionToFollowerState(knownLeaderServerId);
+    raftModeManager.get().transitionToFollowerState(rpcTerm, knownLeaderServerId);
   }
 
   /**
@@ -108,7 +108,6 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     if (request.getTerm() < raftPersistentState.getCurrentTerm()) {
       return false;
     }
-    // TODO: ensure this is populated correctly for leaders when the request has the same term.
     return raftPersistentState
             .getVotedForCandidateId()
             .map(vote -> vote.equals(candidateRaftServerId))

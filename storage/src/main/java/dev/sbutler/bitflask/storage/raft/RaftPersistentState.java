@@ -59,6 +59,7 @@ final class RaftPersistentState {
 
   /** Sets the current term and resets this server's vote. */
   void setCurrentTermAndResetVote(int newCurrentTerm) {
+    Preconditions.checkArgument(newCurrentTerm >= currentTerm.get());
     voteLock.lock();
     try {
       currentTerm.set(newCurrentTerm);

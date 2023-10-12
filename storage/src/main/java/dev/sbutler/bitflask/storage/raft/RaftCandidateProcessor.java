@@ -52,7 +52,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
 
   @Override
   protected void beforeUpdateTermAndTransitionToFollower(int rpcTerm) {
-    logger.atWarning().log("Larger term [%d] found transitioning to follower.", rpcTerm);
+    logger.atWarning().log("Larger term [%d] found. Transitioning to FOLLOWER state.", rpcTerm);
     terminateExecution();
   }
 
@@ -83,7 +83,7 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
       if (receivedMajorityVotes) {
         terminateExecution();
         logger.atInfo().log("Received majority of votes. Transitioning to Leader");
-        raftModeManager.get().transitionToLeaderState();
+        raftModeManager.get().transitionToLeaderState(raftPersistentState.getCurrentTerm());
       } else {
         waitUntilExpiration(
             getExpirationFromNow(electionTimeout), () -> !shouldContinueExecuting());
