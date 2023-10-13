@@ -27,9 +27,12 @@ final class RaftRpcService extends RaftGrpc.RaftImplBase {
     } catch (StatusRuntimeException e) {
       responseObserver.onError(e);
     } catch (Exception e) {
+      Status.Builder builder = Status.newBuilder().setCode(Code.INTERNAL_VALUE);
+      if (e.getMessage() != null) {
+        builder.setMessage(e.getMessage());
+      }
       StatusRuntimeException statusRuntimeException =
-          StatusProto.toStatusRuntimeException(
-              Status.newBuilder().setCode(Code.INTERNAL_VALUE).setMessage(e.getMessage()).build());
+          StatusProto.toStatusRuntimeException(builder.build());
       responseObserver.onError(statusRuntimeException);
     }
   }
@@ -44,9 +47,12 @@ final class RaftRpcService extends RaftGrpc.RaftImplBase {
     } catch (StatusRuntimeException e) {
       responseObserver.onError(e);
     } catch (Exception e) {
+      Status.Builder builder = Status.newBuilder().setCode(Code.INTERNAL_VALUE);
+      if (e.getMessage() != null) {
+        builder.setMessage(e.getMessage());
+      }
       StatusRuntimeException statusRuntimeException =
-          StatusProto.toStatusRuntimeException(
-              Status.newBuilder().setCode(Code.INTERNAL_VALUE).setMessage(e.getMessage()).build());
+          StatusProto.toStatusRuntimeException(builder.build());
       responseObserver.onError(statusRuntimeException);
     }
   }
