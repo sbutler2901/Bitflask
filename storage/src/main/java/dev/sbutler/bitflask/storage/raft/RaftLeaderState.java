@@ -2,6 +2,7 @@ package dev.sbutler.bitflask.storage.raft;
 
 import static dev.sbutler.bitflask.storage.raft.RaftLeaderProcessor.AppendEntriesSubmission;
 
+import com.google.common.base.Preconditions;
 import jakarta.inject.Inject;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -38,26 +39,33 @@ final class RaftLeaderState {
   }
 
   int getFollowerNextIndex(RaftServerId serverId) {
+    Preconditions.checkArgument(
+        followersNextIndex.containsKey(serverId), "[%s] not found.", serverId);
     return followersNextIndex.get(serverId).get();
-  }
-
-  int getFollowerMatchIndex(RaftServerId serverId) {
-    return followersMatchIndex.get(serverId).get();
-  }
-
-  /**
-   * Reduces the provided server's next index based on the provided {@link AppendEntriesSubmission}.
-   */
-  void decreaseFollowerNextIndex(AppendEntriesSubmission submission) {
-    followersNextIndex
-        .get(submission.serverId())
-        .getAndUpdate(prev -> Math.min(prev, submission.followerNextIndex() - 1));
   }
 
   void increaseFollowerNextIndex(AppendEntriesSubmission submission) {
     followersNextIndex
         .get(submission.serverId())
         .getAndUpdate(prev -> Math.max(prev, submission.lastEntryIndex()));
+  }
+
+  /**
+   * Reduces the provided server's next index based on the provided {@link AppendEntriesSubmission}.
+   */
+  void decreaseFollowerNextIndex(AppendEntriesSubmission submission) {
+    AtomicInteger nextIndex = followersMatchIndex.get(submission.serverId());
+    Preconditions.checkState(
+        nextIndex.get() > 0,
+        "Cannot decrease follower [%s]'s next index below 0.",
+        submission.serverId());
+    nextIndex.getAndUpdate(prev -> Math.min(prev, submission.followerNextIndex() - 1));
+  }
+
+  int getFollowerMatchIndex(RaftServerId serverId) {
+    Preconditions.checkArgument(
+        followersMatchIndex.containsKey(serverId), "[%s] not found.", serverId);
+    return followersMatchIndex.get(serverId).get();
   }
 
   void increaseFollowerMatchIndex(AppendEntriesSubmission submission) {

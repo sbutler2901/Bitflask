@@ -20,8 +20,8 @@ final class RaftRpcChannelManager extends AbstractIdleService {
 
   private final RaftConfiguration raftConfiguration;
 
-  private ImmutableMap<RaftServerId, ManagedChannel> otherServerChannels;
-  private ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs;
+  private ImmutableMap<RaftServerId, ManagedChannel> otherServerChannels = ImmutableMap.of();
+  private ImmutableMap<RaftServerId, RaftFutureStub> otherServerStubs = ImmutableMap.of();
 
   @Inject
   RaftRpcChannelManager(RaftConfiguration raftConfiguration) {
