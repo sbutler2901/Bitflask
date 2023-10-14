@@ -115,7 +115,7 @@ final class RaftModeManager extends AbstractService
     return raftModeProcessor.getRaftMode();
   }
 
-  private boolean isCurrentLeader() {
+  boolean isCurrentLeader() {
     transitionLock.lock();
     try {
       return RaftMode.LEADER.equals(getCurrentRaftMode());

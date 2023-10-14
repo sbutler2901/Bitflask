@@ -12,6 +12,7 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
   private final RaftVolatileState raftVolatileState;
   private final RaftEntryConverter raftEntryConverter;
   private final StorageCommandExecutor storageCommandExecutor;
+  private final RaftModeManager raftModeManager;
   private final RaftSubmissionManager raftSubmissionManager;
 
   private volatile boolean shouldContinueExecuting = true;
@@ -22,11 +23,13 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
       RaftVolatileState raftVolatileState,
       RaftEntryConverter raftEntryConverter,
       StorageCommandExecutor storageCommandExecutor,
+      RaftModeManager raftModeManager,
       RaftSubmissionManager raftSubmissionManager) {
     this.raftLog = raftLog;
     this.raftVolatileState = raftVolatileState;
     this.raftEntryConverter = raftEntryConverter;
     this.storageCommandExecutor = storageCommandExecutor;
+    this.raftModeManager = raftModeManager;
     this.raftSubmissionManager = raftSubmissionManager;
   }
 
@@ -53,12 +56,14 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
         Entry entry = raftLog.getEntryAtIndex(nextIndexToApply);
         StorageCommandDto dto = raftEntryConverter.reverse().convert(entry);
         StorageCommandResults results = storageCommandExecutor.executeDto(dto);
-        raftSubmissionManager.completeSubmission(nextIndexToApply, results);
+        if (raftModeManager.isCurrentLeader()) {
+          raftSubmissionManager.completeSubmission(nextIndexToApply, results);
+        }
       } catch (Exception e) {
-        raftVolatileState.increaseHighestAppliedEntryIndexTo(nextIndexToApply - 1);
+        raftVolatileState.decrementHighestAppliedEntryIndex();
         triggerShutdown();
         throw new RaftException(
-            String.format("Failed to apply command at index [%d].", nextIndexToApply));
+            String.format("Failed to apply command at index [%d].", nextIndexToApply), e);
       }
     }
   }

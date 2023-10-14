@@ -51,7 +51,8 @@ final class RaftVolatileState {
             "Attempting to set committed entry index [%d] lower than applied entry index [%d]",
             index, getHighestAppliedEntryIndex()));
     int prev = highestCommittedEntryIndex.getAndSet(index);
-    logger.atInfo().log("Set committed entry index to [%d], previous value [%d].", index, prev);
+    logger.atInfo().log(
+        "Increased highest committed entry index to [%d], previous value [%d].", index, prev);
   }
 
   /** Returns the index of the highest log entry applied to the state machine. */
@@ -76,7 +77,14 @@ final class RaftVolatileState {
             "Attempting to set applied entry index [%d] higher than committed entry index [%d]",
             index, getHighestCommittedEntryIndex()));
     int prev = highestAppliedEntryIndex.getAndSet(index);
-    logger.atInfo().log("Set applied entry index to [%d], previous value [%d].", index, prev);
+    logger.atInfo().log(
+        "Increased highest applied entry index to [%d], previous value [%d].", index, prev);
+  }
+
+  void decrementHighestAppliedEntryIndex() {
+    Preconditions.checkState(
+        highestAppliedEntryIndex.get() > 0, "Highest applied index cannot be decremented below 0.");
+    highestAppliedEntryIndex.decrementAndGet();
   }
 
   /** Returns the {@link RaftServerId} of the current leader, if known. */

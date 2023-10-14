@@ -143,5 +143,10 @@ final class RaftLog {
       }
       return Integer.compare(indexesCompared, 0);
     }
+
+    @Override
+    public String toString() {
+      return "[term=" + term + ", index=" + index + "]";
+    }
   }
 }

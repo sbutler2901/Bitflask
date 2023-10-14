@@ -111,7 +111,8 @@ final class RaftLeaderRpcClient {
     return AppendEntriesRequest.newBuilder()
         .setTerm(raftPersistentState.getCurrentTerm())
         .setLeaderId(leaderId)
+        .setPrevLogIndex(prevLogIndex)
         .setPrevLogTerm(raftLog.getEntryAtIndex(prevLogIndex).getTerm())
-        .setPrevLogIndex(prevLogIndex);
+        .setLeaderCommit(raftVolatileState.getHighestCommittedEntryIndex());
   }
 }

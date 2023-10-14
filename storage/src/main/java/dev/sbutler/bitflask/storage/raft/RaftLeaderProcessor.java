@@ -219,23 +219,14 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
         continue;
       }
       largestTermSeen = Math.max(largestTermSeen, response.get().getTerm());
+
       if (response.get().getSuccess()) {
         raftLeaderState.increaseFollowerNextIndex(submission);
         raftLeaderState.increaseFollowerMatchIndex(submission);
-        logger.atFine().log(
-            "Follower [%s] accepted lastEntryIndex [%d] with prevLogIndex [%d].",
-            submission.serverId().id(),
-            submission.lastEntryIndex(),
-            submission.followerNextIndex());
       } else {
         raftLeaderState.decreaseFollowerNextIndex(submission);
-        logger.atFine().log(
-            "Follower [%s] did not accept AppendEntries request with term [%d], lastEntryIndex [%d], and followerNextIndex [%d].",
-            submission.serverId().id(),
-            submission.request().getTerm(),
-            submission.lastEntryIndex(),
-            submission.followerNextIndex());
       }
+      logAppendEntriesSubmissionResults(submission, response.get().getSuccess());
     }
     if (largestTermSeen > raftPersistentState.getCurrentTerm()) {
       updateTermAndTransitionToFollowerWithUnknownLeader(largestTermSeen);
@@ -263,6 +254,39 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       }
     }
     return Optional.empty();
+  }
+
+  private void logAppendEntriesSubmissionResults(
+      AppendEntriesSubmission submission, boolean success) {
+    String extraDetails =
+        String.format(
+            "[term=%d, lastEntryIndex=%d, followerNextIndex=%d].",
+            submission.request().getTerm(),
+            submission.lastEntryIndex(),
+            submission.followerNextIndex());
+
+    int entriesCount = submission.request().getEntriesCount();
+    if (success) {
+      if (entriesCount > 0) {
+        logger.atInfo().log(
+            "Follower [%s] accepted [%d] entries. %s",
+            submission.serverId().id(), entriesCount, extraDetails);
+      } else {
+        logger.atInfo().atMostEvery(10, TimeUnit.SECONDS).log(
+            "Follower [%s] accepted heartbeat. %s",
+            submission.serverId().id(), entriesCount, extraDetails);
+      }
+    } else {
+      if (entriesCount > 0) {
+        logger.atInfo().log(
+            "Follower [%s] did not accept [%d] entries. %s",
+            submission.serverId().id(), entriesCount, extraDetails);
+      } else {
+        logger.atInfo().atMostEvery(10, TimeUnit.SECONDS).log(
+            "Follower [%s] did not accept heartbeat. %s",
+            submission.serverId().id(), entriesCount, extraDetails);
+      }
+    }
   }
 
   /**

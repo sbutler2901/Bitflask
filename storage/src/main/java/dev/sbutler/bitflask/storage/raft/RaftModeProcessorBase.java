@@ -164,26 +164,44 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
           .atInfo()
           .atMostEvery(10, TimeUnit.SECONDS)
           .log("Successfully processed heartbeat from server [%s].", request.getLeaderId());
+      updateHighestCommitIndex(request.getLeaderCommit());
       return response.setSuccess(true).build();
     }
 
+    LogEntryDetails leaderPrevLogEntry =
+        new LogEntryDetails(request.getPrevLogTerm(), request.getPrevLogIndex());
     boolean appendSuccessful =
         raftPersistentState
             .getRaftLog()
-            .appendEntriesAfterPrevEntry(
-                new LogEntryDetails(request.getPrevLogTerm(), request.getPrevLogIndex()),
-                request.getEntriesList());
-    if (appendSuccessful
-        && request.getLeaderCommit() > raftVolatileState.getHighestCommittedEntryIndex()) {
+            .appendEntriesAfterPrevEntry(leaderPrevLogEntry, request.getEntriesList());
+
+    LogEntryDetails localLastLogEntry = raftPersistentState.getRaftLog().getLastLogEntryDetails();
+    if (appendSuccessful) {
+      getLogger()
+          .atInfo()
+          .log(
+              "Successfully appended [%d] entries. Leader previous log entry %s, new local last log entry %s.",
+              request.getEntriesCount(), leaderPrevLogEntry, localLastLogEntry);
+    } else {
+      getLogger()
+          .atInfo()
+          .log(
+              "Failed to append [%d] entries. Leader previous log entry %s, current local last log entry %s.",
+              request.getEntriesCount(), leaderPrevLogEntry, localLastLogEntry);
+    }
+
+    updateHighestCommitIndex(request.getLeaderCommit());
+    return response.setSuccess(appendSuccessful).build();
+  }
+
+  private void updateHighestCommitIndex(int leaderCommitIndex) {
+    int localCommittedEntryIndex = raftVolatileState.getHighestCommittedEntryIndex();
+    if (leaderCommitIndex > localCommittedEntryIndex) {
       raftVolatileState.increaseHighestCommittedEntryIndexTo(
           Math.min(
-              request.getLeaderCommit(),
+              leaderCommitIndex,
               raftPersistentState.getRaftLog().getLastLogEntryDetails().index()));
-      getLogger().atInfo().log("Successfully appended [%d] entries.", request.getEntriesCount());
-    } else {
-      getLogger().atWarning().log("Failed to append [%d] entries.", request.getEntriesCount());
     }
-    return response.setSuccess(appendSuccessful).build();
   }
 
   /**
