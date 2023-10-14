@@ -152,7 +152,7 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
             && raftLog.getEntryAtIndex(possibleCommitIndex).getTerm() == currentTerm;
         possibleCommitIndex--) {
       if (entryIndexHasMajorityMatch(possibleCommitIndex)) {
-        raftVolatileState.setHighestCommittedEntryIndex(possibleCommitIndex);
+        raftVolatileState.increaseHighestCommittedEntryIndexTo(possibleCommitIndex);
         break;
       }
     }

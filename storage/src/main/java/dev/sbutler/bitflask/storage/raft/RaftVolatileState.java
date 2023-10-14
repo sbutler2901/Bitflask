@@ -26,8 +26,8 @@ final class RaftVolatileState {
 
   /** Used to initialize state at startup. */
   void initialize(int highestCommittedEntryIndex, int highestAppliedEntryIndex) {
-    this.highestCommittedEntryIndex.set(highestCommittedEntryIndex);
-    this.highestAppliedEntryIndex.set(highestAppliedEntryIndex);
+    increaseHighestCommittedEntryIndexTo(highestCommittedEntryIndex);
+    increaseHighestAppliedEntryIndexTo(highestAppliedEntryIndex);
   }
 
   /** Returns the index of the highest log entry known to be committed. */
@@ -36,7 +36,17 @@ final class RaftVolatileState {
   }
 
   /** Sets the index of the highest log entry known to be committed. */
-  void setHighestCommittedEntryIndex(int index) {
+  void increaseHighestCommittedEntryIndexTo(int index) {
+    Preconditions.checkArgument(
+        index >= getHighestCommittedEntryIndex(),
+        "Attempting to set committed entry index [%d] lower than current value [%d]",
+        index,
+        getHighestCommittedEntryIndex());
+    Preconditions.checkArgument(
+        index >= getHighestAppliedEntryIndex(),
+        "Attempting to set committed entry index [%d] lower than applied entry index [%d]",
+        index,
+        getHighestAppliedEntryIndex());
     highestCommittedEntryIndex.getAndSet(index);
   }
 
@@ -45,13 +55,22 @@ final class RaftVolatileState {
     return highestAppliedEntryIndex.get();
   }
 
-  /** Increments the highest applied entry index and returns the new value. */
-  int incrementAndGetHighestAppliedEntryIndex() {
-    return highestAppliedEntryIndex.incrementAndGet();
-  }
-
-  /** Sets the index of the highest log entry applied to the state machine. */
-  void setHighestAppliedEntryIndex(int index) {
+  /**
+   * Sets the index of the highest log entry applied to the state machine.
+   *
+   * <p>The applied index cannot be decreased or set higher than the committed index.
+   */
+  void increaseHighestAppliedEntryIndexTo(int index) {
+    Preconditions.checkArgument(
+        index >= getHighestAppliedEntryIndex(),
+        "Attempting to set applied entry index [%d] lower than current value [%d].",
+        index,
+        getHighestAppliedEntryIndex());
+    Preconditions.checkArgument(
+        index <= getHighestCommittedEntryIndex(),
+        "Attempting to set applied entry index [%d] higher than committed entry index [%d]",
+        index,
+        getHighestCommittedEntryIndex());
     highestAppliedEntryIndex.getAndSet(index);
   }
 
