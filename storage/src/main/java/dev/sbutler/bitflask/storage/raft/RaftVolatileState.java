@@ -51,8 +51,7 @@ final class RaftVolatileState {
             "Attempting to set committed entry index [%d] lower than applied entry index [%d]",
             index, getHighestAppliedEntryIndex()));
     int prev = highestCommittedEntryIndex.getAndSet(index);
-    logger.atInfo().log(
-        "Increased highest committed entry index to [%d], previous value [%d].", index, prev);
+    logger.atInfo().log("Increased highest committed entry index. [new=%d, prev=%d].", index, prev);
   }
 
   /** Returns the index of the highest log entry applied to the state machine. */
@@ -77,8 +76,7 @@ final class RaftVolatileState {
             "Attempting to set applied entry index [%d] higher than committed entry index [%d]",
             index, getHighestCommittedEntryIndex()));
     int prev = highestAppliedEntryIndex.getAndSet(index);
-    logger.atInfo().log(
-        "Increased highest applied entry index to [%d], previous value [%d].", index, prev);
+    logger.atInfo().log("Increased highest applied entry index. [new=%d, prev=%d].", index, prev);
   }
 
   void decrementHighestAppliedEntryIndex() {

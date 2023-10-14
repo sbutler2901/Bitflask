@@ -273,18 +273,16 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
             submission.serverId().id(), entriesCount, extraDetails);
       } else {
         logger.atInfo().atMostEvery(10, TimeUnit.SECONDS).log(
-            "Follower [%s] accepted heartbeat. %s",
-            submission.serverId().id(), entriesCount, extraDetails);
+            "Follower [%s] accepted heartbeat. %s", submission.serverId().id(), extraDetails);
       }
     } else {
       if (entriesCount > 0) {
-        logger.atInfo().log(
+        logger.atWarning().log(
             "Follower [%s] did not accept [%d] entries. %s",
             submission.serverId().id(), entriesCount, extraDetails);
       } else {
-        logger.atInfo().atMostEvery(10, TimeUnit.SECONDS).log(
-            "Follower [%s] did not accept heartbeat. %s",
-            submission.serverId().id(), entriesCount, extraDetails);
+        logger.atWarning().log(
+            "Follower [%s] did not accept heartbeat. %s", submission.serverId().id(), extraDetails);
       }
     }
   }

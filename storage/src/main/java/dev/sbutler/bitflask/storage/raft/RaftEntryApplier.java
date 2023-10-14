@@ -52,15 +52,14 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
         nextIndexToApply <= highestCommittedIndex;
         nextIndexToApply++) {
       try {
-        raftVolatileState.increaseHighestAppliedEntryIndexTo(nextIndexToApply);
         Entry entry = raftLog.getEntryAtIndex(nextIndexToApply);
         StorageCommandDto dto = raftEntryConverter.reverse().convert(entry);
         StorageCommandResults results = storageCommandExecutor.executeDto(dto);
         if (raftModeManager.isCurrentLeader()) {
           raftSubmissionManager.completeSubmission(nextIndexToApply, results);
         }
+        raftVolatileState.increaseHighestAppliedEntryIndexTo(nextIndexToApply);
       } catch (Exception e) {
-        raftVolatileState.decrementHighestAppliedEntryIndex();
         triggerShutdown();
         throw new RaftException(
             String.format("Failed to apply command at index [%d].", nextIndexToApply), e);
