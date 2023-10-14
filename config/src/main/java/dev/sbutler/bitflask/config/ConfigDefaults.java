@@ -42,7 +42,7 @@ public final class ConfigDefaults {
       StorageConfig.newBuilder()
           .setStoreDirectoryPath(
               Paths.get(System.getProperty("user.home") + "/.bitflask/store/").toString())
-          .setLoadingMode(StorageConfig.LoadingMode.LOAD)
+          .setLoadingMode(StorageConfig.LoadingMode.TRUNCATE)
           .setMemtableFlushThresholdBytes(1048576) // 1 MiB
           .setSegmentLevelFlushThresholdBytes(5242880) // 5 MiB
           .setCompactorExecutionDelayMilliseconds(5000) // 5 seconds
