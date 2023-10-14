@@ -1,6 +1,5 @@
 package dev.sbutler.bitflask.storage.raft;
 
-import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import dev.sbutler.bitflask.storage.commands.*;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftException;
@@ -8,8 +7,6 @@ import jakarta.inject.Inject;
 
 /** Handles applying committed entries to the {@link RaftLog}. */
 final class RaftEntryApplier extends AbstractExecutionThreadService {
-
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final RaftLog raftLog;
   private final RaftVolatileState raftVolatileState;
@@ -44,10 +41,7 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
   private void applyCommittedEntries() {
     int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
     int highestCommittedIndex = raftVolatileState.getHighestCommittedEntryIndex();
-    if (highestCommittedIndex < highestAppliedIndex) {
-      throw new RaftException(
-          "The highest applied index is greater than the highest committed index!");
-    } else if (highestCommittedIndex == highestAppliedIndex) {
+    if (highestCommittedIndex == highestAppliedIndex) {
       return;
     }
 
@@ -62,10 +56,9 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
         raftSubmissionManager.completeSubmission(nextIndexToApply, results);
       } catch (Exception e) {
         raftVolatileState.increaseHighestAppliedEntryIndexTo(nextIndexToApply - 1);
-        logger.atSevere().withCause(e).log(
-            "Failed to apply command at index [%d].", nextIndexToApply);
-        // TODO: terminate server
-        break;
+        triggerShutdown();
+        throw new RaftException(
+            String.format("Failed to apply command at index [%d].", nextIndexToApply));
       }
     }
   }
