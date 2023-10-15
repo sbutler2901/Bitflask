@@ -8,6 +8,7 @@ import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftException;
 import org.junit.jupiter.api.Test;
 
+/** Unit tests for {@link Raft}. */
 public class RaftTest {
 
   private static final StorageCommandDto COMMAND_DTO =
