@@ -26,7 +26,7 @@ final class RaftPersistentState {
   // Helper fields
   private final RaftConfiguration raftConfiguration;
   private final ReentrantLock voteLock = new ReentrantLock();
-  private volatile int termWhenVotedForCandidate = 0;
+  private volatile int termWhenVotedForCandidate = -1;
 
   @Inject
   RaftPersistentState(RaftConfiguration raftConfiguration) {
@@ -35,6 +35,7 @@ final class RaftPersistentState {
 
   /** Used to initialize state at startup. */
   void initialize(int latestTermSeen, Optional<RaftServerId> votedForCandidateId) {
+    // TODO: persist state and initialize at startup
     voteLock.lock();
     try {
       currentTerm.set(latestTermSeen);
@@ -49,18 +50,6 @@ final class RaftPersistentState {
     return currentTerm.get();
   }
 
-  /** Sets the current term and resets this server's vote. */
-  void setCurrentTermAndResetVote(int newCurrentTerm) {
-    Preconditions.checkArgument(newCurrentTerm >= currentTerm.get());
-    voteLock.lock();
-    try {
-      currentTerm.set(newCurrentTerm);
-      votedForCandidateId = null;
-    } finally {
-      voteLock.unlock();
-    }
-  }
-
   /** Gets the candidate ID that the server has voted for in the current term, if it has voted. */
   Optional<RaftServerId> getVotedForCandidateId() {
     voteLock.lock();
@@ -71,13 +60,29 @@ final class RaftPersistentState {
     }
   }
 
+  /** Sets the current term and resets this server's vote. */
+  void setCurrentTermAndResetVote(int newCurrentTerm) {
+    voteLock.lock();
+    try {
+      Preconditions.checkArgument(
+          newCurrentTerm >= getCurrentTerm(),
+          String.format(
+              "Current term cannot be decreased. [currentTerm=%d, newCurrentTerm=%d].",
+              currentTerm.get(), newCurrentTerm));
+
+      currentTerm.set(newCurrentTerm);
+      votedForCandidateId = null;
+    } finally {
+      voteLock.unlock();
+    }
+  }
+
   /** Votes for this server. */
   void incrementTermAndVoteForSelf() {
     voteLock.lock();
     try {
       currentTerm.getAndIncrement();
-      votedForCandidateId = raftConfiguration.thisRaftServerId();
-      termWhenVotedForCandidate = currentTerm.get();
+      setVotedForCandidateId(raftConfiguration.thisRaftServerId());
     } finally {
       voteLock.unlock();
     }
@@ -85,12 +90,18 @@ final class RaftPersistentState {
 
   /** Sets the candidate ID that the server has voted for in the current term. */
   void setVotedForCandidateId(RaftServerId candidateId) {
-    Preconditions.checkState(
-        currentTerm.get() > termWhenVotedForCandidate,
-        "This Raft server has already voted for a candidate this term.");
+    Preconditions.checkArgument(
+        raftConfiguration.clusterServers().containsKey(candidateId),
+        String.format(
+            "Attempting to vote for unknown server [%s] for term [%d].",
+            candidateId.id(), getCurrentTerm()));
 
     voteLock.lock();
     try {
+      Preconditions.checkState(
+          getCurrentTerm() > termWhenVotedForCandidate,
+          String.format("Already voted for a candidate this term [%d].", getCurrentTerm()));
+
       votedForCandidateId = candidateId;
       termWhenVotedForCandidate = currentTerm.get();
     } finally {
