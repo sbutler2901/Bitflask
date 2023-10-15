@@ -32,7 +32,7 @@ public final class Raft implements RaftCommandSubmitter {
     } catch (Exception e) {
       logger.atSevere().withCause(e).log("Failed to submit command [%s]", storageCommandDto);
       return new StorageSubmitResults.Success(
-          immediateFailedFuture(new RaftException("Unknown error while submitting.")));
+          immediateFailedFuture(new RaftException("Unknown error while submitting.", e)));
     }
   }
 }
