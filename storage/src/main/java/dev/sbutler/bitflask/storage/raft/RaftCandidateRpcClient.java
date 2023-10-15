@@ -13,15 +13,18 @@ final class RaftCandidateRpcClient {
   private final RaftConfiguration raftConfiguration;
   private final RaftRpcChannelManager rpcChannelManager;
   private final RaftPersistentState raftPersistentState;
+  private final RaftLog raftLog;
 
   @Inject
   RaftCandidateRpcClient(
       RaftConfiguration raftConfiguration,
       RaftRpcChannelManager rpcChannelManager,
-      RaftPersistentState raftPersistentState) {
+      RaftPersistentState raftPersistentState,
+      RaftLog raftLog) {
     this.raftConfiguration = raftConfiguration;
     this.rpcChannelManager = rpcChannelManager;
     this.raftPersistentState = raftPersistentState;
+    this.raftLog = raftLog;
   }
 
   interface Factory {
@@ -44,8 +47,7 @@ final class RaftCandidateRpcClient {
   }
 
   private RequestVoteRequest getRequest() {
-    RaftLog.LogEntryDetails lastLogEntryDetails =
-        raftPersistentState.getRaftLog().getLastLogEntryDetails();
+    RaftLog.LogEntryDetails lastLogEntryDetails = raftLog.getLastLogEntryDetails();
     return RequestVoteRequest.newBuilder()
         .setCandidateId(raftConfiguration.thisRaftServerId().id())
         .setTerm(raftPersistentState.getCurrentTerm())

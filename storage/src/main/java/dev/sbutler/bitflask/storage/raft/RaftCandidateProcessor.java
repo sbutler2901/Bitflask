@@ -36,10 +36,11 @@ public final class RaftCandidateProcessor extends RaftModeProcessorBase {
       Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
+      RaftLog raftLog,
       ListeningExecutorService executorService,
       RaftConfiguration raftConfiguration,
       RaftCandidateRpcClient.Factory rpcClientFactory) {
-    super(raftModeManager, raftPersistentState, raftVolatileState);
+    super(raftModeManager, raftPersistentState, raftVolatileState, raftLog);
     this.executorService = executorService;
     this.raftConfiguration = raftConfiguration;
     this.rpcClient = rpcClientFactory.create();

@@ -42,7 +42,6 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
   private final RaftConfiguration raftConfiguration;
   private final RaftLeaderState raftLeaderState;
   private final RaftLeaderRpcClient rpcClient;
-  private final RaftLog raftLog;
   private final RaftSubmissionManager raftSubmissionManager;
   private final RaftEntryConverter raftEntryConverter;
   private final StorageCommandExecutor storageCommandExecutor;
@@ -54,20 +53,19 @@ public final class RaftLeaderProcessor extends RaftModeProcessorBase
       Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
+      RaftLog raftLog,
       ListeningExecutorService executorService,
       RaftLeaderRpcClient.Factory rpcClientFactory,
       RaftConfiguration raftConfiguration,
       RaftLeaderState raftLeaderState,
-      RaftLog raftLog,
       RaftSubmissionManager raftSubmissionManager,
       RaftEntryConverter raftEntryConverter,
       StorageCommandExecutor storageCommandExecutor) {
-    super(raftModeManager, raftPersistentState, raftVolatileState);
+    super(raftModeManager, raftPersistentState, raftVolatileState, raftLog);
     this.executorService = executorService;
     this.raftConfiguration = raftConfiguration;
     this.raftLeaderState = raftLeaderState;
     this.rpcClient = rpcClientFactory.create(raftLeaderState);
-    this.raftLog = raftLog;
     this.raftSubmissionManager = raftSubmissionManager;
     this.raftEntryConverter = raftEntryConverter;
     this.storageCommandExecutor = storageCommandExecutor;

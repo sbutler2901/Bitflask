@@ -16,8 +16,6 @@ import java.util.concurrent.locks.ReentrantLock;
 final class RaftPersistentState {
 
   // Persisted fields
-  /** The RaftLog for this server. */
-  private final RaftLog raftLog;
 
   /** Latest term server has seen. */
   private final AtomicInteger currentTerm = new AtomicInteger(0);
@@ -31,9 +29,8 @@ final class RaftPersistentState {
   private volatile int termWhenVotedForCandidate = 0;
 
   @Inject
-  RaftPersistentState(RaftConfiguration raftConfiguration, RaftLog raftLog) {
+  RaftPersistentState(RaftConfiguration raftConfiguration) {
     this.raftConfiguration = raftConfiguration;
-    this.raftLog = raftLog;
   }
 
   /** Used to initialize state at startup. */
@@ -45,11 +42,6 @@ final class RaftPersistentState {
     } finally {
       voteLock.unlock();
     }
-  }
-
-  /** Retrieves the Raft log. */
-  RaftLog getRaftLog() {
-    return raftLog;
   }
 
   /** Returns the latest term this server has seen. */

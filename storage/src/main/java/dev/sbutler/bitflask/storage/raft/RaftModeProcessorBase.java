@@ -16,16 +16,19 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   protected final Provider<RaftModeManager> raftModeManager;
   protected final RaftPersistentState raftPersistentState;
   protected final RaftVolatileState raftVolatileState;
+  protected final RaftLog raftLog;
 
   private volatile boolean shouldContinueExecuting = true;
 
   RaftModeProcessorBase(
       Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
-      RaftVolatileState raftVolatileState) {
+      RaftVolatileState raftVolatileState,
+      RaftLog raftLog) {
     this.raftModeManager = raftModeManager;
     this.raftPersistentState = raftPersistentState;
     this.raftVolatileState = raftVolatileState;
+    this.raftLog = raftLog;
   }
 
   final void terminateExecution() {
@@ -118,8 +121,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
   private boolean candidateLogUpToDate(RequestVoteRequest request) {
     LogEntryDetails candidateLastLogEntryDetails =
         new LogEntryDetails(request.getLastLogTerm(), request.getLastLogIndex());
-    LogEntryDetails localLastLogEntryDetails =
-        raftPersistentState.getRaftLog().getLastLogEntryDetails();
+    LogEntryDetails localLastLogEntryDetails = raftLog.getLastLogEntryDetails();
     return candidateLastLogEntryDetails.compareTo(localLastLogEntryDetails) >= 0;
   }
 
@@ -171,11 +173,9 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     LogEntryDetails leaderPrevLogEntry =
         new LogEntryDetails(request.getPrevLogTerm(), request.getPrevLogIndex());
     boolean appendSuccessful =
-        raftPersistentState
-            .getRaftLog()
-            .appendEntriesAfterPrevEntry(leaderPrevLogEntry, request.getEntriesList());
+        raftLog.appendEntriesAfterPrevEntry(leaderPrevLogEntry, request.getEntriesList());
 
-    LogEntryDetails localLastLogEntry = raftPersistentState.getRaftLog().getLastLogEntryDetails();
+    LogEntryDetails localLastLogEntry = raftLog.getLastLogEntryDetails();
     if (appendSuccessful) {
       getLogger()
           .atInfo()
@@ -198,9 +198,7 @@ abstract sealed class RaftModeProcessorBase implements RaftModeProcessor
     int localCommittedEntryIndex = raftVolatileState.getHighestCommittedEntryIndex();
     if (leaderCommitIndex > localCommittedEntryIndex) {
       raftVolatileState.increaseHighestCommittedEntryIndexTo(
-          Math.min(
-              leaderCommitIndex,
-              raftPersistentState.getRaftLog().getLastLogEntryDetails().index()));
+          Math.min(leaderCommitIndex, raftLog.getLastLogEntryDetails().index()));
     }
   }
 

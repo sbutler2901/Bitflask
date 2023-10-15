@@ -29,8 +29,9 @@ public final class RaftFollowerProcessor extends RaftModeProcessorBase {
       Provider<RaftModeManager> raftModeManager,
       RaftPersistentState raftPersistentState,
       RaftVolatileState raftVolatileState,
+      RaftLog raftLog,
       RaftConfiguration raftConfiguration) {
-    super(raftModeManager, raftPersistentState, raftVolatileState);
+    super(raftModeManager, raftPersistentState, raftVolatileState, raftLog);
     this.raftConfiguration = raftConfiguration;
   }
 
