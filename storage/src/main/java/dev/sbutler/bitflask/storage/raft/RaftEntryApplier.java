@@ -1,11 +1,12 @@
 package dev.sbutler.bitflask.storage.raft;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import dev.sbutler.bitflask.storage.commands.*;
 import dev.sbutler.bitflask.storage.raft.exceptions.RaftException;
 import jakarta.inject.Inject;
 
-/** Handles applying committed entries to the {@link RaftLog}. */
+/** Handles applying committed {@link Entry}s in the {@link RaftLog} to the storage engine. */
 final class RaftEntryApplier extends AbstractExecutionThreadService {
 
   private final RaftLog raftLog;
@@ -41,7 +42,8 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
   }
 
   /** Applies any committed entries that have not been applied yet. */
-  private void applyCommittedEntries() {
+  @VisibleForTesting
+  void applyCommittedEntries() {
     int highestAppliedIndex = raftVolatileState.getHighestAppliedEntryIndex();
     int highestCommittedIndex = raftVolatileState.getHighestCommittedEntryIndex();
     if (highestCommittedIndex == highestAppliedIndex) {
@@ -51,19 +53,35 @@ final class RaftEntryApplier extends AbstractExecutionThreadService {
     for (int nextIndexToApply = highestAppliedIndex + 1;
         nextIndexToApply <= highestCommittedIndex;
         nextIndexToApply++) {
-      try {
-        Entry entry = raftLog.getEntryAtIndex(nextIndexToApply);
-        StorageCommandDto dto = raftEntryConverter.reverse().convert(entry);
-        StorageCommandResults results = storageCommandExecutor.executeDto(dto);
-        if (raftModeManager.isCurrentLeader()) {
-          raftSubmissionManager.completeSubmission(nextIndexToApply, results);
-        }
-        raftVolatileState.increaseHighestAppliedEntryIndexTo(nextIndexToApply);
-      } catch (Exception e) {
-        triggerShutdown();
-        throw new RaftException(
-            String.format("Failed to apply command at index [%d].", nextIndexToApply), e);
-      }
+      applyEntryAtIndex(nextIndexToApply);
+    }
+  }
+
+  /**
+   * Applies the {@link Entry} in the {@link RaftLog} at the provided {@code entryIndex} to the
+   * storage engine.
+   */
+  private void applyEntryAtIndex(int entryIndex) {
+    Entry entry = raftLog.getEntryAtIndex(entryIndex);
+    StorageCommandDto dto = raftEntryConverter.reverse().convert(entry);
+
+    StorageCommandResults results;
+    try {
+      results = storageCommandExecutor.executeDto(dto);
+      raftVolatileState.increaseHighestAppliedEntryIndexTo(entryIndex);
+    } catch (Exception e) {
+      triggerShutdown();
+      RaftException exception =
+          new RaftException(
+              String.format(
+                  "Failed to apply [%s] at index [%d].", entry.getCommandCase(), entryIndex),
+              e);
+      raftSubmissionManager.completeAllSubmissionsWithFailure(exception);
+      throw exception;
+    }
+
+    if (raftModeManager.isCurrentLeader()) {
+      raftSubmissionManager.completeSubmission(entryIndex, results);
     }
   }
 
