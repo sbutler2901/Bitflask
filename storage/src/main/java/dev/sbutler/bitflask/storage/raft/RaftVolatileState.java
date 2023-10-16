@@ -43,13 +43,8 @@ final class RaftVolatileState {
     Preconditions.checkArgument(
         index >= getHighestCommittedEntryIndex(),
         String.format(
-            "Attempting to set committed entry index [%d] lower than current value [%d]",
-            index, getHighestCommittedEntryIndex()));
-    Preconditions.checkArgument(
-        index >= getHighestAppliedEntryIndex(),
-        String.format(
-            "Attempting to set committed entry index [%d] lower than applied entry index [%d]",
-            index, getHighestAppliedEntryIndex()));
+            "Attempting to set committed entry index lower than current value. [current=%d, new=%d].",
+            getHighestCommittedEntryIndex(), index));
     int prev = highestCommittedEntryIndex.getAndSet(index);
     logger.atInfo().log("Increased highest committed entry index. [new=%d, prev=%d].", index, prev);
   }
@@ -68,21 +63,15 @@ final class RaftVolatileState {
     Preconditions.checkArgument(
         index >= getHighestAppliedEntryIndex(),
         String.format(
-            "Attempting to set applied entry index [%d] lower than current value [%d].",
-            index, getHighestAppliedEntryIndex()));
+            "Attempting to set applied entry index lower than current value. [current=%d, new=%d].",
+            getHighestAppliedEntryIndex(), index));
     Preconditions.checkArgument(
         index <= getHighestCommittedEntryIndex(),
         String.format(
-            "Attempting to set applied entry index [%d] higher than committed entry index [%d]",
+            "Attempting to set applied entry index [%d] higher than committed entry index [%d].",
             index, getHighestCommittedEntryIndex()));
     int prev = highestAppliedEntryIndex.getAndSet(index);
     logger.atInfo().log("Increased highest applied entry index. [new=%d, prev=%d].", index, prev);
-  }
-
-  void decrementHighestAppliedEntryIndex() {
-    Preconditions.checkState(
-        highestAppliedEntryIndex.get() > 0, "Highest applied index cannot be decremented below 0.");
-    highestAppliedEntryIndex.decrementAndGet();
   }
 
   /** Returns the {@link RaftServerId} of the current leader, if known. */
