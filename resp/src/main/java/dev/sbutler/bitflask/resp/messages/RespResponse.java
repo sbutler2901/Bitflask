@@ -34,10 +34,11 @@ public abstract sealed class RespResponse
       RespResponseCode statusCode =
           RespResponseCode.fromValue((int) elements.get(0).getAsRespInteger().getValue());
       String message = elements.get(1).getAsRespBulkString().getValue();
+      List<RespElement> subElements = elements.subList(2, elements.size());
       return switch (statusCode) {
         case SUCCESS -> new Success(message);
         case FAILURE -> new Failure(message);
-        case NOT_CURRENT_LEADER -> new NotCurrentLeader(message, elements);
+        case NOT_CURRENT_LEADER -> new NotCurrentLeader(message, subElements);
         case NO_KNOWN_LEADER -> new NoKnownLeader(message);
       };
     } catch (Exception e) {
@@ -97,8 +98,8 @@ public abstract sealed class RespResponse
 
     private NotCurrentLeader(String message, List<RespElement> elements) {
       super(RespResponseCode.NOT_CURRENT_LEADER, message);
-      this.host = elements.get(2).getAsRespBulkString().getValue();
-      this.respPort = (int) elements.get(3).getAsRespInteger().getValue();
+      this.host = elements.get(0).getAsRespBulkString().getValue();
+      this.respPort = (int) elements.get(1).getAsRespInteger().getValue();
     }
 
     /** The current Bitflask server leader's hostname. */
