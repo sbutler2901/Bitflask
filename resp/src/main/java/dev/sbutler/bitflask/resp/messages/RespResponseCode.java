@@ -1,7 +1,7 @@
 package dev.sbutler.bitflask.resp.messages;
 
 /** Status codes for RESP based responses from a Bitflask server. */
-public enum RespStatusCode {
+public enum RespResponseCode {
   SUCCESS(0),
   FAILURE(1),
   NOT_CURRENT_LEADER(2),
@@ -9,7 +9,7 @@ public enum RespStatusCode {
 
   private final int value;
 
-  RespStatusCode(int value) {
+  RespResponseCode(int value) {
     this.value = value;
   }
 
@@ -17,14 +17,14 @@ public enum RespStatusCode {
     return value;
   }
 
-  public static RespStatusCode fromValue(int value) {
+  public static RespResponseCode fromValue(int value) {
     return switch (value) {
-      case 0 -> RespStatusCode.SUCCESS;
-      case 1 -> RespStatusCode.FAILURE;
-      case 2 -> RespStatusCode.NOT_CURRENT_LEADER;
-      case 3 -> RespStatusCode.NO_KNOWN_LEADER;
+      case 0 -> RespResponseCode.SUCCESS;
+      case 1 -> RespResponseCode.FAILURE;
+      case 2 -> RespResponseCode.NOT_CURRENT_LEADER;
+      case 3 -> RespResponseCode.NO_KNOWN_LEADER;
       default -> throw new IllegalArgumentException(
-          String.format("No RespStatusCode exists for value [%d].", value));
+          String.format("No RespResponseCode exists for value [%d].", value));
     };
   }
 }

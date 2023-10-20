@@ -13,19 +13,19 @@ public abstract sealed class RespResponse
         RespResponse.NotCurrentLeader,
         RespResponse.Success {
 
-  private final RespStatusCode statusCode;
+  private final RespResponseCode responseCode;
   private final String message;
 
-  private RespResponse(RespStatusCode statusCode, String message) {
-    this.statusCode = statusCode;
+  private RespResponse(RespResponseCode responseCode, String message) {
+    this.responseCode = responseCode;
     this.message = message;
   }
 
   public static RespResponse createFromRespArray(RespArray respArray) {
     try {
       List<RespElement> elements = respArray.getValue();
-      RespStatusCode statusCode =
-          RespStatusCode.fromValue((int) elements.get(0).getAsRespInteger().getValue());
+      RespResponseCode statusCode =
+          RespResponseCode.fromValue((int) elements.get(0).getAsRespInteger().getValue());
       String message = elements.get(1).getAsRespBulkString().getValue();
       return switch (statusCode) {
         case SUCCESS -> new Success(message);
@@ -39,8 +39,8 @@ public abstract sealed class RespResponse
     }
   }
 
-  public RespStatusCode getStatusCode() {
-    return statusCode;
+  public RespResponseCode getResponseCode() {
+    return responseCode;
   }
 
   public String getMessage() {
@@ -50,18 +50,18 @@ public abstract sealed class RespResponse
   public RespArray getAsRespArray() {
     return new RespArray(
         ImmutableList.of(
-            new RespInteger(getStatusCode().getValue()), new RespBulkString(getMessage())));
+            new RespInteger(getResponseCode().getValue()), new RespBulkString(getMessage())));
   }
 
   public static final class Success extends RespResponse {
     public Success(String message) {
-      super(RespStatusCode.SUCCESS, message);
+      super(RespResponseCode.SUCCESS, message);
     }
   }
 
   public static final class Failure extends RespResponse {
     public Failure(String message) {
-      super(RespStatusCode.FAILURE, message);
+      super(RespResponseCode.FAILURE, message);
     }
   }
 
@@ -72,14 +72,14 @@ public abstract sealed class RespResponse
 
     public NotCurrentLeader(String host, int port) {
       super(
-          RespStatusCode.NOT_CURRENT_LEADER,
+          RespResponseCode.NOT_CURRENT_LEADER,
           String.format("Current leader: host %s, port %s.", host, port));
       this.host = host;
       this.port = port;
     }
 
     private NotCurrentLeader(String message, List<RespElement> elements) {
-      super(RespStatusCode.NOT_CURRENT_LEADER, message);
+      super(RespResponseCode.NOT_CURRENT_LEADER, message);
       this.host = elements.get(2).getAsRespBulkString().getValue();
       this.port = (int) elements.get(3).getAsRespInteger().getValue();
     }
@@ -106,7 +106,7 @@ public abstract sealed class RespResponse
 
   public static final class NoKnownLeader extends RespResponse {
     public NoKnownLeader(String message) {
-      super(RespStatusCode.NO_KNOWN_LEADER, message);
+      super(RespResponseCode.NO_KNOWN_LEADER, message);
     }
   }
 }
