@@ -1,7 +1,10 @@
 package dev.sbutler.bitflask.resp.messages;
 
+import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.resp.types.RespArray;
+import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespElement;
+import dev.sbutler.bitflask.resp.types.RespInteger;
 import java.util.List;
 
 /** A request sent to a Bitflask server when using its RESP based API. */
@@ -36,6 +39,9 @@ public abstract sealed class RespRequest
     return requestCode;
   }
 
+  /** Converts the request into a {@link RespArray} suitable for sending to a Bitflask server. */
+  public abstract RespArray getAsRespArray();
+
   /** A request to get the value of the provided key. */
   public static final class GetRequest extends RespRequest {
 
@@ -52,6 +58,13 @@ public abstract sealed class RespRequest
 
     public String getKey() {
       return key;
+    }
+
+    @Override
+    public RespArray getAsRespArray() {
+      return new RespArray(
+          ImmutableList.of(
+              new RespInteger(getRequestCode().getValue()), new RespBulkString(getKey())));
     }
   }
 
@@ -80,6 +93,15 @@ public abstract sealed class RespRequest
     public String getValue() {
       return value;
     }
+
+    @Override
+    public RespArray getAsRespArray() {
+      return new RespArray(
+          ImmutableList.of(
+              new RespInteger(getRequestCode().getValue()),
+              new RespBulkString(getKey()),
+              new RespBulkString(getValue())));
+    }
   }
 
   /** A request to delete the {@code key} and its associated value. */
@@ -98,6 +120,13 @@ public abstract sealed class RespRequest
 
     public String getKey() {
       return key;
+    }
+
+    @Override
+    public RespArray getAsRespArray() {
+      return new RespArray(
+          ImmutableList.of(
+              new RespInteger(getRequestCode().getValue()), new RespBulkString(getKey())));
     }
   }
 }
