@@ -6,6 +6,7 @@ import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespInteger;
 import java.util.List;
+import java.util.Objects;
 
 /** A response sent by a Bitflask server when using its RESP based API. */
 public abstract sealed class RespResponse
@@ -43,7 +44,7 @@ public abstract sealed class RespResponse
       };
     } catch (Exception e) {
       throw new RespResponseConversionException(
-          String.format("Failed to convert [%s] to a RespResponse.", respArray), e);
+          String.format("Failed to convert %s to a RespResponse.", respArray), e);
     }
   }
 
@@ -62,6 +63,18 @@ public abstract sealed class RespResponse
     return new RespArray(
         ImmutableList.of(
             new RespInteger(getResponseCode().getValue()), new RespBulkString(getMessage())));
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof RespResponse that)) return false;
+    return responseCode == that.responseCode && Objects.equals(message, that.message);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(responseCode, message);
   }
 
   /** Indicates the Bitflask successfully processed the request. */
@@ -91,7 +104,7 @@ public abstract sealed class RespResponse
     public NotCurrentLeader(String host, int respPort) {
       super(
           RespResponseCode.NOT_CURRENT_LEADER,
-          String.format("Current leader: host %s, respPort %s.", host, respPort));
+          String.format("Current leader: [host=%s, respPort=%s].", host, respPort));
       this.host = host;
       this.respPort = respPort;
     }
@@ -121,6 +134,19 @@ public abstract sealed class RespResponse
               .add(new RespBulkString(getHost()))
               .add(new RespInteger(getRespPort()))
               .build());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof NotCurrentLeader that)) return false;
+      if (!super.equals(o)) return false;
+      return respPort == that.respPort && Objects.equals(host, that.host);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(super.hashCode(), host, respPort);
     }
   }
 

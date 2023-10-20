@@ -6,6 +6,7 @@ import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespInteger;
 import java.util.List;
+import java.util.Objects;
 
 /** A request sent to a Bitflask server when using its RESP based API. */
 public abstract sealed class RespRequest
@@ -30,7 +31,7 @@ public abstract sealed class RespRequest
       };
     } catch (Exception e) {
       throw new RespRequestConversionException(
-          String.format("Failed to convert [%s] to a RespRequest.", respArray), e);
+          String.format("Failed to convert %s to a RespRequest.", respArray), e);
     }
   }
 
@@ -41,6 +42,18 @@ public abstract sealed class RespRequest
 
   /** Converts the request into a {@link RespArray} suitable for sending to a Bitflask server. */
   public abstract RespArray getAsRespArray();
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof RespRequest that)) return false;
+    return requestCode == that.requestCode;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(requestCode);
+  }
 
   /** A request to get the value of the provided key. */
   public static final class GetRequest extends RespRequest {
@@ -65,6 +78,19 @@ public abstract sealed class RespRequest
       return new RespArray(
           ImmutableList.of(
               new RespInteger(getRequestCode().getValue()), new RespBulkString(getKey())));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof GetRequest that)) return false;
+      if (!super.equals(o)) return false;
+      return Objects.equals(key, that.key);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(super.hashCode(), key);
     }
   }
 
@@ -102,6 +128,19 @@ public abstract sealed class RespRequest
               new RespBulkString(getKey()),
               new RespBulkString(getValue())));
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof SetRequest that)) return false;
+      if (!super.equals(o)) return false;
+      return Objects.equals(key, that.key) && Objects.equals(value, that.value);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(super.hashCode(), key, value);
+    }
   }
 
   /** A request to delete the {@code key} and its associated value. */
@@ -127,6 +166,19 @@ public abstract sealed class RespRequest
       return new RespArray(
           ImmutableList.of(
               new RespInteger(getRequestCode().getValue()), new RespBulkString(getKey())));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof DeleteRequest that)) return false;
+      if (!super.equals(o)) return false;
+      return Objects.equals(key, that.key);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(super.hashCode(), key);
     }
   }
 }
