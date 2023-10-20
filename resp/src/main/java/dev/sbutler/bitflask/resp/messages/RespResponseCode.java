@@ -1,6 +1,6 @@
 package dev.sbutler.bitflask.resp.messages;
 
-/** Status codes for RESP based responses from a Bitflask server. */
+/** Code indicating the type of {@link RespResponse} received from the Bitflask server. */
 public enum RespResponseCode {
   SUCCESS(0),
   FAILURE(1),

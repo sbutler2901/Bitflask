@@ -83,7 +83,7 @@ public class ClientProcessor {
         yield true;
       }
       case RespResponse.NotCurrentLeader notCurrentLeader -> updateRespServiceForNewLeader(
-          notCurrentLeader.getHost(), notCurrentLeader.getPort());
+          notCurrentLeader.getHost(), notCurrentLeader.getRespPort());
       case RespResponse.NoKnownLeader ignored -> {
         outputWriter.writeWithNewLine(response.getMessage());
         yield false;
