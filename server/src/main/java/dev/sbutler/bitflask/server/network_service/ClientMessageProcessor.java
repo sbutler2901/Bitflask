@@ -113,8 +113,7 @@ final class ClientMessageProcessor implements AutoCloseable {
           .NotCurrentLeader(
           notCurrentLeader.currentLeaderInfo().getHost(),
           notCurrentLeader.currentLeaderInfo().getRespPort());
-      case ClientCommandResults.NoKnownLeader ignored -> new RespResponse.NoKnownLeader(
-          "No leader is currently known.");
+      case ClientCommandResults.NoKnownLeader ignored -> new RespResponse.NoKnownLeader();
     };
   }
 

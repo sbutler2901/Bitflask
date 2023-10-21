@@ -15,19 +15,20 @@ import com.google.inject.Injector;
 import com.google.inject.ProvisionException;
 import dev.sbutler.bitflask.client.client_processing.ReplClientProcessorService;
 import dev.sbutler.bitflask.resp.network.RespService;
+import dev.sbutler.bitflask.resp.network.RespServiceProvider;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+/** Unit tests for {@link Client}. */
 public class ClientTest {
 
   private final Injector INJECTOR = mock(Injector.class);
-  private final ReplClientProcessorService REPL_PROCESSOR =
-      mock(ReplClientProcessorService.class);
-  private final RespService RESP_SERVICE =
-      mock(RespService.class);
+  private final ReplClientProcessorService REPL_PROCESSOR = mock(ReplClientProcessorService.class);
+  private final RespServiceProvider RESP_SERVICE_PROVIDER = mock(RespServiceProvider.class);
+  private final RespService RESP_SERVICE = mock(RespService.class);
   private final SocketChannel SOCKET_CHANNEL = mock(SocketChannel.class);
 
   @Test
@@ -36,13 +37,15 @@ public class ClientTest {
         MockedStatic<RespService> respServiceMockedStatic = mockStatic(RespService.class);
         MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       // Arrange
-      socketChannelMockedStatic.when(() -> SocketChannel.open(any(SocketAddress.class)))
+      socketChannelMockedStatic
+          .when(() -> SocketChannel.open(any(SocketAddress.class)))
           .thenReturn(SOCKET_CHANNEL);
       respServiceMockedStatic.when(() -> RespService.create(any())).thenReturn(RESP_SERVICE);
-      guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
+      guiceMockedStatic
+          .when(() -> Guice.createInjector(any(ClientModule.class)))
           .thenReturn(INJECTOR);
-      when(INJECTOR.getInstance(ReplClientProcessorService.class))
-          .thenReturn(REPL_PROCESSOR);
+      when(INJECTOR.getInstance(RespServiceProvider.class)).thenReturn(RESP_SERVICE_PROVIDER);
+      when(INJECTOR.getInstance(ReplClientProcessorService.class)).thenReturn(REPL_PROCESSOR);
       // Act
       Client.main(new String[0]);
       // Assert
@@ -56,10 +59,12 @@ public class ClientTest {
         MockedStatic<RespService> respServiceMockedStatic = mockStatic(RespService.class);
         MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       // Arrange
-      socketChannelMockedStatic.when(() -> SocketChannel.open(any(SocketAddress.class)))
+      socketChannelMockedStatic
+          .when(() -> SocketChannel.open(any(SocketAddress.class)))
           .thenReturn(SOCKET_CHANNEL);
       respServiceMockedStatic.when(() -> RespService.create(any())).thenReturn(RESP_SERVICE);
-      guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
+      guiceMockedStatic
+          .when(() -> Guice.createInjector(any(ClientModule.class)))
           .thenReturn(INJECTOR);
       when(INJECTOR.getInstance(ReplClientProcessorService.class))
           .thenThrow(new ProvisionException("test"));
@@ -76,10 +81,12 @@ public class ClientTest {
         MockedStatic<RespService> respServiceMockedStatic = mockStatic(RespService.class);
         MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       // Arrange
-      socketChannelMockedStatic.when(() -> SocketChannel.open(any(SocketAddress.class)))
+      socketChannelMockedStatic
+          .when(() -> SocketChannel.open(any(SocketAddress.class)))
           .thenReturn(SOCKET_CHANNEL);
       respServiceMockedStatic.when(() -> RespService.create(any())).thenReturn(RESP_SERVICE);
-      guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
+      guiceMockedStatic
+          .when(() -> Guice.createInjector(any(ClientModule.class)))
           .thenReturn(INJECTOR);
       when(INJECTOR.getInstance(ReplClientProcessorService.class))
           .thenThrow(new ConfigurationException(ImmutableList.of()));
@@ -97,13 +104,15 @@ public class ClientTest {
         MockedStatic<RespService> respServiceMockedStatic = mockStatic(RespService.class);
         MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       // Arrange
-      socketChannelMockedStatic.when(() -> SocketChannel.open(any(SocketAddress.class)))
+      socketChannelMockedStatic
+          .when(() -> SocketChannel.open(any(SocketAddress.class)))
           .thenReturn(SOCKET_CHANNEL);
       respServiceMockedStatic.when(() -> RespService.create(any())).thenReturn(RESP_SERVICE);
-      guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
+      guiceMockedStatic
+          .when(() -> Guice.createInjector(any(ClientModule.class)))
           .thenReturn(INJECTOR);
-      when(INJECTOR.getInstance(ReplClientProcessorService.class))
-          .thenReturn(REPL_PROCESSOR);
+      when(INJECTOR.getInstance(RespServiceProvider.class)).thenReturn(RESP_SERVICE_PROVIDER);
+      when(INJECTOR.getInstance(ReplClientProcessorService.class)).thenReturn(REPL_PROCESSOR);
 
       doThrow(new RuntimeException("test")).when(REPL_PROCESSOR).run();
 
@@ -120,13 +129,15 @@ public class ClientTest {
         MockedStatic<RespService> respServiceMockedStatic = mockStatic(RespService.class);
         MockedStatic<Guice> guiceMockedStatic = mockStatic(Guice.class)) {
       // Arrange
-      socketChannelMockedStatic.when(() -> SocketChannel.open(any(SocketAddress.class)))
+      socketChannelMockedStatic
+          .when(() -> SocketChannel.open(any(SocketAddress.class)))
           .thenReturn(SOCKET_CHANNEL);
       respServiceMockedStatic.when(() -> RespService.create(any())).thenReturn(RESP_SERVICE);
-      guiceMockedStatic.when(() -> Guice.createInjector(any(ClientModule.class)))
+      guiceMockedStatic
+          .when(() -> Guice.createInjector(any(ClientModule.class)))
           .thenReturn(INJECTOR);
-      when(INJECTOR.getInstance(ReplClientProcessorService.class))
-          .thenReturn(REPL_PROCESSOR);
+      when(INJECTOR.getInstance(RespServiceProvider.class)).thenReturn(RESP_SERVICE_PROVIDER);
+      when(INJECTOR.getInstance(ReplClientProcessorService.class)).thenReturn(REPL_PROCESSOR);
 
       doThrow(new IOException("test")).when(RESP_SERVICE).close();
 
