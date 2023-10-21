@@ -1,11 +1,7 @@
 package dev.sbutler.bitflask.client.client_processing;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.client.ExecutionMode;
@@ -14,29 +10,22 @@ import dev.sbutler.bitflask.client.client_processing.repl.ReplIOException;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplParser;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplSyntaxException;
+import dev.sbutler.bitflask.client.command_processing.ClientCommandFactory;
+import dev.sbutler.bitflask.client.command_processing.LocalCommand;
 import java.io.IOException;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+/** Unit tests for {@link ReplClientProcessorService}. */
 public class ReplClientProcessorServiceTest {
 
-  ReplClientProcessorService replClientProcessorService;
-  @Mock ClientProcessor clientProcessor;
-  @Mock ReplReader replReader;
-  @Mock OutputWriter outputWriter;
+  private final ClientCommandFactory commandFactory = mock(ClientCommandFactory.class);
+  private final ReplReader replReader = mock(ReplReader.class);
+  private final OutputWriter outputWriter = mock(OutputWriter.class);
 
-  @BeforeEach
-  void beforeEach() {
-    replClientProcessorService =
-        new ReplClientProcessorService(
-            ExecutionMode.REPL, clientProcessor, replReader, outputWriter);
-  }
+  private final ReplClientProcessorService replClientProcessorService =
+      new ReplClientProcessorService(ExecutionMode.REPL, commandFactory, replReader, outputWriter);
 
   @Test
   void replParser_endOfInput() throws Exception {
@@ -61,10 +50,9 @@ public class ReplClientProcessorServiceTest {
           .when(() -> ReplParser.readNextLine(replReader))
           .thenReturn(Optional.of(ImmutableList.of()))
           .thenReturn(Optional.of(ImmutableList.of()));
-      when(clientProcessor.processClientInput(any()))
-          .thenReturn(true)
-          // artificially terminate
-          .thenReturn(false);
+      when(commandFactory.createCommand(any()))
+          .thenReturn(new LocalCommand.Help(outputWriter))
+          .thenReturn(new LocalCommand.Exit());
       // Act
       replClientProcessorService.run();
       // Assert

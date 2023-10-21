@@ -8,6 +8,8 @@ import dev.sbutler.bitflask.client.client_processing.repl.ReplParser;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplReader;
 import dev.sbutler.bitflask.client.client_processing.repl.ReplSyntaxException;
 import dev.sbutler.bitflask.client.client_processing.repl.types.ReplElement;
+import dev.sbutler.bitflask.client.command_processing.ClientCommand;
+import dev.sbutler.bitflask.client.command_processing.ClientCommandFactory;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.Optional;
@@ -18,7 +20,7 @@ public class ReplClientProcessorService implements Runnable {
   private static final String SHELL_PREFIX = "> ";
 
   private final ExecutionMode executionMode;
-  private final ClientProcessor clientProcessor;
+  private final ClientCommandFactory clientCommandFactory;
   private final ReplReader replReader;
   private final OutputWriter outputWriter;
 
@@ -28,11 +30,11 @@ public class ReplClientProcessorService implements Runnable {
   @Inject
   public ReplClientProcessorService(
       ExecutionMode executionMode,
-      ClientProcessor clientProcessor,
+      ClientCommandFactory clientCommandFactory,
       ReplReader replReader,
       OutputWriter outputWriter) {
     this.executionMode = executionMode;
-    this.clientProcessor = clientProcessor;
+    this.clientCommandFactory = clientCommandFactory;
     this.replReader = replReader;
     this.outputWriter = outputWriter;
   }
@@ -76,7 +78,8 @@ public class ReplClientProcessorService implements Runnable {
   }
 
   private void processClientInput(ImmutableList<ReplElement> clientInput) {
-    boolean shouldContinueProcessing = clientProcessor.processClientInput(clientInput);
+    ClientCommand clientCommand = clientCommandFactory.createCommand(clientInput);
+    boolean shouldContinueProcessing = clientCommand.execute();
     if (!shouldContinueProcessing) {
       triggerShutdown();
     }

@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.client.command_processing;
 
+import dev.sbutler.bitflask.resp.messages.RespRequest;
 import dev.sbutler.bitflask.resp.messages.RespResponse;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespElement;
@@ -17,14 +18,14 @@ public class RespCommandProcessor {
     this.respServiceProvider = respServiceProvider;
   }
 
-  public RespResponse runCommand(RemoteCommand command) throws ProcessingException {
-    writeCommand(command);
+  public RespResponse sendRequest(RespRequest request) throws ProcessingException {
+    writeCommand(request);
     return readResponse();
   }
 
-  private void writeCommand(RemoteCommand command) throws ProcessingException {
+  private void writeCommand(RespRequest request) throws ProcessingException {
     try {
-      respServiceProvider.get().write(command.getAsRespArray());
+      respServiceProvider.get().write(request.getAsRespArray());
     } catch (IOException e) {
       throw new ProcessingException("Failed to write command", e);
     }
