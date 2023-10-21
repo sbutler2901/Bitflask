@@ -152,7 +152,11 @@ public abstract sealed class RespResponse
 
   /** Indicates the Bitflask server does not know the current leader server. */
   public static final class NoKnownLeader extends RespResponse {
-    public NoKnownLeader(String message) {
+    public NoKnownLeader() {
+      super(RespResponseCode.NO_KNOWN_LEADER, "No leader is currently known.");
+    }
+
+    private NoKnownLeader(String message) {
       super(RespResponseCode.NO_KNOWN_LEADER, message);
     }
   }

@@ -41,7 +41,7 @@ public class RespResponseTest {
 
   @Test
   public void createFromRespArray_noKnownLeader_identity() {
-    var response = new RespResponse.NoKnownLeader("message");
+    var response = new RespResponse.NoKnownLeader();
 
     var createdResponse = RespResponse.createFromRespArray(response.getAsRespArray());
 
@@ -105,14 +105,14 @@ public class RespResponseTest {
 
   @Test
   public void noKnownLeader() {
-    var response = new RespResponse.NoKnownLeader("message");
+    var response = new RespResponse.NoKnownLeader();
 
     assertThat(response.getResponseCode()).isEqualTo(RespResponseCode.NO_KNOWN_LEADER);
-    assertThat(response.getMessage()).isEqualTo("message");
+    assertThat(response.getMessage()).isEqualTo("No leader is currently known.");
     assertThat(response.getAsRespArray().getValue())
         .containsExactlyElementsIn(
             ImmutableList.of(
                 new RespInteger(RespResponseCode.NO_KNOWN_LEADER.getValue()),
-                new RespBulkString("message")));
+                new RespBulkString("No leader is currently known.")));
   }
 }
