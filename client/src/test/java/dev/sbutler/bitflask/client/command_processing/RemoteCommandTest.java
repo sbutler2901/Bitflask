@@ -112,4 +112,18 @@ public class RemoteCommandTest {
     verify(respServiceProvider, never()).updateRespService(any());
     verify(outputWriter, times(1)).writeWithNewLine("Failed to reconnect to new leader. test");
   }
+
+  @Test
+  public void execute_respCommandProcessor_throwsProcessingException_stopExecution() {
+    when(respCommandProcessor.sendRequest(RESP_REQUEST)).thenThrow(new ProcessingException("test"));
+
+    boolean shouldContinue = remoteCommand.execute();
+
+    assertThat(shouldContinue).isFalse();
+    verify(outputWriter, times(1))
+        .writeWithNewLine(
+            String.format(
+                "Failed to process [%s] request. %s",
+                RESP_REQUEST.getRequestCode().toString(), "test"));
+  }
 }

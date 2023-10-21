@@ -18,6 +18,11 @@ public class RespCommandProcessor {
     this.respServiceProvider = respServiceProvider;
   }
 
+  /**
+   * Sends a request to the current Bitflask server returning its response.
+   *
+   * <p>Throws a {@link ProcessingException} when an unrecoverable error has occurred.
+   */
   public RespResponse sendRequest(RespRequest request) throws ProcessingException {
     writeCommand(request);
     return readResponse();
@@ -40,7 +45,9 @@ public class RespCommandProcessor {
                 "Server responded with unrecoverable error. %s", respElement.getAsRespError()));
       } else if (!respElement.isRespArray()) {
         throw new ProcessingException(
-            String.format("The server did not return an expected RespElement. [%s]", respElement));
+            String.format(
+                "The server did not return an expected RespElement. Received [%s]",
+                respElement.getClass()));
       }
       return RespResponse.createFromRespArray(respElement.getAsRespArray());
     } catch (IOException e) {

@@ -8,7 +8,9 @@ import static org.mockito.Mockito.*;
 import dev.sbutler.bitflask.resp.messages.RespRequest;
 import dev.sbutler.bitflask.resp.messages.RespResponse;
 import dev.sbutler.bitflask.resp.network.RespService;
+import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespElement;
+import dev.sbutler.bitflask.resp.types.RespError;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
@@ -21,10 +23,10 @@ public class RespCommandProcessorTest {
       new RespCommandProcessor(() -> respService);
 
   @Test
-  void runCommand() throws ProcessingException, IOException {
+  public void sendRequest() throws Exception {
     RespRequest request = new RespRequest.PingRequest();
     RespResponse expectedResponse = new RespResponse.Success("pong");
-    doReturn(expectedResponse.getAsRespArray()).when(respService).read();
+    when(respService.read()).thenReturn(expectedResponse.getAsRespArray());
 
     RespResponse response = respCommandProcessor.sendRequest(request);
 
@@ -33,7 +35,7 @@ public class RespCommandProcessorTest {
   }
 
   @Test
-  void runCommand_write_IOException() throws IOException {
+  public void sendRequest_write_throwsIOException_throwProcessingException() throws Exception {
     RespRequest request = new RespRequest.PingRequest();
     IOException ioException = new IOException("test");
     doThrow(ioException).when(respService).write(any(RespElement.class));
@@ -41,14 +43,49 @@ public class RespCommandProcessorTest {
     ProcessingException exception =
         assertThrows(ProcessingException.class, () -> respCommandProcessor.sendRequest(request));
 
-    assertThat(exception).hasMessageThat().ignoringCase().contains("Failed to write");
+    assertThat(exception).hasMessageThat().contains("Failed to write");
     assertThat(exception).hasCauseThat().isEqualTo(ioException);
     verify(respService, times(1)).write(request.getAsRespArray());
     verify(respService, times(0)).read();
   }
 
   @Test
-  void runCommand_read_IOException() throws IOException {
+  public void sendRequest_read_returnsRespError_throwProcessingException() throws Exception {
+    RespRequest request = new RespRequest.PingRequest();
+    RespError readError = new RespError("test");
+    when(respService.read()).thenReturn(readError);
+
+    ProcessingException exception =
+        assertThrows(ProcessingException.class, () -> respCommandProcessor.sendRequest(request));
+
+    assertThat(exception)
+        .hasMessageThat()
+        .contains("Server responded with unrecoverable error. test");
+    verify(respService, times(1)).write(request.getAsRespArray());
+    verify(respService, times(1)).read();
+  }
+
+  @Test
+  public void sendRequest_read_doesNotReturnRespArray_throwProcessingException() throws Exception {
+    RespRequest request = new RespRequest.PingRequest();
+    RespBulkString readString = new RespBulkString("test");
+    when(respService.read()).thenReturn(readString);
+
+    ProcessingException exception =
+        assertThrows(ProcessingException.class, () -> respCommandProcessor.sendRequest(request));
+
+    assertThat(exception)
+        .hasMessageThat()
+        .contains(
+            String.format(
+                "The server did not return an expected RespElement. Received [%s]",
+                readString.getClass()));
+    verify(respService, times(1)).write(request.getAsRespArray());
+    verify(respService, times(1)).read();
+  }
+
+  @Test
+  public void sendRequest_read_throwsIOException_throwProcessingException() throws Exception {
     RespRequest request = new RespRequest.PingRequest();
     IOException ioException = new IOException("test");
     doThrow(ioException).when(respService).read();
