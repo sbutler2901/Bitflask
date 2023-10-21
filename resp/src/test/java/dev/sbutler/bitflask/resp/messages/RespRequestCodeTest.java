@@ -8,17 +8,22 @@ import org.junit.jupiter.api.Test;
 public class RespRequestCodeTest {
 
   @Test
+  public void fromValue_ping() {
+    assertThat(RespRequestCode.fromValue(0)).isEqualTo(RespRequestCode.PING);
+  }
+
+  @Test
   public void fromValue_get() {
-    assertThat(RespRequestCode.fromValue(0)).isEqualTo(RespRequestCode.GET);
+    assertThat(RespRequestCode.fromValue(1)).isEqualTo(RespRequestCode.GET);
   }
 
   @Test
   public void fromValue_set() {
-    assertThat(RespRequestCode.fromValue(1)).isEqualTo(RespRequestCode.SET);
+    assertThat(RespRequestCode.fromValue(2)).isEqualTo(RespRequestCode.SET);
   }
 
   @Test
   public void fromValue_delete() {
-    assertThat(RespRequestCode.fromValue(2)).isEqualTo(RespRequestCode.DELETE);
+    assertThat(RespRequestCode.fromValue(3)).isEqualTo(RespRequestCode.DELETE);
   }
 }

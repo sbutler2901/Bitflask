@@ -15,6 +15,15 @@ import org.junit.jupiter.api.Test;
 public class RespRequestTest {
 
   @Test
+  public void createFromRespArray_ping_identity() {
+    var request = new RespRequest.PingRequest();
+
+    var createdRequest = RespRequest.createFromRespArray(request.getAsRespArray());
+
+    assertThat(createdRequest).isEqualTo(request);
+  }
+
+  @Test
   public void createFromRespArray_get_identity() {
     var request = new RespRequest.GetRequest("key");
 
@@ -53,6 +62,18 @@ public class RespRequestTest {
         .hasMessageThat()
         .isEqualTo(String.format("Failed to convert %s to a RespRequest.", array));
     assertThat(exception).hasCauseThat().isInstanceOf(ArrayIndexOutOfBoundsException.class);
+  }
+
+  @Test
+  public void ping() {
+    var request = new RespRequest.PingRequest();
+
+    List<RespElement> elements = request.getAsRespArray().getValue();
+
+    assertThat(request.getRequestCode()).isEqualTo(RespRequestCode.PING);
+    assertThat(elements)
+        .containsExactlyElementsIn(
+            ImmutableList.of(new RespInteger(RespRequestCode.PING.getValue())));
   }
 
   @Test

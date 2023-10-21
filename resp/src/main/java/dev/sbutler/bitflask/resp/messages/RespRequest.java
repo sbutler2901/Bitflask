@@ -10,7 +10,10 @@ import java.util.Objects;
 
 /** A request sent to a Bitflask server when using its RESP based API. */
 public abstract sealed class RespRequest
-    permits RespRequest.GetRequest, RespRequest.SetRequest, RespRequest.DeleteRequest {
+    permits RespRequest.PingRequest,
+        RespRequest.GetRequest,
+        RespRequest.SetRequest,
+        RespRequest.DeleteRequest {
 
   private final RespRequestCode requestCode;
 
@@ -25,6 +28,7 @@ public abstract sealed class RespRequest
           RespRequestCode.fromValue((int) elements.get(0).getAsRespInteger().getValue());
       List<RespElement> subElements = elements.subList(1, elements.size());
       return switch (statusCode) {
+        case PING -> new PingRequest();
         case GET -> new GetRequest(subElements);
         case SET -> new SetRequest(subElements);
         case DELETE -> new DeleteRequest(subElements);
@@ -53,6 +57,19 @@ public abstract sealed class RespRequest
   @Override
   public int hashCode() {
     return Objects.hash(requestCode);
+  }
+
+  /** A ping request. */
+  public static final class PingRequest extends RespRequest {
+
+    public PingRequest() {
+      super(RespRequestCode.PING);
+    }
+
+    @Override
+    public RespArray getAsRespArray() {
+      return new RespArray(ImmutableList.of(new RespInteger(getRequestCode().getValue())));
+    }
   }
 
   /** A request to get the value of the provided key. */
