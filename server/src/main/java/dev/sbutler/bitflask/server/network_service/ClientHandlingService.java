@@ -14,6 +14,16 @@ final class ClientHandlingService extends AbstractService implements Runnable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private final ListeningExecutorService listeningExecutorService;
+  private final ClientMessageProcessor clientMessageProcessor;
+
+  private ClientHandlingService(
+      ListeningExecutorService listeningExecutorService,
+      ClientMessageProcessor clientMessageProcessor) {
+    this.listeningExecutorService = listeningExecutorService;
+    this.clientMessageProcessor = clientMessageProcessor;
+  }
+
   static class Factory {
 
     private final ListeningExecutorService listeningExecutorService;
@@ -33,16 +43,6 @@ final class ClientHandlingService extends AbstractService implements Runnable {
           clientMessageProcessorFactory.create(respService);
       return new ClientHandlingService(listeningExecutorService, clientMessageProcessor);
     }
-  }
-
-  private final ListeningExecutorService listeningExecutorService;
-  private final ClientMessageProcessor clientMessageProcessor;
-
-  private ClientHandlingService(
-      ListeningExecutorService listeningExecutorService,
-      ClientMessageProcessor clientMessageProcessor) {
-    this.listeningExecutorService = listeningExecutorService;
-    this.clientMessageProcessor = clientMessageProcessor;
   }
 
   @Override
