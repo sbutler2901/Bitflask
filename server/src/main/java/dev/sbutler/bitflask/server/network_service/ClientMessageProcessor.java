@@ -1,17 +1,17 @@
 package dev.sbutler.bitflask.server.network_service;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
+import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
+import dev.sbutler.bitflask.resp.messages.RespRequest;
 import dev.sbutler.bitflask.resp.messages.RespResponse;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespArray;
-import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespError;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
 import dev.sbutler.bitflask.server.command_processing_service.InvalidCommandException;
 import dev.sbutler.bitflask.storage.commands.ClientCommandResults;
-import jakarta.inject.Inject;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.ProtocolException;
@@ -21,31 +21,22 @@ import java.util.Optional;
  * Handles receiving a client's incoming messages, parsing them, submitting them for processing, and
  * responding.
  */
-final class ClientMessageProcessor implements AutoCloseable {
+public final class ClientMessageProcessor implements AutoCloseable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-
-  static final class Factory {
-
-    private final CommandProcessingService commandProcessingService;
-
-    @Inject
-    Factory(CommandProcessingService commandProcessingService) {
-      this.commandProcessingService = commandProcessingService;
-    }
-
-    ClientMessageProcessor create(RespService respService) {
-      return new ClientMessageProcessor(commandProcessingService, respService);
-    }
-  }
 
   private final CommandProcessingService commandProcessingService;
   private final RespService respService;
 
-  private ClientMessageProcessor(
-      CommandProcessingService commandProcessingService, RespService respService) {
+  @Inject
+  ClientMessageProcessor(
+      CommandProcessingService commandProcessingService, @Assisted RespService respService) {
     this.commandProcessingService = commandProcessingService;
     this.respService = respService;
+  }
+
+  public interface Factory {
+    ClientMessageProcessor create(RespService respService);
   }
 
   /**
@@ -60,10 +51,24 @@ final class ClientMessageProcessor implements AutoCloseable {
     if (!respService.isOpen()) {
       return false;
     }
-    return readClientMessage().map(this::processClientMessage).orElse(false);
+
+    Optional<RespElement> readRespMessage = readClientRespMessage();
+    if (readRespMessage.isEmpty()) {
+      return false;
+    }
+
+    RespRequest request;
+    try {
+      request = parseClientMessage(readRespMessage.get());
+    } catch (InvalidCommandException e) {
+      RespResponse respResponse = new RespResponse.Failure(e.getMessage());
+      return sendResponse(respResponse.getAsRespArray());
+    }
+
+    return processRespRequest(request);
   }
 
-  private Optional<RespElement> readClientMessage() {
+  private Optional<RespElement> readClientRespMessage() {
     try {
       return Optional.of(respService.read());
     } catch (EOFException e) {
@@ -76,33 +81,22 @@ final class ClientMessageProcessor implements AutoCloseable {
     return Optional.empty();
   }
 
-  private boolean processClientMessage(RespElement rawClientMessage) {
+  private RespRequest parseClientMessage(RespElement rawClientMessage) {
+    if (rawClientMessage instanceof RespArray respArray) {
+      return RespRequest.createFromRespArray(respArray);
+    } else {
+      throw new InvalidCommandException("Message must be provided in a RespArray");
+    }
+  }
+
+  private boolean processRespRequest(RespRequest request) {
     try {
-      ImmutableList<String> parsedClientMessage = parseClientMessage(rawClientMessage);
-      ClientCommandResults commandResults =
-          commandProcessingService.processCommandMessage(parsedClientMessage);
+      ClientCommandResults commandResults = commandProcessingService.processRespRequest(request);
       RespResponse respResponse = handleCommandResults(commandResults);
-      return sendResponse(respResponse.getAsRespArray());
-    } catch (InvalidCommandException e) {
-      RespResponse respResponse = new RespResponse.Failure(e.getMessage());
       return sendResponse(respResponse.getAsRespArray());
     } catch (Exception e) {
       return sendUnrecoverableErrorToClient(e);
     }
-  }
-
-  private ImmutableList<String> parseClientMessage(RespElement rawClientMessage) {
-    ImmutableList.Builder<String> clientMessage = ImmutableList.builder();
-    if (!(rawClientMessage instanceof RespArray clientMessageRespArray)) {
-      throw new InvalidCommandException("Message must be provided in a RespArray");
-    }
-    for (RespElement arg : clientMessageRespArray.getValue()) {
-      if (!(arg instanceof RespBulkString argBulkString)) {
-        throw new InvalidCommandException("Message arguments must be RespBulkStrings");
-      }
-      clientMessage.add(argBulkString.getValue());
-    }
-    return clientMessage.build();
   }
 
   private RespResponse handleCommandResults(ClientCommandResults commandResults) {

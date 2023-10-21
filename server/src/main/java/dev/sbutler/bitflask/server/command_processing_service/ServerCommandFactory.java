@@ -1,10 +1,9 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
-import com.google.common.collect.ImmutableList;
+import dev.sbutler.bitflask.resp.messages.RespRequest;
 import dev.sbutler.bitflask.storage.commands.ClientCommand;
 import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import jakarta.inject.Inject;
-import java.util.List;
 
 /** Handles creating {@link ServerCommand}s. */
 final class ServerCommandFactory {
@@ -17,35 +16,22 @@ final class ServerCommandFactory {
   }
 
   /** */
-  ServerCommand createCommand(ServerCommandType serverCommandType, ImmutableList<String> args) {
-    if (!isValidCommandArgs(serverCommandType, args)) {
-      throw new InvalidCommandException(
-          String.format("Invalid arguments for command [%s]: %s", serverCommandType, args));
-    }
-
-    return switch (serverCommandType) {
-      case PING -> new ServerPingCommand();
-      case GET -> {
-        var storageCommandDTO = new StorageCommandDto.ReadDto(args.get(0));
+  ServerCommand createCommand(RespRequest request) {
+    return switch (request) {
+      case RespRequest.PingRequest _ignored -> new ServerPingCommand();
+      case RespRequest.GetRequest getRequest -> {
+        var storageCommandDTO = new StorageCommandDto.ReadDto(getRequest.getKey());
         yield new ServerStorageCommand(clientCommandFactory.create(storageCommandDTO));
       }
-      case SET -> {
-        var storageCommandDTO = new StorageCommandDto.WriteDto(args.get(0), args.get(1));
+      case RespRequest.SetRequest setRequest -> {
+        var storageCommandDTO =
+            new StorageCommandDto.WriteDto(setRequest.getKey(), setRequest.getValue());
         yield new ServerStorageCommand(clientCommandFactory.create(storageCommandDTO));
       }
-      case DEL -> {
-        var storageCommandDTO = new StorageCommandDto.DeleteDto(args.get(0));
+      case RespRequest.DeleteRequest deleteRequest -> {
+        var storageCommandDTO = new StorageCommandDto.DeleteDto(deleteRequest.getKey());
         yield new ServerStorageCommand(clientCommandFactory.create(storageCommandDTO));
       }
-    };
-  }
-
-  private static boolean isValidCommandArgs(
-      ServerCommandType serverCommandType, List<String> args) {
-    return switch (serverCommandType) {
-      case PING -> args.isEmpty();
-      case GET, DEL -> args.size() == 1;
-      case SET -> args.size() == 2;
     };
   }
 }
