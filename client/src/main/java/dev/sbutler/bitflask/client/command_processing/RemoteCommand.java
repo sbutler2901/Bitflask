@@ -1,28 +1,85 @@
 package dev.sbutler.bitflask.client.command_processing;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
+import dev.sbutler.bitflask.resp.messages.RespRequest;
+import dev.sbutler.bitflask.resp.messages.RespResponse;
+import dev.sbutler.bitflask.resp.network.RespService;
+import dev.sbutler.bitflask.resp.network.RespServiceProvider;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 
-import com.google.common.collect.ImmutableList;
-import dev.sbutler.bitflask.resp.types.RespArray;
-import dev.sbutler.bitflask.resp.types.RespBulkString;
-import dev.sbutler.bitflask.resp.types.RespElement;
+/** Commands that should be sent to and executed by a Bitflask server. */
+public final class RemoteCommand implements ClientCommand {
 
-public record RemoteCommand(String command, ImmutableList<String> args) implements ClientCommand {
+  private final RespRequest request;
+  private final OutputWriter outputWriter;
+  private final RespCommandProcessor respCommandProcessor;
+  private final RespServiceProvider respServiceProvider;
 
-  public RemoteCommand {
-    checkNotNull(command, args);
+  RemoteCommand(
+      RespRequest respRequest,
+      OutputWriter outputWriter,
+      RespCommandProcessor respCommandProcessor,
+      RespServiceProvider respServiceProvider) {
+    this.request = respRequest;
+    this.outputWriter = outputWriter;
+    this.respCommandProcessor = respCommandProcessor;
+    this.respServiceProvider = respServiceProvider;
   }
 
-  public RespArray getAsRespArray() {
-    ImmutableList.Builder<RespElement> arrayArgs = ImmutableList.builder();
-    arrayArgs.add(new RespBulkString(command));
+  public RespRequest getRespRequest() {
+    return request;
+  }
 
-    if (args != null) {
-      for (String arg : args) {
-        arrayArgs.add(new RespBulkString(arg));
-      }
+  @Override
+  public boolean execute() {
+    RespResponse response;
+    try {
+      response = respCommandProcessor.sendRequest(request);
+    } catch (ProcessingException e) {
+      outputWriter.writeWithNewLine(
+          String.format(
+              "Failed to process [%s] request. %s", request.getRequestCode(), e.getMessage()));
+      return false;
     }
+    return handleRespResponse(response);
+  }
 
-    return new RespArray(arrayArgs.build());
+  private boolean handleRespResponse(RespResponse response) {
+    return switch (response) {
+      case RespResponse.Success ignored -> {
+        outputWriter.writeWithNewLine(response.getMessage());
+        yield true;
+      }
+      case RespResponse.Failure ignored -> {
+        outputWriter.writeWithNewLine(response.getMessage());
+        yield true;
+      }
+      case RespResponse.NotCurrentLeader notCurrentLeader -> updateRespServiceForNewLeader(
+          notCurrentLeader.getHost(), notCurrentLeader.getRespPort());
+      case RespResponse.NoKnownLeader ignored -> {
+        outputWriter.writeWithNewLine(response.getMessage());
+        yield false;
+      }
+    };
+  }
+
+  private boolean updateRespServiceForNewLeader(String host, int port) {
+    RespService respService;
+    try {
+      respServiceProvider.get().close();
+      SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
+      respService = RespService.create(socketChannel);
+    } catch (Exception e) {
+      outputWriter.writeWithNewLine(
+          String.format("Failed to reconnect to new leader. %s", e.getMessage()));
+      return false;
+    }
+    respServiceProvider.updateRespService(respService);
+    outputWriter.writeWithNewLine(
+        String.format(
+            "Reconnected to the current Bitflask server leader host [%s] port [%d]. Retry your command.",
+            host, port));
+    return true;
   }
 }
