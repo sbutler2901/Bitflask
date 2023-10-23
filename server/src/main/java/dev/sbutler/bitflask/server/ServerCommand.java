@@ -4,8 +4,7 @@ import dev.sbutler.bitflask.storage.commands.ClientCommand;
 import dev.sbutler.bitflask.storage.commands.ClientCommandResults;
 
 /** A general interface representing any command executed by the server. */
-public sealed interface ServerCommand
-    permits ServerCommand.StorageCommand, ServerCommand.PingCommand {
+sealed interface ServerCommand permits ServerCommand.StorageCommand, ServerCommand.PingCommand {
 
   /** Executes the corresponding command */
   ClientCommandResults execute();

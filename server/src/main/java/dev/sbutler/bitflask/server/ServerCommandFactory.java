@@ -6,7 +6,7 @@ import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import jakarta.inject.Inject;
 
 /** Handles creating {@link ServerCommand}s from client requests. */
-public final class ServerCommandFactory {
+final class ServerCommandFactory {
 
   private final ClientCommand.Factory clientCommandFactory;
 

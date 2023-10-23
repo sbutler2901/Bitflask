@@ -16,7 +16,7 @@ import javax.annotation.Nonnull;
 
 /** Handles accepting incoming client requests and submitting them for processing. */
 @Singleton
-public final class NetworkService extends AbstractExecutionThreadService {
+final class NetworkService extends AbstractExecutionThreadService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -38,7 +38,7 @@ public final class NetworkService extends AbstractExecutionThreadService {
     this.serverSocketChannel = serverSocketChannel;
   }
 
-  public interface Factory {
+  interface Factory {
     NetworkService create(ServerSocketChannel serverSocketChannel);
   }
 
