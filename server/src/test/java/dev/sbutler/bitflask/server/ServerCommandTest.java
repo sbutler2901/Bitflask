@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.command;
+package dev.sbutler.bitflask.server;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.mock;

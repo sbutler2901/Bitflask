@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.network_resp;
+package dev.sbutler.bitflask.server;
 
 import static com.google.common.util.concurrent.testing.TestingExecutors.sameThreadScheduledExecutor;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,7 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ServiceManager;
 import dev.sbutler.bitflask.resp.network.RespService;
-import dev.sbutler.bitflask.server.network_resp.ClientHandlingService.Factory;
+import dev.sbutler.bitflask.server.ClientHandlingService.Factory;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;

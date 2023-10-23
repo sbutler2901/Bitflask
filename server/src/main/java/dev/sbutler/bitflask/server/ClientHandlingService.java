@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.network_resp;
+package dev.sbutler.bitflask.server;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractService;

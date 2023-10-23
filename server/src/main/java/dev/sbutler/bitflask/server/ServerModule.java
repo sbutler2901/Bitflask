@@ -5,8 +5,6 @@ import com.google.common.util.concurrent.Service;
 import com.google.inject.Injector;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import dev.sbutler.bitflask.common.guice.RootModule;
-import dev.sbutler.bitflask.server.network_resp.ClientMessageProcessor;
-import dev.sbutler.bitflask.server.network_resp.NetworkService;
 import java.nio.channels.ServerSocketChannel;
 
 public class ServerModule extends RootModule {

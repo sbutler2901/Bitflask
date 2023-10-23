@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.command;
+package dev.sbutler.bitflask.server;
 
 import dev.sbutler.bitflask.storage.commands.ClientCommand;
 import dev.sbutler.bitflask.storage.commands.ClientCommandResults;

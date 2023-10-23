@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.network_resp;
+package dev.sbutler.bitflask.server;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
