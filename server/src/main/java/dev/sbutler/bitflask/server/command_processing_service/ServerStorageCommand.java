@@ -4,7 +4,7 @@ import dev.sbutler.bitflask.storage.commands.ClientCommand;
 import dev.sbutler.bitflask.storage.commands.ClientCommandResults;
 
 /** A {@link ServerCommand} that interacts with storage. */
-public class ServerStorageCommand implements ServerCommand {
+public final class ServerStorageCommand implements ServerCommand {
 
   private final ClientCommand clientCommand;
 

@@ -1,12 +1,13 @@
 package dev.sbutler.bitflask.server.command_processing_service;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
-import com.google.common.collect.ImmutableList;
+import dev.sbutler.bitflask.resp.messages.RespRequest;
 import dev.sbutler.bitflask.storage.commands.ClientCommand;
+import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Unit tests for {@link ServerCommandFactory}. */
 public class ServerCommandFactoryTest {
@@ -17,94 +18,51 @@ public class ServerCommandFactoryTest {
       new ServerCommandFactory(clientCommandFactory);
 
   @Test
-  void ping() {
-    // Act
-    ServerCommand serverCommand =
-        serverCommandFactory.createCommand(ServerCommandType.PING, ImmutableList.of());
-    // Assert
+  public void createCommand_respRequest_ping() {
+    RespRequest request = new RespRequest.PingRequest();
+
+    ServerCommand serverCommand = serverCommandFactory.createCommand(request);
+
     assertThat(serverCommand).isInstanceOf(ServerPingCommand.class);
   }
 
   @Test
-  void ping_invalid() {
-    // Act
-    InvalidCommandException e =
-        assertThrows(
-            InvalidCommandException.class,
-            () ->
-                serverCommandFactory.createCommand(
-                    ServerCommandType.PING, ImmutableList.of("invalidArg")));
-    // Assert
-    assertThat(e).hasMessageThat().ignoringCase().contains("ping");
-    assertThat(e).hasMessageThat().ignoringCase().contains("invalidArg");
-  }
+  public void createCommand_respRequest_get() {
+    RespRequest request = new RespRequest.GetRequest("key");
 
-  @Test
-  void get() {
-    // Act
-    ServerCommand serverCommand =
-        serverCommandFactory.createCommand(ServerCommandType.GET, ImmutableList.of("key"));
-    // Assert
+    ServerCommand serverCommand = serverCommandFactory.createCommand(request);
+
     assertThat(serverCommand).isInstanceOf(ServerStorageCommand.class);
+    ArgumentCaptor<StorageCommandDto.ReadDto> commandDtoCaptor =
+        ArgumentCaptor.forClass(StorageCommandDto.ReadDto.class);
+    verify(clientCommandFactory, times(1)).create(commandDtoCaptor.capture());
+    assertThat(commandDtoCaptor.getValue().key()).isEqualTo("key");
   }
 
   @Test
-  void get_invalid() {
-    // Act
-    InvalidCommandException e =
-        assertThrows(
-            InvalidCommandException.class,
-            () ->
-                serverCommandFactory.createCommand(
-                    ServerCommandType.GET, ImmutableList.of("key", "invalidArg")));
-    // Assert
-    assertThat(e).hasMessageThat().ignoringCase().contains("get");
-    assertThat(e).hasMessageThat().ignoringCase().contains("invalidArg");
-  }
+  public void createCommand_respRequest_set() {
+    RespRequest request = new RespRequest.SetRequest("key", "value");
 
-  @Test
-  void set() {
-    // Act
-    ServerCommand serverCommand =
-        serverCommandFactory.createCommand(ServerCommandType.SET, ImmutableList.of("key", "value"));
-    // Assert
+    ServerCommand serverCommand = serverCommandFactory.createCommand(request);
+
     assertThat(serverCommand).isInstanceOf(ServerStorageCommand.class);
+    ArgumentCaptor<StorageCommandDto.WriteDto> commandDtoCaptor =
+        ArgumentCaptor.forClass(StorageCommandDto.WriteDto.class);
+    verify(clientCommandFactory, times(1)).create(commandDtoCaptor.capture());
+    assertThat(commandDtoCaptor.getValue().key()).isEqualTo("key");
+    assertThat(commandDtoCaptor.getValue().value()).isEqualTo("value");
   }
 
   @Test
-  void set_invalid() {
-    // Act
-    InvalidCommandException e =
-        assertThrows(
-            InvalidCommandException.class,
-            () ->
-                serverCommandFactory.createCommand(
-                    ServerCommandType.SET, ImmutableList.of("key", "value", "invalidArg")));
-    // Assert
-    assertThat(e).hasMessageThat().ignoringCase().contains("set");
-    assertThat(e).hasMessageThat().ignoringCase().contains("invalidArg");
-  }
+  public void createCommand_respRequest_delete() {
+    RespRequest request = new RespRequest.DeleteRequest("key");
 
-  @Test
-  void delete() {
-    // Act
-    ServerCommand serverCommand =
-        serverCommandFactory.createCommand(ServerCommandType.DEL, ImmutableList.of("key"));
-    // Assert
+    ServerCommand serverCommand = serverCommandFactory.createCommand(request);
+
     assertThat(serverCommand).isInstanceOf(ServerStorageCommand.class);
-  }
-
-  @Test
-  void delete_invalid() {
-    // Act
-    InvalidCommandException e =
-        assertThrows(
-            InvalidCommandException.class,
-            () ->
-                serverCommandFactory.createCommand(
-                    ServerCommandType.DEL, ImmutableList.of("key", "invalidArg")));
-    // Assert
-    assertThat(e).hasMessageThat().ignoringCase().contains("del");
-    assertThat(e).hasMessageThat().ignoringCase().contains("invalidArg");
+    ArgumentCaptor<StorageCommandDto.DeleteDto> commandDtoCaptor =
+        ArgumentCaptor.forClass(StorageCommandDto.DeleteDto.class);
+    verify(clientCommandFactory, times(1)).create(commandDtoCaptor.capture());
+    assertThat(commandDtoCaptor.getValue().key()).isEqualTo("key");
   }
 }

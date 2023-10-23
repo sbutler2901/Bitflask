@@ -10,7 +10,8 @@ import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespError;
-import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
+import dev.sbutler.bitflask.server.command_processing_service.ServerCommand;
+import dev.sbutler.bitflask.server.command_processing_service.ServerCommandFactory;
 import dev.sbutler.bitflask.storage.commands.ClientCommandResults;
 import java.io.EOFException;
 import java.io.IOException;
@@ -25,13 +26,13 @@ public final class ClientMessageProcessor implements AutoCloseable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private final CommandProcessingService commandProcessingService;
+  private final ServerCommandFactory serverCommandFactory;
   private final RespService respService;
 
   @Inject
   ClientMessageProcessor(
-      CommandProcessingService commandProcessingService, @Assisted RespService respService) {
-    this.commandProcessingService = commandProcessingService;
+      ServerCommandFactory serverCommandFactory, @Assisted RespService respService) {
+    this.serverCommandFactory = serverCommandFactory;
     this.respService = respService;
   }
 
@@ -73,7 +74,8 @@ public final class ClientMessageProcessor implements AutoCloseable {
 
   private boolean processRespRequest(RespRequest request) {
     try {
-      ClientCommandResults commandResults = commandProcessingService.processRespRequest(request);
+      ServerCommand command = serverCommandFactory.createCommand(request);
+      ClientCommandResults commandResults = command.execute();
       RespResponse respResponse = handleCommandResults(commandResults);
       return sendResponse(respResponse);
     } catch (Exception e) {
@@ -120,7 +122,7 @@ public final class ClientMessageProcessor implements AutoCloseable {
     logger.atSevere().withCause(e).log("Responding with unrecoverable error to client.");
     RespError response = new RespError(e.getMessage());
     try {
-      respService.write(response.getAsRespArray());
+      respService.write(response);
     } catch (IOException ioException) {
       logger.atSevere().withCause(e).log("Failed to write response to client");
     }

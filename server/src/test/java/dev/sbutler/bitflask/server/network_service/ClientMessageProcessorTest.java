@@ -2,197 +2,136 @@ package dev.sbutler.bitflask.server.network_service;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
+import dev.sbutler.bitflask.resp.messages.RespRequest;
+import dev.sbutler.bitflask.resp.messages.RespResponse;
+import dev.sbutler.bitflask.resp.messages.RespResponseCode;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespBulkString;
 import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespError;
-import dev.sbutler.bitflask.resp.types.RespInteger;
-import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
-import dev.sbutler.bitflask.server.command_processing_service.InvalidCommandException;
-import dev.sbutler.bitflask.server.command_processing_service.StorageProcessingException;
+import dev.sbutler.bitflask.server.command_processing_service.*;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.ProtocolException;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Unit tests for {@link ClientMessageProcessor}. */
 public class ClientMessageProcessorTest {
 
-  private ClientMessageProcessor clientMessageProcessor;
-
-  private final CommandProcessingService commandProcessingService =
-      mock(CommandProcessingService.class);
+  private final ServerCommandFactory serverCommandFactory = mock(ServerCommandFactory.class);
   private final RespService respService = mock(RespService.class);
 
-  @BeforeEach
-  void beforeEach() {
-    var factory = new ClientMessageProcessor.Factory(commandProcessingService);
-    clientMessageProcessor = factory.create(respService);
+  private final ClientMessageProcessor clientMessageProcessor =
+      new ClientMessageProcessor(serverCommandFactory, respService);
 
+  @BeforeEach
+  public void beforeEach() {
     when(respService.isOpen()).thenReturn(true);
   }
 
   @Test
-  void processNextMessage_success() throws Exception {
-    RespElement rawClientMessage = new RespArray(List.of(new RespBulkString("ping")));
-    doReturn(rawClientMessage).when(respService).read();
-    String responseValue = "pong";
-    doReturn(responseValue).when(commandProcessingService).processCommandMessage(any());
+  public void processNextMessage_success() throws Exception {
+    RespElement rawClientMessage = new RespRequest.PingRequest().getAsRespArray();
+    when(respService.read()).thenReturn(rawClientMessage);
+    when(serverCommandFactory.createCommand(any())).thenReturn(new ServerPingCommand());
 
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
 
     assertThat(processingSuccessful).isTrue();
-    verify(respService, times(1)).read();
-    verify(commandProcessingService, times(1)).processCommandMessage(any());
-    verify(respService, times(1)).write(any(RespBulkString.class));
+    verify(respService, times(1)).write(any());
   }
 
   @Test
-  void processNextMessage_commandProcessing_throwsInvalidCommandException() throws Exception {
-    RespElement rawClientMessage = new RespArray(List.of(new RespBulkString("invalidCommand")));
-    doReturn(rawClientMessage).when(respService).read();
-    InvalidCommandException exception =
-        new InvalidCommandException(String.format("Invalid command: [%s]", "invalidCommand"));
-    doThrow(exception).when(commandProcessingService).processCommandMessage(any());
-
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
-
-    assertThat(processingSuccessful).isTrue();
-    verify(respService, times(1)).read();
-    verify(commandProcessingService, times(1)).processCommandMessage(any());
-    verify(respService, times(1)).write(any(RespError.class));
-  }
-
-  @Test
-  void processNextMessage_commandProcessing_throwsStorageProcessingException() throws Exception {
-    RespElement rawClientMessage = new RespArray(List.of(new RespBulkString("invalidCommand")));
-    doReturn(rawClientMessage).when(respService).read();
-    StorageProcessingException exception =
-        new StorageProcessingException(
-            String.format("Unexpected failure getting [%s]", "invalidCommand"));
-    doThrow(exception).when(commandProcessingService).processCommandMessage(any());
-
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
-
-    assertThat(processingSuccessful).isFalse();
-    verify(respService, times(1)).read();
-    verify(commandProcessingService, times(1)).processCommandMessage(any());
-    verify(respService, times(1)).write(any(RespError.class));
-  }
-
-  @Test
-  void processNextMessage_commandProcessing_throwsUnexpectedException() throws Exception {
-    RespElement rawClientMessage = new RespArray(List.of(new RespBulkString("invalidCommand")));
-    doReturn(rawClientMessage).when(respService).read();
-    RuntimeException exception = new RuntimeException("test");
-    doThrow(exception).when(commandProcessingService).processCommandMessage(any());
-
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
-
-    assertThat(processingSuccessful).isFalse();
-    verify(respService, times(1)).read();
-    verify(commandProcessingService, times(1)).processCommandMessage(any());
-    verify(respService, times(1)).write(any(RespError.class));
-  }
-
-  @Test
-  void readClientMessage_EOFException() throws Exception {
-    doThrow(EOFException.class).when(respService).read();
-
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
-
-    assertThat(processingSuccessful).isFalse();
-    verify(respService, times(1)).read();
-    verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respService, times(0)).write(any());
-  }
-
-  @Test
-  void readClientMessage_ProtocolException() throws Exception {
-    doThrow(ProtocolException.class).when(respService).read();
-
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
-
-    assertThat(processingSuccessful).isFalse();
-    verify(respService, times(1)).read();
-    verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respService, times(0)).write(any());
-  }
-
-  @Test
-  void readClientMessage_IOException() throws Exception {
-    doThrow(IOException.class).when(respService).read();
-
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
-
-    assertThat(processingSuccessful).isFalse();
-    verify(respService, times(1)).read();
-    verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respService, times(0)).write(any());
-  }
-
-  @Test
-  void writeResponseMessage_IOException() throws Exception {
-    RespElement rawClientMessage = new RespArray(List.of(new RespBulkString("ping")));
-    doReturn(rawClientMessage).when(respService).read();
-    String responseValue = "pong";
-    doReturn(responseValue).when(commandProcessingService).processCommandMessage(any());
-    doThrow(IOException.class).when(respService).write(any());
-
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
-
-    assertThat(processingSuccessful).isFalse();
-    verify(respService, times(1)).read();
-    verify(commandProcessingService, times(1)).processCommandMessage(any());
-    verify(respService, times(1)).write(any(RespBulkString.class));
-  }
-
-  @Test
-  void parseClientMessage_noRespArray() throws Exception {
-    RespElement rawClientMessage = new RespBulkString("ping");
-    doReturn(rawClientMessage).when(respService).read();
-
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
-
-    assertThat(processingSuccessful).isTrue();
-    verify(respService, times(1)).read();
-    verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respService, times(1)).write(any(RespError.class));
-  }
-
-  @Test
-  void parseClientMessage_notRespBulkStringArgs() throws Exception {
-    RespElement rawClientMessage = new RespArray(ImmutableList.of(new RespInteger(1)));
-    doReturn(rawClientMessage).when(respService).read();
-
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
-
-    assertThat(processingSuccessful).isTrue();
-    verify(respService, times(1)).read();
-    verify(commandProcessingService, times(0)).processCommandMessage(any());
-    verify(respService, times(1)).write(any(RespError.class));
-  }
-
-  @Test
-  void respServiceClosed() {
+  public void processNextMessage_respService_closed() {
     reset(respService);
     when(respService.isOpen()).thenReturn(false);
 
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
 
     assertThat(processingSuccessful).isFalse();
+  }
+
+  @Test
+  public void processNextMessage_respService_throwsEOFException() throws Exception {
+    when(respService.read()).thenThrow(EOFException.class);
+
+    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+
+    assertThat(processingSuccessful).isFalse();
+    verify(respService, times(1)).read();
+    verify(respService, times(0)).write(any());
+  }
+
+  @Test
+  public void processNextMessage_respService_throwsProtocolException() throws Exception {
+    when(respService.read()).thenThrow(ProtocolException.class);
+
+    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+
+    assertThat(processingSuccessful).isFalse();
+    verify(respService, times(1)).read();
+    verify(respService, never()).write(any());
+  }
+
+  @Test
+  public void processNextMessage_respService_throwsIOException() throws Exception {
+    when(respService.read()).thenThrow(IOException.class);
+
+    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+
+    assertThat(processingSuccessful).isFalse();
+    verify(respService, times(1)).read();
+    verify(respService, never()).write(any());
+  }
+
+  @Test
+  public void processNextMessage_readMessageNotRespArray_failureResponse() throws Exception {
+    when(respService.read()).thenReturn(new RespBulkString("test"));
+
+    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+
+    assertThat(processingSuccessful).isTrue();
+    ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
+    verify(respService, times(1)).write(responseCaptor.capture());
+    RespResponse respResponse = RespResponse.createFromRespArray(responseCaptor.getValue());
+    assertThat(respResponse.getResponseCode()).isEqualTo(RespResponseCode.FAILURE);
+    assertThat(respResponse.getMessage()).isEqualTo("Message must be provided in a RespArray");
+  }
+
+  @Test
+  public void processNextMessage_thrownRespRequestConversionException_failureResponse()
+      throws Exception {
+    when(respService.read()).thenReturn(new RespArray(ImmutableList.of()));
+
+    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+
+    assertThat(processingSuccessful).isTrue();
+    ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
+    verify(respService, times(1)).write(responseCaptor.capture());
+    RespResponse respResponse = RespResponse.createFromRespArray(responseCaptor.getValue());
+    assertThat(respResponse.getResponseCode()).isEqualTo(RespResponseCode.FAILURE);
+    assertThat(respResponse.getMessage()).isEqualTo("Failed to convert [] to a RespRequest.");
+  }
+
+  @Test
+  public void processNextMessage_unrecoverableErrorThrown_errorResponse() throws Exception {
+    RespElement rawClientMessage = new RespRequest.PingRequest().getAsRespArray();
+    when(respService.read()).thenReturn(rawClientMessage);
+    RuntimeException exception = new RuntimeException("test");
+    when(serverCommandFactory.createCommand(any())).thenThrow(exception);
+
+    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+
+    assertThat(processingSuccessful).isFalse();
+    ArgumentCaptor<RespError> responseCaptor = ArgumentCaptor.forClass(RespError.class);
+    verify(respService, times(1)).write(responseCaptor.capture());
+    assertThat(responseCaptor.getValue().getValue()).isEqualTo("test");
   }
 
   @Test
