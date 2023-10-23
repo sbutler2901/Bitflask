@@ -39,7 +39,7 @@ public class ClientMessageProcessorTest {
   public void processNextMessage_success() throws Exception {
     RespElement rawClientMessage = new RespRequest.PingRequest().getAsRespArray();
     when(respService.read()).thenReturn(rawClientMessage);
-    when(serverCommandFactory.createCommand(any())).thenReturn(new ServerPingCommand());
+    when(serverCommandFactory.createCommand(any())).thenReturn(new ServerCommand.PingCommand());
 
     boolean processingSuccessful = clientMessageProcessor.processNextMessage();
 

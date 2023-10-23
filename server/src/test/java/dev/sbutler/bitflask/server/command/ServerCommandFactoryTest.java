@@ -23,7 +23,7 @@ public class ServerCommandFactoryTest {
 
     ServerCommand serverCommand = serverCommandFactory.createCommand(request);
 
-    assertThat(serverCommand).isInstanceOf(ServerPingCommand.class);
+    assertThat(serverCommand).isInstanceOf(ServerCommand.PingCommand.class);
   }
 
   @Test
@@ -32,7 +32,7 @@ public class ServerCommandFactoryTest {
 
     ServerCommand serverCommand = serverCommandFactory.createCommand(request);
 
-    assertThat(serverCommand).isInstanceOf(ServerStorageCommand.class);
+    assertThat(serverCommand).isInstanceOf(ServerCommand.StorageCommand.class);
     ArgumentCaptor<StorageCommandDto.ReadDto> commandDtoCaptor =
         ArgumentCaptor.forClass(StorageCommandDto.ReadDto.class);
     verify(clientCommandFactory, times(1)).create(commandDtoCaptor.capture());
@@ -45,7 +45,7 @@ public class ServerCommandFactoryTest {
 
     ServerCommand serverCommand = serverCommandFactory.createCommand(request);
 
-    assertThat(serverCommand).isInstanceOf(ServerStorageCommand.class);
+    assertThat(serverCommand).isInstanceOf(ServerCommand.StorageCommand.class);
     ArgumentCaptor<StorageCommandDto.WriteDto> commandDtoCaptor =
         ArgumentCaptor.forClass(StorageCommandDto.WriteDto.class);
     verify(clientCommandFactory, times(1)).create(commandDtoCaptor.capture());
@@ -59,7 +59,7 @@ public class ServerCommandFactoryTest {
 
     ServerCommand serverCommand = serverCommandFactory.createCommand(request);
 
-    assertThat(serverCommand).isInstanceOf(ServerStorageCommand.class);
+    assertThat(serverCommand).isInstanceOf(ServerCommand.StorageCommand.class);
     ArgumentCaptor<StorageCommandDto.DeleteDto> commandDtoCaptor =
         ArgumentCaptor.forClass(StorageCommandDto.DeleteDto.class);
     verify(clientCommandFactory, times(1)).create(commandDtoCaptor.capture());

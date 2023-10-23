@@ -18,19 +18,19 @@ public final class ServerCommandFactory {
   /** Creates a ServerCommand from a {@link RespRequest}. */
   public ServerCommand createCommand(RespRequest request) {
     return switch (request) {
-      case RespRequest.PingRequest _ignored -> new ServerPingCommand();
+      case RespRequest.PingRequest _ignored -> new ServerCommand.PingCommand();
       case RespRequest.GetRequest getRequest -> {
         var storageCommandDTO = new StorageCommandDto.ReadDto(getRequest.getKey());
-        yield new ServerStorageCommand(clientCommandFactory.create(storageCommandDTO));
+        yield new ServerCommand.StorageCommand(clientCommandFactory.create(storageCommandDTO));
       }
       case RespRequest.SetRequest setRequest -> {
         var storageCommandDTO =
             new StorageCommandDto.WriteDto(setRequest.getKey(), setRequest.getValue());
-        yield new ServerStorageCommand(clientCommandFactory.create(storageCommandDTO));
+        yield new ServerCommand.StorageCommand(clientCommandFactory.create(storageCommandDTO));
       }
       case RespRequest.DeleteRequest deleteRequest -> {
         var storageCommandDTO = new StorageCommandDto.DeleteDto(deleteRequest.getKey());
-        yield new ServerStorageCommand(clientCommandFactory.create(storageCommandDTO));
+        yield new ServerCommand.StorageCommand(clientCommandFactory.create(storageCommandDTO));
       }
     };
   }
