@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.network_service;
+package dev.sbutler.bitflask.server.network_resp;
 
 import static com.google.common.util.concurrent.testing.TestingExecutors.sameThreadScheduledExecutor;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,7 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ServiceManager;
 import dev.sbutler.bitflask.resp.network.RespService;
-import dev.sbutler.bitflask.server.network_service.ClientHandlingService.Factory;
+import dev.sbutler.bitflask.server.network_resp.ClientHandlingService.Factory;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
@@ -30,8 +30,8 @@ public class ClientHandlingServiceTest {
 
   private ClientHandlingService clientHandlingService;
 
-  @Mock
-  private ClientMessageProcessor clientMessageProcessor;
+  @Mock private ClientMessageProcessor clientMessageProcessor;
+
   @SuppressWarnings("UnstableApiUsage")
   @Spy
   ListeningExecutorService listeningExecutorService = sameThreadScheduledExecutor();
@@ -45,7 +45,8 @@ public class ClientHandlingServiceTest {
         new Factory(listeningExecutorService, clientMessageProcessorFactory);
 
     try (MockedStatic<RespService> respServiceMockedStatic = mockStatic(RespService.class)) {
-      respServiceMockedStatic.when(() -> RespService.create(any()))
+      respServiceMockedStatic
+          .when(() -> RespService.create(any()))
           .thenReturn(mock(RespService.class));
       clientHandlingService = clientHandlingServiceFactory.create(mock(SocketChannel.class));
     }

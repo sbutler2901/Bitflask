@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.network_service;
+package dev.sbutler.bitflask.server.network_resp;
 
 import com.google.common.flogger.FluentLogger;
 import com.google.inject.Inject;
@@ -10,8 +10,8 @@ import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespError;
-import dev.sbutler.bitflask.server.command_processing_service.ServerCommand;
-import dev.sbutler.bitflask.server.command_processing_service.ServerCommandFactory;
+import dev.sbutler.bitflask.server.command.ServerCommand;
+import dev.sbutler.bitflask.server.command.ServerCommandFactory;
 import dev.sbutler.bitflask.storage.commands.ClientCommandResults;
 import java.io.EOFException;
 import java.io.IOException;

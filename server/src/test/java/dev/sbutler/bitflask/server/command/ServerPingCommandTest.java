@@ -1,4 +1,4 @@
-package dev.sbutler.bitflask.server.command_processing_service;
+package dev.sbutler.bitflask.server.command;
 
 import static com.google.common.truth.Truth.assertThat;
 
