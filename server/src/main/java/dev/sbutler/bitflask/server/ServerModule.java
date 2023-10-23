@@ -19,6 +19,7 @@ public class ServerModule extends RootModule {
 
   @Override
   protected void configure() {
+    install(new FactoryModuleBuilder().build(NetworkService.Factory.class));
     install(new FactoryModuleBuilder().build(ClientMessageProcessor.Factory.class));
   }
 

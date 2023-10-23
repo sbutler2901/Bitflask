@@ -3,7 +3,8 @@ package dev.sbutler.bitflask.server.network_service;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import jakarta.inject.Inject;
+import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
@@ -19,25 +20,6 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  public static class Factory {
-
-    private final ListeningExecutorService listeningExecutorService;
-    private final ClientHandlingService.Factory clientHandlingServiceFactory;
-
-    @Inject
-    Factory(
-        ListeningExecutorService listeningExecutorService,
-        ClientHandlingService.Factory clientHandlingServiceFactory) {
-      this.listeningExecutorService = listeningExecutorService;
-      this.clientHandlingServiceFactory = clientHandlingServiceFactory;
-    }
-
-    public NetworkService create(ServerSocketChannel serverSocketChannel) {
-      return new NetworkService(
-          listeningExecutorService, serverSocketChannel, clientHandlingServiceFactory);
-    }
-  }
-
   private final ListeningExecutorService listeningExecutorService;
   private final ServerSocketChannel serverSocketChannel;
   private final ClientHandlingService.Factory clientHandlingServiceFactory;
@@ -46,13 +28,18 @@ public final class NetworkService extends AbstractExecutionThreadService {
 
   private volatile boolean isRunning = true;
 
+  @Inject
   NetworkService(
       ListeningExecutorService listeningExecutorService,
-      ServerSocketChannel serverSocketChannel,
-      ClientHandlingService.Factory clientHandlingServiceFactory) {
+      ClientHandlingService.Factory clientHandlingServiceFactory,
+      @Assisted ServerSocketChannel serverSocketChannel) {
     this.listeningExecutorService = listeningExecutorService;
-    this.serverSocketChannel = serverSocketChannel;
     this.clientHandlingServiceFactory = clientHandlingServiceFactory;
+    this.serverSocketChannel = serverSocketChannel;
+  }
+
+  public interface Factory {
+    NetworkService create(ServerSocketChannel serverSocketChannel);
   }
 
   @Override
