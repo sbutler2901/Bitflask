@@ -5,7 +5,7 @@ import dev.sbutler.bitflask.storage.commands.ClientCommand;
 import dev.sbutler.bitflask.storage.commands.StorageCommandDto;
 import jakarta.inject.Inject;
 
-/** Handles creating {@link ServerCommand}s. */
+/** Handles creating {@link ServerCommand}s from client requests. */
 final class ServerCommandFactory {
 
   private final ClientCommand.Factory clientCommandFactory;
@@ -15,7 +15,7 @@ final class ServerCommandFactory {
     this.clientCommandFactory = clientCommandFactory;
   }
 
-  /** */
+  /** Creates a ServerCommand from a {@link RespRequest}. */
   ServerCommand createCommand(RespRequest request) {
     return switch (request) {
       case RespRequest.PingRequest _ignored -> new ServerPingCommand();

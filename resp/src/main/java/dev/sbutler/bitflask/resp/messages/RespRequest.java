@@ -21,6 +21,15 @@ public abstract sealed class RespRequest
     this.requestCode = requestCode;
   }
 
+  /**
+   * Creates a {@link RespRequest} from a {@link RespArray}.
+   *
+   * <p>The RespArray is expected to have been created by using {@link
+   * RespRequest#getAsRespArray()}.
+   *
+   * <p>A {@link RespRequestConversionException} will be thrown if there are any issues creating the
+   * RespRequest.
+   */
   public static RespRequest createFromRespArray(RespArray respArray) {
     try {
       List<RespElement> elements = respArray.getValue();

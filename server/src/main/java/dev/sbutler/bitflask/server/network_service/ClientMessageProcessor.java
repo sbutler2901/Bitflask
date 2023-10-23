@@ -4,13 +4,13 @@ import com.google.common.flogger.FluentLogger;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.resp.messages.RespRequest;
+import dev.sbutler.bitflask.resp.messages.RespRequestConversionException;
 import dev.sbutler.bitflask.resp.messages.RespResponse;
 import dev.sbutler.bitflask.resp.network.RespService;
 import dev.sbutler.bitflask.resp.types.RespArray;
 import dev.sbutler.bitflask.resp.types.RespElement;
 import dev.sbutler.bitflask.resp.types.RespError;
 import dev.sbutler.bitflask.server.command_processing_service.CommandProcessingService;
-import dev.sbutler.bitflask.server.command_processing_service.InvalidCommandException;
 import dev.sbutler.bitflask.storage.commands.ClientCommandResults;
 import java.io.EOFException;
 import java.io.IOException;
@@ -57,43 +57,25 @@ public final class ClientMessageProcessor implements AutoCloseable {
       return false;
     }
 
+    if (!(readRespMessage.get() instanceof RespArray)) {
+      return sendResponse(new RespResponse.Failure("Message must be provided in a RespArray"));
+    }
+
     RespRequest request;
     try {
-      request = parseClientMessage(readRespMessage.get());
-    } catch (InvalidCommandException e) {
-      RespResponse respResponse = new RespResponse.Failure(e.getMessage());
-      return sendResponse(respResponse.getAsRespArray());
+      request = RespRequest.createFromRespArray((RespArray) readRespMessage.get());
+    } catch (RespRequestConversionException e) {
+      return sendResponse(new RespResponse.Failure(e.getMessage()));
     }
 
     return processRespRequest(request);
-  }
-
-  private Optional<RespElement> readClientRespMessage() {
-    try {
-      return Optional.of(respService.read());
-    } catch (EOFException e) {
-      logger.atInfo().log("Client disconnected.");
-    } catch (ProtocolException e) {
-      logger.atWarning().withCause(e).log("Client message format malformed");
-    } catch (IOException e) {
-      logger.atSevere().withCause(e).log("Failure reading client's message");
-    }
-    return Optional.empty();
-  }
-
-  private RespRequest parseClientMessage(RespElement rawClientMessage) {
-    if (rawClientMessage instanceof RespArray respArray) {
-      return RespRequest.createFromRespArray(respArray);
-    } else {
-      throw new InvalidCommandException("Message must be provided in a RespArray");
-    }
   }
 
   private boolean processRespRequest(RespRequest request) {
     try {
       ClientCommandResults commandResults = commandProcessingService.processRespRequest(request);
       RespResponse respResponse = handleCommandResults(commandResults);
-      return sendResponse(respResponse.getAsRespArray());
+      return sendResponse(respResponse);
     } catch (Exception e) {
       return sendUnrecoverableErrorToClient(e);
     }
@@ -111,21 +93,38 @@ public final class ClientMessageProcessor implements AutoCloseable {
     };
   }
 
-  private boolean sendUnrecoverableErrorToClient(Exception e) {
-    logger.atSevere().withCause(e).log("Responding with unrecoverable error to client.");
-    RespError response = new RespError(e.getMessage());
-    sendResponse(response);
-    return false;
+  private Optional<RespElement> readClientRespMessage() {
+    try {
+      return Optional.of(respService.read());
+    } catch (EOFException e) {
+      logger.atInfo().log("Client disconnected.");
+    } catch (ProtocolException e) {
+      logger.atWarning().withCause(e).log("Client message format malformed");
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log("Failure reading client's message");
+    }
+    return Optional.empty();
   }
 
-  private boolean sendResponse(RespElement response) {
+  private boolean sendResponse(RespResponse response) {
     try {
-      respService.write(response);
+      respService.write(response.getAsRespArray());
       return true;
     } catch (IOException e) {
       logger.atSevere().withCause(e).log("Failed to write response to client");
       return false;
     }
+  }
+
+  private boolean sendUnrecoverableErrorToClient(Exception e) {
+    logger.atSevere().withCause(e).log("Responding with unrecoverable error to client.");
+    RespError response = new RespError(e.getMessage());
+    try {
+      respService.write(response.getAsRespArray());
+    } catch (IOException ioException) {
+      logger.atSevere().withCause(e).log("Failed to write response to client");
+    }
+    return false;
   }
 
   public boolean isOpen() {
