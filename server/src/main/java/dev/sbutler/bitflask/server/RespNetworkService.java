@@ -16,22 +16,22 @@ import javax.annotation.Nonnull;
 
 /** Handles accepting incoming client requests and submitting them for processing. */
 @Singleton
-final class NetworkService extends AbstractExecutionThreadService {
+final class RespNetworkService extends AbstractExecutionThreadService {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService listeningExecutorService;
   private final ServerSocketChannel serverSocketChannel;
-  private final ClientHandlingService.Factory clientHandlingServiceFactory;
-  private final Set<ClientHandlingService> runningClientHandlingServices =
+  private final RespClientHandlingService.Factory clientHandlingServiceFactory;
+  private final Set<RespClientHandlingService> runningRespClientHandlingServices =
       ConcurrentHashMap.newKeySet();
 
   private volatile boolean isRunning = true;
 
   @Inject
-  NetworkService(
+  RespNetworkService(
       ListeningExecutorService listeningExecutorService,
-      ClientHandlingService.Factory clientHandlingServiceFactory,
+      RespClientHandlingService.Factory clientHandlingServiceFactory,
       @Assisted ServerSocketChannel serverSocketChannel) {
     this.listeningExecutorService = listeningExecutorService;
     this.clientHandlingServiceFactory = clientHandlingServiceFactory;
@@ -39,7 +39,7 @@ final class NetworkService extends AbstractExecutionThreadService {
   }
 
   interface Factory {
-    NetworkService create(ServerSocketChannel serverSocketChannel);
+    RespNetworkService create(ServerSocketChannel serverSocketChannel);
   }
 
   @Override
@@ -50,9 +50,9 @@ final class NetworkService extends AbstractExecutionThreadService {
         logger.atInfo().log(
             "Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
 
-        ClientHandlingService clientHandlingService =
+        RespClientHandlingService respClientHandlingService =
             clientHandlingServiceFactory.create(socketChannel);
-        startClientHandlingService(clientHandlingService);
+        startClientHandlingService(respClientHandlingService);
       }
     } catch (AsynchronousCloseException ignored) {
       // Service shutdown externally
@@ -61,22 +61,22 @@ final class NetworkService extends AbstractExecutionThreadService {
     }
   }
 
-  private void startClientHandlingService(ClientHandlingService clientHandlingService) {
-    runningClientHandlingServices.add(clientHandlingService);
+  private void startClientHandlingService(RespClientHandlingService respClientHandlingService) {
+    runningRespClientHandlingServices.add(respClientHandlingService);
 
     // Clean up after service has reached a terminal state on its own
-    clientHandlingService
+    respClientHandlingService
         .startAsync()
         .addListener(
             new Listener() {
               @Override
               public void terminated(@Nonnull State from) {
-                runningClientHandlingServices.remove(clientHandlingService);
+                runningRespClientHandlingServices.remove(respClientHandlingService);
               }
 
               @Override
               public void failed(@Nonnull State from, @Nonnull Throwable failure) {
-                runningClientHandlingServices.remove(clientHandlingService);
+                runningRespClientHandlingServices.remove(respClientHandlingService);
               }
             },
             listeningExecutorService);
@@ -98,7 +98,7 @@ final class NetworkService extends AbstractExecutionThreadService {
   }
 
   private void stopAllClientHandlingServices() {
-    runningClientHandlingServices.forEach(ClientHandlingService::stopAsync);
-    runningClientHandlingServices.forEach(ClientHandlingService::awaitTerminated);
+    runningRespClientHandlingServices.forEach(RespClientHandlingService::stopAsync);
+    runningRespClientHandlingServices.forEach(RespClientHandlingService::awaitTerminated);
   }
 }

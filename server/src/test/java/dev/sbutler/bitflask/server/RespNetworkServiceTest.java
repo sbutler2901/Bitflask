@@ -11,18 +11,18 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.Test;
 
-public class NetworkServiceTest {
+public class RespNetworkServiceTest {
 
   @SuppressWarnings("UnstableApiUsage")
   private final ListeningExecutorService executorService =
       spy(TestingExecutors.sameThreadScheduledExecutor());
 
   private final ServerSocketChannel serverSocketChannel = mock(ServerSocketChannel.class);
-  private final ClientHandlingService.Factory clientHandlingServiceFactory =
-      mock(ClientHandlingService.Factory.class);
+  private final RespClientHandlingService.Factory clientHandlingServiceFactory =
+      mock(RespClientHandlingService.Factory.class);
 
-  private final NetworkService networkService =
-      new NetworkService(executorService, clientHandlingServiceFactory, serverSocketChannel);
+  private final RespNetworkService respNetworkService =
+      new RespNetworkService(executorService, clientHandlingServiceFactory, serverSocketChannel);
 
   @Test
   void run() throws Exception {
@@ -31,18 +31,19 @@ public class NetworkServiceTest {
     SocketChannel socketChannel = mock(SocketChannel.class);
     when(serverSocketChannel.accept()).thenReturn(socketChannel);
 
-    ClientHandlingService clientHandlingService = mock(ClientHandlingService.class);
-    when(clientHandlingServiceFactory.create(eq(socketChannel))).thenReturn(clientHandlingService);
-    when(clientHandlingService.startAsync()).thenReturn(clientHandlingService);
+    RespClientHandlingService respClientHandlingService = mock(RespClientHandlingService.class);
+    when(clientHandlingServiceFactory.create(eq(socketChannel)))
+        .thenReturn(respClientHandlingService);
+    when(respClientHandlingService.startAsync()).thenReturn(respClientHandlingService);
 
     // Act
-    networkService.run();
-    networkService.triggerShutdown();
+    respNetworkService.run();
+    respNetworkService.triggerShutdown();
     // Assert
-    verify(clientHandlingService, times(1)).startAsync();
-    verify(clientHandlingService, times(1)).addListener(any(), any());
+    verify(respClientHandlingService, times(1)).startAsync();
+    verify(respClientHandlingService, times(1)).addListener(any(), any());
     verify(serverSocketChannel, atLeastOnce()).close();
-    verify(clientHandlingService, atLeastOnce()).stopAsync();
+    verify(respClientHandlingService, atLeastOnce()).stopAsync();
   }
 
   @Test
@@ -50,6 +51,6 @@ public class NetworkServiceTest {
     // Arrange
     doThrow(IOException.class).when(serverSocketChannel).close();
     // Act
-    networkService.triggerShutdown();
+    respNetworkService.triggerShutdown();
   }
 }

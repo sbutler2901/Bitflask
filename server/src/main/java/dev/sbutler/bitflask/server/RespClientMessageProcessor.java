@@ -20,7 +20,7 @@ import java.util.Optional;
  * Handles receiving a client's incoming messages, parsing them, submitting them for processing, and
  * responding.
  */
-final class ClientMessageProcessor implements AutoCloseable {
+final class RespClientMessageProcessor implements AutoCloseable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -28,14 +28,14 @@ final class ClientMessageProcessor implements AutoCloseable {
   private final RespService respService;
 
   @Inject
-  ClientMessageProcessor(
+  RespClientMessageProcessor(
       ServerCommandFactory serverCommandFactory, @Assisted RespService respService) {
     this.serverCommandFactory = serverCommandFactory;
     this.respService = respService;
   }
 
   interface Factory {
-    ClientMessageProcessor create(RespService respService);
+    RespClientMessageProcessor create(RespService respService);
   }
 
   /**

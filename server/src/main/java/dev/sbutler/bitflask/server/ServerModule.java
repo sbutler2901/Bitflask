@@ -17,13 +17,13 @@ public class ServerModule extends RootModule {
 
   @Override
   protected void configure() {
-    install(new FactoryModuleBuilder().build(NetworkService.Factory.class));
-    install(new FactoryModuleBuilder().build(ClientMessageProcessor.Factory.class));
+    install(new FactoryModuleBuilder().build(RespNetworkService.Factory.class));
+    install(new FactoryModuleBuilder().build(RespClientMessageProcessor.Factory.class));
   }
 
   @Override
   public ImmutableSet<Service> getServices(Injector injector) {
     return ImmutableSet.of(
-        injector.getInstance(NetworkService.Factory.class).create(serverSocketChannel));
+        injector.getInstance(RespNetworkService.Factory.class).create(serverSocketChannel));
   }
 }

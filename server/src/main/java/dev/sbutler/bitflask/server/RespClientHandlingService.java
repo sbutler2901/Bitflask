@@ -10,38 +10,38 @@ import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
 /** Handles the processing of a specific client including messages and network resources. */
-final class ClientHandlingService extends AbstractService implements Runnable {
+final class RespClientHandlingService extends AbstractService implements Runnable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService listeningExecutorService;
-  private final ClientMessageProcessor clientMessageProcessor;
+  private final RespClientMessageProcessor respClientMessageProcessor;
 
-  private ClientHandlingService(
+  private RespClientHandlingService(
       ListeningExecutorService listeningExecutorService,
-      ClientMessageProcessor clientMessageProcessor) {
+      RespClientMessageProcessor respClientMessageProcessor) {
     this.listeningExecutorService = listeningExecutorService;
-    this.clientMessageProcessor = clientMessageProcessor;
+    this.respClientMessageProcessor = respClientMessageProcessor;
   }
 
   static class Factory {
 
     private final ListeningExecutorService listeningExecutorService;
-    private final ClientMessageProcessor.Factory clientMessageProcessorFactory;
+    private final RespClientMessageProcessor.Factory clientMessageProcessorFactory;
 
     @Inject
     Factory(
         ListeningExecutorService listeningExecutorService,
-        ClientMessageProcessor.Factory clientMessageProcessorFactory) {
+        RespClientMessageProcessor.Factory clientMessageProcessorFactory) {
       this.listeningExecutorService = listeningExecutorService;
       this.clientMessageProcessorFactory = clientMessageProcessorFactory;
     }
 
-    ClientHandlingService create(SocketChannel socketChannel) throws IOException {
+    RespClientHandlingService create(SocketChannel socketChannel) throws IOException {
       RespService respService = RespService.create(socketChannel);
-      ClientMessageProcessor clientMessageProcessor =
+      RespClientMessageProcessor respClientMessageProcessor =
           clientMessageProcessorFactory.create(respService);
-      return new ClientHandlingService(listeningExecutorService, clientMessageProcessor);
+      return new RespClientHandlingService(listeningExecutorService, respClientMessageProcessor);
     }
   }
 
@@ -54,9 +54,9 @@ final class ClientHandlingService extends AbstractService implements Runnable {
     notifyStarted();
     try {
       while (isRunning()
-          && clientMessageProcessor.isOpen()
+          && respClientMessageProcessor.isOpen()
           && !Thread.currentThread().isInterrupted()) {
-        boolean shouldContinueRunning = clientMessageProcessor.processNextMessage();
+        boolean shouldContinueRunning = respClientMessageProcessor.processNextMessage();
         if (!shouldContinueRunning) {
           break;
         }
@@ -70,10 +70,10 @@ final class ClientHandlingService extends AbstractService implements Runnable {
   @Override
   protected void doStop() {
     try {
-      clientMessageProcessor.close();
+      respClientMessageProcessor.close();
       notifyStopped();
     } catch (IOException e) {
-      logger.atSevere().withCause(e).log("Failed to close the ClientMessageProcessor");
+      logger.atSevere().withCause(e).log("Failed to close the RespClientMessageProcessor");
       notifyFailed(e);
     } catch (Exception e) {
       logger.atSevere().withCause(e).log("Unexpected error while stopping");

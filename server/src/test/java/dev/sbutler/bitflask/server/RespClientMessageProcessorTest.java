@@ -20,14 +20,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Unit tests for {@link ClientMessageProcessor}. */
-public class ClientMessageProcessorTest {
+/** Unit tests for {@link RespClientMessageProcessor}. */
+public class RespClientMessageProcessorTest {
 
   private final ServerCommandFactory serverCommandFactory = mock(ServerCommandFactory.class);
   private final RespService respService = mock(RespService.class);
 
-  private final ClientMessageProcessor clientMessageProcessor =
-      new ClientMessageProcessor(serverCommandFactory, respService);
+  private final RespClientMessageProcessor respClientMessageProcessor =
+      new RespClientMessageProcessor(serverCommandFactory, respService);
 
   @BeforeEach
   public void beforeEach() {
@@ -40,7 +40,7 @@ public class ClientMessageProcessorTest {
     when(respService.read()).thenReturn(rawClientMessage);
     when(serverCommandFactory.createCommand(any())).thenReturn(new ServerCommand.PingCommand());
 
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+    boolean processingSuccessful = respClientMessageProcessor.processNextMessage();
 
     assertThat(processingSuccessful).isTrue();
     verify(respService, times(1)).write(any());
@@ -51,7 +51,7 @@ public class ClientMessageProcessorTest {
     reset(respService);
     when(respService.isOpen()).thenReturn(false);
 
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+    boolean processingSuccessful = respClientMessageProcessor.processNextMessage();
 
     assertThat(processingSuccessful).isFalse();
   }
@@ -60,7 +60,7 @@ public class ClientMessageProcessorTest {
   public void processNextMessage_respService_throwsEOFException() throws Exception {
     when(respService.read()).thenThrow(EOFException.class);
 
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+    boolean processingSuccessful = respClientMessageProcessor.processNextMessage();
 
     assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
@@ -71,7 +71,7 @@ public class ClientMessageProcessorTest {
   public void processNextMessage_respService_throwsProtocolException() throws Exception {
     when(respService.read()).thenThrow(ProtocolException.class);
 
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+    boolean processingSuccessful = respClientMessageProcessor.processNextMessage();
 
     assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
@@ -82,7 +82,7 @@ public class ClientMessageProcessorTest {
   public void processNextMessage_respService_throwsIOException() throws Exception {
     when(respService.read()).thenThrow(IOException.class);
 
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+    boolean processingSuccessful = respClientMessageProcessor.processNextMessage();
 
     assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
@@ -93,7 +93,7 @@ public class ClientMessageProcessorTest {
   public void processNextMessage_readMessageNotRespArray_failureResponse() throws Exception {
     when(respService.read()).thenReturn(new RespBulkString("test"));
 
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+    boolean processingSuccessful = respClientMessageProcessor.processNextMessage();
 
     assertThat(processingSuccessful).isTrue();
     ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
@@ -108,7 +108,7 @@ public class ClientMessageProcessorTest {
       throws Exception {
     when(respService.read()).thenReturn(new RespArray(ImmutableList.of()));
 
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+    boolean processingSuccessful = respClientMessageProcessor.processNextMessage();
 
     assertThat(processingSuccessful).isTrue();
     ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
@@ -125,7 +125,7 @@ public class ClientMessageProcessorTest {
     RuntimeException exception = new RuntimeException("test");
     when(serverCommandFactory.createCommand(any())).thenThrow(exception);
 
-    boolean processingSuccessful = clientMessageProcessor.processNextMessage();
+    boolean processingSuccessful = respClientMessageProcessor.processNextMessage();
 
     assertThat(processingSuccessful).isFalse();
     ArgumentCaptor<RespError> responseCaptor = ArgumentCaptor.forClass(RespError.class);
@@ -135,7 +135,7 @@ public class ClientMessageProcessorTest {
 
   @Test
   void isOpen() {
-    boolean isOpen = clientMessageProcessor.isOpen();
+    boolean isOpen = respClientMessageProcessor.isOpen();
 
     assertThat(isOpen).isTrue();
     verify(respService, times(1)).isOpen();
@@ -145,7 +145,7 @@ public class ClientMessageProcessorTest {
   void close() throws Exception {
     reset(respService);
 
-    clientMessageProcessor.close();
+    respClientMessageProcessor.close();
 
     verify(respService, times(1)).close();
   }
