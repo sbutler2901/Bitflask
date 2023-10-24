@@ -43,7 +43,7 @@ final class RespClientRequestProcessor implements AutoCloseable {
    *
    * @return true if processing can continue, false otherwise
    */
-  public boolean processNextMessage() {
+  public boolean processNextRespRequest() {
     if (!respService.isOpen()) {
       return false;
     }

@@ -35,32 +35,32 @@ public class RespClientRequestProcessorTest {
   }
 
   @Test
-  public void processNextMessage_success() throws Exception {
+  public void processNextRespRequest_success() throws Exception {
     RespElement rawClientMessage = new RespRequest.PingRequest().getAsRespArray();
     when(respService.read()).thenReturn(rawClientMessage);
     when(serverCommandFactory.createCommand(any())).thenReturn(new ServerCommand.PingCommand());
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextMessage();
+    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
 
     assertThat(processingSuccessful).isTrue();
     verify(respService, times(1)).write(any());
   }
 
   @Test
-  public void processNextMessage_respService_closed() {
+  public void processNextRespRequest_respService_closed() {
     reset(respService);
     when(respService.isOpen()).thenReturn(false);
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextMessage();
+    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
 
     assertThat(processingSuccessful).isFalse();
   }
 
   @Test
-  public void processNextMessage_respService_throwsEOFException() throws Exception {
+  public void processNextRespRequest_respService_throwsEOFException() throws Exception {
     when(respService.read()).thenThrow(EOFException.class);
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextMessage();
+    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
 
     assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
@@ -68,10 +68,10 @@ public class RespClientRequestProcessorTest {
   }
 
   @Test
-  public void processNextMessage_respService_throwsProtocolException() throws Exception {
+  public void processNextRespRequest_respService_throwsProtocolException() throws Exception {
     when(respService.read()).thenThrow(ProtocolException.class);
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextMessage();
+    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
 
     assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
@@ -79,10 +79,10 @@ public class RespClientRequestProcessorTest {
   }
 
   @Test
-  public void processNextMessage_respService_throwsIOException() throws Exception {
+  public void processNextRespRequest_respService_throwsIOException() throws Exception {
     when(respService.read()).thenThrow(IOException.class);
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextMessage();
+    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
 
     assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
@@ -90,10 +90,10 @@ public class RespClientRequestProcessorTest {
   }
 
   @Test
-  public void processNextMessage_readMessageNotRespArray_failureResponse() throws Exception {
+  public void processNextRespRequest_readMessageNotRespArray_failureResponse() throws Exception {
     when(respService.read()).thenReturn(new RespBulkString("test"));
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextMessage();
+    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
 
     assertThat(processingSuccessful).isTrue();
     ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
@@ -104,11 +104,11 @@ public class RespClientRequestProcessorTest {
   }
 
   @Test
-  public void processNextMessage_thrownRespRequestConversionException_failureResponse()
+  public void processNextRespRequest_thrownRespRequestConversionException_failureResponse()
       throws Exception {
     when(respService.read()).thenReturn(new RespArray(ImmutableList.of()));
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextMessage();
+    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
 
     assertThat(processingSuccessful).isTrue();
     ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
@@ -119,13 +119,13 @@ public class RespClientRequestProcessorTest {
   }
 
   @Test
-  public void processNextMessage_unrecoverableErrorThrown_errorResponse() throws Exception {
+  public void processNextRespRequest_unrecoverableErrorThrown_errorResponse() throws Exception {
     RespElement rawClientMessage = new RespRequest.PingRequest().getAsRespArray();
     when(respService.read()).thenReturn(rawClientMessage);
     RuntimeException exception = new RuntimeException("test");
     when(serverCommandFactory.createCommand(any())).thenThrow(exception);
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextMessage();
+    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
 
     assertThat(processingSuccessful).isFalse();
     ArgumentCaptor<RespError> responseCaptor = ArgumentCaptor.forClass(RespError.class);

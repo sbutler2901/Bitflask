@@ -58,7 +58,7 @@ final class RespClientService extends AbstractService implements Runnable {
       while (isRunning()
           && respClientRequestProcessor.isOpen()
           && !Thread.currentThread().isInterrupted()) {
-        boolean shouldContinueRunning = respClientRequestProcessor.processNextMessage();
+        boolean shouldContinueRunning = respClientRequestProcessor.processNextRespRequest();
         if (!shouldContinueRunning) {
           break;
         }

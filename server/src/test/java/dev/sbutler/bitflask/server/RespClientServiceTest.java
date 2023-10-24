@@ -62,22 +62,22 @@ public class RespClientServiceTest {
     serviceManager.stopAsync().awaitStopped(Duration.ofMillis(100));
     // Assert
     verify(respClientRequestProcessor, times(1)).isOpen();
-    verify(respClientRequestProcessor, times(0)).processNextMessage();
+    verify(respClientRequestProcessor, times(0)).processNextRespRequest();
     verify(respClientRequestProcessor, times(1)).close();
   }
 
   @Test
-  void run_clientMessageProcessor_processNextMessageTerminates() throws Exception {
+  void run_clientMessageProcessor_processNextRespRequestTerminates() throws Exception {
     // Arrange
     when(respClientRequestProcessor.isOpen()).thenReturn(true);
-    when(respClientRequestProcessor.processNextMessage()).thenReturn(true).thenReturn(false);
+    when(respClientRequestProcessor.processNextRespRequest()).thenReturn(true).thenReturn(false);
     // Act
     ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientService));
     serviceManager.startAsync();
     serviceManager.stopAsync().awaitStopped(Duration.ofMillis(100));
     // Assert
     verify(respClientRequestProcessor, times(2)).isOpen();
-    verify(respClientRequestProcessor, times(2)).processNextMessage();
+    verify(respClientRequestProcessor, times(2)).processNextRespRequest();
     verify(respClientRequestProcessor, times(1)).close();
   }
 
@@ -85,13 +85,13 @@ public class RespClientServiceTest {
   void run_runtimeException() throws Exception {
     // Arrange
     when(respClientRequestProcessor.isOpen()).thenReturn(true);
-    doThrow(RuntimeException.class).when(respClientRequestProcessor).processNextMessage();
+    doThrow(RuntimeException.class).when(respClientRequestProcessor).processNextRespRequest();
     // Act
     ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientService));
     serviceManager.startAsync();
     // Assert
     verify(respClientRequestProcessor, times(1)).isOpen();
-    verify(respClientRequestProcessor, times(1)).processNextMessage();
+    verify(respClientRequestProcessor, times(1)).processNextRespRequest();
     verify(respClientRequestProcessor, times(1)).close();
   }
 
