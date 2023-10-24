@@ -14,7 +14,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 
-/** Handles accepting incoming client requests and submitting them for processing. */
+/**
+ * Handles accepting incoming RESP based client connections and spawning a {@link
+ * RespClientService}.
+ *
+ * <p>If this service is shutdown, all spawned RespClientHandlingServices that are still running
+ * will also be shutdown.
+ */
 @Singleton
 final class RespNetworkService extends AbstractExecutionThreadService {
 
@@ -22,16 +28,13 @@ final class RespNetworkService extends AbstractExecutionThreadService {
 
   private final ListeningExecutorService listeningExecutorService;
   private final ServerSocketChannel serverSocketChannel;
-  private final RespClientHandlingService.Factory clientHandlingServiceFactory;
-  private final Set<RespClientHandlingService> runningRespClientHandlingServices =
-      ConcurrentHashMap.newKeySet();
-
-  private volatile boolean isRunning = true;
+  private final RespClientService.Factory clientHandlingServiceFactory;
+  private final Set<RespClientService> runningRespClientServices = ConcurrentHashMap.newKeySet();
 
   @Inject
   RespNetworkService(
       ListeningExecutorService listeningExecutorService,
-      RespClientHandlingService.Factory clientHandlingServiceFactory,
+      RespClientService.Factory clientHandlingServiceFactory,
       @Assisted ServerSocketChannel serverSocketChannel) {
     this.listeningExecutorService = listeningExecutorService;
     this.clientHandlingServiceFactory = clientHandlingServiceFactory;
@@ -43,40 +46,44 @@ final class RespNetworkService extends AbstractExecutionThreadService {
   }
 
   @Override
-  protected void run() throws IOException {
+  protected void run() {
     try {
-      while (isRunning && serverSocketChannel.isOpen() && !Thread.currentThread().isInterrupted()) {
+      while (isRunning()
+          && serverSocketChannel.isOpen()
+          && !Thread.currentThread().isInterrupted()) {
         SocketChannel socketChannel = serverSocketChannel.accept();
         logger.atInfo().log(
             "Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
 
-        RespClientHandlingService respClientHandlingService =
-            clientHandlingServiceFactory.create(socketChannel);
-        startClientHandlingService(respClientHandlingService);
+        RespClientService respClientService = clientHandlingServiceFactory.create(socketChannel);
+        startRespClientHandlingService(respClientService);
       }
     } catch (AsynchronousCloseException ignored) {
       // Service shutdown externally
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log(
+          "Failed to create RespClientService for incoming client connection. Shutting down.");
     } finally {
       triggerShutdown();
     }
   }
 
-  private void startClientHandlingService(RespClientHandlingService respClientHandlingService) {
-    runningRespClientHandlingServices.add(respClientHandlingService);
+  private void startRespClientHandlingService(RespClientService respClientService) {
+    runningRespClientServices.add(respClientService);
 
     // Clean up after service has reached a terminal state on its own
-    respClientHandlingService
+    respClientService
         .startAsync()
         .addListener(
             new Listener() {
               @Override
               public void terminated(@Nonnull State from) {
-                runningRespClientHandlingServices.remove(respClientHandlingService);
+                runningRespClientServices.remove(respClientService);
               }
 
               @Override
               public void failed(@Nonnull State from, @Nonnull Throwable failure) {
-                runningRespClientHandlingServices.remove(respClientHandlingService);
+                runningRespClientServices.remove(respClientService);
               }
             },
             listeningExecutorService);
@@ -84,9 +91,8 @@ final class RespNetworkService extends AbstractExecutionThreadService {
 
   @Override
   protected void triggerShutdown() {
-    isRunning = false;
     close();
-    stopAllClientHandlingServices();
+    stopAllRespClientHandlingServices();
   }
 
   private void close() {
@@ -97,8 +103,8 @@ final class RespNetworkService extends AbstractExecutionThreadService {
     }
   }
 
-  private void stopAllClientHandlingServices() {
-    runningRespClientHandlingServices.forEach(RespClientHandlingService::stopAsync);
-    runningRespClientHandlingServices.forEach(RespClientHandlingService::awaitTerminated);
+  private void stopAllRespClientHandlingServices() {
+    runningRespClientServices.forEach(RespClientService::stopAsync);
+    runningRespClientServices.forEach(RespClientService::awaitTerminated);
   }
 }

@@ -16,11 +16,8 @@ import java.io.IOException;
 import java.net.ProtocolException;
 import java.util.Optional;
 
-/**
- * Handles receiving a client's incoming messages, parsing them, submitting them for processing, and
- * responding.
- */
-final class RespClientMessageProcessor implements AutoCloseable {
+/** Handles receiving a client's incoming RESP requests, processes them, and responding. */
+final class RespClientRequestProcessor implements AutoCloseable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -28,14 +25,14 @@ final class RespClientMessageProcessor implements AutoCloseable {
   private final RespService respService;
 
   @Inject
-  RespClientMessageProcessor(
+  RespClientRequestProcessor(
       ServerCommandFactory serverCommandFactory, @Assisted RespService respService) {
     this.serverCommandFactory = serverCommandFactory;
     this.respService = respService;
   }
 
   interface Factory {
-    RespClientMessageProcessor create(RespService respService);
+    RespClientRequestProcessor create(RespService respService);
   }
 
   /**

@@ -18,8 +18,8 @@ public class RespNetworkServiceTest {
       spy(TestingExecutors.sameThreadScheduledExecutor());
 
   private final ServerSocketChannel serverSocketChannel = mock(ServerSocketChannel.class);
-  private final RespClientHandlingService.Factory clientHandlingServiceFactory =
-      mock(RespClientHandlingService.Factory.class);
+  private final RespClientService.Factory clientHandlingServiceFactory =
+      mock(RespClientService.Factory.class);
 
   private final RespNetworkService respNetworkService =
       new RespNetworkService(executorService, clientHandlingServiceFactory, serverSocketChannel);
@@ -31,19 +31,18 @@ public class RespNetworkServiceTest {
     SocketChannel socketChannel = mock(SocketChannel.class);
     when(serverSocketChannel.accept()).thenReturn(socketChannel);
 
-    RespClientHandlingService respClientHandlingService = mock(RespClientHandlingService.class);
-    when(clientHandlingServiceFactory.create(eq(socketChannel)))
-        .thenReturn(respClientHandlingService);
-    when(respClientHandlingService.startAsync()).thenReturn(respClientHandlingService);
+    RespClientService respClientService = mock(RespClientService.class);
+    when(clientHandlingServiceFactory.create(eq(socketChannel))).thenReturn(respClientService);
+    when(respClientService.startAsync()).thenReturn(respClientService);
 
     // Act
     respNetworkService.run();
     respNetworkService.triggerShutdown();
     // Assert
-    verify(respClientHandlingService, times(1)).startAsync();
-    verify(respClientHandlingService, times(1)).addListener(any(), any());
+    verify(respClientService, times(1)).startAsync();
+    verify(respClientService, times(1)).addListener(any(), any());
     verify(serverSocketChannel, atLeastOnce()).close();
-    verify(respClientHandlingService, atLeastOnce()).stopAsync();
+    verify(respClientService, atLeastOnce()).stopAsync();
   }
 
   @Test

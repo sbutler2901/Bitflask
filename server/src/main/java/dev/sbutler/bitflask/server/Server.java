@@ -79,7 +79,7 @@ public final class Server {
       addServiceManagerListener(serviceManager, listeningExecutorService);
       registerShutdownHook(serviceManager, listeningExecutorService);
 
-      serviceManager.startAsync();
+      serviceManager.startAsync().awaitHealthy();
     } catch (Exception e) {
       logger.atSevere().withCause(e).log("Server catastrophic failure");
     }

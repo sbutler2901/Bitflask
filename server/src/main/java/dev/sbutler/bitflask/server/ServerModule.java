@@ -18,7 +18,7 @@ public class ServerModule extends RootModule {
   @Override
   protected void configure() {
     install(new FactoryModuleBuilder().build(RespNetworkService.Factory.class));
-    install(new FactoryModuleBuilder().build(RespClientMessageProcessor.Factory.class));
+    install(new FactoryModuleBuilder().build(RespClientRequestProcessor.Factory.class));
   }
 
   @Override

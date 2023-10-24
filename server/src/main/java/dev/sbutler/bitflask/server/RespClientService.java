@@ -9,54 +9,56 @@ import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
-/** Handles the processing of a specific client including messages and network resources. */
-final class RespClientHandlingService extends AbstractService implements Runnable {
+/** Manages the lifecycle of a single RESP based client's connection. */
+final class RespClientService extends AbstractService implements Runnable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ListeningExecutorService listeningExecutorService;
-  private final RespClientMessageProcessor respClientMessageProcessor;
+  private final RespClientRequestProcessor respClientRequestProcessor;
 
-  private RespClientHandlingService(
+  private RespClientService(
       ListeningExecutorService listeningExecutorService,
-      RespClientMessageProcessor respClientMessageProcessor) {
+      RespClientRequestProcessor respClientRequestProcessor) {
     this.listeningExecutorService = listeningExecutorService;
-    this.respClientMessageProcessor = respClientMessageProcessor;
+    this.respClientRequestProcessor = respClientRequestProcessor;
   }
 
   static class Factory {
 
     private final ListeningExecutorService listeningExecutorService;
-    private final RespClientMessageProcessor.Factory clientMessageProcessorFactory;
+    private final RespClientRequestProcessor.Factory clientMessageProcessorFactory;
 
     @Inject
     Factory(
         ListeningExecutorService listeningExecutorService,
-        RespClientMessageProcessor.Factory clientMessageProcessorFactory) {
+        RespClientRequestProcessor.Factory clientMessageProcessorFactory) {
       this.listeningExecutorService = listeningExecutorService;
       this.clientMessageProcessorFactory = clientMessageProcessorFactory;
     }
 
-    RespClientHandlingService create(SocketChannel socketChannel) throws IOException {
+    RespClientService create(SocketChannel socketChannel) throws IOException {
       RespService respService = RespService.create(socketChannel);
-      RespClientMessageProcessor respClientMessageProcessor =
+      RespClientRequestProcessor respClientRequestProcessor =
           clientMessageProcessorFactory.create(respService);
-      return new RespClientHandlingService(listeningExecutorService, respClientMessageProcessor);
+      return new RespClientService(listeningExecutorService, respClientRequestProcessor);
     }
   }
 
   @Override
   protected void doStart() {
+    // Bootstrap service
     Futures.submit(this, listeningExecutorService);
   }
 
+  @Override
   public void run() {
     notifyStarted();
     try {
       while (isRunning()
-          && respClientMessageProcessor.isOpen()
+          && respClientRequestProcessor.isOpen()
           && !Thread.currentThread().isInterrupted()) {
-        boolean shouldContinueRunning = respClientMessageProcessor.processNextMessage();
+        boolean shouldContinueRunning = respClientRequestProcessor.processNextMessage();
         if (!shouldContinueRunning) {
           break;
         }
@@ -70,10 +72,10 @@ final class RespClientHandlingService extends AbstractService implements Runnabl
   @Override
   protected void doStop() {
     try {
-      respClientMessageProcessor.close();
+      respClientRequestProcessor.close();
       notifyStopped();
     } catch (IOException e) {
-      logger.atSevere().withCause(e).log("Failed to close the RespClientMessageProcessor");
+      logger.atSevere().withCause(e).log("Failed to close the RespClientRequestProcessor");
       notifyFailed(e);
     } catch (Exception e) {
       logger.atSevere().withCause(e).log("Unexpected error while stopping");

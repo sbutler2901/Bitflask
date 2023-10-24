@@ -13,7 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ServiceManager;
 import dev.sbutler.bitflask.resp.network.RespService;
-import dev.sbutler.bitflask.server.RespClientHandlingService.Factory;
+import dev.sbutler.bitflask.server.RespClientService.Factory;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
@@ -26,11 +26,11 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class RespClientHandlingServiceTest {
+public class RespClientServiceTest {
 
-  private RespClientHandlingService respClientHandlingService;
+  private RespClientService respClientService;
 
-  @Mock private RespClientMessageProcessor respClientMessageProcessor;
+  @Mock private RespClientRequestProcessor respClientRequestProcessor;
 
   @SuppressWarnings("UnstableApiUsage")
   @Spy
@@ -38,69 +38,69 @@ public class RespClientHandlingServiceTest {
 
   @BeforeEach
   void beforeEach() throws Exception {
-    RespClientMessageProcessor.Factory clientMessageProcessorFactory =
-        mock(RespClientMessageProcessor.Factory.class);
-    when(clientMessageProcessorFactory.create(any())).thenReturn(respClientMessageProcessor);
-    RespClientHandlingService.Factory clientHandlingServiceFactory =
+    RespClientRequestProcessor.Factory clientMessageProcessorFactory =
+        mock(RespClientRequestProcessor.Factory.class);
+    when(clientMessageProcessorFactory.create(any())).thenReturn(respClientRequestProcessor);
+    RespClientService.Factory clientHandlingServiceFactory =
         new Factory(listeningExecutorService, clientMessageProcessorFactory);
 
     try (MockedStatic<RespService> respServiceMockedStatic = mockStatic(RespService.class)) {
       respServiceMockedStatic
           .when(() -> RespService.create(any()))
           .thenReturn(mock(RespService.class));
-      respClientHandlingService = clientHandlingServiceFactory.create(mock(SocketChannel.class));
+      respClientService = clientHandlingServiceFactory.create(mock(SocketChannel.class));
     }
   }
 
   @Test
   void run_clientMessageProcessor_isOpenTerminates() throws Exception {
     // Arrange
-    when(respClientMessageProcessor.isOpen()).thenReturn(false);
+    when(respClientRequestProcessor.isOpen()).thenReturn(false);
     // Act
-    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientHandlingService));
+    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientService));
     serviceManager.startAsync();
     serviceManager.stopAsync().awaitStopped(Duration.ofMillis(100));
     // Assert
-    verify(respClientMessageProcessor, times(1)).isOpen();
-    verify(respClientMessageProcessor, times(0)).processNextMessage();
-    verify(respClientMessageProcessor, times(1)).close();
+    verify(respClientRequestProcessor, times(1)).isOpen();
+    verify(respClientRequestProcessor, times(0)).processNextMessage();
+    verify(respClientRequestProcessor, times(1)).close();
   }
 
   @Test
   void run_clientMessageProcessor_processNextMessageTerminates() throws Exception {
     // Arrange
-    when(respClientMessageProcessor.isOpen()).thenReturn(true);
-    when(respClientMessageProcessor.processNextMessage()).thenReturn(true).thenReturn(false);
+    when(respClientRequestProcessor.isOpen()).thenReturn(true);
+    when(respClientRequestProcessor.processNextMessage()).thenReturn(true).thenReturn(false);
     // Act
-    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientHandlingService));
+    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientService));
     serviceManager.startAsync();
     serviceManager.stopAsync().awaitStopped(Duration.ofMillis(100));
     // Assert
-    verify(respClientMessageProcessor, times(2)).isOpen();
-    verify(respClientMessageProcessor, times(2)).processNextMessage();
-    verify(respClientMessageProcessor, times(1)).close();
+    verify(respClientRequestProcessor, times(2)).isOpen();
+    verify(respClientRequestProcessor, times(2)).processNextMessage();
+    verify(respClientRequestProcessor, times(1)).close();
   }
 
   @Test
   void run_runtimeException() throws Exception {
     // Arrange
-    when(respClientMessageProcessor.isOpen()).thenReturn(true);
-    doThrow(RuntimeException.class).when(respClientMessageProcessor).processNextMessage();
+    when(respClientRequestProcessor.isOpen()).thenReturn(true);
+    doThrow(RuntimeException.class).when(respClientRequestProcessor).processNextMessage();
     // Act
-    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientHandlingService));
+    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientService));
     serviceManager.startAsync();
     // Assert
-    verify(respClientMessageProcessor, times(1)).isOpen();
-    verify(respClientMessageProcessor, times(1)).processNextMessage();
-    verify(respClientMessageProcessor, times(1)).close();
+    verify(respClientRequestProcessor, times(1)).isOpen();
+    verify(respClientRequestProcessor, times(1)).processNextMessage();
+    verify(respClientRequestProcessor, times(1)).close();
   }
 
   @Test
   void doStop_IOException() throws Exception {
     // Arrange
-    doThrow(IOException.class).when(respClientMessageProcessor).close();
+    doThrow(IOException.class).when(respClientRequestProcessor).close();
     // Act
-    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientHandlingService));
+    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientService));
     serviceManager.startAsync();
     serviceManager.stopAsync().awaitStopped(Duration.ofMillis(100));
   }
@@ -108,9 +108,9 @@ public class RespClientHandlingServiceTest {
   @Test
   void doStop_Exception() throws Exception {
     // Arrange
-    doThrow(Exception.class).when(respClientMessageProcessor).close();
+    doThrow(Exception.class).when(respClientRequestProcessor).close();
     // Act
-    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientHandlingService));
+    ServiceManager serviceManager = new ServiceManager(ImmutableSet.of(respClientService));
     serviceManager.startAsync();
     serviceManager.stopAsync().awaitStopped(Duration.ofMillis(100));
   }
