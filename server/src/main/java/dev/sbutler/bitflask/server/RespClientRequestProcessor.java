@@ -1,5 +1,6 @@
 package dev.sbutler.bitflask.server;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.flogger.FluentLogger;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
@@ -17,7 +18,7 @@ import java.net.ProtocolException;
 import java.util.Optional;
 
 /** Handles receiving a client's incoming RESP requests, processes them, and responding. */
-final class RespClientRequestProcessor implements AutoCloseable {
+final class RespClientRequestProcessor implements Runnable, AutoCloseable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -35,6 +36,22 @@ final class RespClientRequestProcessor implements AutoCloseable {
     RespClientRequestProcessor create(RespService respService);
   }
 
+  @Override
+  public void run() {
+    try {
+      boolean shouldContinueRunning = true;
+      while (shouldContinueRunning
+          && respService.isOpen()
+          && !Thread.currentThread().isInterrupted()) {
+        shouldContinueRunning = processNextRespRequest();
+      }
+    } catch (Exception e) {
+      logger.atSevere().withCause(e).log("Unexpected error occurred. Terminating connection");
+    } finally {
+      close();
+    }
+  }
+
   /**
    * Reads, processes, and responds to the client's message
    *
@@ -43,7 +60,8 @@ final class RespClientRequestProcessor implements AutoCloseable {
    *
    * @return true if processing can continue, false otherwise
    */
-  public boolean processNextRespRequest() {
+  @VisibleForTesting
+  boolean processNextRespRequest() {
     if (!respService.isOpen()) {
       return false;
     }
@@ -129,7 +147,11 @@ final class RespClientRequestProcessor implements AutoCloseable {
   }
 
   @Override
-  public void close() throws IOException {
-    respService.close();
+  public void close() {
+    try {
+      respService.close();
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log("Failed to close the RespService");
+    }
   }
 }
