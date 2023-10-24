@@ -29,6 +29,7 @@ final class RespNetworkService extends AbstractExecutionThreadService {
 
   private final Set<ListenableFuture<Void>> respClientRequestProcessorFutures =
       ConcurrentHashMap.newKeySet();
+  private volatile boolean isRunning = true;
 
   @Inject
   RespNetworkService(
@@ -47,9 +48,7 @@ final class RespNetworkService extends AbstractExecutionThreadService {
   @Override
   protected void run() {
     try {
-      while (isRunning()
-          && serverSocketChannel.isOpen()
-          && !Thread.currentThread().isInterrupted()) {
+      while (isRunning && serverSocketChannel.isOpen() && !Thread.currentThread().isInterrupted()) {
         SocketChannel socketChannel = serverSocketChannel.accept();
         logger.atInfo().log(
             "Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
@@ -95,6 +94,7 @@ final class RespNetworkService extends AbstractExecutionThreadService {
 
   @Override
   protected void triggerShutdown() {
+    isRunning = false;
     close();
     stopAllRespClientRequestProcessor();
   }

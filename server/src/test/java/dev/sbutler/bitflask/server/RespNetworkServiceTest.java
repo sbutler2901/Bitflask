@@ -7,6 +7,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.resp.network.RespService;
 import java.io.IOException;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ public class RespNetworkServiceTest {
       new RespNetworkService(executorService, clientRequestProcessorFactory, serverSocketChannel);
 
   @Test
-  void run() throws Exception {
+  public void run() throws Exception {
     when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
     SocketChannel socketChannel = mock(SocketChannel.class);
     when(serverSocketChannel.accept()).thenReturn(socketChannel);
@@ -43,7 +44,31 @@ public class RespNetworkServiceTest {
   }
 
   @Test
-  void triggerShutdown_close_throwsIOException() throws Exception {
+  public void run_acceptThrowsAsynchronousCloseException() throws Exception {
+    when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
+    when(serverSocketChannel.accept()).thenThrow(new AsynchronousCloseException());
+
+    respNetworkService.run();
+
+    verify(serverSocketChannel, atLeastOnce()).close();
+  }
+
+  @Test
+  public void run_respServiceThrowsIOException() throws Exception {
+    when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
+    SocketChannel socketChannel = mock(SocketChannel.class);
+    when(serverSocketChannel.accept()).thenReturn(socketChannel);
+
+    try (MockedStatic<RespService> respServiceMockedStatic = mockStatic(RespService.class)) {
+      respServiceMockedStatic.when(() -> RespService.create(any())).thenThrow(IOException.class);
+      respNetworkService.run();
+    }
+
+    verify(serverSocketChannel, atLeastOnce()).close();
+  }
+
+  @Test
+  public void triggerShutdown_close_throwsIOException() throws Exception {
     // Arrange
     doThrow(IOException.class).when(serverSocketChannel).close();
     // Act
