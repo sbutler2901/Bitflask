@@ -6,11 +6,12 @@ import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import dev.sbutler.bitflask.resp.network.RespService;
 import java.io.IOException;
-import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nullable;
 
 /**
  * Handles accepting incoming RESP based client connections and spawning a {@link
@@ -27,9 +28,9 @@ final class RespNetworkService extends AbstractExecutionThreadService {
   private final RespClientRequestProcessor.Factory clientRequestProcessorFactory;
   private final ServerSocketChannel serverSocketChannel;
 
-  private final Set<ListenableFuture<Void>> respClientRequestProcessorFutures =
+  private final Set<RespClientRequestProcessor> runningRespClientRequestProcessors =
       ConcurrentHashMap.newKeySet();
-  private volatile boolean isRunning = true;
+  private volatile boolean shouldContinueRunning = true;
 
   @Inject
   RespNetworkService(
@@ -48,32 +49,49 @@ final class RespNetworkService extends AbstractExecutionThreadService {
   @Override
   protected void run() {
     try {
-      while (isRunning && serverSocketChannel.isOpen() && !Thread.currentThread().isInterrupted()) {
-        SocketChannel socketChannel = serverSocketChannel.accept();
-        logger.atInfo().log(
-            "Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
-
-        createAndStartClientRequestProcessor(socketChannel);
+      while (shouldContinueRunning
+          && serverSocketChannel.isOpen()
+          && !Thread.currentThread().isInterrupted()) {
+        Optional<RespService> respService = acceptNextRespConnection();
+        if (respService.isEmpty()) {
+          break;
+        }
+        createAndStartClientRequestProcessor(respService.get());
       }
-    } catch (AsynchronousCloseException ignored) {
-      // Service shutdown externally
-    } catch (IOException e) {
-      logger.atSevere().withCause(e).log(
-          "Failed to create RespService for incoming client connection. Shutting down.");
     } finally {
       triggerShutdown();
     }
   }
 
-  private void createAndStartClientRequestProcessor(SocketChannel socketChannel)
-      throws IOException {
-    RespService respService = RespService.create(socketChannel);
+  private Optional<RespService> acceptNextRespConnection() {
+    SocketChannel socketChannel;
+    try {
+      socketChannel = serverSocketChannel.accept();
+      logger.atInfo().log(
+          "Received incoming client connection from [%s]", socketChannel.getRemoteAddress());
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log("Failed to accept resp connection. Shutting down.");
+      triggerShutdown();
+      return Optional.empty();
+    }
+
+    try {
+      return Optional.of(RespService.create(socketChannel));
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log(
+          "Failed to create RespService for incoming client connection. Shutting down.");
+      triggerShutdown();
+    }
+    return Optional.empty();
+  }
+
+  private void createAndStartClientRequestProcessor(RespService respService) {
     RespClientRequestProcessor clientRequestProcessor =
         clientRequestProcessorFactory.create(respService);
 
     ListenableFuture<Void> clientRequestProcessorFuture =
         Futures.submit(clientRequestProcessor, listeningExecutorService);
-    respClientRequestProcessorFutures.add(clientRequestProcessorFuture);
+    runningRespClientRequestProcessors.add(clientRequestProcessor);
 
     // Clean up after service has reached a terminal state on its own
     Futures.addCallback(
@@ -81,12 +99,12 @@ final class RespNetworkService extends AbstractExecutionThreadService {
         new FutureCallback<>() {
           @Override
           public void onSuccess(Void result) {
-            respClientRequestProcessorFutures.remove(clientRequestProcessorFuture);
+            runningRespClientRequestProcessors.remove(clientRequestProcessor);
           }
 
           @Override
-          public void onFailure(Throwable t) {
-            respClientRequestProcessorFutures.remove(clientRequestProcessorFuture);
+          public void onFailure(@Nullable Throwable t) {
+            runningRespClientRequestProcessors.remove(clientRequestProcessor);
           }
         },
         listeningExecutorService);
@@ -94,22 +112,12 @@ final class RespNetworkService extends AbstractExecutionThreadService {
 
   @Override
   protected void triggerShutdown() {
-    isRunning = false;
-    close();
-    stopAllRespClientRequestProcessor();
-  }
-
-  private void close() {
+    shouldContinueRunning = false;
     try {
       serverSocketChannel.close();
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Error closing the ServerSocketChannel");
     }
-  }
-
-  private void stopAllRespClientRequestProcessor() {
-    for (var future : respClientRequestProcessorFutures) {
-      future.cancel(true);
-    }
+    runningRespClientRequestProcessors.forEach(RespClientRequestProcessor::triggerShutdown);
   }
 }

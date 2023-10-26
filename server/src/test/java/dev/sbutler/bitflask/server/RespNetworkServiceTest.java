@@ -7,7 +7,6 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.testing.TestingExecutors;
 import dev.sbutler.bitflask.resp.network.RespService;
 import java.io.IOException;
-import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import org.junit.jupiter.api.Test;
@@ -27,35 +26,55 @@ public class RespNetworkServiceTest {
       new RespNetworkService(executorService, clientRequestProcessorFactory, serverSocketChannel);
 
   @Test
-  public void run() throws Exception {
+  public void run_acceptNextRespConnection_success() throws Exception {
     when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
     SocketChannel socketChannel = mock(SocketChannel.class);
     when(serverSocketChannel.accept()).thenReturn(socketChannel);
     RespClientRequestProcessor clientRequestProcessor = mock(RespClientRequestProcessor.class);
     when(clientRequestProcessorFactory.create(any())).thenReturn(clientRequestProcessor);
 
-    RespService respService = mock(RespService.class);
     try (MockedStatic<RespService> respServiceMockedStatic = mockStatic(RespService.class)) {
-      respServiceMockedStatic.when(() -> RespService.create(any())).thenReturn(respService);
+      RespService mockRespService = mock(RespService.class);
+      respServiceMockedStatic.when(() -> RespService.create(any())).thenReturn(mockRespService);
       respNetworkService.run();
     }
 
-    verify(serverSocketChannel, atLeastOnce()).close();
+    verify(clientRequestProcessor, atMostOnce()).run();
+    verify(serverSocketChannel, atMostOnce()).close();
   }
 
   @Test
-  public void run_acceptThrowsAsynchronousCloseException() throws Exception {
+  public void run_acceptNextRespConnection_success_processorFails() throws Exception {
     when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
-    when(serverSocketChannel.accept()).thenThrow(new AsynchronousCloseException());
+    SocketChannel socketChannel = mock(SocketChannel.class);
+    when(serverSocketChannel.accept()).thenReturn(socketChannel);
+    RespClientRequestProcessor clientRequestProcessor = mock(RespClientRequestProcessor.class);
+    when(clientRequestProcessorFactory.create(any())).thenReturn(clientRequestProcessor);
+    doThrow(RuntimeException.class).when(clientRequestProcessor).run();
+
+    try (MockedStatic<RespService> respServiceMockedStatic = mockStatic(RespService.class)) {
+      RespService mockRespService = mock(RespService.class);
+      respServiceMockedStatic.when(() -> RespService.create(any())).thenReturn(mockRespService);
+      respNetworkService.run();
+    }
+
+    verify(clientRequestProcessor, atMostOnce()).run();
+    verify(serverSocketChannel, atMostOnce()).close();
+  }
+
+  @Test
+  public void run_serverSocketChannelAcceptThrowsIOException() throws Exception {
+    when(serverSocketChannel.isOpen()).thenReturn(true);
+    when(serverSocketChannel.accept()).thenThrow(IOException.class);
 
     respNetworkService.run();
 
-    verify(serverSocketChannel, atLeastOnce()).close();
+    verify(serverSocketChannel, times(2)).close();
   }
 
   @Test
-  public void run_respServiceThrowsIOException() throws Exception {
-    when(serverSocketChannel.isOpen()).thenReturn(true).thenReturn(false);
+  public void run_acceptNextRespConnection_respServiceCreateThrowsIOException() throws Exception {
+    when(serverSocketChannel.isOpen()).thenReturn(true);
     SocketChannel socketChannel = mock(SocketChannel.class);
     when(serverSocketChannel.accept()).thenReturn(socketChannel);
 
@@ -64,14 +83,15 @@ public class RespNetworkServiceTest {
       respNetworkService.run();
     }
 
-    verify(serverSocketChannel, atLeastOnce()).close();
+    verify(serverSocketChannel, times(2)).close();
   }
 
   @Test
   public void triggerShutdown_close_throwsIOException() throws Exception {
-    // Arrange
     doThrow(IOException.class).when(serverSocketChannel).close();
-    // Act
+
     respNetworkService.triggerShutdown();
+
+    verify(serverSocketChannel, atMostOnce()).close();
   }
 }
