@@ -18,12 +18,14 @@ import java.net.ProtocolException;
 import java.util.Optional;
 
 /** Handles receiving a client's incoming RESP requests, processes them, and responding. */
-final class RespClientRequestProcessor implements Runnable, AutoCloseable {
+final class RespClientRequestProcessor implements Runnable {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final ServerCommandFactory serverCommandFactory;
   private final RespService respService;
+
+  private volatile boolean shouldContinueRunning = true;
 
   @Inject
   RespClientRequestProcessor(
@@ -39,16 +41,15 @@ final class RespClientRequestProcessor implements Runnable, AutoCloseable {
   @Override
   public void run() {
     try {
-      boolean shouldContinueRunning = true;
       while (shouldContinueRunning
           && respService.isOpen()
           && !Thread.currentThread().isInterrupted()) {
-        shouldContinueRunning = processNextRespRequest();
+        processNextRespRequest();
       }
     } catch (Exception e) {
       logger.atSevere().withCause(e).log("Unexpected error occurred. Terminating connection");
     } finally {
-      close();
+      triggerShutdown();
     }
   }
 
@@ -57,42 +58,39 @@ final class RespClientRequestProcessor implements Runnable, AutoCloseable {
    *
    * <p>Errors or issues that occur during processing which are unrecoverable will be handled. These
    * cases will result in false being returned by this function.
-   *
-   * @return true if processing can continue, false otherwise
    */
   @VisibleForTesting
-  boolean processNextRespRequest() {
-    if (!respService.isOpen()) {
-      return false;
-    }
-
+  void processNextRespRequest() {
     Optional<RespElement> readRespMessage = readClientRespMessage();
     if (readRespMessage.isEmpty()) {
-      return false;
+      triggerShutdown();
+      return;
     }
 
     if (!(readRespMessage.get() instanceof RespArray)) {
-      return sendResponse(new RespResponse.Failure("Message must be provided in a RespArray"));
+      sendResponse(new RespResponse.Failure("Message must be provided in a RespArray"));
+      return;
     }
 
     RespRequest request;
     try {
       request = RespRequest.createFromRespArray((RespArray) readRespMessage.get());
     } catch (RespRequestConversionException e) {
-      return sendResponse(new RespResponse.Failure(e.getMessage()));
+      sendResponse(new RespResponse.Failure(e.getMessage()));
+      return;
     }
 
-    return processRespRequest(request);
+    processRespRequest(request);
   }
 
-  private boolean processRespRequest(RespRequest request) {
+  private void processRespRequest(RespRequest request) {
     try {
       ServerCommand command = serverCommandFactory.createCommand(request);
       ClientCommandResults commandResults = command.execute();
       RespResponse respResponse = handleCommandResults(commandResults);
-      return sendResponse(respResponse);
+      sendResponse(respResponse);
     } catch (Exception e) {
-      return sendUnrecoverableErrorToClient(e);
+      sendUnrecoverableErrorToClient(e);
     }
   }
 
@@ -121,17 +119,16 @@ final class RespClientRequestProcessor implements Runnable, AutoCloseable {
     return Optional.empty();
   }
 
-  private boolean sendResponse(RespResponse response) {
+  private void sendResponse(RespResponse response) {
     try {
       respService.write(response.getAsRespArray());
-      return true;
     } catch (IOException e) {
       logger.atSevere().withCause(e).log("Failed to write response to client");
-      return false;
+      triggerShutdown();
     }
   }
 
-  private boolean sendUnrecoverableErrorToClient(Exception e) {
+  private void sendUnrecoverableErrorToClient(Exception e) {
     logger.atSevere().withCause(e).log("Responding with unrecoverable error to client.");
     RespError response = new RespError(e.getMessage());
     try {
@@ -139,15 +136,11 @@ final class RespClientRequestProcessor implements Runnable, AutoCloseable {
     } catch (IOException ioException) {
       logger.atSevere().withCause(e).log("Failed to write response to client");
     }
-    return false;
+    triggerShutdown();
   }
 
-  public boolean isOpen() {
-    return respService.isOpen();
-  }
-
-  @Override
-  public void close() {
+  public void triggerShutdown() {
+    shouldContinueRunning = false;
     try {
       respService.close();
     } catch (IOException e) {

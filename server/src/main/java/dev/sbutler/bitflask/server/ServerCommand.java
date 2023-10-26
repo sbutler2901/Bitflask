@@ -18,6 +18,7 @@ sealed interface ServerCommand permits ServerCommand.StorageCommand, ServerComma
       this.clientCommand = clientCommand;
     }
 
+    /** A blocking call that executes against the storage engine. */
     @Override
     public ClientCommandResults execute() {
       return clientCommand.execute();

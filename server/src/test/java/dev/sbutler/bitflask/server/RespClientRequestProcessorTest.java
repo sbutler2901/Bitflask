@@ -60,14 +60,12 @@ public class RespClientRequestProcessorTest {
     when(respService.read()).thenReturn(rawClientMessage);
     when(serverCommandFactory.createCommand(any())).thenReturn(new ServerCommand.PingCommand());
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isTrue();
     ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
     verify(respService, times(1)).write(responseCaptor.capture());
-    RespResponse respResponse = RespResponse.createFromRespArray(responseCaptor.getValue());
-    assertThat(respResponse.getResponseCode()).isEqualTo(RespResponseCode.SUCCESS);
-    assertThat(respResponse.getMessage()).isEqualTo("pong");
+    assertRawResponseWithMessage(responseCaptor.getValue(), RespResponseCode.SUCCESS, "pong");
+    verify(respService, never()).close();
   }
 
   @Test
@@ -78,14 +76,12 @@ public class RespClientRequestProcessorTest {
     when(serverCommandFactory.createCommand(any())).thenReturn(serverCommand);
     when(serverCommand.execute()).thenReturn(new ClientCommandResults.Failure("test"));
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isTrue();
     ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
     verify(respService, times(1)).write(responseCaptor.capture());
-    RespResponse respResponse = RespResponse.createFromRespArray(responseCaptor.getValue());
-    assertThat(respResponse.getResponseCode()).isEqualTo(RespResponseCode.FAILURE);
-    assertThat(respResponse.getMessage()).isEqualTo("test");
+    assertRawResponseWithMessage(responseCaptor.getValue(), RespResponseCode.FAILURE, "test");
+    verify(respService, never()).close();
   }
 
   @Test
@@ -102,15 +98,18 @@ public class RespClientRequestProcessorTest {
                     .setRespPort(9090)
                     .buildPartial()));
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isTrue();
     ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
     verify(respService, times(1)).write(responseCaptor.capture());
-    RespResponse respResponse = RespResponse.createFromRespArray(responseCaptor.getValue());
-    assertThat(respResponse.getResponseCode()).isEqualTo(RespResponseCode.NOT_CURRENT_LEADER);
+    RespResponse respResponse =
+        assertRawResponseWithMessage(
+            responseCaptor.getValue(),
+            RespResponseCode.NOT_CURRENT_LEADER,
+            "Current leader: [host=host, respPort=9090].");
     assertThat(((RespResponse.NotCurrentLeader) respResponse).getHost()).isEqualTo("host");
     assertThat(((RespResponse.NotCurrentLeader) respResponse).getRespPort()).isEqualTo(9090);
+    verify(respService, never()).close();
   }
 
   @Test
@@ -121,45 +120,37 @@ public class RespClientRequestProcessorTest {
     when(serverCommandFactory.createCommand(any())).thenReturn(serverCommand);
     when(serverCommand.execute()).thenReturn(new ClientCommandResults.NoKnownLeader());
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isTrue();
     ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
     verify(respService, times(1)).write(responseCaptor.capture());
-    RespResponse respResponse = RespResponse.createFromRespArray(responseCaptor.getValue());
-    assertThat(respResponse.getResponseCode()).isEqualTo(RespResponseCode.NO_KNOWN_LEADER);
-  }
-
-  @Test
-  public void processNextRespRequest_respService_closed() {
-    reset(respService);
-    when(respService.isOpen()).thenReturn(false);
-
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
-
-    assertThat(processingSuccessful).isFalse();
+    assertRawResponseWithMessage(
+        responseCaptor.getValue(),
+        RespResponseCode.NO_KNOWN_LEADER,
+        "No leader is currently known.");
+    verify(respService, never()).close();
   }
 
   @Test
   public void processNextRespRequest_respService_throwsEOFException() throws Exception {
     when(respService.read()).thenThrow(EOFException.class);
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(respService, times(0)).write(any());
+    verify(respService, times(1)).close();
   }
 
   @Test
   public void processNextRespRequest_respService_throwsProtocolException() throws Exception {
     when(respService.read()).thenThrow(ProtocolException.class);
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(respService, never()).write(any());
+    verify(respService, times(1)).close();
   }
 
   @Test
@@ -170,14 +161,12 @@ public class RespClientRequestProcessorTest {
     doThrow(new IOException("test")).when(respService).write(any());
     when(serverCommandFactory.createCommand(any())).thenReturn(new ServerCommand.PingCommand());
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isFalse();
     ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
     verify(respService, times(1)).write(responseCaptor.capture());
-    RespResponse respResponse = RespResponse.createFromRespArray(responseCaptor.getValue());
-    assertThat(respResponse.getResponseCode()).isEqualTo(RespResponseCode.SUCCESS);
-    assertThat(respResponse.getMessage()).isEqualTo("pong");
+    assertRawResponseWithMessage(responseCaptor.getValue(), RespResponseCode.SUCCESS, "pong");
+    verify(respService, times(1)).close();
   }
 
   @Test
@@ -190,37 +179,38 @@ public class RespClientRequestProcessorTest {
     RuntimeException exception = new RuntimeException("test");
     when(serverCommandFactory.createCommand(any())).thenThrow(exception);
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isFalse();
     ArgumentCaptor<RespError> responseCaptor = ArgumentCaptor.forClass(RespError.class);
     verify(respService, times(1)).write(responseCaptor.capture());
     assertThat(responseCaptor.getValue().getValue()).isEqualTo("test");
+    verify(respService, times(1)).close();
   }
 
   @Test
   public void processNextRespRequest_respService_read_throwsIOException() throws Exception {
     when(respService.read()).thenThrow(IOException.class);
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isFalse();
     verify(respService, times(1)).read();
     verify(respService, never()).write(any());
+    verify(respService, times(1)).close();
   }
 
   @Test
   public void processNextRespRequest_readMessageNotRespArray_failureResponse() throws Exception {
     when(respService.read()).thenReturn(new RespBulkString("test"));
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isTrue();
     ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
     verify(respService, times(1)).write(responseCaptor.capture());
-    RespResponse respResponse = RespResponse.createFromRespArray(responseCaptor.getValue());
-    assertThat(respResponse.getResponseCode()).isEqualTo(RespResponseCode.FAILURE);
-    assertThat(respResponse.getMessage()).isEqualTo("Message must be provided in a RespArray");
+    assertRawResponseWithMessage(
+        responseCaptor.getValue(),
+        RespResponseCode.FAILURE,
+        "Message must be provided in a RespArray");
+    verify(respService, never()).close();
   }
 
   @Test
@@ -228,55 +218,55 @@ public class RespClientRequestProcessorTest {
       throws Exception {
     when(respService.read()).thenReturn(new RespArray(ImmutableList.of()));
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isTrue();
     ArgumentCaptor<RespArray> responseCaptor = ArgumentCaptor.forClass(RespArray.class);
     verify(respService, times(1)).write(responseCaptor.capture());
-    RespResponse respResponse = RespResponse.createFromRespArray(responseCaptor.getValue());
-    assertThat(respResponse.getResponseCode()).isEqualTo(RespResponseCode.FAILURE);
-    assertThat(respResponse.getMessage()).isEqualTo("Failed to convert [] to a RespRequest.");
+    assertRawResponseWithMessage(
+        responseCaptor.getValue(),
+        RespResponseCode.FAILURE,
+        "Failed to convert [] to a RespRequest.");
+    verify(respService, never()).close();
   }
 
   @Test
   public void processNextRespRequest_unrecoverableErrorThrown_errorResponse() throws Exception {
     RespElement rawClientMessage = new RespRequest.PingRequest().getAsRespArray();
     when(respService.read()).thenReturn(rawClientMessage);
+    ServerCommand command = mock(ServerCommand.StorageCommand.class);
+    when(serverCommandFactory.createCommand(any())).thenReturn(command);
     RuntimeException exception = new RuntimeException("test");
-    when(serverCommandFactory.createCommand(any())).thenThrow(exception);
+    when(command.execute()).thenThrow(exception);
 
-    boolean processingSuccessful = respClientRequestProcessor.processNextRespRequest();
+    respClientRequestProcessor.processNextRespRequest();
 
-    assertThat(processingSuccessful).isFalse();
     ArgumentCaptor<RespError> responseCaptor = ArgumentCaptor.forClass(RespError.class);
     verify(respService, times(1)).write(responseCaptor.capture());
     assertThat(responseCaptor.getValue().getValue()).isEqualTo("test");
+    verify(respService, times(1)).close();
   }
 
   @Test
-  void isOpen() {
-    boolean isOpen = respClientRequestProcessor.isOpen();
-
-    assertThat(isOpen).isTrue();
-    verify(respService, times(1)).isOpen();
-  }
-
-  @Test
-  void close() throws Exception {
-    reset(respService);
-
-    respClientRequestProcessor.close();
+  void triggerShutdown() throws Exception {
+    respClientRequestProcessor.triggerShutdown();
 
     verify(respService, times(1)).close();
   }
 
   @Test
-  void close_respService_throwsIOException() throws Exception {
-    reset(respService);
+  void triggerShutdown_respService_throwsIOException() throws Exception {
     doThrow(new IOException("test")).when(respService).close();
 
-    respClientRequestProcessor.close();
+    respClientRequestProcessor.triggerShutdown();
 
     verify(respService, times(1)).close();
+  }
+
+  private static RespResponse assertRawResponseWithMessage(
+      RespArray rawResponse, RespResponseCode responseCode, String message) {
+    RespResponse respResponse = RespResponse.createFromRespArray(rawResponse);
+    assertThat(respResponse.getResponseCode()).isEqualTo(responseCode);
+    assertThat(respResponse.getMessage()).isEqualTo(message);
+    return respResponse;
   }
 }
