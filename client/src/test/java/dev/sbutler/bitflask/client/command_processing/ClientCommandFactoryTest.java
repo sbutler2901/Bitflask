@@ -1,8 +1,7 @@
 package dev.sbutler.bitflask.client.command_processing;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
 import dev.sbutler.bitflask.client.client_processing.output.OutputWriter;
@@ -23,7 +22,7 @@ public class ClientCommandFactoryTest {
       new ClientCommandFactory(outputWriter, respCommandProcessor, respServiceProvider);
 
   @Test
-  public void createClientCommand_remoteCommand_ping() {
+  public void createCommand_remoteCommand_ping() {
     ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("ping"));
 
     ClientCommand command = clientCommandFactory.createCommand(clientInput);
@@ -34,7 +33,7 @@ public class ClientCommandFactoryTest {
   }
 
   @Test
-  public void createClientCommand_remoteCommand_get() {
+  public void createCommand_remoteCommand_get() {
     ImmutableList<ReplElement> clientInput =
         ImmutableList.of(new ReplString("get"), new ReplString("key"));
 
@@ -46,7 +45,7 @@ public class ClientCommandFactoryTest {
   }
 
   @Test
-  public void createClientCommand_remoteCommand_set() {
+  public void createCommand_remoteCommand_set() {
     ImmutableList<ReplElement> clientInput =
         ImmutableList.of(new ReplString("set"), new ReplString("key"), new ReplString("value"));
 
@@ -58,7 +57,7 @@ public class ClientCommandFactoryTest {
   }
 
   @Test
-  public void createClientCommand_remoteCommand_delete() {
+  public void createCommand_remoteCommand_delete() {
     ImmutableList<ReplElement> clientInput =
         ImmutableList.of(new ReplString("delete"), new ReplString("key"));
 
@@ -70,15 +69,7 @@ public class ClientCommandFactoryTest {
   }
 
   @Test
-  public void createClientCommand_remoteCommand_invalidArgs_throwsIndexOutOfBoundsException() {
-    ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("get"));
-
-    assertThrows(
-        IndexOutOfBoundsException.class, () -> clientCommandFactory.createCommand(clientInput));
-  }
-
-  @Test
-  public void createClientCommand_localCommand_help() {
+  public void createCommand_localCommand_help() {
     ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("help"));
 
     ClientCommand command = clientCommandFactory.createCommand(clientInput);
@@ -87,7 +78,7 @@ public class ClientCommandFactoryTest {
   }
 
   @Test
-  public void createClientCommand_localCommand_exit() {
+  public void createCommand_localCommand_exit() {
     ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("exit"));
 
     ClientCommand command = clientCommandFactory.createCommand(clientInput);
@@ -96,11 +87,58 @@ public class ClientCommandFactoryTest {
   }
 
   @Test
-  public void createClientCommand_localCommand_unknown() {
+  public void createCommand_localCommand_invalid() {
     ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("unknown"));
 
     ClientCommand command = clientCommandFactory.createCommand(clientInput);
+    command.execute();
 
-    assertThat(command).isInstanceOf(LocalCommand.Unknown.class);
+    assertThat(command).isInstanceOf(LocalCommand.Invalid.class);
+    verify(outputWriter, atMostOnce()).writeWithNewLine("Unknown command [unknown].");
+  }
+
+  @Test
+  public void createClientCommand_empty_invalid() {
+    ImmutableList<ReplElement> clientInput = ImmutableList.of();
+
+    ClientCommand command = clientCommandFactory.createCommand(clientInput);
+    command.execute();
+
+    assertThat(command).isInstanceOf(LocalCommand.Invalid.class);
+    verify(outputWriter, atMostOnce()).writeWithNewLine("");
+  }
+
+  @Test
+  public void createCommand_remoteCommand_get_invalidArgs_invalid() {
+    ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("get"));
+
+    ClientCommand command = clientCommandFactory.createCommand(clientInput);
+    command.execute();
+
+    assertThat(command).isInstanceOf(LocalCommand.Invalid.class);
+    verify(outputWriter, atMostOnce()).writeWithNewLine("The Get command requires a key.");
+  }
+
+  @Test
+  public void createCommand_remoteCommand_set_invalidArgs_invalid() {
+    ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("set"));
+
+    ClientCommand command = clientCommandFactory.createCommand(clientInput);
+    command.execute();
+
+    assertThat(command).isInstanceOf(LocalCommand.Invalid.class);
+    verify(outputWriter, atMostOnce())
+        .writeWithNewLine("The Set command requires a key and value.");
+  }
+
+  @Test
+  public void createCommand_remoteCommand_del_invalidArgs_invalid() {
+    ImmutableList<ReplElement> clientInput = ImmutableList.of(new ReplString("delete"));
+
+    ClientCommand command = clientCommandFactory.createCommand(clientInput);
+    command.execute();
+
+    assertThat(command).isInstanceOf(LocalCommand.Invalid.class);
+    verify(outputWriter, atMostOnce()).writeWithNewLine("The Delete command requires a key.");
   }
 }

@@ -27,15 +27,22 @@ public final class ClientCommandFactory {
   }
 
   public ClientCommand createCommand(ImmutableList<ReplElement> clientInput) {
+    if (clientInput.isEmpty()) {
+      return new LocalCommand.Invalid(outputWriter, "");
+    }
     return createRemoteCommand(clientInput).orElseGet(() -> createLocalCommand(clientInput));
   }
 
   private Optional<ClientCommand> createRemoteCommand(ImmutableList<ReplElement> clientInput) {
-    return createRespRequest(clientInput)
-        .map(
-            request ->
-                new RemoteCommand(
-                    request, outputWriter, respCommandProcessor, respServiceProvider));
+    try {
+      return createRespRequest(clientInput)
+          .map(
+              request ->
+                  new RemoteCommand(
+                      request, outputWriter, respCommandProcessor, respServiceProvider));
+    } catch (InvalidClientCommandException e) {
+      return Optional.of(new LocalCommand.Invalid(outputWriter, e.getMessage()));
+    }
   }
 
   private Optional<RespRequest> createRespRequest(ImmutableList<ReplElement> clientInput) {
@@ -48,7 +55,8 @@ public final class ClientCommandFactory {
       return Optional.empty();
     }
 
-    // TODO: improve error handling
+    validateClientInputForRespRequest(requestCode, clientInput);
+
     RespRequest respRequest =
         switch (requestCode) {
           case PING -> new RespRequest.PingRequest();
@@ -61,6 +69,26 @@ public final class ClientCommandFactory {
     return Optional.of(respRequest);
   }
 
+  private void validateClientInputForRespRequest(
+      RespRequestCode requestCode, ImmutableList<ReplElement> clientInput) {
+    switch (requestCode) {
+      case PING:
+        break;
+      case GET:
+        if (clientInput.size() < 2)
+          throw new InvalidClientCommandException("The Get command requires a key.");
+        break;
+      case SET:
+        if (clientInput.size() < 3)
+          throw new InvalidClientCommandException("The Set command requires a key and value.");
+        break;
+      case DELETE:
+        if (clientInput.size() < 2)
+          throw new InvalidClientCommandException("The Delete command requires a key.");
+        break;
+    }
+  }
+
   private ClientCommand createLocalCommand(ImmutableList<ReplElement> clientInput) {
     String command = clientInput.get(0).getAsString();
 
@@ -69,7 +97,8 @@ public final class ClientCommandFactory {
     } else if (LocalCommand.Exit.commandStringMatches(command)) {
       return new LocalCommand.Exit();
     } else {
-      return new LocalCommand.Unknown(outputWriter, command);
+      return new LocalCommand.Invalid(
+          outputWriter, String.format("Unknown command [%s].", command));
     }
   }
 }

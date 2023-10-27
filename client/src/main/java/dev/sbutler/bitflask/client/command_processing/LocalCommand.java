@@ -38,20 +38,20 @@ public sealed interface LocalCommand extends ClientCommand {
     }
   }
 
-  /** The user has provided an unknown command. */
-  final class Unknown implements LocalCommand {
+  /** The user has provided an invalid command. */
+  final class Invalid implements LocalCommand {
 
     private final OutputWriter outputWriter;
-    private final String command;
+    private final String message;
 
-    public Unknown(OutputWriter outputWriter, String command) {
+    public Invalid(OutputWriter outputWriter, String message) {
       this.outputWriter = outputWriter;
-      this.command = command;
+      this.message = message;
     }
 
     @Override
     public boolean execute() {
-      outputWriter.writeWithNewLine(String.format("Unknown command [%s].", command));
+      outputWriter.writeWithNewLine(message);
       return true;
     }
   }
